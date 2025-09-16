@@ -6,6 +6,7 @@ const openai = new OpenAI({
 });
 
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
+const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
 
 // AI Prompts for different operations
 export const AI_PROMPTS = {
@@ -274,7 +275,19 @@ export class AIService {
     resumeText: string,
     jobDescription: string,
     jobTitle: string,
-    companyName: string
+    companyName: string,
+    tone: 'professional' | 'enthusiastic' | 'concise' = 'professional',
+    length: 'same' | 'shorter' | 'longer' = 'same'
+  ): Promise<ResumeCustomizationResult> {
+    if (ASSISTANT_RESUME_TAILOR_ID) {
+      return this.customizeResumeWithAssistant(resumeText, jobDescription, jobTitle, companyName, tone, length);
+    }
+    return this.customizeResumeWithModel(resumeText, jobDescription);
+  }
+
+  private static async customizeResumeWithModel(
+    resumeText: string,
+    jobDescription: string
   ): Promise<ResumeCustomizationResult> {
     try {
       const prompt = AI_PROMPTS.RESUME_TAILORING
@@ -302,10 +315,7 @@ export class AIService {
         throw new Error('Failed to get customized resume from OpenAI');
       }
 
-      // Calculate match score
       const matchScore = calculateMatchScore(customizedText, jobDescription);
-
-      // Get improvement suggestions
       const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
 
       return {
@@ -322,6 +332,100 @@ export class AIService {
     } catch (error) {
       console.error('Resume customization error:', error);
       throw new Error('Failed to customize resume');
+    }
+  }
+
+  private static async customizeResumeWithAssistant(
+    resumeText: string,
+    jobDescription: string,
+    jobTitle: string,
+    companyName: string,
+    tone: 'professional' | 'enthusiastic' | 'concise',
+    length: 'same' | 'shorter' | 'longer'
+  ): Promise<ResumeCustomizationResult> {
+    if (!ASSISTANT_RESUME_TAILOR_ID) {
+      return this.customizeResumeWithModel(resumeText, jobDescription);
+    }
+
+    // Create a thread and provide structured content
+    const thread = await openai.beta.threads.create({});
+    const userContent = `TASK: Rewrite the resume to align with the job.
+
+Job Title: ${jobTitle}
+Company: ${companyName}
+Tone: ${tone}
+Length: ${length}
+
+JOB DESCRIPTION:\n${jobDescription}\n
+RESUME:\n${resumeText}`;
+    await openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: userContent,
+    });
+
+    // Start assistant run
+    let run: any = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_RESUME_TAILOR_ID as string,
+    });
+
+    // Handle tool calls and poll until completion
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
+        const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
+        const toolOutputs = await Promise.all(
+          toolCalls.map(async (toolCall: any) => {
+            try {
+              const fn = toolCall.function;
+              if (fn?.name === 'tailor_resume') {
+                const args = JSON.parse(fn.arguments || '{}');
+                const rd = typeof args.resumeText === 'string' ? args.resumeText : resumeText;
+                const jd = typeof args.jobDescription === 'string' ? args.jobDescription : jobDescription;
+                const result = await this.customizeResumeWithModel(rd, jd);
+                return { tool_call_id: toolCall.id, output: result.customizedResume };
+              }
+              return { tool_call_id: toolCall.id, output: '' };
+            } catch {
+              return { tool_call_id: toolCall.id, output: '' };
+            }
+          })
+        );
+
+        run = await openai.beta.threads.runs.submitToolOutputs(
+          thread.id,
+          run.id,
+          { tool_outputs: toolOutputs }
+        );
+        continue;
+      }
+
+      if (run.status === 'completed') {
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const last = messages.data.find((m) => m.role === 'assistant');
+        const content = last?.content?.[0];
+        const text = (content && 'text' in content) ? content.text.value : undefined;
+        const customizedResume = text && text.trim().length > 0 ? text.trim() : (await this.customizeResumeWithModel(resumeText, jobDescription)).customizedResume;
+        const matchScore = calculateMatchScore(customizedResume, jobDescription);
+        const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
+        return {
+          customizedResume,
+          matchScore,
+          improvements: [
+            'Keywords optimized for ATS',
+            'Achievements aligned with job requirements',
+            'Professional summary tailored to role',
+            'Skills section prioritized for relevance'
+          ],
+          suggestions,
+        };
+      }
+
+      if (run.status === 'failed' || run.status === 'cancelled' || run.status === 'expired') {
+        return this.customizeResumeWithModel(resumeText, jobDescription);
+      }
+
+      await new Promise((r) => setTimeout(r, 600));
+      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
   }
 

@@ -6,6 +6,7 @@ const nextConfig = {
         NEXTAUTH_URL: process.env.NEXTAUTH_URL,
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
         OPENAI_ASSISTANT_JOB_ANALYSIS: process.env.OPENAI_ASSISTANT_JOB_ANALYSIS,
+        OPENAI_ASSISTANT_RESUME_TAILOR: process.env.OPENAI_ASSISTANT_RESUME_TAILOR,
     },
     images: {
         domains: ['localhost'],
