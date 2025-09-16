@@ -445,6 +445,36 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
     toast.success('Resume downloaded!')
   }
 
+  const downloadPdf = async () => {
+    if (!generatedResume) return
+    try {
+      const resp = await fetch('/api/resume/export/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          html: generatedResume.output.html,
+          filename: `${resumeData.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.pdf`
+        })
+      })
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}))
+        throw new Error((data as any).error || 'Failed to export PDF')
+      }
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${resumeData.personalInfo.fullName.replace(/\s+/g, '_')}_Resume.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('PDF downloaded!')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to export PDF')
+    }
+  }
+
   const calculateCompleteness = () => {
     let score = 0
     let total = 0
@@ -1161,6 +1191,13 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
                   >
                     <Download className="mr-2 h-4 w-4" />
                     Download HTML
+                  </Button>
+                  <Button
+                    onClick={downloadPdf}
+                    className="w-full"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
                   </Button>
                   <p className="text-xs text-gray-600 text-center">
                     Professional templates with ATS optimization
