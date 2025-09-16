@@ -4,6 +4,7 @@ import connectToDatabase from '@/lib/mongodb';
 import { authOptions } from '@/lib/auth';
 import { extractKeywords } from '@/lib/utils';
 import { AIService } from '@/lib/ai-service';
+import JobApplication from '@/models/JobApplication';
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,6 +32,14 @@ export async function POST(request: NextRequest) {
 
     // Use AI service to analyze the job description
     const analysis = await AIService.analyzeJobDescription(jobDescription);
+
+    // Persist analysis snapshot to the user's latest application for this company/title (or create a minimal record)
+    await connectToDatabase();
+    const app = await JobApplication.findOne({ userId: session.user.id, companyName: companyName || analysis.companyName, jobTitle: jobTitle || analysis.jobTitle }).sort({ createdAt: -1 })
+    if (app) {
+      app.analysis = analysis
+      await app.save()
+    }
 
     // Extract keywords from the job description
     const keywords = extractKeywords(jobDescription);

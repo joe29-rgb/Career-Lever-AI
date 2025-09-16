@@ -19,6 +19,8 @@ export interface IJobApplication extends Document {
   followUpDates: Date[]
   notes?: string
   companyResearch?: mongoose.Types.ObjectId
+  analysis?: any
+  coverLetterId?: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }
@@ -67,6 +69,14 @@ const JobApplicationSchema = new Schema<IJobApplication>({
   companyResearch: {
     type: Schema.Types.ObjectId,
     ref: 'CompanyData',
+  },
+  analysis: {
+    type: Schema.Types.Mixed,
+    default: null,
+  },
+  coverLetterId: {
+    type: Schema.Types.ObjectId,
+    ref: 'CoverLetter',
   },
 }, {
   timestamps: true,

@@ -25,7 +25,8 @@ export async function PUT(
       jobDescription,
       jobUrl,
       applicationStatus,
-      notes
+      notes,
+      coverLetterId
     } = body;
 
     // Connect to database
@@ -44,6 +45,7 @@ export async function PUT(
         ...(jobUrl !== undefined && { jobUrl }),
         ...(applicationStatus && { applicationStatus }),
         ...(notes !== undefined && { notes }),
+        ...(coverLetterId && { coverLetterId }),
         updatedAt: new Date(),
       },
       { new: true }
