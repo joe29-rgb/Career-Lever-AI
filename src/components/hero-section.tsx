@@ -1,0 +1,113 @@
+'use client'
+
+import { useState } from 'react'
+import { signIn } from 'next-auth/react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Sparkles, Target, Zap, Users } from 'lucide-react'
+
+export function HeroSection() {
+  const [email, setEmail] = useState('')
+
+  const handleGetStarted = async () => {
+    if (email) {
+      // For demo purposes, we'll sign in with Google
+      // In production, you might want to handle email signup differently
+      await signIn('google')
+    }
+  }
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-black/10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }} />
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          {/* Badge */}
+          <Badge variant="secondary" className="mb-8 bg-white/10 text-white hover:bg-white/20">
+            <Sparkles className="mr-2 h-4 w-4" />
+            AI-Powered Job Application Assistant
+          </Badge>
+
+          {/* Main Heading */}
+          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
+            Land Your Dream Job with
+            <span className="block bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+              AI-Powered Tools
+            </span>
+          </h1>
+
+          {/* Subheading */}
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-blue-100 sm:text-xl">
+            Customize your resume and cover letters with AI, research companies instantly,
+            and track your applications—all in one powerful platform designed for job seekers.
+          </p>
+
+          {/* CTA Section */}
+          <div className="mx-auto mt-10 max-w-md">
+            <div className="flex gap-4">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-blue-200"
+              />
+              <Button
+                onClick={handleGetStarted}
+                size="lg"
+                className="bg-white text-blue-600 hover:bg-blue-50"
+              >
+                Get Started
+              </Button>
+            </div>
+            <p className="mt-4 text-sm text-blue-200">
+              Join 10,000+ job seekers who've landed their dream roles
+            </p>
+          </div>
+
+          {/* Feature Cards */}
+          <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-3">
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <Target className="mx-auto h-8 w-8 text-yellow-400" />
+                <h3 className="mt-4 text-sm font-semibold text-white">Smart Resume Tailoring</h3>
+                <p className="mt-2 text-sm text-blue-100">
+                  AI analyzes job descriptions and optimizes your resume for ATS systems
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <Zap className="mx-auto h-8 w-8 text-yellow-400" />
+                <h3 className="mt-4 text-sm font-semibold text-white">Instant Company Research</h3>
+                <p className="mt-2 text-sm text-blue-100">
+                  Get company insights from LinkedIn, Glassdoor, and social media
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <Users className="mx-auto h-8 w-8 text-yellow-400" />
+                <h3 className="mt-4 text-sm font-semibold text-white">Application Tracking</h3>
+                <p className="mt-2 text-sm text-blue-100">
+                  Track all your applications and follow-ups in one dashboard
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+

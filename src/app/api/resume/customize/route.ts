@@ -1,0 +1,116 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import connectToDatabase from '@/lib/mongodb';
+import Resume from '@/models/Resume';
+import JobApplication from '@/models/JobApplication';
+import { authOptions } from '@/lib/auth';
+import { AIService } from '@/lib/ai-service';
+
+export async function POST(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { resumeId, jobDescription, jobTitle, companyName } = body;
+
+    if (!resumeId || !jobDescription || !jobTitle || !companyName) {
+      return NextResponse.json(
+        { error: 'Missing required fields: resumeId, jobDescription, jobTitle, companyName' },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database
+    await connectToDatabase();
+
+    // Find the resume
+    const resume = await Resume.findOne({
+      _id: resumeId,
+      userId: session.user.id
+    });
+
+    if (!resume) {
+      return NextResponse.json(
+        { error: 'Resume not found' },
+        { status: 404 }
+      );
+    }
+
+    // Create job application record
+    const jobApplication = new JobApplication({
+      userId: session.user.id,
+      jobTitle,
+      companyName,
+      jobDescription,
+      applicationStatus: 'saved',
+      appliedDate: new Date(),
+      followUpDates: [],
+    });
+
+    await jobApplication.save();
+
+    // Use AI service to customize the resume
+    const customizationResult = await AIService.customizeResume(
+      resume.extractedText,
+      jobDescription,
+      jobTitle,
+      companyName
+    );
+
+    const { customizedResume: customizedText, matchScore, improvements, suggestions } = customizationResult;
+
+    // Create customized version
+    const customizedVersion = {
+      jobApplicationId: jobApplication._id,
+      customizedText,
+      jobTitle,
+      companyName,
+      matchScore,
+      createdAt: new Date(),
+    };
+
+    // Add to resume
+    resume.customizedVersions.push(customizedVersion);
+    const savedResume = await resume.save();
+
+    // Find the newly added version
+    const newVersion = savedResume.customizedVersions[savedResume.customizedVersions.length - 1];
+
+    return NextResponse.json({
+      success: true,
+      customizedResume: {
+        _id: newVersion._id,
+        jobApplicationId: customizedVersion.jobApplicationId,
+        customizedText,
+        jobTitle,
+        companyName,
+        matchScore,
+        createdAt: customizedVersion.createdAt,
+      },
+      jobApplication: {
+        _id: jobApplication._id,
+        jobTitle: jobApplication.jobTitle,
+        companyName: jobApplication.companyName,
+        applicationStatus: jobApplication.applicationStatus,
+        appliedDate: jobApplication.appliedDate,
+      },
+      matchScore,
+      improvements,
+      suggestions,
+    });
+
+  } catch (error) {
+    console.error('Resume customization error:', error);
+    return NextResponse.json(
+      { error: 'Failed to customize resume' },
+      { status: 500 }
+    );
+  }
+}
