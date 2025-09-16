@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import crypto from 'crypto';
 import { extractKeywords, calculateMatchScore } from './utils';
 
 const openai = new OpenAI({
@@ -8,6 +9,42 @@ const openai = new OpenAI({
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
 const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
 const ASSISTANT_COVER_LETTER_ID = process.env.OPENAI_ASSISTANT_COVER_LETTER;
+
+// Runtime controls
+const DEFAULT_MODEL = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o-mini';
+const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 20000);
+const DEMO_MODE = String(process.env.DEMO_MODE || 'false').toLowerCase() === 'true';
+const CACHE_TTL_MS = Number(process.env.AI_CACHE_TTL_MS || 10 * 60 * 1000);
+
+// Simple in-memory cache (ephemeral)
+type CacheEntry = { expiresAt: number; value: any };
+const aiCache: Map<string, CacheEntry> = new Map();
+
+function getCache(key: string): any | undefined {
+  const entry = aiCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    aiCache.delete(key);
+    return undefined;
+  }
+  return entry.value;
+}
+
+function setCache(key: string, value: any) {
+  aiCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value });
+}
+
+function makeKey(prefix: string, payload: string) {
+  return `${prefix}:${crypto.createHash('sha256').update(payload).digest('hex')}`;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('AI request timed out')), timeoutMs);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer!));
+}
 
 // AI Prompts for different operations
 export const AI_PROMPTS = {
@@ -148,11 +185,29 @@ export class AIService {
   }
 
   private static async analyzeJobDescriptionWithModel(jobDescription: string): Promise<JobAnalysisResult> {
+    if (DEMO_MODE) {
+      return {
+        jobTitle: 'Software Engineer',
+        companyName: 'Acme Inc',
+        keyRequirements: ['JavaScript', 'React', 'Node.js', 'APIs', 'Testing'],
+        preferredSkills: ['TypeScript', 'CI/CD', 'Cloud'],
+        responsibilities: ['Build features', 'Write tests', 'Code reviews'],
+        companyCulture: ['Collaborative', 'Ownership', 'Customer-first'],
+        experienceLevel: 'mid',
+        educationRequirements: ['BS CS or equivalent experience'],
+        remoteWorkPolicy: 'hybrid',
+        salaryRange: '120k-150k',
+      };
+    }
+
+    const cacheKey = makeKey('job-analysis', jobDescription);
+    const cached = getCache(cacheKey);
+    if (cached) return cached as JobAnalysisResult;
     try {
       const prompt = AI_PROMPTS.JOB_ANALYSIS.replace('{jobDescription}', jobDescription);
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+      const completion = await withTimeout(openai.chat.completions.create({
+        model: DEFAULT_MODEL,
         messages: [
           {
             role: 'system',
@@ -165,9 +220,12 @@ export class AIService {
         ],
         temperature: 0.3,
         max_tokens: 1500,
-      });
+      }), AI_TIMEOUT_MS);
 
       const analysisText = completion.choices[0]?.message?.content?.trim();
+      if ((completion as any).usage) {
+        console.log('AI usage (analysis):', (completion as any).usage);
+      }
       if (!analysisText) {
         throw new Error('Failed to get analysis from OpenAI');
       }
@@ -190,6 +248,7 @@ export class AIService {
         };
       }
 
+      setCache(cacheKey, analysis);
       return analysis;
     } catch (error) {
       console.error('Job analysis error:', error);
@@ -290,13 +349,25 @@ export class AIService {
     resumeText: string,
     jobDescription: string
   ): Promise<ResumeCustomizationResult> {
+    if (DEMO_MODE) {
+      const customized = `Summary: Experienced engineer aligned to role.\n\n${resumeText}`;
+      return {
+        customizedResume: customized,
+        matchScore: 75,
+        improvements: ['Keywords aligned', 'Achievements quantified'],
+        suggestions: ['Tighten summary', 'Reorder skills'],
+      };
+    }
+    const cacheKey = makeKey('resume-tailor', JSON.stringify({ resumeText, jobDescription }));
+    const cached = getCache(cacheKey);
+    if (cached) return cached as ResumeCustomizationResult;
     try {
       const prompt = AI_PROMPTS.RESUME_TAILORING
         .replace('{jobDescription}', jobDescription)
         .replace('{resumeText}', resumeText);
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+      const completion = await withTimeout(openai.chat.completions.create({
+        model: DEFAULT_MODEL,
         messages: [
           {
             role: 'system',
@@ -309,9 +380,12 @@ export class AIService {
         ],
         temperature: 0.7,
         max_tokens: 3000,
-      });
+      }), AI_TIMEOUT_MS);
 
       const customizedText = completion.choices[0]?.message?.content?.trim();
+      if ((completion as any).usage) {
+        console.log('AI usage (tailor):', (completion as any).usage);
+      }
       if (!customizedText) {
         throw new Error('Failed to get customized resume from OpenAI');
       }
@@ -319,7 +393,7 @@ export class AIService {
       const matchScore = calculateMatchScore(customizedText, jobDescription);
       const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
 
-      return {
+      const result = {
         customizedResume: customizedText,
         matchScore,
         improvements: [
@@ -330,6 +404,8 @@ export class AIService {
         ],
         suggestions
       };
+      setCache(cacheKey, result);
+      return result;
     } catch (error) {
       console.error('Resume customization error:', error);
       throw new Error('Failed to customize resume');
@@ -439,6 +515,10 @@ RESUME:\n${resumeText}`;
     tone: 'professional' | 'casual' | 'enthusiastic' = 'professional',
     length: 'short' | 'medium' | 'long' = 'medium'
   ): Promise<CoverLetterResult> {
+    if (DEMO_MODE) {
+      const coverLetter = `Dear Hiring Manager,\n\nI am excited to apply for the ${jobTitle} role at ${companyName}. I bring relevant achievements and alignment to your needs...\n\nSincerely,\nCandidate`;
+      return { coverLetter, keyPoints: ['Strong intro', 'Aligned achievements', 'Clear CTA'], wordCount: coverLetter.split(/\s+/).length };
+    }
     if (ASSISTANT_COVER_LETTER_ID) {
       return this.generateCoverLetterWithAssistant(
         jobTitle,
@@ -471,8 +551,8 @@ Company Research:
         .replace('{tone}', tone)
         .replace('{length}', length);
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+      const completion = await withTimeout(openai.chat.completions.create({
+        model: DEFAULT_MODEL,
         messages: [
           {
             role: 'system',
@@ -485,9 +565,12 @@ Company Research:
         ],
         temperature: 0.7,
         max_tokens: 2000,
-      });
+      }), AI_TIMEOUT_MS);
 
       const coverLetter = completion.choices[0]?.message?.content?.trim();
+      if ((completion as any).usage) {
+        console.log('AI usage (cover letter):', (completion as any).usage);
+      }
       if (!coverLetter) {
         throw new Error('Failed to generate cover letter from OpenAI');
       }

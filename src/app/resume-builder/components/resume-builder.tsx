@@ -171,6 +171,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
   const [generatedResume, setGeneratedResume] = useState<any>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [jobDescription, setJobDescription] = useState('')
+  const [showDiff, setShowDiff] = useState(false)
 
   // Load existing resume data if available
   useEffect(() => {
@@ -1131,11 +1132,20 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
             <CardContent>
               {generatedResume && showPreview ? (
                 <div className="border rounded-lg overflow-hidden">
-                  <iframe
-                    srcDoc={generatedResume.output.html}
-                    className="w-full h-96 border-0"
-                    title="Resume Preview"
-                  />
+                  {!showDiff ? (
+                    <iframe srcDoc={generatedResume.output.html} className="w-full h-96 border-0" title="Resume Preview" />
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2">
+                      <div className="p-2 border-r">
+                        <div className="text-xs text-gray-500 mb-1">Original (extracted)</div>
+                        <pre className="whitespace-pre-wrap text-xs">{resumeData.personalInfo.summary ? `${resumeData.personalInfo.summary}\n\n` : ''}{/* simplified */}{/* show some sections */}</pre>
+                      </div>
+                      <div className="p-2">
+                        <div className="text-xs text-gray-500 mb-1">Tailored</div>
+                        <pre className="whitespace-pre-wrap text-xs">{generatedResume.resumeText || ''}</pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-500">
@@ -1198,6 +1208,13 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
 
               {generatedResume && (
                 <div className="space-y-2">
+                  <Button
+                    onClick={() => setShowDiff(!showDiff)}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    {showDiff ? 'Hide Diff' : 'Show Original vs Tailored'}
+                  </Button>
                   <Button
                     onClick={downloadResume}
                     variant="outline"
