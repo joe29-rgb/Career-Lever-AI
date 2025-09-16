@@ -20,6 +20,36 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw } = body;
 
+    // RAW INPUT MODE: allow direct inputs without DB lookups
+    if (!jobApplicationId && !resumeId && raw === true) {
+      const { jobTitle, companyName, jobDescription, resumeText } = body as any;
+      if (!jobTitle || !companyName || !jobDescription || !resumeText) {
+        return NextResponse.json(
+          { error: 'Missing required fields: jobTitle, companyName, jobDescription, resumeText' },
+          { status: 400 }
+        );
+      }
+
+      const result = await AIService.generateCoverLetter(
+        jobTitle,
+        companyName,
+        jobDescription,
+        resumeText,
+        undefined,
+        tone,
+        length
+      );
+
+      const { coverLetter, keyPoints, wordCount } = result;
+      return NextResponse.json({
+        success: true,
+        coverLetter,
+        keyPoints,
+        wordCount,
+        preview: { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` }
+      });
+    }
+
     if (!jobApplicationId || !resumeId) {
       return NextResponse.json(
         { error: 'Missing required fields: jobApplicationId, resumeId' },
