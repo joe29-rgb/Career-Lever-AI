@@ -170,6 +170,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedResume, setGeneratedResume] = useState<any>(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [jobDescription, setJobDescription] = useState('')
 
   // Load existing resume data if available
   useEffect(() => {
@@ -407,7 +408,8 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
           template: selectedTemplate,
           targetJob: 'Software Engineer', // This could be dynamic
           industry: 'Technology',
-          experienceLevel: 'mid'
+          experienceLevel: 'mid',
+          jobDescription: jobDescription && jobDescription.length > 20 ? jobDescription : undefined
         }),
       })
 
@@ -569,6 +571,18 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Target Job Description (for AI tailoring) */}
+              <div className="space-y-2">
+                <Label htmlFor="jobDescription">Target Job Description (for AI tailoring)</Label>
+                <Textarea
+                  id="jobDescription"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Paste the job description here to tailor your resume."
+                  rows={6}
+                />
+                <p className="text-xs text-gray-500">Optional but recommended. At least 20 characters to enable AI tailoring.</p>
+              </div>
               <Tabs value={activeSection} onValueChange={setActiveSection}>
                 <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="personal">Personal</TabsTrigger>
