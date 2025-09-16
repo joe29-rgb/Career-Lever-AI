@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb';
 import { authOptions } from '@/lib/auth';
 import { extractKeywords } from '@/lib/utils';
 import { AIService } from '@/lib/ai-service';
+import { isRateLimited } from '@/lib/rate-limit';
+import { jobAnalyzeSchema } from '@/lib/validators';
 import JobApplication from '@/models/JobApplication';
 
 export async function POST(request: NextRequest) {
@@ -18,7 +20,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobDescription, jobTitle, companyName } = body;
+    const parsed = jobAnalyzeSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
+    }
+    const { jobDescription, jobTitle, companyName } = parsed.data;
+
+    const rl = isRateLimited((session.user as any).id, 'job-analyze');
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
 
     if (!jobDescription || jobDescription.trim().length < 50) {
       return NextResponse.json(

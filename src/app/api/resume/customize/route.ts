@@ -5,6 +5,8 @@ import Resume from '@/models/Resume';
 import JobApplication from '@/models/JobApplication';
 import { authOptions } from '@/lib/auth';
 import { AIService } from '@/lib/ai-service';
+import { isRateLimited } from '@/lib/rate-limit';
+import { resumeCustomizeSchema } from '@/lib/validators';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +20,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { resumeId, jobDescription, jobTitle, companyName } = body;
+    const parsed = resumeCustomizeSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
+    }
+    const { resumeId, jobDescription, jobTitle, companyName } = parsed.data;
+
+    const rl = isRateLimited((session.user as any).id, 'resume-customize');
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
 
     if (!resumeId || !jobDescription || !jobTitle || !companyName) {
       return NextResponse.json(

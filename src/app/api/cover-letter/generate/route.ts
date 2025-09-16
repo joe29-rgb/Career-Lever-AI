@@ -6,6 +6,8 @@ import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
 import { AIService } from '@/lib/ai-service';
 import CoverLetter from '@/models/CoverLetter';
+import { isRateLimited } from '@/lib/rate-limit';
+import { coverLetterRawSchema } from '@/lib/validators';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +23,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save } = body;
 
+    const rl = isRateLimited((session.user as any).id, 'cover-letter');
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     // RAW INPUT MODE: allow direct inputs without DB lookups
     if (!jobApplicationId && !resumeId && raw === true) {
-      const { jobTitle, companyName, jobDescription, resumeText } = body as any;
+      const parsed = coverLetterRawSchema.safeParse(body);
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
+      }
+      const { jobTitle, companyName, jobDescription, resumeText } = parsed.data as any;
       if (!jobTitle || !companyName || !jobDescription || !resumeText) {
         return NextResponse.json(
           { error: 'Missing required fields: jobTitle, companyName, jobDescription, resumeText' },
