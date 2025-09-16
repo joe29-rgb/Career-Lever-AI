@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium' } = body;
+    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw } = body;
 
     if (!jobApplicationId || !resumeId) {
       return NextResponse.json(
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       coverLetter,
       keyPoints,
       wordCount,
+      preview: raw ? { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` } : undefined
     });
 
   } catch (error) {

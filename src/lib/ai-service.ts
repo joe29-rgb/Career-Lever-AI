@@ -7,6 +7,7 @@ const openai = new OpenAI({
 
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
 const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
+const ASSISTANT_COVER_LETTER_ID = process.env.OPENAI_ASSISTANT_COVER_LETTER;
 
 // AI Prompts for different operations
 export const AI_PROMPTS = {
@@ -438,6 +439,17 @@ RESUME:\n${resumeText}`;
     tone: 'professional' | 'casual' | 'enthusiastic' = 'professional',
     length: 'short' | 'medium' | 'long' = 'medium'
   ): Promise<CoverLetterResult> {
+    if (ASSISTANT_COVER_LETTER_ID) {
+      return this.generateCoverLetterWithAssistant(
+        jobTitle,
+        companyName,
+        jobDescription,
+        resumeText,
+        companyData,
+        tone,
+        length
+      );
+    }
     try {
       let companyInfo = '';
       if (companyData) {
@@ -492,6 +504,94 @@ Company Research:
     } catch (error) {
       console.error('Cover letter generation error:', error);
       throw new Error('Failed to generate cover letter');
+    }
+  }
+
+  private static async generateCoverLetterWithAssistant(
+    jobTitle: string,
+    companyName: string,
+    jobDescription: string,
+    resumeText: string,
+    companyData?: any,
+    tone: 'professional' | 'casual' | 'enthusiastic' = 'professional',
+    length: 'short' | 'medium' | 'long' = 'medium'
+  ): Promise<CoverLetterResult> {
+    if (!ASSISTANT_COVER_LETTER_ID) {
+      return this.generateCoverLetter(jobTitle, companyName, jobDescription, resumeText, companyData, tone, length);
+    }
+
+    const companyInfo = companyData ? JSON.stringify(companyData, null, 2) : '';
+    const userContent = `TASK: Generate a tailored cover letter.\n\nJob Title: ${jobTitle}\nCompany: ${companyName}\nTone: ${tone}\nLength: ${length}\n\nJOB DESCRIPTION:\n${jobDescription}\n\nRESUME:\n${resumeText}\n\nCOMPANY DATA:\n${companyInfo}`;
+
+    // Create a thread and add the request
+    const thread = await openai.beta.threads.create({});
+    await openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: userContent,
+    });
+
+    // Start run
+    let run: any = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_COVER_LETTER_ID as string,
+    });
+
+    // Poll for tool calls or completion
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
+        const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
+        const toolOutputs = await Promise.all(
+          toolCalls.map(async (toolCall: any) => {
+            try {
+              const fn = toolCall.function;
+              if (fn?.name === 'generate_cover_letter') {
+                const args = JSON.parse(fn.arguments || '{}');
+                const title = typeof args.jobTitle === 'string' ? args.jobTitle : jobTitle;
+                const company = typeof args.companyName === 'string' ? args.companyName : companyName;
+                const jd = typeof args.jobDescription === 'string' ? args.jobDescription : jobDescription;
+                const rt = typeof args.resumeText === 'string' ? args.resumeText : resumeText;
+                const cd = typeof args.companyData === 'string' ? args.companyData : (companyInfo || '');
+                const t = typeof args.tone === 'string' ? args.tone : tone;
+                const l = typeof args.length === 'string' ? args.length : length;
+                const result = await this.generateCoverLetter(title, company, jd, rt, cd ? { raw: cd } : undefined, t, l);
+                return { tool_call_id: toolCall.id, output: result.coverLetter };
+              }
+              return { tool_call_id: toolCall.id, output: '' };
+            } catch {
+              return { tool_call_id: toolCall.id, output: '' };
+            }
+          })
+        );
+
+        run = await openai.beta.threads.runs.submitToolOutputs(
+          thread.id,
+          run.id,
+          { tool_outputs: toolOutputs }
+        );
+        continue;
+      }
+
+      if (run.status === 'completed') {
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const last = messages.data.find((m) => m.role === 'assistant');
+        const content = last?.content?.[0];
+        const text = (content && 'text' in content) ? content.text.value : undefined;
+        const coverLetterText = text && text.trim().length > 0 ? text.trim() : '';
+        const keyPoints = await this.extractKeyPointsFromCoverLetter(coverLetterText);
+        const wordCount = coverLetterText ? coverLetterText.split(/\s+/).length : 0;
+        return {
+          coverLetter: coverLetterText,
+          keyPoints,
+          wordCount,
+        };
+      }
+
+      if (run.status === 'failed' || run.status === 'cancelled' || run.status === 'expired') {
+        return this.generateCoverLetter(jobTitle, companyName, jobDescription, resumeText, companyData, tone, length);
+      }
+
+      await new Promise((r) => setTimeout(r, 600));
+      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
   }
 
