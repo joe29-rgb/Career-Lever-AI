@@ -142,9 +142,9 @@ export function RecentApplications() {
                   <Button variant="outline" size="sm">
                     Edit
                   </Button>
-                  <Button variant="outline" size="sm">
+                  <a href={`/applications/${application._id}`} className="inline-flex items-center px-3 py-2 border rounded text-sm">
                     View Details
-                  </Button>
+                  </a>
                 </div>
               </div>
             ))}
