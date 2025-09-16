@@ -18,6 +18,7 @@ export default function CoverLetterPage() {
   const [tone, setTone] = useState<'professional' | 'casual' | 'enthusiastic'>('professional')
   const [length, setLength] = useState<'short' | 'medium' | 'long'>('medium')
   const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
 
   const generate = async () => {
@@ -73,6 +74,39 @@ export default function CoverLetterPage() {
       URL.revokeObjectURL(url)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to export')
+    }
+  }
+
+  const saveLetter = async () => {
+    if (!previewHtml) {
+      toast.error('Generate a cover letter first')
+      return
+    }
+    setIsSaving(true)
+    try {
+      const resp = await fetch('/api/cover-letter/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raw: true,
+          save: true,
+          jobTitle,
+          companyName,
+          jobDescription,
+          resumeText,
+          tone,
+          length,
+        })
+      })
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}))
+        throw new Error((data as any).error || 'Failed to save')
+      }
+      toast.success('Cover letter saved!')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -147,7 +181,12 @@ export default function CoverLetterPage() {
               <div className="border rounded overflow-hidden">
                 <iframe srcDoc={previewHtml} className="w-full h-96 border-0" title="Cover Letter Preview" />
               </div>
-              <Button onClick={downloadPdf} className="w-full"><Download className="mr-2 h-4 w-4" />Download PDF</Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <Button onClick={downloadPdf} className="w-full"><Download className="mr-2 h-4 w-4" />Download PDF</Button>
+                <Button onClick={saveLetter} disabled={isSaving} variant="outline" className="w-full">
+                  {isSaving ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>) : 'Save to Applications'}
+                </Button>
+              </div>
             </>
           ) : (
             <div className="text-sm text-gray-600">No preview yet. Fill the form and click Generate.</div>

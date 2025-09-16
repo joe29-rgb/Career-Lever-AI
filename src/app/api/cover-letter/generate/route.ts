@@ -5,6 +5,7 @@ import Resume from '@/models/Resume';
 import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
 import { AIService } from '@/lib/ai-service';
+import CoverLetter from '@/models/CoverLetter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw } = body;
+    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save } = body;
 
     // RAW INPUT MODE: allow direct inputs without DB lookups
     if (!jobApplicationId && !resumeId && raw === true) {
@@ -41,6 +42,20 @@ export async function POST(request: NextRequest) {
       );
 
       const { coverLetter, keyPoints, wordCount } = result;
+
+      if (save === true) {
+        await connectToDatabase();
+        await CoverLetter.create({
+          userId: session.user.id,
+          jobTitle,
+          companyName,
+          jobDescription,
+          resumeSnapshot: (resumeText as string).slice(0, 4000),
+          content: coverLetter,
+          tone,
+          length,
+        })
+      }
       return NextResponse.json({
         success: true,
         coverLetter,
@@ -105,6 +120,20 @@ export async function POST(request: NextRequest) {
     );
 
     const { coverLetter, keyPoints, wordCount } = coverLetterResult;
+
+    if (save === true) {
+      await CoverLetter.create({
+        userId: session.user.id,
+        applicationId: jobApplication._id,
+        jobTitle: jobApplication.jobTitle,
+        companyName: jobApplication.companyName,
+        jobDescription: jobApplication.jobDescription,
+        resumeSnapshot: (resume.extractedText || '').slice(0, 4000),
+        content: coverLetter,
+        tone,
+        length,
+      })
+    }
 
     return NextResponse.json({
       success: true,
