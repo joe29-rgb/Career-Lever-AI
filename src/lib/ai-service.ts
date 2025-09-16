@@ -5,6 +5,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
+
 // AI Prompts for different operations
 export const AI_PROMPTS = {
   RESUME_TAILORING: `Analyze this job description and customize the provided resume to highlight relevant skills and experiences. Focus on:
@@ -137,6 +139,13 @@ export interface CompanyInsightsResult {
 
 export class AIService {
   static async analyzeJobDescription(jobDescription: string): Promise<JobAnalysisResult> {
+    if (ASSISTANT_JOB_ANALYSIS_ID) {
+      return this.analyzeJobDescriptionWithAssistant(jobDescription);
+    }
+    return this.analyzeJobDescriptionWithModel(jobDescription);
+  }
+
+  private static async analyzeJobDescriptionWithModel(jobDescription: string): Promise<JobAnalysisResult> {
     try {
       const prompt = AI_PROMPTS.JOB_ANALYSIS.replace('{jobDescription}', jobDescription);
 
@@ -161,13 +170,11 @@ export class AIService {
         throw new Error('Failed to get analysis from OpenAI');
       }
 
-      // Parse the JSON response
       let analysis: JobAnalysisResult;
       try {
         analysis = JSON.parse(analysisText);
       } catch (parseError) {
         console.error('Failed to parse OpenAI response:', analysisText);
-        // Fallback analysis if JSON parsing fails
         analysis = {
           jobTitle: 'Unknown Position',
           companyName: 'Unknown Company',
@@ -185,6 +192,81 @@ export class AIService {
     } catch (error) {
       console.error('Job analysis error:', error);
       throw new Error('Failed to analyze job description');
+    }
+  }
+
+  private static async analyzeJobDescriptionWithAssistant(jobDescription: string): Promise<JobAnalysisResult> {
+    if (!ASSISTANT_JOB_ANALYSIS_ID) {
+      return this.analyzeJobDescriptionWithModel(jobDescription);
+    }
+
+    // Create a thread and add the user's job description
+    const thread = await openai.beta.threads.create({});
+    await openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: jobDescription,
+    });
+
+    // Start a run for the assistant
+    let run: any = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_JOB_ANALYSIS_ID as string,
+    });
+
+    // Poll for tool calls or completion
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
+        const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
+
+        const toolOutputs = await Promise.all(
+          toolCalls.map(async (toolCall: any) => {
+            try {
+              const fn = toolCall.function;
+              if (fn?.name === 'analyze_job_description') {
+                const args = JSON.parse(fn.arguments || '{}');
+                const jd = typeof args.jobDescription === 'string' ? args.jobDescription : jobDescription;
+                const result = await this.analyzeJobDescriptionWithModel(jd);
+                return { tool_call_id: toolCall.id, output: JSON.stringify(result) };
+              }
+              // Unknown tool: return empty object
+              return { tool_call_id: toolCall.id, output: '{}' };
+            } catch (e) {
+              return { tool_call_id: toolCall.id, output: '{}' };
+            }
+          })
+        );
+
+        run = await openai.beta.threads.runs.submitToolOutputs(
+          thread.id,
+          run.id,
+          { tool_outputs: toolOutputs }
+        );
+        // Continue loop after submitting outputs
+        continue;
+      }
+
+      if (run.status === 'completed') {
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const last = messages.data.find((m) => m.role === 'assistant');
+        const content = last?.content?.[0];
+        const text = (content && 'text' in content) ? content.text.value : undefined;
+        if (!text) {
+          // If the assistant responded via tool only, return model result
+          return this.analyzeJobDescriptionWithModel(jobDescription);
+        }
+        try {
+          return JSON.parse(text) as JobAnalysisResult;
+        } catch {
+          return this.analyzeJobDescriptionWithModel(jobDescription);
+        }
+      }
+
+      if (run.status === 'failed' || run.status === 'cancelled' || run.status === 'expired') {
+        return this.analyzeJobDescriptionWithModel(jobDescription);
+      }
+
+      await new Promise((r) => setTimeout(r, 600));
+      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
   }
 
