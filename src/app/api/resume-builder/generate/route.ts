@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import connectToDatabase from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
+import { AIService } from '@/lib/ai-service'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -78,7 +79,8 @@ export async function POST(request: NextRequest) {
       template = 'modern',
       targetJob,
       industry,
-      experienceLevel = 'mid'
+      experienceLevel = 'mid',
+      jobDescription
     } = body
 
     if (!resumeData) {
@@ -90,24 +92,52 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase()
 
-    // Generate optimized resume content
-    const optimizedResume = await generateOptimizedResume(
-      resumeData,
-      template,
-      targetJob,
-      industry,
-      experienceLevel
-    )
+    const useAssistant = Boolean(process.env.OPENAI_ASSISTANT_RESUME_TAILOR && jobDescription && typeof jobDescription === 'string' && jobDescription.length > 20)
 
-    // Generate PDF/HTML output
-    const resumeOutput = await generateResumeOutput(optimizedResume, template)
+    if (useAssistant) {
+      // Serialize current builder data to plain text resume
+      const resumeText = serializeResumeToPlainText(resumeData)
+      const tailored = await AIService.customizeResume(
+        resumeText,
+        jobDescription as string,
+        targetJob || '',
+        '',
+        'professional',
+        'same'
+      )
 
-    return NextResponse.json({
-      success: true,
-      resume: optimizedResume,
-      output: resumeOutput,
-      preview: generateResumePreview(optimizedResume, template)
-    })
+      const tailoredHtml = wrapTailoredTextAsHtml(tailored.customizedResume, resumeData.personalInfo.fullName)
+      return NextResponse.json({
+        success: true,
+        resumeText: tailored.customizedResume,
+        matchScore: tailored.matchScore,
+        suggestions: tailored.suggestions,
+        output: {
+          html: tailoredHtml,
+          css: '',
+          pdfOptions: { format: 'A4' }
+        },
+        preview: { thumbnail: null, summary: null }
+      })
+    } else {
+      // Generate optimized resume content via classic flow
+      const optimizedResume = await generateOptimizedResume(
+        resumeData,
+        template,
+        targetJob,
+        industry,
+        experienceLevel
+      )
+
+      const resumeOutput = await generateResumeOutput(optimizedResume, template)
+
+      return NextResponse.json({
+        success: true,
+        resume: optimizedResume,
+        output: resumeOutput,
+        preview: generateResumePreview(optimizedResume, template)
+      })
+    }
 
   } catch (error) {
     console.error('Resume builder error:', error)
@@ -580,4 +610,56 @@ function calculateCompletenessScore(resume: ResumeData): number {
   }
 
   return Math.round((score / total) * 100)
+}
+
+function serializeResumeToPlainText(resumeData: any): string {
+  const lines: string[] = []
+  const pi = resumeData.personalInfo || {}
+  lines.push(`${pi.fullName || ''}`)
+  lines.push(`${pi.email || ''} | ${pi.phone || ''} | ${pi.location || ''}`)
+  if (pi.linkedin) lines.push(`LinkedIn: ${pi.linkedin}`)
+  if (pi.website) lines.push(`Website: ${pi.website}`)
+  if (pi.summary) {
+    lines.push('Summary:')
+    lines.push(pi.summary)
+  }
+  if (Array.isArray(resumeData.experience)) {
+    lines.push('Experience:')
+    for (const exp of resumeData.experience) {
+      lines.push(`- ${exp.position || ''} at ${exp.company || ''} (${exp.startDate || ''} - ${exp.current ? 'Present' : exp.endDate || ''})`) 
+      if (exp.description) lines.push(`  ${exp.description}`)
+      if (Array.isArray(exp.achievements) && exp.achievements.length) {
+        for (const a of exp.achievements) lines.push(`  * ${a}`)
+      }
+      if (Array.isArray(exp.technologies) && exp.technologies.length) {
+        lines.push(`  Tech: ${exp.technologies.join(', ')}`)
+      }
+    }
+  }
+  if (Array.isArray(resumeData.education)) {
+    lines.push('Education:')
+    for (const edu of resumeData.education) {
+      lines.push(`- ${edu.degree || ''} in ${edu.field || ''} @ ${edu.institution || ''} (${edu.graduationDate || ''})`)
+    }
+  }
+  if (resumeData.skills) {
+    const s = resumeData.skills
+    if (Array.isArray(s.technical) && s.technical.length) lines.push(`Technical: ${s.technical.join(', ')}`)
+    if (Array.isArray(s.soft) && s.soft.length) lines.push(`Soft: ${s.soft.join(', ')}`)
+    if (Array.isArray(s.languages) && s.languages.length) lines.push(`Languages: ${s.languages.map((l: any)=>`${l.language}(${l.proficiency})`).join(', ')}`)
+    if (Array.isArray(s.certifications) && s.certifications.length) lines.push(`Certs: ${s.certifications.map((c:any)=>c.name).join(', ')}`)
+  }
+  if (Array.isArray(resumeData.projects) && resumeData.projects.length) {
+    lines.push('Projects:')
+    for (const p of resumeData.projects) {
+      lines.push(`- ${p.name || ''}: ${p.description || ''}`)
+    }
+  }
+  return lines.filter(Boolean).join('\n')
+}
+
+function wrapTailoredTextAsHtml(text: string, fullName: string): string {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fullName} - Tailored Resume</title>
+  <style>body{font-family:Arial, sans-serif; font-size:11pt; line-height:1.5; color:#333; max-width:8.5in; margin:0 auto; padding:0.5in; white-space:pre-wrap}</style>
+  </head><body>${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
 }
