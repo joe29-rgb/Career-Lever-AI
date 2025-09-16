@@ -5,6 +5,7 @@ import { DashboardHeader } from './components/dashboard-header'
 import { QuickActions } from './components/quick-actions'
 import { RecentApplications } from './components/recent-applications'
 import { StatsOverview } from './components/stats-overview'
+import { RecentCoverLetters } from './components/recent-cover-letters'
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
           {/* Sidebar */}
           <div className="space-y-8">
             <StatsOverview />
+            <RecentCoverLetters />
           </div>
         </div>
       </main>
