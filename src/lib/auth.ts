@@ -15,6 +15,13 @@ export const authOptions: NextAuthOptions = {
           GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            authorization: {
+              params: {
+                access_type: 'offline',
+                prompt: 'consent',
+                scope: 'openid email profile https://www.googleapis.com/auth/calendar.events'
+              }
+            }
           }),
         ]
       : []),
@@ -64,15 +71,23 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        token.id = user.id;
+        token.id = (user as any).id;
       }
-      return token;
+      if (account && account.provider === 'google') {
+        token.googleAccessToken = account.access_token
+        token.googleRefreshToken = account.refresh_token ?? token.googleRefreshToken
+        if (account.expires_at) {
+          token.googleAccessTokenExpires = account.expires_at * 1000
+        }
+      }
+      return token as any;
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string;
+        (session as any).user.id = token.id as string;
+        // Do not expose tokens to the client; server routes can use next-auth/jwt getToken
       }
       return session;
     },
