@@ -11,6 +11,7 @@ const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
 const ASSISTANT_COVER_LETTER_ID = process.env.OPENAI_ASSISTANT_COVER_LETTER;
 const ASSISTANT_INTERVIEW_PREP_ID = process.env.OPENAI_ASSISTANT_INTERVIEW_PREP;
 const ASSISTANT_SALARY_COACH_ID = process.env.OPENAI_ASSISTANT_SALARY_COACH;
+const ASSISTANT_COMPANY_INSIGHTS_ID = process.env.OPENAI_ASSISTANT_COMPANY_INSIGHTS;
 
 // Runtime controls
 const DEFAULT_MODEL = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o-mini';
@@ -924,6 +925,46 @@ Respond with a JSON array of key points (strings).`;
     companyData: any,
     jobTitle: string
   ): Promise<CompanyInsightsResult> {
+    // Assistant-backed path
+    if (ASSISTANT_COMPANY_INSIGHTS_ID) {
+      const thread = await openai.beta.threads.create({});
+      await openai.beta.threads.messages.create(thread.id, {
+        role: 'user',
+        content: `Generate tailored company insights as JSON for job title: ${jobTitle}. Company data: ${JSON.stringify(companyData, null, 2)}`,
+      });
+      let run: any = await openai.beta.threads.runs.create(thread.id, {
+        assistant_id: ASSISTANT_COMPANY_INSIGHTS_ID as string,
+      });
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
+          const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
+          const toolOutputs = toolCalls.map((tc: any) => ({ tool_call_id: tc.id, output: JSON.stringify({ jobTitle, companyData }) }));
+          run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs: toolOutputs });
+          continue;
+        }
+        if (run.status === 'completed') {
+          const messages = await openai.beta.threads.messages.list(thread.id);
+          const last = messages.data.find((m) => m.role === 'assistant');
+          const content = last?.content?.[0];
+          const text = (content && 'text' in content) ? (content as any).text.value : undefined;
+          if (text) {
+            try {
+              const parsed = JSON.parse(text);
+              return {
+                talkingPoints: Array.isArray(parsed.talkingPoints) ? parsed.talkingPoints : [],
+                keyValues: Array.isArray(parsed.keyValues) ? parsed.keyValues : (companyData?.culture || []),
+                cultureFit: Array.isArray(parsed.cultureFit) ? parsed.cultureFit : [],
+              };
+            } catch {/* fallthrough */}
+          }
+          break;
+        }
+        if ([ 'failed','cancelled','expired' ].includes(run.status)) break;
+        await new Promise(r=>setTimeout(r,600));
+        run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+      }
+    }
     try {
       const companyDataString = JSON.stringify(companyData, null, 2);
       const prompt = AI_PROMPTS.COMPANY_INSIGHTS
