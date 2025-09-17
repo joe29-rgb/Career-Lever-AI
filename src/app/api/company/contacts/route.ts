@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
     const contacts = { site: siteContacts, people: hiring }
     await redisSetJSON(cacheKey, contacts, 60 * 30)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'miss' })
-    return NextResponse.json({ success: true, contacts })
+    const resp = NextResponse.json({ success: true, contacts })
+    resp.headers.set('x-request-id', requestId)
+    return resp
   } catch (e) {
     console.error('Company contacts error:', e)
     return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 })

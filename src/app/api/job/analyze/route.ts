@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       analysis,
       keywords,
     });
+    resp.headers.set('x-request-id', requestId)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
     return resp
 

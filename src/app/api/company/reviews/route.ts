@@ -31,12 +31,16 @@ export async function POST(request: NextRequest) {
     const cached = await redisGetJSON<any>(cacheKey)
     if (cached) {
       logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'hit' })
-      return NextResponse.json({ success: true, summary: cached, cache: 'hit' })
+      const resp = NextResponse.json({ success: true, summary: cached, cache: 'hit' })
+      resp.headers.set('x-request-id', requestId)
+      return resp
     }
     const summary = await webScraper.scrapeGlassdoorReviewsSummary(companyName)
     await redisSetJSON(cacheKey, summary, 60 * 60)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'miss' })
-    return NextResponse.json({ success: true, summary })
+    const resp2 = NextResponse.json({ success: true, summary })
+    resp2.headers.set('x-request-id', requestId)
+    return resp2
   } catch (e) {
     console.error('Company reviews error:', e)
     return NextResponse.json({ error: 'Failed to fetch reviews' }, { status: 500 })

@@ -121,6 +121,7 @@ export async function POST(request: NextRequest) {
       improvements,
       suggestions,
     });
+    resp.headers.set('x-request-id', requestId)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
     return resp
 
