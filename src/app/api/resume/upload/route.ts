@@ -6,6 +6,7 @@ import connectToDatabase from '@/lib/mongodb';
 import Resume from '@/models/Resume';
 import { authOptions } from '@/lib/auth';
 import { isRateLimited } from '@/lib/rate-limit';
+import { isSameOrigin } from '@/lib/security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,11 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Basic CSRF/same-origin check for browser requests
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid origin' }, { status: 400 })
     }
 
     const limiter = isRateLimited((session.user as any).id, 'resume:upload')
@@ -38,8 +44,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    if (file.type !== 'application/pdf') {
+    // Validate file type (server-side MIME is not fully trustworthy; enforce extension + size too)
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
       return NextResponse.json(
         { error: 'Only PDF files are allowed' },
         { status: 400 }

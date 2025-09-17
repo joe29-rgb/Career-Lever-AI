@@ -6,6 +6,7 @@ import NetworkConnection from '@/models/NetworkConnection'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
+import { isSameOrigin } from '@/lib/security'
 
 export async function GET(request: NextRequest) {
   try {
@@ -122,6 +123,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid origin' }, { status: 400 })
     }
 
     const limiter = isRateLimited((session.user as any).id, 'network:messages:post')

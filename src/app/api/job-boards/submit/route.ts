@@ -8,6 +8,7 @@ import { createJobBoardService } from '@/lib/job-board-service'
 import puppeteer from 'puppeteer'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
+import { isSameOrigin } from '@/lib/security'
 
 interface JobSubmission {
   jobBoard: string
@@ -104,6 +105,10 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!isSameOrigin(request)) {
+      return NextResponse.json({ error: 'Invalid origin' }, { status: 400 })
     }
 
     const limiter = isRateLimited((session.user as any).id, 'jobboards:submit:post')
