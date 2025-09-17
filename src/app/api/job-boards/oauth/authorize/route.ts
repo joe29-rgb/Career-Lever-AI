@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth/next'
 import connectToDatabase from '@/lib/mongodb'
 import { createJobBoardService } from '@/lib/job-board-service'
 import { authOptions } from '@/lib/auth'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,17 +15,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const limiter = isRateLimited((session.user as any).id, 'jobboards:oauth:authorize')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+
     await connectToDatabase()
 
+    const schema = z.object({ boardName: z.string().min(2).max(50) })
     const body = await request.json()
-    const { boardName } = body
-
-    if (!boardName) {
-      return NextResponse.json(
-        { error: 'Job board name is required' },
-        { status: 400 }
-      )
-    }
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { boardName } = parsed.data
 
     // Validate job board
     let jobBoardService

@@ -5,13 +5,16 @@ import connectToDatabase from '@/lib/mongodb'
 import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { createJobBoardService } from '@/lib/job-board-service'
 import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const limiter = isRateLimited((session.user as any).id, 'jobboards:jobs:list')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
-    const schema = z.object({ boardName: z.string().min(2) })
+    const schema = z.object({ boardName: z.string().min(2).max(50) })
     const body = await request.json()
     const parsed = schema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })

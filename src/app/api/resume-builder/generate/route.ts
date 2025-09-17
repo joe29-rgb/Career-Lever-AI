@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
 import { AIService } from '@/lib/ai-service'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -73,7 +75,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    const limiter = isRateLimited((session.user as any).id, 'resume-builder:generate')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+
+    const schema = z.object({
+      resumeData: z.any(),
+      template: z.string().min(2).max(40).default('modern'),
+      targetJob: z.string().max(100).optional(),
+      industry: z.string().max(100).optional(),
+      experienceLevel: z.enum(['entry','mid','senior']).default('mid'),
+      jobDescription: z.string().max(20000).optional(),
+    })
+    const raw = await request.json()
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const {
       resumeData,
       template = 'modern',
@@ -81,7 +96,7 @@ export async function POST(request: NextRequest) {
       industry,
       experienceLevel = 'mid',
       jobDescription
-    } = body
+    } = parsed.data
 
     if (!resumeData) {
       return NextResponse.json(

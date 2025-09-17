@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth/next'
 import connectToDatabase from '@/lib/mongodb'
 import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { authOptions } from '@/lib/auth'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +14,9 @@ export async function GET(request: NextRequest) {
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const limiter = isRateLimited((session.user as any).id, 'jobboards:integrations:get')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
     await connectToDatabase()
 
@@ -42,15 +47,17 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase()
 
-    const body = await request.json()
-    const { boardName, action } = body
+    const limiter = isRateLimited((session.user as any).id, 'jobboards:integrations:post')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
-    if (!boardName) {
-      return NextResponse.json(
-        { error: 'Board name is required' },
-        { status: 400 }
-      )
-    }
+    const schema = z.object({
+      boardName: z.string().min(2).max(50),
+      action: z.enum(['connect','disconnect','sync']),
+    })
+    const body = await request.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { boardName, action } = parsed.data
 
     // Find existing integration
     let integration = await JobBoardIntegration.findOne({

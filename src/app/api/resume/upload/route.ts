@@ -5,6 +5,7 @@ import path from 'path';
 import connectToDatabase from '@/lib/mongodb';
 import Resume from '@/models/Resume';
 import { authOptions } from '@/lib/auth';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    const limiter = isRateLimited((session.user as any).id, 'resume:upload')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
     // Connect to database
     await connectToDatabase();
