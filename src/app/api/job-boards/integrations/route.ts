@@ -1,3 +1,5 @@
+// cleaned duplicate header
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import connectToDatabase from '@/lib/mongodb'
