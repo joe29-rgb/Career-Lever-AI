@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { JobsActions } from './components/jobs-actions'
 
 export default async function JobsPage() {
   const session = await getServerSession(authOptions)
@@ -10,6 +11,10 @@ export default async function JobsPage() {
       <h1 className="text-2xl font-bold">Jobs</h1>
       <JobImport />
       <CalendarQuick />
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Import from Connected Boards</h2>
+        <JobsActions />
+      </section>
     </div>
   )
 }

@@ -61,6 +61,33 @@ export default function ApplicationDetailsPage() {
     }
   }
 
+  const addCalendarEvent = async () => {
+    if (!data?.application) return
+    try {
+      const now = new Date()
+      const end = new Date(now.getTime() + 30*60000)
+      await fetch('/api/calendar/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summary: `${data.application.companyName} - ${data.application.jobTitle} Interview`, start: now.toISOString(), end: end.toISOString(), description: 'Interview scheduled' }) })
+      toast.success('Event created in Google Calendar')
+    } catch { toast.error('Failed to create event') }
+  }
+
+  const downloadICS = async () => {
+    if (!data?.application) return
+    try {
+      const now = new Date()
+      const end = new Date(now.getTime() + 30*60000)
+      const res = await fetch('/api/calendar/ics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ summary: `${data.application.companyName} - ${data.application.jobTitle} Interview`, start: now.toISOString(), end: end.toISOString(), description: 'Interview scheduled' }) })
+      if (!res.ok) throw new Error('ics failed')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'event.ics'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch { toast.error('Failed to download ICS') }
+  }
+
   const attachCoverLetter = async () => {
     if (!attachId) { toast.error('Select a cover letter'); return }
     setAttaching(true)
@@ -554,6 +581,8 @@ export default function ApplicationDetailsPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button onClick={exportPack} className="flex-1"><Download className="h-4 w-4 mr-1" /> Export Application Pack</Button>
             <Button variant="outline" onClick={attachLatest} className="flex-1">Attach Latest Resume + Cover Letter</Button>
+            <Button variant="outline" onClick={addCalendarEvent} className="flex-1">Add to Google Calendar</Button>
+            <Button variant="outline" onClick={downloadICS} className="flex-1">Download ICS</Button>
           </div>
           </CardContent>
         </Card>
