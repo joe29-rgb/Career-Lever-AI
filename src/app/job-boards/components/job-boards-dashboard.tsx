@@ -397,7 +397,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
             <div>
               <h4 className="font-medium">Enable Auto-Pilot</h4>
               <p className="text-sm text-gray-600">
-                Let JobCraftAI automatically find and apply to relevant positions
+                Let Career Lever AI automatically find and apply to relevant positions
               </p>
             </div>
             <Button

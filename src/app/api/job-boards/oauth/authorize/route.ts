@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate state parameter for security
-    const state = `jobcraft_${session.user.id}_${boardName}_${Date.now()}`
+    const state = `careerlever_${session.user.id}_${boardName}_${Date.now()}`
 
     // Generate redirect URI
     const redirectUri = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/job-boards/oauth/callback?board=${boardName}`

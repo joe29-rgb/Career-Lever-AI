@@ -34,11 +34,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify state parameter for security (in production, store state in session/database)
-    if (!state.startsWith('jobcraft_')) {
+    if (!state.startsWith('careerlever_')) {
       return NextResponse.redirect(new URL('/job-boards?error=invalid_state', request.url))
     }
 
-    // Extract user ID from state (format: jobcraft_{userId}_{boardName})
+    // Extract user ID from state (format: careerlever_{userId}_{boardName})
     const stateParts = state.split('_')
     if (stateParts.length < 3) {
       return NextResponse.redirect(new URL('/job-boards?error=invalid_state', request.url))

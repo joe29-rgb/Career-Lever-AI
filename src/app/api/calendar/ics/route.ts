@@ -22,12 +22,12 @@ export async function POST(request: NextRequest) {
     const parsed = schema.safeParse(raw)
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const { summary, description, start, end, location, organizer } = parsed.data
-    const uid = `${Date.now()}@jobcraft.ai`
+    const uid = `${Date.now()}@careerlever.ai`
     const dt = (s: string) => new Date(s).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
     const ics = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//JobCraft AI//EN',
+      'PRODID:-//Career Lever AI//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       'BEGIN:VEVENT',

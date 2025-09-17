@@ -34,7 +34,7 @@ export function StatsSection() {
             Trusted by job seekers worldwide
           </h2>
           <p className="mt-4 text-lg text-gray-600">
-            Join thousands of professionals who've transformed their job search with JobCraft AI.
+            Join thousands of professionals who've transformed their job search with Career Lever AI.
           </p>
         </div>
 
@@ -59,7 +59,7 @@ export function StatsSection() {
         {/* Testimonial */}
         <div className="mx-auto mt-16 max-w-3xl text-center">
           <blockquote className="text-lg font-medium text-gray-900">
-            "JobCraft AI completely transformed my job search. I went from getting no responses to having multiple interviews within two weeks. The AI resume customization is incredible!"
+            "Career Lever AI completely transformed my job search. I went from getting no responses to having multiple interviews within two weeks. The AI resume customization is incredible!"
           </blockquote>
           <div className="mt-6">
             <div className="font-semibold text-gray-900">Sarah Johnson</div>

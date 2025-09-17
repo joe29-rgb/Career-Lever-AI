@@ -1,8 +1,8 @@
-# JobCraft AI - Railway Deployment Guide
+# Career Lever AI - Railway Deployment Guide
 
 ## 🚀 Deployment to Railway
 
-This guide will help you deploy JobCraft AI to Railway.
+This guide will help you deploy Career Lever AI to Railway.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ Make sure your code is committed and pushed to GitHub.
 1. Go to [railway.app](https://railway.app) and sign in
 2. Click "New Project"
 3. Choose "Deploy from GitHub repo"
-4. Select your JobCraft AI repository
+4. Select your Career Lever AI repository
 5. Choose your branch (usually `main`)
 
 ## Step 3: Configure Environment Variables
@@ -99,7 +99,7 @@ If Chromium is missing, ensure Nixpacks includes it via `nixpacks.toml` and the 
 
 1. Visit your deployed app
 2. Create your first user account
-3. Start using JobCraft AI!
+3. Start using Career Lever AI!
 
 ## Troubleshooting
 
@@ -150,5 +150,5 @@ For Railway-specific issues, check:
 - [Railway Documentation](https://docs.railway.app/)
 - [Railway Discord](https://discord.gg/railway)
 
-For JobCraft AI issues, refer to the main README.md file.
+For Career Lever AI issues, refer to the main README.md file.
 

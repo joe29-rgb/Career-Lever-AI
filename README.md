@@ -1,8 +1,8 @@
-# JobCraft AI - The Ultimate AI-Powered Job Application Assistant
+# Career Lever AI - The Ultimate AI-Powered Job Application Assistant
 
 🚀 **The most comprehensive AI-powered job search platform** - Transform your career with intelligent resume customization, company research, interview preparation, and advanced analytics that give you a competitive edge in today's job market.
 
-## 🔥 What Makes JobCraft AI Stand Out
+## 🔥 What Makes Career Lever AI Stand Out
 
 ### 🤖 **Advanced AI-Powered Features**
 - **GPT-4 Integration**: Industry-leading AI for resume customization and content generation
@@ -36,7 +36,7 @@
 ## 🏆 **Competitive Advantages**
 
 ### **vs. Basic Resume Builders**
-| Feature | JobCraft AI | Resume.com | Canva | LinkedIn |
+| Feature | Career Lever AI | Resume.com | Canva | LinkedIn |
 |---------|-------------|------------|-------|----------|
 | AI Resume Customization | ✅ GPT-4 Powered | ❌ | ❌ | ❌ |
 | Company Research | ✅ Multi-Source | ❌ | ❌ | ❌ |
@@ -46,7 +46,7 @@
 | Skill Gap Analysis | ✅ Career Planning | ❌ | ❌ | ❌ |
 
 ### **vs. Job Search Platforms**
-| Feature | JobCraft AI | Indeed | LinkedIn | Glassdoor |
+| Feature | Career Lever AI | Indeed | LinkedIn | Glassdoor |
 |---------|-------------|--------|----------|-----------|
 | Resume Optimization | ✅ AI-Powered | ❌ | Basic | ❌ |
 | Company Intelligence | ✅ Real-time | Basic | Good | Good |
@@ -55,7 +55,7 @@
 | Career Analytics | ✅ Data-Driven | ❌ | Basic | Basic |
 
 ### **vs. AI Job Assistants**
-| Feature | JobCraft AI | Teal | Huntr | JobCopilot |
+| Feature | Career Lever AI | Teal | Huntr | JobCopilot |
 |---------|-------------|------|-------|------------|
 | Full Workflow | ✅ End-to-End | ❌ | ❌ | ❌ |
 | Custom AI Prompts | ✅ Specialized | Basic | Basic | Basic |
@@ -119,7 +119,7 @@
 1. Clone the repository
 ```bash
 git clone <repository-url>
-cd jobcraft-ai
+cd career-lever-ai
 ```
 
 2. Install dependencies
@@ -133,7 +133,7 @@ Create a `.env.local` file in the root directory:
 
 ```env
 # Database
-MONGODB_URI=mongodb://localhost:27017/jobcraft-ai
+MONGODB_URI=mongodb://localhost:27017/career-lever-ai
 
 # Authentication
 NEXTAUTH_SECRET=your-nextauth-secret-key-here
@@ -179,7 +179,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## Project Structure
 
 ```
-jobcraft-ai/
+career-lever-ai/
 ├── src/
 │   ├── app/                    # Next.js app directory
 │   │   ├── api/               # API routes
@@ -231,7 +231,7 @@ jobcraft-ai/
 
 ### Railway Deployment (Recommended)
 
-JobCraft AI is optimized for deployment on Railway. See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) for detailed instructions.
+Career Lever AI is optimized for deployment on Railway. See [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md) for detailed instructions.
 
 **Quick Railway Setup:**
 1. Connect your GitHub repository to Railway
@@ -256,10 +256,10 @@ The application can also be deployed on Vercel with these considerations:
 4. Run tests and linting
 5. Submit a pull request
 
-## 🚀 **What Makes JobCraft AI Revolutionary**
+## 🚀 **What Makes Career Lever AI Revolutionary**
 
 ### **The Complete Job Search Ecosystem**
-JobCraft AI isn't just another resume builder or job tracker. It's a comprehensive ecosystem that transforms how professionals approach job searching:
+Career Lever AI isn't just another resume builder or job tracker. It's a comprehensive ecosystem that transforms how professionals approach job searching:
 
 1. **AI-First Approach**: Every feature leverages GPT-4 for intelligent automation
 2. **Data-Driven Decisions**: Analytics provide real insights into what works
@@ -307,9 +307,9 @@ JobCraft AI isn't just another resume builder or job tracker. It's a comprehensi
 - **Patent Pending**: Novel AI resume optimization algorithms
 - **Research Partnership**: Collaboration with leading universities
 
-## 🎯 **The JobCraft AI Difference**
+## 🎯 **The Career Lever AI Difference**
 
-### **Why Choose JobCraft AI?**
+### **Why Choose Career Lever AI?**
 
 1. **Comprehensive Solution**: Everything you need in one platform
 2. **AI-Powered Intelligence**: Industry-leading automation and insights
@@ -332,7 +332,7 @@ JobCraft AI isn't just another resume builder or job tracker. It's a comprehensi
 
 ## 🔗 **Get Started Today**
 
-Ready to transform your job search? Join thousands of successful professionals who have landed their dream jobs with JobCraft AI.
+Ready to transform your job search? Join thousands of successful professionals who have landed their dream jobs with Career Lever AI.
 
 - **Sign up for free** and experience the difference
 - **Upgrade to Pro** for unlimited AI customizations

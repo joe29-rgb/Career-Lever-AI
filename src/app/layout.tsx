@@ -6,7 +6,7 @@ import { Providers } from '@/components/providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'JobCraft AI - AI-Powered Job Application Assistant',
+  title: 'Career Lever AI - AI-Powered Job Application Assistant',
   description: 'Customize your resume and cover letters with AI to land your dream job. Get company insights, track applications, and boost your career success.',
   keywords: 'resume, job application, AI, career, recruitment, cover letter',
 }

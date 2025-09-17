@@ -1,5 +1,5 @@
 {
-    "name": "jobcraft-ai",
+    "name": "career-lever-ai",
     "version": "1.0.0",
     "description": "AI-powered job application assistant for resume customization and company research",
     "main": "index.js",
@@ -77,6 +77,6 @@
         "career",
         "recruitment"
     ],
-    "author": "JobCraftAI Team",
+    "author": "Career Lever AI Team",
     "license": "MIT"
 }

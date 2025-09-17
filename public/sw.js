@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jobcraft-cache-v1';
+const CACHE_NAME = 'careerlever-cache-v1';
 const ASSETS = [
   '/',
   '/manifest.json'

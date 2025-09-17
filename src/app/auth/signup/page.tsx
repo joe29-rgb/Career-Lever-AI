@@ -138,7 +138,7 @@ export default function SignUpPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
             <Sparkles className="w-8 h-8 text-purple-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Join JobCraft AI</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Join Career Lever AI</h1>
           <p className="text-gray-600">Create your account and start your career transformation</p>
         </div>
 

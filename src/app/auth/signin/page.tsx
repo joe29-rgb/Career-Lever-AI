@@ -96,12 +96,12 @@ function SignInInner() {
 
   const handleDemoSignIn = async () => {
     setIsLoading(true)
-    setEmail('demo@jobcraft.ai')
+    setEmail('demo@careerlever.ai')
     setPassword('demo123')
 
     try {
       const result = await signIn('credentials', {
-        email: 'demo@jobcraft.ai',
+        email: 'demo@careerlever.ai',
         password: 'demo123',
         redirect: false,
       })
@@ -128,7 +128,7 @@ function SignInInner() {
             <Sparkles className="w-8 h-8 text-blue-600" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
-          <p className="text-gray-600">Sign in to your JobCraft AI account</p>
+          <p className="text-gray-600">Sign in to your Career Lever AI account</p>
         </div>
 
         {/* Success Alert */}
