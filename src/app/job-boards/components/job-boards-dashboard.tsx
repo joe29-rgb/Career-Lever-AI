@@ -268,6 +268,19 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
     }
   }
 
+  const syncJobs = async (boardId: string) => {
+    try {
+      const resp = await fetch('/api/job-boards/jobs/sync', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ boardName: boardId })
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json.success) throw new Error(json.error || 'Sync failed')
+      toast.success(`Imported ${json.created} new, updated ${json.updated}`)
+    } catch (e) {
+      toast.error('Failed to sync jobs')
+    }
+  }
+
   const getAutomationBadgeColor = (level: string) => {
     switch (level) {
       case 'full': return 'bg-green-100 text-green-800'
@@ -552,15 +565,26 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                         Connect
                       </Button>
                     ) : (
-                      <Button
-                        variant="outline"
-                        onClick={() => {/* Open settings */}}
-                        className="flex-1"
-                        size="sm"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </Button>
+                      <div className="flex gap-2 w-full">
+                        <Button
+                          variant="outline"
+                          onClick={() => syncJobs(board.id)}
+                          className="flex-1"
+                          size="sm"
+                        >
+                          <RefreshCw className="w-4 h-4 mr-2" />
+                          Sync Jobs
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {/* Open settings */}}
+                          className="flex-1"
+                          size="sm"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Settings
+                        </Button>
+                      </div>
                     )}
                   </div>
 
