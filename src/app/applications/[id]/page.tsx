@@ -105,6 +105,8 @@ export default function ApplicationDetailsPage() {
 
   const [followEmail, setFollowEmail] = useState<{ subject: string; body: string } | null>(null)
   const [followDates, setFollowDates] = useState<Date[] | null>(null)
+  const [insights, setInsights] = useState<{ talkingPoints: string[]; keyValues: string[]; cultureFit: string[] } | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
   const suggestFollowUp = async () => {
     try {
       const resp = await fetch(`/api/applications/${params.id}/followup/suggest`)
@@ -114,6 +116,37 @@ export default function ApplicationDetailsPage() {
       setFollowDates((j.dates || []).map((d: string) => new Date(d)))
     } catch {
       toast.error('Failed to suggest follow-up')
+    }
+  }
+
+  const loadCompanyInsights = async () => {
+    if (!data?.application) return
+    setInsightsLoading(true)
+    try {
+      // Fetch company research first if needed
+      let companyData = data?.application?.companyResearch ? data.application.companyResearch : null
+      if (!companyData) {
+        // Try to scrape minimal data (best-effort)
+        const res = await fetch('/api/company/research', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyName: data.application.companyName })
+        })
+        if (res.ok) {
+          const j = await res.json()
+          companyData = j.companyData
+        }
+      }
+      const resp = await fetch('/api/company/insights', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobTitle: data.application.jobTitle, companyData: companyData || {} })
+      })
+      if (!resp.ok) throw new Error('Failed to generate insights')
+      const j = await resp.json()
+      setInsights(j.insights)
+    } catch {
+      toast.error('Failed to load company insights')
+    } finally {
+      setInsightsLoading(false)
     }
   }
 
@@ -167,6 +200,67 @@ export default function ApplicationDetailsPage() {
             <Button onClick={attachCoverLetter} disabled={attaching}>{attaching ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Attaching...</>) : 'Attach'}</Button>
             <a className="inline-flex items-center justify-center border rounded px-3 py-2" href="/cover-letter">Create New</a>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Company Insights */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Company Insights</CardTitle>
+              <CardDescription>Comprehensive breakdown to evaluate fit and tailor messaging</CardDescription>
+            </div>
+            <Button variant="outline" onClick={loadCompanyInsights} disabled={insightsLoading}>
+              {insightsLoading ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Loading...</>) : 'Generate Insights'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {insights ? (
+            <div className="space-y-6">
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-2">Key Values & Culture Signals</div>
+                {insights.keyValues && insights.keyValues.length > 0 ? (
+                  <ul className="space-y-1">
+                    {insights.keyValues.map((v, i) => (
+                      <li key={i} className="text-sm text-gray-700 flex gap-2"><span className="text-blue-500">•</span>{v}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-gray-500">No culture signals found.</div>
+                )}
+              </div>
+
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-2">Talking Points (Tailor your pitch)</div>
+                {insights.talkingPoints && insights.talkingPoints.length > 0 ? (
+                  <ol className="space-y-2 list-decimal pl-5">
+                    {insights.talkingPoints.map((p, i) => (
+                      <li key={i} className="text-sm text-gray-800">{p}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  <div className="text-sm text-gray-500">No talking points generated.</div>
+                )}
+              </div>
+
+              <div>
+                <div className="text-sm font-medium text-gray-900 mb-2">Culture Fit Angles</div>
+                {insights.cultureFit && insights.cultureFit.length > 0 ? (
+                  <ul className="space-y-1">
+                    {insights.cultureFit.map((c, i) => (
+                      <li key={i} className="text-sm text-gray-700 flex gap-2"><span className="text-green-500">•</span>{c}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-sm text-gray-500">No culture fit suggestions.</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-gray-600">Click Generate Insights to build a full company breakdown.</div>
+          )}
         </CardContent>
       </Card>
 
