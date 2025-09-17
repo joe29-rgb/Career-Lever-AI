@@ -22,6 +22,7 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
       </body>
     </html>
   )
