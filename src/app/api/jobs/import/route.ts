@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
 
@@ -9,6 +10,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const limiter = isRateLimited((session.user as any).id, 'jobs:import:url')
+    if (limiter.limited) {
+      return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    }
     const schema = z.object({ jobUrl: z.string().url() })
     const raw = await request.json()
     const parsed = schema.safeParse(raw)
