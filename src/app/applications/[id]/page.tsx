@@ -107,6 +107,8 @@ export default function ApplicationDetailsPage() {
   const [followDates, setFollowDates] = useState<Date[] | null>(null)
   const [insights, setInsights] = useState<{ talkingPoints: string[]; keyValues: string[]; cultureFit: string[] } | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
+  const [fullResearch, setFullResearch] = useState<any | null>(null)
+  const [fullResearchLoading, setFullResearchLoading] = useState(false)
   const suggestFollowUp = async () => {
     try {
       const resp = await fetch(`/api/applications/${params.id}/followup/suggest`)
@@ -147,6 +149,33 @@ export default function ApplicationDetailsPage() {
       toast.error('Failed to load company insights')
     } finally {
       setInsightsLoading(false)
+    }
+  }
+
+  const runFullCompanyResearch = async () => {
+    if (!data?.application) return
+    setFullResearchLoading(true)
+    try {
+      const resp = await fetch('/api/company/orchestrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: data.application.companyName,
+          jobPostingUrl: data.application.jobUrl,
+          companyWebsite: data.resume?.original?.fileUrl ? undefined : undefined,
+          linkedinCompanyUrl: undefined,
+          roleHints: ["Recruiter","Talent Acquisition","Engineering Manager","Head of People"],
+          locationHint: undefined,
+          jobTitle: data.application.jobTitle
+        })
+      })
+      if (!resp.ok) throw new Error('Failed to orchestrate research')
+      const j = await resp.json()
+      setFullResearch(j.result || j.raw || null)
+    } catch (e) {
+      toast.error('Failed to run full company research')
+    } finally {
+      setFullResearchLoading(false)
     }
   }
 
@@ -260,6 +289,164 @@ export default function ApplicationDetailsPage() {
             </div>
           ) : (
             <div className="text-sm text-gray-600">Click Generate Insights to build a full company breakdown.</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Full Company Research (Assistant Orchestrated) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Full Company Research</CardTitle>
+              <CardDescription>Profile, culture, reviews, news, contacts, and role relevance</CardDescription>
+            </div>
+            <Button onClick={runFullCompanyResearch} disabled={fullResearchLoading}>
+              {fullResearchLoading ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Researching...</>) : 'Run Research'}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {!fullResearch && <div className="text-sm text-gray-600">Run research to fetch a complete breakdown from multiple sources.</div>}
+          {fullResearch && (
+            <div className="space-y-6">
+              {/* Profile */}
+              {fullResearch.profile && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Company Profile</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-gray-500">Name:</span> {fullResearch.profile.companyName || 'Unknown'}</div>
+                    <div><span className="text-gray-500">Website:</span> {fullResearch.profile.website || 'Unknown'}</div>
+                    <div><span className="text-gray-500">Industry:</span> {fullResearch.profile.industry || 'Unknown'}</div>
+                    <div><span className="text-gray-500">Size:</span> {fullResearch.profile.size || 'Unknown'}</div>
+                    <div className="md:col-span-2"><span className="text-gray-500">Description:</span> {fullResearch.profile.description || 'Unknown'}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Culture */}
+              {fullResearch.culture && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Culture & Benefits</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Values</div>
+                      <ul className="space-y-1">
+                        {(fullResearch.culture.values || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Benefits</div>
+                      <ul className="space-y-1">
+                        {(fullResearch.culture.benefits || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Signals</div>
+                      <ul className="space-y-1">
+                        {(fullResearch.culture.signals || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews */}
+              {fullResearch.reviewsSummary && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Reviews Summary</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div><span className="text-gray-500">Glassdoor Rating:</span> {fullResearch.reviewsSummary.glassdoorRating ?? 'Unknown'}</div>
+                    <div><span className="text-gray-500">Reviews:</span> {fullResearch.reviewsSummary.glassdoorReviews ?? 'Unknown'}</div>
+                    <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Pros</div>
+                        <ul className="space-y-1">{(fullResearch.reviewsSummary.pros || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 mb-1">Cons</div>
+                        <ul className="space-y-1">{(fullResearch.reviewsSummary.cons || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* News */}
+              {fullResearch.news && fullResearch.news.items && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Recent News</div>
+                  <ul className="space-y-2">
+                    {fullResearch.news.items.map((n: any, i: number) => (
+                      <li key={i} className="text-sm">
+                        <a className="text-blue-600 hover:underline" href={n.url} target="_blank" rel="noopener noreferrer">{n.title}</a>
+                        <div className="text-xs text-gray-500">{n.publishedAt}</div>
+                        <div>{n.summary}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Contacts */}
+              {fullResearch.hiringContacts && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Hiring Contacts</div>
+                  <ul className="space-y-1">
+                    {fullResearch.hiringContacts.map((p: any, i: number) => (
+                      <li key={i} className="text-sm">
+                        <span className="font-medium">{p.name}</span> — {p.title} {p.profileUrl && (<a className="text-blue-600 hover:underline ml-2" href={p.profileUrl} target="_blank" rel="noopener noreferrer">Profile</a>)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {fullResearch.contactInfo && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Contact Info</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Emails</div>
+                      <ul className="space-y-1">{(fullResearch.contactInfo.emails || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Phones</div>
+                      <ul className="space-y-1">{(fullResearch.contactInfo.phones || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Addresses</div>
+                      <ul className="space-y-1">{(fullResearch.contactInfo.addresses || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Role Relevance */}
+              {fullResearch.roleRelevance && (
+                <div>
+                  <div className="text-sm font-medium text-gray-900 mb-2">Role Relevance</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Why This Company</div>
+                      <ul className="space-y-1">{(fullResearch.roleRelevance.whyThisCompany || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Talking Points</div>
+                      <ul className="space-y-1">{(fullResearch.roleRelevance.talkingPoints || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Risks</div>
+                      <ul className="space-y-1">{(fullResearch.roleRelevance.riskNotes || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Opportunities</div>
+                      <ul className="space-y-1">{(fullResearch.roleRelevance.opportunities || []).map((x: string, i: number) => (<li key={i} className="text-sm">{x}</li>))}</ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
