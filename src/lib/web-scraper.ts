@@ -166,6 +166,111 @@ export class WebScraperService {
     return data;
   }
 
+  async scrapeContactInfoFromWebsite(website: string): Promise<{ emails: string[]; phones: string[]; addresses: string[] }> {
+    if (!this.browser) await this.initialize();
+    const results = { emails: [] as string[], phones: [] as string[], addresses: [] as string[] };
+    const candidates = [website, `${website.replace(/\/?$/, '/') }contact`, `${website.replace(/\/?$/, '/') }about`];
+    const page = await this.browser!.newPage();
+    try {
+      for (const url of candidates) {
+        try {
+          await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+          await page.waitForTimeout(1000);
+          const html = await page.content();
+          // Emails from mailto and plain text
+          const mailtos = await page.$$eval('a[href^="mailto:"]', els => els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''));
+          const mailtoClean = mailtos.map(h => h.replace(/^mailto:/i, '').trim()).filter(Boolean);
+          const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+          const textEmails = (html.match(emailRegex) || []).map(e => e.trim());
+          const phoneRegex = /(\+?\d[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}/g;
+          const phones = (html.match(phoneRegex) || []).map(p => p.trim());
+          // Address heuristic: lines with street/ave/blvd/suite
+          const addressRegex = /(\d+\s+[^\n,]+(?:Street|St\.|Avenue|Ave\.|Road|Rd\.|Boulevard|Blvd\.|Lane|Ln\.|Suite|Ste\.)[^\n<]{0,80})/gi;
+          const addresses = (html.match(addressRegex) || []).map(a => a.trim());
+          results.emails.push(...mailtoClean, ...textEmails);
+          results.phones.push(...phones);
+          results.addresses.push(...addresses);
+        } catch {
+          continue;
+        }
+      }
+    } finally {
+      await page.close();
+    }
+    // Deduplicate
+    results.emails = Array.from(new Set(results.emails));
+    results.phones = Array.from(new Set(results.phones));
+    results.addresses = Array.from(new Set(results.addresses));
+    return results;
+  }
+
+  async searchHiringContacts(companyName: string, roleHints: string[] = [], locationHint?: string): Promise<Array<{ name: string; title: string; profileUrl?: string; source: string }>> {
+    if (!this.browser) await this.initialize();
+    const page = await this.browser!.newPage();
+    const people: Array<{ name: string; title: string; profileUrl?: string; source: string }> = [];
+    try {
+      const query = `${companyName} ${roleHints.join(' OR ')} site:linkedin.com/in ${locationHint || ''}`.trim();
+      const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+      await page.waitForTimeout(2000);
+      const results = await page.evaluate(() => {
+        const items: Array<{ title: string; href: string; snippet: string }> = [];
+        const nodes = document.querySelectorAll('a[href^="http"]');
+        nodes.forEach((a) => {
+          const href = (a as HTMLAnchorElement).href;
+          const h3 = a.querySelector('h3');
+          const title = h3?.textContent || '';
+          const parent = a.closest('div') as HTMLElement | null;
+          const snippet = parent?.querySelector('span, div')?.textContent || '';
+          if (title && href && /linkedin\.com\/in\//i.test(href)) {
+            items.push({ title: title.trim(), href, snippet: snippet.trim() });
+          }
+        });
+        return items.slice(0, 10);
+      });
+      for (const r of results) {
+        // Heuristic to split name and title: "Name - Title - Company" or "Name | Title"
+        const parts = r.title.split(/[-|–]\s*/);
+        const name = parts[0]?.trim() || r.title;
+        const title = parts.slice(1).join(' - ').trim() || r.snippet;
+        if (name) people.push({ name, title, profileUrl: r.href, source: 'google-linkedin' });
+      }
+    } catch {
+      // ignore
+    } finally {
+      await page.close();
+    }
+    return people;
+  }
+
+  async scrapeGlassdoorReviewsSummary(companyName: string): Promise<{ pros: string[]; cons: string[] } | null> {
+    if (!this.browser) await this.initialize();
+    const page = await this.browser!.newPage();
+    try {
+      const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
+      await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 15000 });
+      await page.waitForTimeout(2000);
+      const data = await page.evaluate(() => {
+        const textContent = document.body.innerText || '';
+        const pros: string[] = [];
+        const cons: string[] = [];
+        // Simple heuristic: look for lines following "Pros" or "Cons"
+        const lines = textContent.split('\n').map(l => l.trim()).filter(Boolean);
+        for (let i = 0; i < lines.length; i++) {
+          if (/^pros\b/i.test(lines[i]) && lines[i+1]) pros.push(lines[i+1].slice(0, 200));
+          if (/^cons\b/i.test(lines[i]) && lines[i+1]) cons.push(lines[i+1].slice(0, 200));
+        }
+        return { pros: Array.from(new Set(pros)).slice(0, 5), cons: Array.from(new Set(cons)).slice(0, 5) };
+      });
+      return data;
+    } catch (e) {
+      console.error('Glassdoor summary error:', e);
+      return null;
+    } finally {
+      await page.close();
+    }
+  }
+
   private async scrapeGlassdoorData(companyName: string): Promise<{
     rating?: number;
     reviews?: number;
