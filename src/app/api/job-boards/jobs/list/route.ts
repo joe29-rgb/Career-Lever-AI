@@ -1,0 +1,33 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import connectToDatabase from '@/lib/mongodb'
+import JobBoardIntegration from '@/models/JobBoardIntegration'
+import { createJobBoardService } from '@/lib/job-board-service'
+import { z } from 'zod'
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const schema = z.object({ boardName: z.string().min(2) })
+    const body = await request.json()
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { boardName } = parsed.data
+
+    await connectToDatabase()
+    const integration: any = await JobBoardIntegration.findOne({ userId: (session.user as any).id, boardName }).lean()
+    if (!integration || !integration.accessToken) return NextResponse.json({ error: 'Not connected' }, { status: 400 })
+
+    const svc = createJobBoardService(boardName)
+    const endpoint = svc.getConfig().endpoints.jobs
+    const jobs = await svc.makeAuthenticatedRequest(endpoint, 'GET', integration.accessToken)
+    return NextResponse.json({ success: true, jobs })
+  } catch (e) {
+    return NextResponse.json({ error: 'Failed to list jobs' }, { status: 500 })
+  }
+}
+
+
