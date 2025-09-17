@@ -66,6 +66,38 @@ export default function ApplicationDetailsPage() {
     }
   }
 
+  const exportPack = async () => {
+    try {
+      const resp = await fetch(`/api/applications/${params.id}/export/pack`)
+      if (!resp.ok) throw new Error('Failed to export pack')
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${data.application.companyName}_${data.application.jobTitle}_ApplicationPack.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Export failed')
+    }
+  }
+
+  const [followEmail, setFollowEmail] = useState<{ subject: string; body: string } | null>(null)
+  const [followDates, setFollowDates] = useState<Date[] | null>(null)
+  const suggestFollowUp = async () => {
+    try {
+      const resp = await fetch(`/api/applications/${params.id}/followup/suggest`)
+      if (!resp.ok) throw new Error('Failed to suggest follow-up')
+      const j = await resp.json()
+      setFollowEmail(j.email)
+      setFollowDates((j.dates || []).map((d: string) => new Date(d)))
+    } catch {
+      toast.error('Failed to suggest follow-up')
+    }
+  }
+
   if (loading) return <div className="p-6 text-sm text-gray-600">Loading...</div>
   if (!data?.success) return <div className="p-6 text-sm text-red-600">Failed to load application.</div>
 
@@ -148,6 +180,39 @@ export default function ApplicationDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Application Pack</CardTitle>
+            <CardDescription>Export tailored resume + cover letter + talking points</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={exportPack} className="w-full"><Download className="h-4 w-4 mr-1" /> Export Application Pack</Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Follow-up</CardTitle>
+            <CardDescription>Suggest dates and generate email</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button variant="outline" onClick={suggestFollowUp}>Suggest Dates & Email</Button>
+            {followDates && (
+              <div className="text-sm text-gray-700">Suggested dates: {followDates.map(d=>d.toLocaleDateString()).join(', ')}</div>
+            )}
+            {followEmail && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Subject</div>
+                <div className="text-sm text-gray-800">{followEmail.subject}</div>
+                <div className="text-sm font-medium">Body</div>
+                <pre className="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded">{followEmail.body}</pre>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

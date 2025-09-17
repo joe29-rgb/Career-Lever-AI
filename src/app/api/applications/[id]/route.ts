@@ -28,7 +28,8 @@ export async function PUT(
       jobUrl,
       applicationStatus,
       notes,
-      coverLetterId
+      coverLetterId,
+      followUpDates
     } = body;
 
     // Connect to database
@@ -48,6 +49,7 @@ export async function PUT(
         ...(applicationStatus && { applicationStatus }),
         ...(notes !== undefined && { notes }),
         ...(coverLetterId && { coverLetterId }),
+        ...(Array.isArray(followUpDates) && { followUpDates }),
         updatedAt: new Date(),
       },
       { new: true }
