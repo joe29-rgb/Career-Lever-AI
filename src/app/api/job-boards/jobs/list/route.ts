@@ -6,7 +6,6 @@ import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { createJobBoardService } from '@/lib/job-board-service'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
-import JobBoardIntegration from '@/models/JobBoardIntegration'
 
 export async function POST(request: NextRequest) {
   try {
