@@ -169,6 +169,25 @@ Provide 5-7 specific, actionable suggestions to improve the resume's effectivene
 - Skills alignment
 - Experience relevance
 - ATS compatibility`
+,
+  SUCCESS_SCORE: `You are an expert recruiter. Score the probability of success for this application (0-100).
+
+Return JSON strictly in this shape:
+{
+  "score": number,                      // 0-100
+  "reasons": string[3-6],              // why this score
+  "riskFactors": string[2-5],          // risks to address
+  "improvements": string[3-6]          // concrete actions to raise score
+}
+
+Consider:
+- Job match (keywords, seniority, responsibilities)
+- Resume alignment and quantified impact
+- Company culture fit (if provided)
+- Signal quality (job source, clarity)
+- Any red flags
+
+Job Description:\n{jobDescription}\n\nResume:\n{resumeText}\n\nCompany Data (optional):\n{companyData}`
 };
 
 export interface JobAnalysisResult {
@@ -1048,6 +1067,45 @@ Respond with a JSON array of key points (strings).`;
         cultureFit: []
       };
     }
+  }
+
+  static async scoreApplication(
+    jobDescription: string,
+    resumeText: string,
+    companyData?: any
+  ): Promise<{ score: number; reasons: string[]; riskFactors: string[]; improvements: string[] }> {
+    const cacheKey = makeKey('success-score', JSON.stringify({ jobDescription, resumeText, companyData }))
+    const cached = getCache(cacheKey)
+    if (cached) return cached
+    const rcached = await getCacheFromRedis(cacheKey)
+    if (rcached) return rcached
+
+    const prompt = AI_PROMPTS.SUCCESS_SCORE
+      .replace('{jobDescription}', jobDescription)
+      .replace('{resumeText}', resumeText)
+      .replace('{companyData}', companyData ? JSON.stringify(companyData, null, 2) : 'N/A')
+
+    const completion = await withTimeout(openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: 'system', content: 'You evaluate job application success probability and output strict JSON.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.3,
+      max_tokens: 600
+    }), AI_TIMEOUT_MS)
+
+    const text = completion.choices[0]?.message?.content?.trim() || '{}'
+    let parsed: any = { score: 0, reasons: [], riskFactors: [], improvements: [] }
+    try { parsed = JSON.parse(text) } catch {}
+    const result = {
+      score: typeof parsed.score === 'number' ? Math.max(0, Math.min(100, parsed.score)) : 0,
+      reasons: Array.isArray(parsed.reasons) ? parsed.reasons : [],
+      riskFactors: Array.isArray(parsed.riskFactors) ? parsed.riskFactors : [],
+      improvements: Array.isArray(parsed.improvements) ? parsed.improvements : []
+    }
+    setCache(cacheKey, result)
+    return result
   }
 
   static async generateSalaryNegotiationPlan(input: {

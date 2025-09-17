@@ -109,6 +109,8 @@ export default function ApplicationDetailsPage() {
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [fullResearch, setFullResearch] = useState<any | null>(null)
   const [fullResearchLoading, setFullResearchLoading] = useState(false)
+  const [score, setScore] = useState<{ score: number; reasons: string[]; riskFactors: string[]; improvements: string[] } | null>(null)
+  const [scoring, setScoring] = useState(false)
   const suggestFollowUp = async () => {
     try {
       const resp = await fetch(`/api/applications/${params.id}/followup/suggest`)
@@ -176,6 +178,20 @@ export default function ApplicationDetailsPage() {
       toast.error('Failed to run full company research')
     } finally {
       setFullResearchLoading(false)
+    }
+  }
+
+  const runScore = async () => {
+    setScoring(true)
+    try {
+      const resp = await fetch(`/api/applications/${params.id}/score`)
+      if (!resp.ok) throw new Error('Score failed')
+      const j = await resp.json()
+      setScore(j.score)
+    } catch {
+      toast.error('Failed to score application')
+    } finally {
+      setScoring(false)
     }
   }
 
@@ -457,6 +473,9 @@ export default function ApplicationDetailsPage() {
           <CardDescription>Original upload and tailored versions.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-end">
+            <Button variant="outline" onClick={runScore} disabled={scoring}>{scoring ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Scoring...</>) : 'Score Success Probability'}</Button>
+          </div>
           <div>
             <div className="flex items-center justify-between">
               <Label>Original (extracted)</Label>
@@ -498,6 +517,32 @@ export default function ApplicationDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {score && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Success Probability</CardTitle>
+            <CardDescription>AI-assessed score with recommendations</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-2xl font-bold">{score.score}/100</div>
+            <div>
+              <div className="text-sm font-medium mb-1">Reasons</div>
+              <ul className="list-disc ml-5 text-sm">{score.reasons.map((r,i)=>(<li key={i}>{r}</li>))}</ul>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <div className="text-sm font-medium mb-1">Risks</div>
+                <ul className="list-disc ml-5 text-sm">{score.riskFactors.map((r,i)=>(<li key={i}>{r}</li>))}</ul>
+              </div>
+              <div>
+                <div className="text-sm font-medium mb-1">Improvements</div>
+                <ul className="list-disc ml-5 text-sm">{score.improvements.map((r,i)=>(<li key={i}>{r}</li>))}</ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
