@@ -24,4 +24,21 @@ export const coverLetterRawSchema = z.object({
   save: z.boolean().optional(),
 })
 
+export const salaryNegotiationSchema = z.object({
+  jobTitle: z.string().min(2),
+  companyName: z.string().min(2),
+  location: z.string().min(2),
+  seniority: z.enum(['entry','mid','senior']),
+  offer: z.object({
+    base: z.string().min(1),
+    bonus: z.string().optional(),
+    equity: z.string().optional(),
+    benefits: z.string().optional(),
+  }),
+  marketData: z.string().optional(),
+  candidateHighlights: z.string().min(10),
+  constraints: z.string().optional(),
+  tone: z.enum(['professional','warm','concise']).default('professional'),
+})
+
 

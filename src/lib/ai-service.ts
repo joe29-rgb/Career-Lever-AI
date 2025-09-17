@@ -9,6 +9,8 @@ const openai = new OpenAI({
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
 const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
 const ASSISTANT_COVER_LETTER_ID = process.env.OPENAI_ASSISTANT_COVER_LETTER;
+const ASSISTANT_INTERVIEW_PREP_ID = process.env.OPENAI_ASSISTANT_INTERVIEW_PREP;
+const ASSISTANT_SALARY_COACH_ID = process.env.OPENAI_ASSISTANT_SALARY_COACH;
 
 // Runtime controls
 const DEFAULT_MODEL = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o-mini';
@@ -170,6 +172,14 @@ export interface CoverLetterResult {
   wordCount: number;
 }
 
+export interface SalaryNegotiationPlan {
+  targetRange: { base: string; totalComp: string };
+  justifications: string[];
+  tradeoffs: string[];
+  negotiationEmail: { subject: string; body: string };
+  talkingPoints: string[];
+}
+
 export interface CompanyInsightsResult {
   talkingPoints: string[];
   keyValues: string[];
@@ -182,6 +192,96 @@ export class AIService {
       return this.analyzeJobDescriptionWithAssistant(jobDescription);
     }
     return this.analyzeJobDescriptionWithModel(jobDescription);
+  }
+
+  static async generateInterviewCoach(
+    jobTitle: string,
+    seniority: 'entry' | 'mid' | 'senior',
+    resumeHighlights: string,
+    companyData?: any,
+    focusAreas?: string[],
+    numBehavioral?: number,
+    numTechnical?: number
+  ): Promise<{ behavioralQuestions: string[]; technicalQuestions: string[]; starGuidance: string[]; companySpecificAngles: string[] }> {
+    if (DEMO_MODE) {
+      return {
+        behavioralQuestions: [
+          'Tell me about a time you led a project.',
+          'Describe a conflict you resolved on your team.'
+        ],
+        technicalQuestions: [
+          'Design a rate limiter for an API.',
+          'Explain database indexing and query optimization.'
+        ],
+        starGuidance: ['State context in 1-2 lines', 'Quantify impact', 'Tie to role'],
+        companySpecificAngles: ['Connect achievements to product goals', 'Show ownership and bias for action']
+      }
+    }
+    if (!ASSISTANT_INTERVIEW_PREP_ID) {
+      // Simple fallback without assistant
+      return {
+        behavioralQuestions: [
+          'Tell me about yourself',
+          'Tell me about a challenging project and what you learned'
+        ],
+        technicalQuestions: ['Discuss a system you designed end-to-end'],
+        starGuidance: ['Situation, Task, Action, Result'],
+        companySpecificAngles: ['Align answers to company values']
+      }
+    }
+
+    const companyInfo = companyData ? JSON.stringify(companyData, null, 2) : '';
+    const payload = {
+      jobTitle,
+      seniority,
+      resumeHighlights,
+      companyData: companyInfo,
+      focusAreas: focusAreas || [],
+      numBehavioral: numBehavioral || 6,
+      numTechnical: numTechnical || 6,
+    };
+    const thread = await openai.beta.threads.create({});
+    await openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: `Generate interview prep as JSON for: ${jobTitle} (${seniority}).\nResume:\n${resumeHighlights}\nCompany:\n${companyInfo}`,
+    });
+    let run: any = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_INTERVIEW_PREP_ID as string,
+      tools: [
+        { type: 'function', function: { name: 'generate_interview_prep', description: 'Generate tailored interview prep', parameters: (payload as any) } }
+      ] as any
+    });
+    while (true) {
+      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
+        const tool_outputs = run.required_action.submit_tool_outputs.tool_calls.map((tc: any) => ({ tool_call_id: tc.id, output: JSON.stringify(payload) }));
+        run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs });
+        continue;
+      }
+      if (run.status === 'completed') {
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const last = messages.data.find((m) => m.role === 'assistant');
+        const content = last?.content?.[0];
+        const text = (content && 'text' in content) ? content.text.value : undefined;
+        try {
+          const parsed = text ? JSON.parse(text) : {};
+          return {
+            behavioralQuestions: Array.isArray(parsed.behavioralQuestions) ? parsed.behavioralQuestions : [],
+            technicalQuestions: Array.isArray(parsed.technicalQuestions) ? parsed.technicalQuestions : [],
+            starGuidance: Array.isArray(parsed.starGuidance) ? parsed.starGuidance : [],
+            companySpecificAngles: Array.isArray(parsed.companySpecificAngles) ? parsed.companySpecificAngles : [],
+          };
+        } catch {
+          return {
+            behavioralQuestions: [], technicalQuestions: [], starGuidance: [], companySpecificAngles: []
+          }
+        }
+      }
+      if (['failed','cancelled','expired'].includes(run.status)) {
+        return { behavioralQuestions: [], technicalQuestions: [], starGuidance: [], companySpecificAngles: [] };
+      }
+      await new Promise(r=>setTimeout(r, 600));
+      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    }
   }
 
   private static async analyzeJobDescriptionWithModel(jobDescription: string): Promise<JobAnalysisResult> {
@@ -871,6 +971,157 @@ Respond with a JSON array of key points (strings).`;
         keyValues: [],
         cultureFit: []
       };
+    }
+  }
+
+  static async generateSalaryNegotiationPlan(input: {
+    jobTitle: string;
+    companyName: string;
+    location: string;
+    seniority: 'entry' | 'mid' | 'senior';
+    offer: { base: string; bonus?: string; equity?: string; benefits?: string };
+    marketData?: string;
+    candidateHighlights: string;
+    constraints?: string;
+    tone?: 'professional' | 'warm' | 'concise';
+  }): Promise<SalaryNegotiationPlan> {
+    if (DEMO_MODE) {
+      return {
+        targetRange: { base: '$175k-$190k', totalComp: '$270k-$310k' },
+        justifications: [
+          'Senior market in Austin trends toward upper bands',
+          'Led cost reductions of 18% with measurable impact',
+          'Owned 10M msg/day pipeline — high complexity',
+          'Hybrid role warrants premium vs remote-only'
+        ],
+        tradeoffs: [
+          'Prioritize base over equity',
+          'Concede minor signing bonus deltas',
+          'Flexible start date within 4-6 weeks'
+        ],
+        negotiationEmail: {
+          subject: 'Compensation Discussion – Senior Backend Engineer',
+          body: 'Hi <Name>,\n\nThank you for the offer. Based on Austin market norms for senior roles and my impact (e.g., 18% infra savings; 10M msg/day pipeline), I’m targeting a base of $180k-$190k with total comp in the $280k-$300k range. I value the opportunity and am flexible on equity/bonus to reach this base.\n\nIf helpful, happy to discuss details.\n\nBest,\n<Your Name>'
+        },
+        talkingPoints: [
+          'Anchor to Austin senior market bands',
+          'Quantify prior impact and scope',
+          'State clear base target and rationale',
+          'Offer flexibility on secondary levers'
+        ]
+      };
+    }
+
+    if (ASSISTANT_SALARY_COACH_ID) {
+      return this.generateSalaryNegotiationPlanWithAssistant(input);
+    }
+    return this.generateSalaryNegotiationPlanWithModel(input);
+  }
+
+  private static async generateSalaryNegotiationPlanWithModel(input: {
+    jobTitle: string;
+    companyName: string;
+    location: string;
+    seniority: 'entry' | 'mid' | 'senior';
+    offer: { base: string; bonus?: string; equity?: string; benefits?: string };
+    marketData?: string;
+    candidateHighlights: string;
+    constraints?: string;
+    tone?: 'professional' | 'warm' | 'concise';
+  }): Promise<SalaryNegotiationPlan> {
+    const system = 'You are a salary negotiation coach. Output strictly JSON with the requested keys.';
+    const user = `Given the role and offer, produce a JSON plan with keys: targetRange, justifications, tradeoffs, negotiationEmail {subject, body}, talkingPoints.\n\nInput:\njobTitle: ${input.jobTitle}\ncompanyName: ${input.companyName}\nlocation: ${input.location}\nseniority: ${input.seniority}\noffer: ${JSON.stringify(input.offer)}\nmarketData: ${input.marketData || ''}\ncandidateHighlights: ${input.candidateHighlights}\nconstraints: ${input.constraints || ''}\ntone: ${input.tone || 'professional'}`;
+    const completion = await withTimeout(openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ],
+      temperature: 0.6,
+      max_tokens: 1200,
+    }), AI_TIMEOUT_MS);
+    const text = completion.choices[0]?.message?.content?.trim();
+    if (!text) throw new Error('No negotiation plan generated');
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      // Best-effort fallback minimal plan
+      return {
+        targetRange: { base: input.offer.base || 'TBD', totalComp: 'TBD' },
+        justifications: ['Market alignment', 'Role scope', 'Prior impact', 'Location norms'],
+        tradeoffs: ['Flex equity/bonus', 'Firm on base'],
+        negotiationEmail: { subject: `Compensation Discussion – ${input.jobTitle}`, body: text },
+        talkingPoints: ['Anchor to market', 'Quantify impact', 'Set clear target']
+      };
+    }
+  }
+
+  private static async generateSalaryNegotiationPlanWithAssistant(input: {
+    jobTitle: string;
+    companyName: string;
+    location: string;
+    seniority: 'entry' | 'mid' | 'senior';
+    offer: { base: string; bonus?: string; equity?: string; benefits?: string };
+    marketData?: string;
+    candidateHighlights: string;
+    constraints?: string;
+    tone?: 'professional' | 'warm' | 'concise';
+  }): Promise<SalaryNegotiationPlan> {
+    const thread = await openai.beta.threads.create({});
+    await openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: `Generate a negotiation plan as JSON for ${input.jobTitle} at ${input.companyName} (${input.location}). Seniority: ${input.seniority}. Offer: ${JSON.stringify(input.offer)}. Market: ${input.marketData || 'n/a'}. Highlights: ${input.candidateHighlights}. Constraints: ${input.constraints || 'n/a'}. Tone: ${input.tone || 'professional'}.`,
+    });
+    let run: any = await openai.beta.threads.runs.create(thread.id, {
+      assistant_id: ASSISTANT_SALARY_COACH_ID as string,
+    });
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
+        const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
+        const toolOutputs = await Promise.all(toolCalls.map(async (tc: any) => {
+          const fn = tc.function;
+          if (fn?.name === 'generate_negotiation_plan') {
+            const args = JSON.parse(fn.arguments || '{}');
+            // Prefer assistant-parsed args if present
+            const merged = {
+              jobTitle: args.jobTitle || input.jobTitle,
+              companyName: args.companyName || input.companyName,
+              location: args.location || input.location,
+              seniority: args.seniority || input.seniority,
+              offer: args.offer || input.offer,
+              marketData: args.marketData || input.marketData,
+              candidateHighlights: args.candidateHighlights || input.candidateHighlights,
+              constraints: args.constraints || input.constraints,
+              tone: args.tone || input.tone,
+            } as typeof input;
+            const result = await this.generateSalaryNegotiationPlanWithModel(merged);
+            return { tool_call_id: tc.id, output: JSON.stringify(result) };
+          }
+          return { tool_call_id: tc.id, output: '{}' };
+        }));
+        run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs: toolOutputs });
+        continue;
+      }
+      if (run.status === 'completed') {
+        const messages = await openai.beta.threads.messages.list(thread.id);
+        const last = messages.data.find((m) => m.role === 'assistant');
+        const content = last?.content?.[0];
+        const text = (content && 'text' in content) ? (content as any).text.value : undefined;
+        if (text) {
+          try {
+            return JSON.parse(text) as SalaryNegotiationPlan;
+          } catch {
+            return this.generateSalaryNegotiationPlanWithModel(input);
+          }
+        }
+        return this.generateSalaryNegotiationPlanWithModel(input);
+      }
+      if (['failed','cancelled','expired'].includes(run.status)) {
+        return this.generateSalaryNegotiationPlanWithModel(input);
+      }
+      await new Promise(r => setTimeout(r, 600));
+      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
     }
   }
 }

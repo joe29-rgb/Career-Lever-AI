@@ -65,8 +65,11 @@ export class WebScraperService {
 
   async initialize(): Promise<void> {
     if (!this.browser) {
+      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+
       this.browser = await puppeteer.launch({
         headless: true,
+        executablePath: executablePath || undefined,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

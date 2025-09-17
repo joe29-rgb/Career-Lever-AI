@@ -104,12 +104,49 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate comprehensive interview preparation
-    const preparation = await generateInterviewPreparation(
-      jobApplication,
-      resume,
-      preparationLevel
-    )
+    // Use assistant-backed generator when configured; fallback to local generator
+    const assistantId = process.env.OPENAI_ASSISTANT_INTERVIEW_PREP
+    let preparation: InterviewPreparation
+    if (assistantId) {
+      const coach = await AIService.generateInterviewCoach(
+        jobApplication.jobTitle,
+        'mid',
+        resume.extractedText.substring(0, 4000),
+        jobApplication.companyResearch,
+        undefined,
+        6,
+        6,
+      )
+
+      // Build InterviewPreparation structure from coach output + local extras
+      const companyOverview = {
+        name: jobApplication.companyName,
+        industry: jobApplication.companyResearch?.industry || 'Technology',
+        culture: jobApplication.companyResearch?.culture || ['Ownership', 'Customer-obsessed', 'Bias for action'],
+        recentNews: jobApplication.companyResearch?.recentNews?.slice(0,3).map((n: any) => n.title) || [],
+        keyFacts: generateCompanyKeyFacts(jobApplication.companyName, jobApplication.companyResearch)
+      }
+      const roleRequirements = extractRoleRequirements(jobApplication.jobDescription)
+      const technicalSkills = extractTechnicalSkills(jobApplication.jobDescription)
+      preparation = {
+        companyOverview,
+        jobSpecificPrep: {
+          roleRequirements,
+          technicalSkills,
+          behavioralQuestions: (coach.behavioralQuestions || []).map(q => ({ question: q, suggestedAnswer: '', tips: [] })),
+          technicalQuestions: (coach.technicalQuestions || []).map(q => ({ question: q, difficulty: 'intermediate', suggestedAnswer: '', relatedSkills: [] })),
+        },
+        candidatePreparation: await generateCandidatePreparation(jobApplication, resume),
+        practicePlan: generatePracticePlan(jobApplication.jobTitle, preparationLevel),
+      }
+    } else {
+      // Generate comprehensive interview preparation (local)
+      preparation = await generateInterviewPreparation(
+        jobApplication,
+        resume,
+        preparationLevel
+      )
+    }
 
     return NextResponse.json({
       success: true,
@@ -243,7 +280,7 @@ Provide a concise but detailed answer (2-3 paragraphs) that highlights relevant 
 
       const response = completion.choices[0]?.message?.content?.trim() || ''
       const [answer, tipsSection] = response.split('\n\nTips:')
-      const tips = tipsSection ? tipsSection.split('\n').filter(tip => tip.trim()) : []
+      const tips = tipsSection ? tipsSection.split('\n').filter((tip: string) => tip.trim()) : []
 
       questionsWithAnswers.push({
         question,

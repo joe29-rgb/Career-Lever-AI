@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth/next'
 import connectToDatabase from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
+import { isRateLimited } from '@/lib/rate-limit'
+import { salaryNegotiationSchema } from '@/lib/validators'
+import { AIService } from '@/lib/ai-service'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -62,6 +65,12 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limit per user
+    const rl = isRateLimited(session.user.id as unknown as string, 'salary:analysis')
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
     const body = await request.json()

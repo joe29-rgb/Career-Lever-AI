@@ -87,6 +87,13 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
     currentSalary: ''
   })
   const [analysis, setAnalysis] = useState<SalaryAnalysis | null>(null)
+  const [plan, setPlan] = useState<null | {
+    targetRange: { base: string; totalComp: string }
+    justifications: string[]
+    tradeoffs: string[]
+    negotiationEmail: { subject: string; body: string }
+    talkingPoints: string[]
+  }>(null)
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('market')
 
@@ -127,6 +134,44 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
     } catch (error) {
       console.error('Analysis error:', error)
       toast.error(error instanceof Error ? error.message : 'Analysis failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const generateNegotiationPlan = async () => {
+    if (!formData.jobTitle || !formData.location) {
+      toast.error('Please fill in job title and location')
+      return
+    }
+    setLoading(true)
+    try {
+      const payload = {
+        jobTitle: formData.jobTitle,
+        companyName: formData.company || 'Unknown',
+        location: formData.location,
+        seniority: (formData.experience as any) === 'senior' ? 'senior' : (formData.experience as any) === 'entry' ? 'entry' : 'mid',
+        offer: { base: formData.currentSalary ? `$${formData.currentSalary}` : 'TBD' },
+        marketData: undefined,
+        candidateHighlights: 'Key achievements and impact from resume',
+        constraints: undefined,
+        tone: 'professional' as const,
+      }
+      const res = await fetch('/api/salary/coach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || 'Failed to generate plan')
+      }
+      const data = await res.json()
+      setPlan(data.plan)
+      toast.success('Negotiation plan generated!')
+    } catch (e) {
+      console.error(e)
+      toast.error(e instanceof Error ? e.message : 'Failed to generate plan')
     } finally {
       setLoading(false)
     }
@@ -229,6 +274,24 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
               <>
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Generate Salary Analysis
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={generateNegotiationPlan}
+            disabled={loading || !formData.jobTitle || !formData.location}
+            variant="secondary"
+            className="w-full md:w-auto ml-0 md:ml-3"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating Plan...
+              </>
+            ) : (
+              <>
+                <Target className="mr-2 h-4 w-4" />
+                Generate Negotiation Plan
               </>
             )}
           </Button>
@@ -639,6 +702,82 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
               </div>
             </TabsContent>
           </Tabs>
+        </div>
+      )}
+
+      {/* Negotiation Plan */}
+      {plan && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Negotiation Plan
+              </CardTitle>
+              <CardDescription>Targets, rationale, tradeoffs, and email draft</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-green-50 rounded">
+                  <div className="text-sm text-green-800">Target Base</div>
+                  <div className="text-xl font-semibold text-green-900">{plan.targetRange.base}</div>
+                </div>
+                <div className="p-4 bg-blue-50 rounded">
+                  <div className="text-sm text-blue-800">Target Total Comp</div>
+                  <div className="text-xl font-semibold text-blue-900">{plan.targetRange.totalComp}</div>
+                </div>
+                <div className="p-4 bg-purple-50 rounded">
+                  <div className="text-sm text-purple-800">Tradeoffs</div>
+                  <div className="text-sm text-purple-900">{plan.tradeoffs[0]}</div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Justifications</h4>
+                <ul className="space-y-1">
+                  {plan.justifications.map((j, i) => (
+                    <li key={i} className="text-sm text-gray-700 flex gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                      {j}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Talking Points</h4>
+                <div className="flex flex-wrap gap-2">
+                  {plan.talkingPoints.map((tp, i) => (
+                    <Badge key={i} variant="outline">{tp}</Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Negotiation Email</h4>
+                <div className="p-4 bg-gray-50 rounded border">
+                  <div className="font-semibold mb-2">Subject: {plan.negotiationEmail.subject}</div>
+                  <pre className="whitespace-pre-wrap text-sm text-gray-800">{plan.negotiationEmail.body}</pre>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      const blob = new Blob([plan.negotiationEmail.body], { type: 'text/plain;charset=utf-8' })
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      a.download = 'negotiation-email.txt'
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    }}
+                  >
+                    <FileText className="mr-2 h-4 w-4" /> Download Email
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
