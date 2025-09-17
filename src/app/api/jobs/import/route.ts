@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
 import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
+import { webScraper } from '@/lib/web-scraper'
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,18 +21,22 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const { jobUrl } = parsed.data
 
-    // Basic extraction heuristics (title/company may be improved via crawler)
+    // Try scraping the job detail page for title/company/description
+    let scraped: any = null
+    try { scraped = await webScraper.scrapeJobDetailFromUrl(jobUrl) } catch {}
+
+    // Basic extraction heuristics (fallback)
     await connectToDatabase()
     const urlObj = new URL(jobUrl)
     const host = urlObj.hostname.replace('www.', '')
-    const jobTitleGuess = host.includes('linkedin') ? 'Imported Role (LinkedIn)' : host.includes('indeed') ? 'Imported Role (Indeed)' : 'Imported Role'
-    const companyGuess = host.split('.')[0].replace(/\W+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    const jobTitleGuess = scraped?.title || (host.includes('linkedin') ? 'Imported Role (LinkedIn)' : host.includes('indeed') ? 'Imported Role (Indeed)' : 'Imported Role')
+    const companyGuess = scraped?.companyName || host.split('.')[0].replace(/\W+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
     const app = new JobApplication({
       userId: (session.user as any).id,
       jobTitle: jobTitleGuess,
       companyName: companyGuess || 'Unknown Company',
-      jobDescription: 'Imported via URL. Analyze to tailor your resume.',
+      jobDescription: scraped?.description || 'Imported via URL. Analyze to tailor your resume.',
       jobUrl,
       applicationStatus: 'saved',
       followUpDates: []

@@ -83,6 +83,170 @@ export class WebScraperService {
     }
   }
 
+  // Scrape a single job detail page from a public URL (best-effort)
+  async scrapeJobDetailFromUrl(jobUrl: string): Promise<{
+    title?: string;
+    companyName?: string;
+    location?: string;
+    description?: string;
+    source: string;
+    jobUrl: string;
+  }> {
+    if (!this.browser) await this.initialize();
+    const page = await this.browser!.newPage();
+    try {
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      await page.setViewport({ width: 1366, height: 768 });
+      await page.goto(jobUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+      await page.waitForTimeout(1500);
+
+      const host = new URL(jobUrl).hostname.replace('www.', '');
+      const data = await page.evaluate((host) => {
+        const getText = (sel: string[]) => {
+          for (const s of sel) {
+            const el = document.querySelector(s) as HTMLElement | null;
+            if (el && el.textContent && el.textContent.trim().length > 3) return el.textContent.trim();
+          }
+          return undefined;
+        };
+        const getHtml = (sel: string[]) => {
+          for (const s of sel) {
+            const el = document.querySelector(s) as HTMLElement | null;
+            if (el && el.innerText && el.innerText.trim().length > 10) return el.innerText.trim();
+          }
+          return undefined;
+        };
+
+        let title = getText(['h1', 'h1[data-testid="jobTitle"]', 'h1.jobsearch-JobInfoHeader-title', 'h1.job-title']);
+        let companyName = getText(['.companyName', '[data-company-name="true"]', '.icl-u-lg-mr--sm.icl-u-xs-mr--xs', 'a[data-tn-element="companyName"]', 'a[data-company-name]']);
+        if (!companyName) companyName = getText(['[data-testid="companyName"]', 'div[data-company-name]']);
+        let location = getText(['.jobsearch-JobInfoHeader-subtitle div:last-child', 'div[data-testid="inlineHeader-companyLocation"]', '.location', '[data-testid="jobLocation"]']);
+        let description = getHtml(['#jobDescriptionText', 'div#jobDescriptionText', 'div.jobsearch-jobDescriptionText', 'section#jobDescription', 'div.job-description', 'article']);
+
+        return { title, companyName, location, description };
+      }, host);
+
+      return {
+        title: data.title,
+        companyName: data.companyName,
+        location: data.location,
+        description: data.description,
+        source: host,
+        jobUrl,
+      };
+    } catch (e) {
+      return { source: new URL(jobUrl).hostname, jobUrl };
+    } finally {
+      await page.close();
+    }
+  }
+
+  // Scrape public search results page (Indeed/ZipRecruiter/Job Bank/Google Jobs page) best-effort
+  async scrapeJobsFromSearchUrl(searchUrl: string, limit: number = 20): Promise<Array<{
+    title?: string;
+    companyName?: string;
+    location?: string;
+    snippet?: string;
+    jobUrl: string;
+    source: string;
+  }>> {
+    if (!this.browser) await this.initialize();
+    const page = await this.browser!.newPage();
+    const results: any[] = [];
+    try {
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      await page.setViewport({ width: 1366, height: 768 });
+      await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+      await page.waitForTimeout(1500);
+      const host = new URL(searchUrl).hostname.replace('www.', '');
+
+      if (/indeed\.com|indeed\.ca/i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a.tapItem, a[data-jk], a[href*="/rc/clk"], a[href*="/pagead/"]').forEach((a) => {
+            const el = a as HTMLAnchorElement;
+            const card = el.closest('[data-testid="jobsearch-SerpJobCard"]') || el.closest('div.jobsearch-SerpJobCard') || el;
+            const title = (card.querySelector('h2.jobTitle, h2 a, h1') as HTMLElement | null)?.innerText?.trim();
+            const company = (card.querySelector('.companyName') as HTMLElement | null)?.innerText?.trim();
+            const location = (card.querySelector('.companyLocation') as HTMLElement | null)?.innerText?.trim();
+            const snippet = (card.querySelector('.job-snippet') as HTMLElement | null)?.innerText?.trim();
+            const href = el.href;
+            if (href) out.push({ title, companyName: company, location, snippet, jobUrl: href });
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      } else if (/ziprecruiter\.com/i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a[href*="/jobs/"], a[href*="/jobs-search"] h2 a').forEach((a) => {
+            const link = (a as HTMLAnchorElement).href;
+            const card = (a as HTMLElement).closest('article, .job_result, .job_card, .job_content') || (a as HTMLElement);
+            const title = (card.querySelector('h2, h3') as HTMLElement | null)?.innerText?.trim();
+            const company = (card.querySelector('.job_org, .company, .t_org_link') as HTMLElement | null)?.innerText?.trim();
+            const location = (card.querySelector('.location, .job_loc') as HTMLElement | null)?.innerText?.trim();
+            const snippet = (card.querySelector('p, .job_snippet') as HTMLElement | null)?.innerText?.trim();
+            if (link) out.push({ title, companyName: company, location, snippet, jobUrl: link });
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      } else if (/jobbank\.gc\.ca/i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a[href*="/jobsearch/jobposting/"]').forEach((a) => {
+            const link = (a as HTMLAnchorElement).href;
+            const card = (a as HTMLElement).closest('li, article, .resultJobItem') || (a as HTMLElement);
+            const title = (card.querySelector('h3, h4, a') as HTMLElement | null)?.innerText?.trim();
+            const company = (card.querySelector('.business, .resultJobItem__company') as HTMLElement | null)?.innerText?.trim();
+            const location = (card.querySelector('.location, .resultJobItem__infoItem--location') as HTMLElement | null)?.innerText?.trim();
+            const snippet = (card.querySelector('p, .resultJobItem__short') as HTMLElement | null)?.innerText?.trim();
+            if (link) out.push({ title, companyName: company, location, snippet, jobUrl: link });
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      } else if (/google\./i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a[href^="http"]').forEach((a) => {
+            const href = (a as HTMLAnchorElement).href;
+            const text = (a as HTMLAnchorElement).innerText || '';
+            if (/indeed|ziprecruiter|jobbank\.gc\.ca|workopolis|glassdoor/i.test(href) && text && text.length > 5) {
+              out.push({ title: text.split('\n')[0], companyName: undefined, location: undefined, snippet: undefined, jobUrl: href });
+            }
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      await page.close();
+    }
+    // De-dupe by URL
+    const seen = new Set<string>();
+    const deduped = results.filter(r => {
+      const key = r.jobUrl.split('#')[0];
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+    return deduped.slice(0, limit);
+  }
+
   async close(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
