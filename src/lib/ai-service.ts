@@ -19,9 +19,19 @@ const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 20000);
 const DEMO_MODE = String(process.env.DEMO_MODE || 'false').toLowerCase() === 'true';
 const CACHE_TTL_MS = Number(process.env.AI_CACHE_TTL_MS || 10 * 60 * 1000);
 
-// Simple in-memory cache (ephemeral)
+// Simple in-memory cache (ephemeral). Optionally back with Redis if configured.
 type CacheEntry = { expiresAt: number; value: any };
 const aiCache: Map<string, CacheEntry> = new Map();
+let redisClient: any = null
+if (process.env.REDIS_URL) {
+  try {
+    // Lazy import to avoid build-time issues
+    const { createClient } = require('redis')
+    redisClient = createClient({ url: process.env.REDIS_URL })
+    redisClient.on('error', () => {})
+    redisClient.connect().catch(()=>{})
+  } catch {}
+}
 
 function getCache(key: string): any | undefined {
   const entry = aiCache.get(key);
@@ -35,6 +45,9 @@ function getCache(key: string): any | undefined {
 
 function setCache(key: string, value: any) {
   aiCache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value });
+  if (redisClient) {
+    redisClient.setEx(`ai:${key}`, Math.floor(CACHE_TTL_MS/1000), JSON.stringify(value)).catch(()=>{})
+  }
 }
 
 function makeKey(prefix: string, payload: string) {

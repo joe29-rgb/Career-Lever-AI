@@ -13,6 +13,19 @@ const nextConfig = {
         OPENAI_ASSISTANT_COMPANY_INSIGHTS: process.env.OPENAI_ASSISTANT_COMPANY_INSIGHTS,
         OPENAI_ASSISTANT_COMPANY_SCRAPER: process.env.OPENAI_ASSISTANT_COMPANY_SCRAPER,
     },
+    async headers() {
+        return [
+            {
+                source: '/(.*)',
+                headers: [
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                    { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+                    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+                    { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' }
+                ]
+            }
+        ]
+    },
     images: {
         domains: ['localhost'],
     },
