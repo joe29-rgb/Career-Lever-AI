@@ -7,9 +7,14 @@ import { authOptions } from '@/lib/auth';
 import { AIService } from '@/lib/ai-service';
 import { isRateLimited } from '@/lib/rate-limit';
 import { resumeCustomizeSchema } from '@/lib/validators';
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
 export async function POST(request: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(request.headers as any)
+    const startedAt = now()
+    const routeKey = 'resume:customize'
+    logRequestStart(routeKey, requestId)
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -94,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Find the newly added version
     const newVersion = savedResume.customizedVersions[savedResume.customizedVersions.length - 1];
 
-    return NextResponse.json({
+    const resp = NextResponse.json({
       success: true,
       customizedResume: {
         _id: newVersion._id,
@@ -116,6 +121,8 @@ export async function POST(request: NextRequest) {
       improvements,
       suggestions,
     });
+    logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+    return resp
 
   } catch (error) {
     console.error('Resume customization error:', error);

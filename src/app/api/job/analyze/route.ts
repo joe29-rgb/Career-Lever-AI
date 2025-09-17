@@ -7,9 +7,14 @@ import { AIService } from '@/lib/ai-service';
 import { isRateLimited } from '@/lib/rate-limit';
 import { jobAnalyzeSchema } from '@/lib/validators';
 import JobApplication from '@/models/JobApplication';
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
 export async function POST(request: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(request.headers as any)
+    const startedAt = now()
+    const routeKey = 'job:analyze'
+    logRequestStart(routeKey, requestId)
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -55,11 +60,13 @@ export async function POST(request: NextRequest) {
     // Extract keywords from the job description
     const keywords = extractKeywords(jobDescription);
 
-    return NextResponse.json({
+    const resp = NextResponse.json({
       success: true,
       analysis,
       keywords,
     });
+    logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+    return resp
 
   } catch (error) {
     console.error('Job analysis error:', error);

@@ -8,9 +8,14 @@ import { AIService } from '@/lib/ai-service';
 import CoverLetter from '@/models/CoverLetter';
 import { isRateLimited } from '@/lib/rate-limit';
 import { coverLetterRawSchema } from '@/lib/validators';
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
 export async function POST(request: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(request.headers as any)
+    const startedAt = now()
+    const routeKey = 'cover-letter:generate'
+    logRequestStart(routeKey, requestId)
     // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -67,13 +72,15 @@ export async function POST(request: NextRequest) {
           length,
         })
       }
-      return NextResponse.json({
+      const resp = NextResponse.json({
         success: true,
         coverLetter,
         keyPoints,
         wordCount,
         preview: { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` }
       });
+      logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+      return resp
     }
 
     if (!jobApplicationId || !resumeId) {
@@ -146,13 +153,15 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    return NextResponse.json({
+    const resp2 = NextResponse.json({
       success: true,
       coverLetter,
       keyPoints,
       wordCount,
       preview: raw ? { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` } : undefined
     });
+    logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+    return resp2
 
   } catch (error) {
     console.error('Cover letter generation error:', error);

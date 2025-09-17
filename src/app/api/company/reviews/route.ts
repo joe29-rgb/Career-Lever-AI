@@ -4,9 +4,15 @@ import { authOptions } from '@/lib/auth'
 import { isRateLimited } from '@/lib/rate-limit'
 import { webScraper } from '@/lib/web-scraper'
 import { z } from 'zod'
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
+import { redisGetJSON, redisSetJSON } from '@/lib/redis'
 
 export async function POST(request: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(request.headers as any)
+    const startedAt = now()
+    const routeKey = 'company:reviews'
+    logRequestStart(routeKey, requestId)
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -21,7 +27,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     }
     const { companyName } = parsed.data as any
+    const cacheKey = `company:reviews:${companyName}`
+    const cached = await redisGetJSON<any>(cacheKey)
+    if (cached) {
+      logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'hit' })
+      return NextResponse.json({ success: true, summary: cached, cache: 'hit' })
+    }
     const summary = await webScraper.scrapeGlassdoorReviewsSummary(companyName)
+    await redisSetJSON(cacheKey, summary, 60 * 60)
+    logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'miss' })
     return NextResponse.json({ success: true, summary })
   } catch (e) {
     console.error('Company reviews error:', e)
