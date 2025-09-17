@@ -338,11 +338,11 @@ Ready to transform your job search? Join thousands of successful professionals w
 - **Upgrade to Pro** for unlimited AI customizations
 - **Contact sales** for enterprise solutions
 
-## 🎯 **What Makes JobCraftAI the #1 Choice**
+## 🎯 **What Makes Career Lever AI the #1 Choice**
 
 ### **📊 Complete Feature Matrix**
 
-| Feature Category | JobCraftAI | Resume.com | LinkedIn | Indeed | Teal | Huntr |
+| Feature Category | Career Lever AI | Resume.com | LinkedIn | Indeed | Teal | Huntr |
 |-----------------|------------|------------|----------|--------|------|-------|
 | **AI Resume Customization** | ✅ GPT-4 Powered | ❌ | ❌ | ❌ | Basic | Basic |
 | **Company Research** | ✅ 50+ Sources | ❌ | Basic | ❌ | Manual | Manual |
@@ -357,7 +357,7 @@ Ready to transform your job search? Join thousands of successful professionals w
 
 ### **🤝 Professional Networking Platform**
 
-JobCraftAI now includes a comprehensive **professional networking ecosystem** designed specifically for job seekers:
+Career Lever AI now includes a comprehensive **professional networking ecosystem** designed specifically for job seekers:
 
 #### **Network Features**
 - **Smart Connection Suggestions**: AI-powered recommendations based on career goals and industry
@@ -384,7 +384,7 @@ JobCraftAI now includes a comprehensive **professional networking ecosystem** de
 - **💼 85% Success Rate** - Users landing jobs within 90 days
 
 ### **🚀 Success Stories**
-- **Sarah M.**: "JobCraftAI helped me negotiate a $35K salary increase"
+- **Sarah M.**: "Career Lever AI helped me negotiate a $35K salary increase"
 - **David K.**: "The interview prep was incredible - got offers from 3 FAANG companies"
 - **Jennifer L.**: "Skill gap analysis showed me exactly what to learn - now I'm a senior engineer"
 - **Michael R.**: "Company research revealed red flags I would have missed"
@@ -406,7 +406,7 @@ JobCraftAI now includes a comprehensive **professional networking ecosystem** de
 
 ### **🌟 The Future of Job Search**
 
-JobCraftAI isn't just another job search tool. It's the **intelligent career companion** that transforms how professionals approach their career development. With advanced AI, comprehensive analytics, and proven results, it's the only tool you'll ever need for your career journey.
+Career Lever AI isn't just another job search tool. It's the **intelligent career companion** that transforms how professionals approach their career development. With advanced AI, comprehensive analytics, and proven results, it's the only tool you'll ever need for your career journey.
 
 **Ready to transform your career?** 🚀
 
@@ -414,7 +414,7 @@ JobCraftAI isn't just another job search tool. It's the **intelligent career com
 
 ---
 
-**JobCraftAI** - Where AI meets career success. The most advanced career development platform ever created. 🌟
+**Career Lever AI** - Where AI meets career success. The most advanced career development platform ever created. 🌟
 
 ## License
 
