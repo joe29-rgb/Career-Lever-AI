@@ -172,6 +172,14 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
   const [showPreview, setShowPreview] = useState(false)
   const [jobDescription, setJobDescription] = useState('')
   const [showDiff, setShowDiff] = useState(false)
+  const [highlightKeywordsOn, setHighlightKeywordsOn] = useState(true)
+  const highlightKeywords = (html: string, keywords: string[]) => {
+    if (!html || !keywords || keywords.length === 0) return html
+    const escaped = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean)
+    if (escaped.length === 0) return html
+    const regex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi')
+    return html.replace(regex, '<mark class="bg-yellow-200">$1</mark>')
+  }
 
   // Load existing resume data if available
   useEffect(() => {
@@ -1133,7 +1141,19 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
               {generatedResume && showPreview ? (
                 <div className="border rounded-lg overflow-hidden">
                   {!showDiff ? (
-                    <iframe srcDoc={generatedResume.output.html} className="w-full h-96 border-0" title="Resume Preview" />
+                    <>
+                      <div className="flex items-center justify-end p-2 gap-2 text-xs text-gray-600">
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={highlightKeywordsOn}
+                            onChange={(e) => setHighlightKeywordsOn(e.target.checked)}
+                          />
+                          Highlight keywords
+                        </label>
+                      </div>
+                      <iframe srcDoc={highlightKeywordsOn ? highlightKeywords(generatedResume.output.html, (generatedResume.analysis?.keyRequirements || []).concat(generatedResume.analysis?.preferredSkills || [])) : generatedResume.output.html} className="w-full h-96 border-0" title="Resume Preview" />
+                    </>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2">
                       <div className="p-2 border-r">

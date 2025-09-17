@@ -10,6 +10,15 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Download, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+function highlightKeywords(text: string, keywords: string[]): string {
+  if (!text) return ''
+  if (!keywords || keywords.length === 0) return text
+  const escaped = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean)
+  if (escaped.length === 0) return text
+  const regex = new RegExp(`\\b(${escaped.join('|')})\\b`, 'gi')
+  return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>')
+}
+
 export default function ApplicationDetailsPage() {
   const params = useParams<{ id: string }>()
   const [loading, setLoading] = useState(true)
@@ -112,7 +121,7 @@ export default function ApplicationDetailsPage() {
         <CardContent className="space-y-4">
           <div>
             <Label>Job Description</Label>
-            <Textarea readOnly rows={8} value={application.jobDescription || ''} />
+            <div className="border rounded p-2 text-sm bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(application.jobDescription || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
           </div>
 
           <div>
@@ -159,7 +168,7 @@ export default function ApplicationDetailsPage() {
         <CardContent className="space-y-4">
           <div>
             <Label>Original (extracted)</Label>
-            <Textarea readOnly rows={8} value={resume?.original?.extractedText || ''} />
+            <div className="border rounded p-2 text-sm bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
           </div>
           <div className="space-y-2">
             <Label>Tailored Versions</Label>
@@ -172,6 +181,19 @@ export default function ApplicationDetailsPage() {
                     <div className="text-sm text-gray-700 mb-2">{v.jobTitle} @ {v.companyName} — Match: {v.matchScore ?? 0}%</div>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={() => downloadResumeVersion(v.customizedText, `${application.companyName}_${application.jobTitle}_Resume`)}><Download className="h-4 w-4 mr-1" /> PDF</Button>
+                      <details className="ml-2">
+                        <summary className="cursor-pointer text-xs text-gray-600">Preview Changes</summary>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                          <div className="text-xs">
+                            <div className="text-gray-500 mb-1">Original</div>
+                            <div className="border rounded p-2 bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
+                          </div>
+                          <div className="text-xs">
+                            <div className="text-gray-500 mb-1">Tailored</div>
+                            <div className="border rounded p-2 bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(v.customizedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
+                          </div>
+                        </div>
+                      </details>
                     </div>
                   </div>
                 ))}

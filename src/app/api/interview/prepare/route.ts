@@ -6,6 +6,8 @@ import Resume from '@/models/Resume'
 import { authOptions } from '@/lib/auth'
 import { AIService } from '@/lib/ai-service'
 import OpenAI from 'openai'
+import { isRateLimited } from '@/lib/rate-limit'
+import { z } from 'zod'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -67,15 +69,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { jobApplicationId, preparationLevel = 'comprehensive' } = body
-
-    if (!jobApplicationId) {
-      return NextResponse.json(
-        { error: 'Job application ID is required' },
-        { status: 400 }
-      )
+    const rl = isRateLimited(session.user.id as unknown as string, 'interview:prepare')
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
+
+    const schema = z.object({
+      jobApplicationId: z.string().min(1),
+      preparationLevel: z.enum(['basic','comprehensive']).default('comprehensive')
+    })
+    const raw = await request.json()
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const { jobApplicationId, preparationLevel } = parsed.data
 
     await connectToDatabase()
 
