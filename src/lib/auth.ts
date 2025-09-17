@@ -82,6 +82,26 @@ export const authOptions: NextAuthOptions = {
           token.googleAccessTokenExpires = account.expires_at * 1000
         }
       }
+
+      // Refresh Google access token if expired and refresh token is available
+      const needsRefresh = token.googleAccessToken && token.googleAccessTokenExpires && Date.now() > (token.googleAccessTokenExpires as number - 60000)
+      if (needsRefresh && token.googleRefreshToken && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+        try {
+          const params = new URLSearchParams({
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            grant_type: 'refresh_token',
+            refresh_token: token.googleRefreshToken as string
+          })
+          const res = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+          const json = await res.json() as any
+          if (res.ok && json.access_token) {
+            token.googleAccessToken = json.access_token
+            if (json.expires_in) token.googleAccessTokenExpires = Date.now() + json.expires_in * 1000
+            if (json.refresh_token) token.googleRefreshToken = json.refresh_token
+          }
+        } catch {}
+      }
       return token as any;
     },
     async session({ session, token }) {

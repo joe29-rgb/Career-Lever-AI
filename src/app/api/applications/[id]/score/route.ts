@@ -16,8 +16,8 @@ export async function GET(
     await connectToDatabase()
     const app: any = await JobApplication.findOne({ _id: params.id, userId: (session.user as any).id }).lean()
     if (!app) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
-    const resumeText = resume?.extractedText || ''
+    const resume: any = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
+    const resumeText = (resume && typeof (resume as any).extractedText === 'string') ? (resume as any).extractedText : ''
     const companyData = app.companyResearch || {}
     const result = await AIService.scoreApplication(app.jobDescription || '', resumeText, companyData)
     return NextResponse.json({ success: true, score: result })
