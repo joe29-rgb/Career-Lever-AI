@@ -26,6 +26,13 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+        {/* iOS PWA meta tags */}
+        <head>
+          <meta name="apple-mobile-web-app-capable" content="yes" />
+          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+          <meta name="apple-mobile-web-app-title" content="Career Lever AI" />
+          <link rel="apple-touch-icon" href="/icon-192.svg" />
+        </head>
         <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
       </body>
     </html>
