@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { isRateLimited } from '@/lib/rate-limit'
 import { z } from 'zod'
 import OpenAI from 'openai'
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs, logAIUsage } from '@/lib/observability'
+import { redisGetJSON, redisSetJSON } from '@/lib/redis'
 import { webScraper } from '@/lib/web-scraper'
 import { AIService } from '@/lib/ai-service'
 
@@ -11,6 +13,10 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export async function POST(request: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(request.headers)
+    const startedAt = now()
+    const routeKey = 'company:orchestrate'
+    logRequestStart(routeKey, requestId)
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -39,6 +45,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     }
     const { companyName, jobPostingUrl, companyWebsite, linkedinCompanyUrl, roleHints, locationHint, jobTitle } = parsed.data as any
+
+    // Redis cache: key by companyName+jobPostingUrl
+    const cacheKey = `company:orchestrate:${companyName}:${jobPostingUrl || ''}`
+    const cached = await redisGetJSON<any>(cacheKey)
+    if (cached) {
+      logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'hit' })
+      return NextResponse.json({ success: true, result: cached, cache: 'hit' })
+    }
 
     const contextMsg = `Company research request.\nCompany: ${companyName}\nJob Title: ${jobTitle || ''}\nPosting: ${jobPostingUrl || ''}\nWebsite: ${companyWebsite || ''}\nLinkedIn: ${linkedinCompanyUrl || ''}\nRole Hints: ${roleHints.join(', ')}\nLocation: ${locationHint || ''}`
 
@@ -94,12 +108,16 @@ export async function POST(request: NextRequest) {
         if (!text) return NextResponse.json({ error: 'No content' }, { status: 500 })
         try {
           const json = JSON.parse(text)
+          await redisSetJSON(cacheKey, json, 60 * 30) // 30 minutes
+          logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'miss' })
           return NextResponse.json({ success: true, result: json })
         } catch {
+          logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { raw: true })
           return NextResponse.json({ success: true, raw: text })
         }
       }
       if ([ 'failed','cancelled','expired' ].includes(run.status)) {
+        logRequestEnd(routeKey, requestId, 500, durationMs(startedAt), { status: run.status })
         return NextResponse.json({ error: `Assistant run ${run.status}` }, { status: 500 })
       }
       await new Promise(r => setTimeout(r, 600))

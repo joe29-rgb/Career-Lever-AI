@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import crypto from 'crypto';
 import { extractKeywords, calculateMatchScore } from './utils';
+import { logAIUsage } from './observability'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -369,9 +370,7 @@ export class AIService {
       }), AI_TIMEOUT_MS);
 
       const analysisText = completion.choices[0]?.message?.content?.trim();
-      if ((completion as any).usage) {
-        console.log('AI usage (analysis):', (completion as any).usage);
-      }
+      logAIUsage('job-analysis', undefined, completion)
       if (!analysisText) {
         throw new Error('Failed to get analysis from OpenAI');
       }
@@ -531,9 +530,7 @@ export class AIService {
       }), AI_TIMEOUT_MS);
 
       const customizedText = completion.choices[0]?.message?.content?.trim();
-      if ((completion as any).usage) {
-        console.log('AI usage (tailor):', (completion as any).usage);
-      }
+      logAIUsage('resume-tailor', undefined, completion)
       if (!customizedText) {
         throw new Error('Failed to get customized resume from OpenAI');
       }
@@ -721,9 +718,7 @@ Company Research:
       }), AI_TIMEOUT_MS);
 
       const coverLetter = completion.choices[0]?.message?.content?.trim();
-      if ((completion as any).usage) {
-        console.log('AI usage (cover letter):', (completion as any).usage);
-      }
+      logAIUsage('cover-letter', undefined, completion)
       if (!coverLetter) {
         throw new Error('Failed to generate cover letter from OpenAI');
       }
@@ -865,6 +860,7 @@ Company Research:
       });
 
       const emailContent = completion.choices[0]?.message?.content?.trim();
+      logAIUsage('follow-up-email', undefined, completion)
       if (!emailContent) {
         throw new Error('Failed to generate follow-up email from OpenAI');
       }
@@ -954,6 +950,7 @@ Respond with a JSON array of key points (strings).`;
       });
 
       const keyPointsText = completion.choices[0]?.message?.content?.trim();
+      logAIUsage('cover-letter-keypoints', undefined, completion)
       if (!keyPointsText) {
         return [];
       }
@@ -1043,6 +1040,7 @@ Respond with a JSON array of key points (strings).`;
       });
 
       const insightsText = completion.choices[0]?.message?.content?.trim();
+      logAIUsage('company-insights', undefined, completion)
       if (!insightsText) {
         throw new Error('Failed to generate company insights');
       }
@@ -1096,6 +1094,7 @@ Respond with a JSON array of key points (strings).`;
     }), AI_TIMEOUT_MS)
 
     const text = completion.choices[0]?.message?.content?.trim() || '{}'
+    logAIUsage('success-score', undefined, completion)
     let parsed: any = { score: 0, reasons: [], riskFactors: [], improvements: [] }
     try { parsed = JSON.parse(text) } catch {}
     const result = {
