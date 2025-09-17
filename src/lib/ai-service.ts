@@ -33,6 +33,17 @@ if (process.env.REDIS_URL) {
   } catch {}
 }
 
+async function getCacheFromRedis(key: string): Promise<any | undefined> {
+  if (!redisClient) return undefined
+  try {
+    const raw = await redisClient.get(`ai:${key}`)
+    if (!raw) return undefined
+    return JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+}
+
 function getCache(key: string): any | undefined {
   const entry = aiCache.get(key);
   if (!entry) return undefined;
@@ -317,6 +328,8 @@ export class AIService {
     const cacheKey = makeKey('job-analysis', jobDescription);
     const cached = getCache(cacheKey);
     if (cached) return cached as JobAnalysisResult;
+    const rcached = await getCacheFromRedis(cacheKey)
+    if (rcached) return rcached as JobAnalysisResult
     try {
       const prompt = AI_PROMPTS.JOB_ANALYSIS.replace('{jobDescription}', jobDescription);
 
@@ -475,6 +488,8 @@ export class AIService {
     const cacheKey = makeKey('resume-tailor', JSON.stringify({ resumeText, jobDescription }));
     const cached = getCache(cacheKey);
     if (cached) return cached as ResumeCustomizationResult;
+    const rcached = await getCacheFromRedis(cacheKey)
+    if (rcached) return rcached as ResumeCustomizationResult
     try {
       const prompt = AI_PROMPTS.RESUME_TAILORING
         .replace('{jobDescription}', jobDescription)
@@ -645,6 +660,11 @@ RESUME:\n${resumeText}`;
       );
     }
     try {
+      const cacheKey = makeKey('cover-letter', JSON.stringify({ jobTitle, companyName, jobDescription, resumeText, tone, length }))
+      const cached = getCache(cacheKey)
+      if (cached) return cached as CoverLetterResult
+      const rcached = await getCacheFromRedis(cacheKey)
+      if (rcached) return rcached as CoverLetterResult
       let companyInfo = '';
       if (companyData) {
         companyInfo = `
@@ -693,11 +713,13 @@ Company Research:
       const keyPoints = await this.extractKeyPointsFromCoverLetter(coverLetter);
       const wordCount = coverLetter.split(/\s+/).length;
 
-      return {
+      const result = {
         coverLetter,
         keyPoints,
         wordCount
       };
+      setCache(cacheKey, result)
+      return result
     } catch (error) {
       console.error('Cover letter generation error:', error);
       throw new Error('Failed to generate cover letter');
