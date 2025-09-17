@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb'
 import NetworkPost from '@/models/NetworkPost'
 import NetworkConnection from '@/models/NetworkConnection'
 import { authOptions } from '@/lib/auth'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -117,22 +119,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const {
-      type,
-      title,
-      content,
-      tags = [],
-      attachments = [],
-      visibility = 'public'
-    } = body
+    const limiter = isRateLimited((session.user as any).id, 'network:feed:post')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
-    if (!content) {
-      return NextResponse.json(
-        { error: 'Content is required' },
-        { status: 400 }
-      )
-    }
+    const schema = z.object({
+      type: z.string().max(30).optional(),
+      title: z.string().max(200).optional(),
+      content: z.string().min(1).max(4000),
+      tags: z.array(z.string().max(32)).optional(),
+      attachments: z.array(z.any()).optional(),
+      visibility: z.enum(['public','connections','private']).default('public')
+    })
+    const raw = await request.json()
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { type, title, content, tags = [], attachments = [], visibility = 'public' } = parsed.data as any
 
     await connectToDatabase()
 

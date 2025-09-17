@@ -6,6 +6,7 @@ import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { createJobBoardService } from '@/lib/job-board-service'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
+import JobBoardIntegration from '@/models/JobBoardIntegration'
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,12 +22,30 @@ export async function POST(request: NextRequest) {
     const { boardName } = parsed.data
 
     await connectToDatabase()
-    const integration: any = await JobBoardIntegration.findOne({ userId: (session.user as any).id, boardName }).lean()
+    const integration: any = await JobBoardIntegration.findOne({ userId: (session.user as any).id, boardName })
     if (!integration || !integration.accessToken) return NextResponse.json({ error: 'Not connected' }, { status: 400 })
 
     const svc = createJobBoardService(boardName)
     const endpoint = svc.getConfig().endpoints.jobs
-    const jobs = await svc.makeAuthenticatedRequest(endpoint, 'GET', integration.accessToken)
+    let jobs: any
+    try {
+      jobs = await svc.makeAuthenticatedRequest(endpoint, 'GET', integration.accessToken)
+    } catch (e: any) {
+      if (e && typeof e.message === 'string' && e.message.includes('TOKEN_EXPIRED') && integration.refreshToken) {
+        try {
+          const refreshed = await svc.refreshToken(integration.refreshToken)
+          integration.accessToken = refreshed.access_token
+          if (refreshed.refresh_token) integration.refreshToken = refreshed.refresh_token
+          if (refreshed.expires_in) integration.tokenExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000)
+          await integration.save()
+          jobs = await svc.makeAuthenticatedRequest(endpoint, 'GET', integration.accessToken)
+        } catch {
+          return NextResponse.json({ error: 'Re-authentication required' }, { status: 401 })
+        }
+      } else {
+        throw e
+      }
+    }
     return NextResponse.json({ success: true, jobs })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to list jobs' }, { status: 500 })

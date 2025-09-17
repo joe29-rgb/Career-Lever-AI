@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb'
 import Message from '@/models/Message'
 import NetworkConnection from '@/models/NetworkConnection'
 import { authOptions } from '@/lib/auth'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -122,19 +124,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const limiter = isRateLimited((session.user as any).id, 'network:messages:post')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+
     await connectToDatabase()
 
-    const body = await request.json()
-    const { receiverId, content, messageType = 'text', attachments = [] } = body
+    const schema = z.object({
+      receiverId: z.string().min(1),
+      content: z.string().max(4000).optional(),
+      messageType: z.enum(['text','link','image','file']).default('text'),
+      attachments: z.array(z.any()).optional()
+    })
+    const raw = await request.json()
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { receiverId, content, messageType, attachments = [] } = parsed.data as any
 
-    if (!receiverId) {
-      return NextResponse.json(
-        { error: 'Receiver ID is required' },
-        { status: 400 }
-      )
-    }
-
-    if (!content && (!attachments || attachments.length === 0)) {
+    if (!content && (!attachments || (attachments as any[]).length === 0)) {
       return NextResponse.json(
         { error: 'Message content or attachments are required' },
         { status: 400 }

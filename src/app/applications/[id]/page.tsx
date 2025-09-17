@@ -132,6 +132,7 @@ export default function ApplicationDetailsPage() {
 
   const [followEmail, setFollowEmail] = useState<{ subject: string; body: string } | null>(null)
   const [followDates, setFollowDates] = useState<Date[] | null>(null)
+  const [savingFollows, setSavingFollows] = useState(false)
   const [insights, setInsights] = useState<{ talkingPoints: string[]; keyValues: string[]; cultureFit: string[] } | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
   const [fullResearch, setFullResearch] = useState<any | null>(null)
@@ -596,6 +597,27 @@ export default function ApplicationDetailsPage() {
             <Button variant="outline" onClick={suggestFollowUp}>Suggest Dates & Email</Button>
             {followDates && (
               <div className="text-sm text-gray-700">Suggested dates: {followDates.map(d=>d.toLocaleDateString()).join(', ')}</div>
+            )}
+            {followDates && followDates.length > 0 && (
+              <Button
+                variant="default"
+                disabled={savingFollows}
+                onClick={async ()=>{
+                  try {
+                    setSavingFollows(true)
+                    const resp = await fetch(`/api/applications/${params.id}/followup/save`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ dates: followDates.map(d=>d.toISOString()) })
+                    })
+                    if (!resp.ok) throw new Error('save failed')
+                    toast.success('Follow-up dates saved')
+                  } catch { toast.error('Failed to save follow-ups') }
+                  finally { setSavingFollows(false) }
+                }}
+              >
+                {savingFollows ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Saving...</>) : 'Save Follow-ups'}
+              </Button>
             )}
             {followEmail && (
               <div className="space-y-2">

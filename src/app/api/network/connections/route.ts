@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb'
 import NetworkConnection from '@/models/NetworkConnection'
 import User from '@/models/User'
 import { authOptions } from '@/lib/auth'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export async function GET(request: NextRequest) {
   try {
@@ -220,15 +222,18 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase()
 
-    const body = await request.json()
-    const { action, targetUserId, message } = body
+    const limiter = isRateLimited((session.user as any).id, 'network:connections:post')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
-    if (!targetUserId) {
-      return NextResponse.json(
-        { error: 'Target user ID is required' },
-        { status: 400 }
-      )
-    }
+    const schema = z.object({
+      action: z.enum(['connect','accept','decline']),
+      targetUserId: z.string().min(1),
+      message: z.string().max(500).optional(),
+    })
+    const raw = await request.json()
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { action, targetUserId, message } = parsed.data as any
 
     if (action === 'connect') {
       // Check if connection already exists

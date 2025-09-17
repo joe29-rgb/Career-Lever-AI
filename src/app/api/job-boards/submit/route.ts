@@ -6,6 +6,8 @@ import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { authOptions } from '@/lib/auth'
 import { createJobBoardService } from '@/lib/job-board-service'
 import puppeteer from 'puppeteer'
+import { z } from 'zod'
+import { isRateLimited } from '@/lib/rate-limit'
 
 interface JobSubmission {
   jobBoard: string
@@ -104,21 +106,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const {
-      jobApplicationId,
-      jobBoards,
-      resumeId,
-      coverLetterId,
-      customizations = {}
-    } = body
+    const limiter = isRateLimited((session.user as any).id, 'jobboards:submit:post')
+    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
-    if (!jobApplicationId || !jobBoards || jobBoards.length === 0) {
-      return NextResponse.json(
-        { error: 'Job application ID and job boards are required' },
-        { status: 400 }
-      )
-    }
+    const schema = z.object({
+      jobApplicationId: z.string().min(1),
+      jobBoards: z.array(z.string().min(2)).min(1),
+      resumeId: z.string().min(1).optional(),
+      coverLetterId: z.string().min(1).optional(),
+      customizations: z.record(z.any()).default({})
+    })
+    const raw = await request.json()
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    const { jobApplicationId, jobBoards, resumeId, coverLetterId, customizations } = parsed.data as any
 
     await connectToDatabase()
 
