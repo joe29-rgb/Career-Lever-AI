@@ -38,6 +38,13 @@ NEXTAUTH_URL=https://your-app-name.railway.app
 
 # AI Integration
 OPENAI_API_KEY=sk-your-openai-api-key
+
+# Redis (optional but recommended)
+REDIS_URL=redis://default:password@host:port
+
+# Puppeteer (Chromium) for PDF export & scraping
+PUPPETEER_SKIP_DOWNLOAD=true
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 ```
 
 ### Optional Job Board API Variables
@@ -85,6 +92,8 @@ INDEED_CLIENT_SECRET=your-indeed-client-secret
 1. Click "Deploy" in Railway
 2. Wait for the build and deployment to complete
 3. Your app will be available at `https://your-project-name.railway.app`
+
+If Chromium is missing, ensure Nixpacks includes it via `nixpacks.toml` and the environment variables above are set.
 
 ## Step 6: Initial Setup
 
