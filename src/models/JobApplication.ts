@@ -21,6 +21,7 @@ export interface IJobApplication extends Document {
   companyResearch?: mongoose.Types.ObjectId
   analysis?: any
   coverLetterId?: mongoose.Types.ObjectId
+  resumeVersionId?: mongoose.Types.ObjectId
   createdAt: Date
   updatedAt: Date
 }
@@ -77,6 +78,9 @@ const JobApplicationSchema = new Schema<IJobApplication>({
   coverLetterId: {
     type: Schema.Types.ObjectId,
     ref: 'CoverLetter',
+  },
+  resumeVersionId: {
+    type: Schema.Types.ObjectId,
   },
 }, {
   timestamps: true,

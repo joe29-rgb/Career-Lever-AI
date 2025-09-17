@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb';
 import JobApplication from '@/models/JobApplication';
 import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
+import { isRateLimited } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +16,11 @@ export async function GET(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    const rl = isRateLimited((session.user as any).id, 'applications:list')
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
     // Connect to database
@@ -93,22 +100,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const {
-      jobTitle,
-      companyName,
-      jobDescription,
-      jobUrl,
-      applicationStatus = 'saved',
-      notes
-    } = body;
-
-    if (!jobTitle || !companyName || !jobDescription) {
-      return NextResponse.json(
-        { error: 'Missing required fields: jobTitle, companyName, jobDescription' },
-        { status: 400 }
-      );
+    const rl = isRateLimited((session.user as any).id, 'applications:create')
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
+
+    const schema = z.object({
+      jobTitle: z.string().min(2),
+      companyName: z.string().min(2),
+      jobDescription: z.string().min(50),
+      jobUrl: z.string().url().optional(),
+      applicationStatus: z.enum(['saved','applied','interviewing','offer','rejected','withdrawn']).default('saved'),
+      notes: z.string().optional(),
+    })
+    const raw = await request.json();
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const { jobTitle, companyName, jobDescription, jobUrl, applicationStatus, notes } = parsed.data as any;
 
     // Connect to database
     await connectToDatabase();

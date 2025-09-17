@@ -4,6 +4,7 @@ import connectToDatabase from '@/lib/mongodb';
 import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
 import { webScraper } from '@/lib/web-scraper';
+import { isRateLimited } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,11 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    const rl = isRateLimited((session.user as any).id, 'company:research')
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
     const body = await request.json();

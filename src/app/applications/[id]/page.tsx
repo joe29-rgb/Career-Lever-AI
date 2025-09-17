@@ -93,6 +93,16 @@ export default function ApplicationDetailsPage() {
     }
   }
 
+  const attachLatest = async () => {
+    try {
+      const resp = await fetch(`/api/applications/${params.id}/attach`, { method: 'POST' })
+      if (!resp.ok) throw new Error('Attach failed')
+      toast.success('Attached latest tailored resume and recent cover letter')
+    } catch {
+      toast.error('Failed to attach latest assets')
+    }
+  }
+
   const [followEmail, setFollowEmail] = useState<{ subject: string; body: string } | null>(null)
   const [followDates, setFollowDates] = useState<Date[] | null>(null)
   const suggestFollowUp = async () => {
@@ -167,7 +177,12 @@ export default function ApplicationDetailsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label>Original (extracted)</Label>
+            <div className="flex items-center justify-between">
+              <Label>Original (extracted)</Label>
+              {resume?.original?.fileUrl && (
+                <a href={resume.original.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Download original upload</a>
+              )}
+            </div>
             <div className="border rounded p-2 text-sm bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
           </div>
           <div className="space-y-2">
@@ -210,7 +225,10 @@ export default function ApplicationDetailsPage() {
             <CardDescription>Export tailored resume + cover letter + talking points</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={exportPack} className="w-full"><Download className="h-4 w-4 mr-1" /> Export Application Pack</Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={exportPack} className="flex-1"><Download className="h-4 w-4 mr-1" /> Export Application Pack</Button>
+            <Button variant="outline" onClick={attachLatest} className="flex-1">Attach Latest Resume + Cover Letter</Button>
+          </div>
           </CardContent>
         </Card>
 

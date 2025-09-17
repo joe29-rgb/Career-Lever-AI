@@ -5,6 +5,8 @@ import JobApplication from '@/models/JobApplication';
 import CoverLetter from '@/models/CoverLetter';
 import Resume from '@/models/Resume';
 import { authOptions } from '@/lib/auth';
+import { isRateLimited } from '@/lib/rate-limit';
+import { z } from 'zod';
 
 export async function PUT(
   request: NextRequest,
@@ -20,17 +22,28 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
-    const {
-      jobTitle,
-      companyName,
-      jobDescription,
-      jobUrl,
-      applicationStatus,
-      notes,
-      coverLetterId,
-      followUpDates
-    } = body;
+    const rl = isRateLimited((session.user as any).id, 'applications:update')
+    if (rl.limited) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+    }
+
+    const schema = z.object({
+      jobTitle: z.string().optional(),
+      companyName: z.string().optional(),
+      jobDescription: z.string().optional(),
+      jobUrl: z.string().optional(),
+      applicationStatus: z.enum(['saved','applied','interviewing','offer','rejected','withdrawn']).optional(),
+      notes: z.string().optional(),
+      coverLetterId: z.string().optional(),
+      followUpDates: z.array(z.coerce.date()).optional(),
+      resumeVersionId: z.string().optional(),
+    })
+    const raw = await request.json();
+    const parsed = schema.safeParse(raw)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const { jobTitle, companyName, jobDescription, jobUrl, applicationStatus, notes, coverLetterId, followUpDates, resumeVersionId } = parsed.data as any;
 
     // Connect to database
     await connectToDatabase();
@@ -50,6 +63,7 @@ export async function PUT(
         ...(notes !== undefined && { notes }),
         ...(coverLetterId && { coverLetterId }),
         ...(Array.isArray(followUpDates) && { followUpDates }),
+        ...(resumeVersionId && { resumeVersionId }),
         updatedAt: new Date(),
       },
       { new: true }

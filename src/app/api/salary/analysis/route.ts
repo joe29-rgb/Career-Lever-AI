@@ -4,8 +4,7 @@ import connectToDatabase from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
 import { isRateLimited } from '@/lib/rate-limit'
-import { salaryNegotiationSchema } from '@/lib/validators'
-import { AIService } from '@/lib/ai-service'
+import { z } from 'zod'
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -74,7 +73,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { jobTitle, company, location, experience, currentSalary, resumeId } = body
+    const schema = z.object({
+      jobTitle: z.string().min(2),
+      company: z.string().optional(),
+      location: z.string().min(2),
+      experience: z.string().optional(),
+      currentSalary: z.number().optional(),
+      resumeId: z.string().optional(),
+    })
+    const parsed = schema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
+    }
+    const { jobTitle, company, location, experience, currentSalary, resumeId } = parsed.data as any
 
     if (!jobTitle || !location) {
       return NextResponse.json(
