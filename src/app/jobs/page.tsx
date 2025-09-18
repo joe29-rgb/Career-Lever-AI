@@ -2,13 +2,15 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { JobsActions } from './components/jobs-actions'
+import { t, type Locale } from '@/lib/i18n'
 
 export default async function JobsPage() {
   const session = await getServerSession(authOptions)
   if (!session) redirect('/auth/signin')
+  const locale = ((await import('next/headers')).headers().get('x-locale') || 'en') as Locale
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Jobs</h1>
+      <h1 className="text-2xl font-bold">{t(locale, 'jobs.pageTitle', 'Jobs')}</h1>
       <JobImport />
       <SearchImport />
       <CalendarQuick />
