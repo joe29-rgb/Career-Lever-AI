@@ -219,6 +219,7 @@ career-lever-ai/
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run type-check` - Run TypeScript type checking
+- `npm run test` - Run unit tests (Vitest)
 
 ### Code Quality
 
@@ -238,6 +239,19 @@ Career Lever AI is optimized for deployment on Railway. See [RAILWAY_DEPLOYMENT.
 2. Add MongoDB plugin (or use MongoDB Atlas)
 3. Set environment variables
 4. Deploy!
+
+### Mobile (Capacitor) – Packaging
+1. Build web assets (or export) for production
+2. Add native projects:
+   - `npx cap add ios`
+   - `npx cap add android`
+3. Copy web build into native shells:
+   - `npm run build && npx cap copy`
+4. Open native IDEs for signing and icons:
+   - `npx cap open ios`
+   - `npx cap open android`
+5. Configure deep links (associated domains) and Sign in with Apple (iOS)
+6. Submit to App Store / Play Console
 
 ### Vercel Deployment
 
