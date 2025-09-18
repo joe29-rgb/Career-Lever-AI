@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-export default function SignUpPage() {
+function SignUpInner() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -45,14 +45,10 @@ export default function SignUpPage() {
   const searchParams = useSearchParams()
 
   // Prefill email if passed from homepage
-  const prefillEmail = searchParams.get('email')
-  if (prefillEmail && !formData.email) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useState(() => {
-      setFormData(prev => ({ ...prev, email: prefillEmail }))
-      return undefined as any
-    })
-  }
+  useEffect(() => {
+    const prefill = searchParams.get('email')
+    if (prefill) setFormData(prev => ({ ...prev, email: prefill }))
+  }, [searchParams])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -399,6 +395,14 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpInner />
+    </Suspense>
   )
 }
 
