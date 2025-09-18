@@ -12,11 +12,11 @@ export function HeroSection() {
   const [email, setEmail] = useState('')
 
   const handleGetStarted = async () => {
-    if (email) {
-      // For demo purposes, we'll sign in with Google
-      // In production, you might want to handle email signup differently
-      await signIn('google')
-    }
+    // Send users to dedicated auth page with their email prefilled
+    const callbackUrl = encodeURIComponent('/dashboard')
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
+    const target = `${base}/auth/signin?callbackUrl=${encodeURIComponent(`${base}/dashboard`)}${email ? `&email=${encodeURIComponent(email)}` : ''}`
+    window.location.href = target
   }
 
   return (
@@ -37,10 +37,10 @@ export function HeroSection() {
           </Badge>
 
           {/* Main Heading */}
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
-            Land Your Dream Job with
+          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
+            <span className="block">Career Lever AI</span>
             <span className="block bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-              AI-Powered Tools
+              Land Your Dream Job with AI-Powered Tools
             </span>
           </h1>
 
