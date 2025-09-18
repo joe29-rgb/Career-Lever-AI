@@ -73,17 +73,20 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Always force redirect to the configured NEXTAUTH_URL host
+      // Normalize to our host and prefer dashboard as landing
       const appBase = process.env.NEXTAUTH_URL || baseUrl
+      const base = new URL(appBase)
       try {
-        const target = new URL(url, appBase)
-        const base = new URL(appBase)
-        // Keep internal paths, otherwise send to base
+        // Internal path → join with base origin
+        if (url.startsWith('/')) return `${base.origin}${url}`
+        const target = new URL(url)
+        // Same origin → allow
         if (target.origin === base.origin) return target.toString()
-        return base.toString()
       } catch {
-        return appBase
+        // ignore parse errors
       }
+      // Fallback
+      return `${base.origin}/dashboard`
     },
     async jwt({ token, user, account }) {
       if (user) {
