@@ -36,6 +36,12 @@ function SignInInner() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
 
+  // Prefill email from query
+  useEffect(() => {
+    const prefill = searchParams.get('email')
+    if (prefill) setEmail(prefill)
+  }, [searchParams])
+
   // Redirect if already authenticated
   useEffect(() => {
     if (session) {

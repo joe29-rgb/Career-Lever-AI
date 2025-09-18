@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,6 +42,17 @@ export default function SignUpPage() {
   const [success, setSuccess] = useState('')
 
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Prefill email if passed from homepage
+  const prefillEmail = searchParams.get('email')
+  if (prefillEmail && !formData.email) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useState(() => {
+      setFormData(prev => ({ ...prev, email: prefillEmail }))
+      return undefined as any
+    })
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))

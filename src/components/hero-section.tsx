@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,29 @@ export function HeroSection() {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+        {/* Top Nav with brand + auth actions */}
+        <div className="absolute left-0 right-0 -top-6 sm:top-0">
+          <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center gap-3">
+              <img src="/icon-192.svg" alt="Career Lever AI" className="h-8 w-8" />
+              <span className="text-white font-semibold text-lg">Career Lever AI</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/auth/signin${email ? `?email=${encodeURIComponent(email)}` : ''}`}
+                className="text-white/90 hover:text-white text-sm font-medium"
+              >
+                Sign in
+              </Link>
+              <Link
+                href={`/auth/signup${email ? `?email=${encodeURIComponent(email)}` : ''}`}
+                className="inline-flex items-center rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20"
+              >
+                Sign up
+              </Link>
+            </div>
+          </div>
+        </div>
         <div className="mx-auto max-w-3xl text-center">
           {/* Badge */}
           <Badge variant="secondary" className="mb-8 bg-white/10 text-white hover:bg-white/20">
@@ -67,6 +91,15 @@ export function HeroSection() {
               >
                 Get Started
               </Button>
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-4 text-sm">
+              <Link href={`/auth/signin${email ? `?email=${encodeURIComponent(email)}` : ''}`} className="text-blue-100 hover:text-white underline">
+                Sign in
+              </Link>
+              <span className="text-blue-200">or</span>
+              <Link href={`/auth/signup${email ? `?email=${encodeURIComponent(email)}` : ''}`} className="text-blue-100 hover:text-white underline">
+                Create an account
+              </Link>
             </div>
             <p className="mt-4 text-sm text-blue-200">
               Join 10,000+ job seekers who've landed their dream roles
