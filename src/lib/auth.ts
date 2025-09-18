@@ -8,7 +8,8 @@ import connectToDatabase from './mongodb';
 import User from '@/models/User';
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // Make adapter optional so OAuth can work even if DB is temporarily unreachable
+  adapter: process.env.MONGODB_URI ? (MongoDBAdapter(clientPromise) as any) : undefined,
   providers: [
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
@@ -128,5 +129,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',
   },
+  trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
 };
