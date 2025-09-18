@@ -129,6 +129,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/auth/signin',
   },
-  trustHost: true,
   secret: process.env.NEXTAUTH_SECRET,
 };
