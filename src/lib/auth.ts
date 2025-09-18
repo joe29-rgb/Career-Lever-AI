@@ -71,6 +71,19 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Always force redirect to the configured NEXTAUTH_URL host
+      const appBase = process.env.NEXTAUTH_URL || baseUrl
+      try {
+        const target = new URL(url, appBase)
+        const base = new URL(appBase)
+        // Keep internal paths, otherwise send to base
+        if (target.origin === base.origin) return target.toString()
+        return base.toString()
+      } catch {
+        return appBase
+      }
+    },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = (user as any).id;

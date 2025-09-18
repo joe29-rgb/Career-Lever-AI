@@ -38,12 +38,12 @@ const nextConfig = {
                         "script-src 'self' 'unsafe-inline' https:",
                         "style-src 'self' 'unsafe-inline' https:",
                         "img-src 'self' data: blob:",
-                        "font-src 'self' data:",
+                        "font-src 'self' data: https:",
                         "connect-src 'self' https: wss:",
                         "frame-src 'self' https://accounts.google.com",
                         "object-src 'none'",
                         "base-uri 'self'",
-                        "form-action 'self'"
+                        "form-action 'self' https://accounts.google.com https://*.google.com https://*.googleusercontent.com"
                     ].join('; ')
                 }
             ]
