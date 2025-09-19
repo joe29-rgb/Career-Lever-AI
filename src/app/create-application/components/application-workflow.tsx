@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,7 +19,7 @@ import { JobAnalysisForm } from '@/components/job-analysis'
 import { CompanyResearchPanel } from '@/components/company-research'
 import { ResumeCustomizer } from '@/components/resume-customizer'
 import { Resume, JobAnalysis, CompanyData } from '@/types'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 const STEPS = [
@@ -58,7 +58,18 @@ interface ApplicationWorkflowProps {
 }
 
 export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
-  const [currentStep, setCurrentStep] = useState(0)
+  const searchParams = useSearchParams()
+  const initialStepFromQuery = useMemo(() => {
+    const step = (searchParams?.get('step') || '').toLowerCase()
+    switch (step) {
+      case 'upload': return 0
+      case 'analyze': return 1
+      case 'research': return 2
+      case 'customize': return 3
+      default: return 0
+    }
+  }, [searchParams])
+  const [currentStep, setCurrentStep] = useState(initialStepFromQuery)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [workflowData, setWorkflowData] = useState<{
     resume?: Resume
@@ -173,8 +184,8 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
   }
 
   const isStepAccessible = (stepIndex: number) => {
-    if (stepIndex === 0) return true
-    return completedSteps.has(stepIndex - 1)
+    // Allow users to jump to any step (job analysis/company research without resume)
+    return true
   }
 
   const isStepCompleted = (stepIndex: number) => {

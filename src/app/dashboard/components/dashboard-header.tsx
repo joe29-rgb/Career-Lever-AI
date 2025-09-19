@@ -26,17 +26,18 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
   }
 
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Career Lever AI</h1>
+          <div className="flex items-center gap-3">
+            <img src="/icon-192.svg" alt="Career Lever AI" className="h-8 w-8" />
+            <h1 className="text-lg font-semibold sm:text-xl">Career Lever AI</h1>
           </div>
 
           <div className="flex items-center space-x-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Button variant="secondary" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.image || ''} alt={user.name || ''} />
                     <AvatarFallback>
