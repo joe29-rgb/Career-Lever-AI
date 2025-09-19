@@ -26,7 +26,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
   }
 
   return (
-    <header className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white">
+    <header className="text-white brand-gradient">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">

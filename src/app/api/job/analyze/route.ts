@@ -9,6 +9,8 @@ import { jobAnalyzeSchema } from '@/lib/validators';
 import JobApplication from '@/models/JobApplication';
 import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const requestId = getOrCreateRequestId(request.headers as any)

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
   description: 'Customize your resume and cover letters with AI to land your dream job. Get company insights, track applications, and boost your career success.',
   keywords: 'resume, job application, AI, career, recruitment, cover letter',
-  icons: { apple: '/icon-192.svg' },
+  icons: { icon: '/favicon.ico', apple: '/icon-192.svg' },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

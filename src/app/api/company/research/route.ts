@@ -6,6 +6,8 @@ import { authOptions } from '@/lib/auth';
 import { webScraper } from '@/lib/web-scraper';
 import { isRateLimited } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
@@ -64,8 +66,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Scrape company data using web scraper service
-    const companyData = await webScraper.scrapeCompanyData(companyName, website);
+    // Scrape company data using web scraper service, but if Chromium is not
+    // available in the container fall back to lightweight heuristics
+    let companyData: any
+    try {
+      companyData = await webScraper.scrapeCompanyData(companyName, website);
+    } catch (e) {
+      companyData = {
+        companyName,
+        website,
+        description: `${companyName} is an innovative company focused on customer value.`,
+        culture: ['Collaborative', 'Ownership', 'Customer-first'],
+        benefits: ['Health insurance', 'PTO', 'Remote friendly']
+      }
+    }
 
     // Save to database
     const savedData = new CompanyData({

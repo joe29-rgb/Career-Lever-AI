@@ -7,7 +7,16 @@ export function isSameOrigin(request: NextRequest): boolean {
     if (!origin) return true
     const reqOrigin = new URL(request.nextUrl.origin).host
     const originHost = new URL(origin).host
-    return reqOrigin === originHost
+    if (reqOrigin === originHost) return true
+    // Allow configured public origin (Railway) to POST to API if set
+    const allowed = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL
+    if (allowed) {
+      try {
+        const allowedHost = new URL(allowed).host
+        if (originHost === allowedHost) return true
+      } catch {}
+    }
+    return false
   } catch {
     return false
   }
