@@ -86,9 +86,20 @@ export class WebScraperService {
     if (!this.browser) await this.initialize();
     const page = await this.browser!.newPage();
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setRequestInterception(true)
+      page.on('request', (req) => {
+        const type = req.resourceType()
+        if (type === 'image' || type === 'media' || type === 'font' || type === 'stylesheet') {
+          req.abort().catch(()=>{})
+        } else {
+          req.continue().catch(()=>{})
+        }
+      })
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
-      await page.goto(jobUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+      await page.goto(jobUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await new Promise(r => setTimeout(r, 1500));
 
       const host = new URL(jobUrl).hostname.replace('www.', '');
@@ -145,9 +156,20 @@ export class WebScraperService {
     const page = await this.browser!.newPage();
     const results: any[] = [];
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setRequestInterception(true)
+      page.on('request', (req) => {
+        const type = req.resourceType()
+        if (type === 'image' || type === 'media' || type === 'font' || type === 'stylesheet') {
+          req.abort().catch(()=>{})
+        } else {
+          req.continue().catch(()=>{})
+        }
+      })
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
-      await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
       await new Promise(r => setTimeout(r, 1500));
       const host = new URL(searchUrl).hostname.replace('www.', '');
 
@@ -327,9 +349,11 @@ export class WebScraperService {
     const candidates = [website, `${website.replace(/\/?$/, '/') }contact`, `${website.replace(/\/?$/, '/') }about`];
     const page = await this.browser!.newPage();
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
       for (const url of candidates) {
         try {
-          await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
           await new Promise(r => setTimeout(r, 1000));
           const html = await page.content();
           // Emails from mailto and plain text
@@ -402,8 +426,10 @@ export class WebScraperService {
     if (!this.browser) await this.initialize();
     const page = await this.browser!.newPage();
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
       const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
-      await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 15000 });
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await new Promise(r => setTimeout(r, 2000));
       const data = await page.evaluate(() => {
         const textContent = document.body.innerText || '';
@@ -437,14 +463,16 @@ export class WebScraperService {
     const page = await this.browser.newPage();
 
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
 
       const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
 
       await page.goto(searchUrl, {
-        waitUntil: 'networkidle2',
-        timeout: 15000
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
       });
 
       // Wait for content to load
@@ -532,14 +560,16 @@ export class WebScraperService {
     const page = await this.browser.newPage();
 
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
 
       const searchUrl = `https://www.linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '')}`;
 
       await page.goto(searchUrl, {
-        waitUntil: 'networkidle2',
-        timeout: 15000
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
       });
 
       // Wait for content to load
@@ -631,12 +661,14 @@ export class WebScraperService {
     const page = await this.browser.newPage();
 
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
 
       await page.goto(website, {
-        waitUntil: 'networkidle2',
-        timeout: 15000
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
       });
 
       // Wait for content to load
@@ -728,6 +760,8 @@ export class WebScraperService {
     const page = await this.browser.newPage();
 
     try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
 
@@ -736,8 +770,8 @@ export class WebScraperService {
       const newsUrl = `https://www.google.com/search?q=${searchQuery}&tbm=nws&tbs=qdr:m`;
 
       await page.goto(newsUrl, {
-        waitUntil: 'networkidle2',
-        timeout: 15000
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
       });
 
       await new Promise(r => setTimeout(r, 2000));
