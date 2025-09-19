@@ -60,7 +60,7 @@ const ResumeSchema: Schema = new Schema({
   },
   fileUrl: {
     type: String,
-    required: true,
+    required: false,
     trim: true,
   },
   extractedText: {

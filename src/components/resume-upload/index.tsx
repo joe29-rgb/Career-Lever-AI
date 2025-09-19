@@ -99,8 +99,10 @@ export function ResumeUpload({
       setUploadProgress(100)
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Upload failed')
+        // Try to read json error, otherwise use status text
+        let message = 'Upload failed'
+        try { const errorData = await response.json(); message = (errorData as any).error || message } catch {}
+        throw new Error(message)
       }
 
       const data = await response.json()

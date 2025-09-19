@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       const pdfData = await pdfParse(buffer)
       extractedText = pdfData.text?.trim() || ''
       } catch (error) {
-      console.error('PDF parsing error, falling back to OCR:', error)
+      console.error('PDF parsing error, skipping OCR on server:', error)
       extractedText = ''
       }
 
@@ -82,6 +82,19 @@ export async function POST(request: NextRequest) {
     }
 
     const tooShort = !extractedText || extractedText.trim().length < 50
+    if (tooShort && !pastedText) {
+      // Attempt a super-lightweight fallback by reading first 2KB as text (best effort)
+      try {
+        if (file) {
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          const ascii = buffer.toString('utf8').replace(/\s+/g, ' ').slice(0, 2000)
+          if (ascii && ascii.length >= 50) {
+            extractedText = ascii
+          }
+        }
+      } catch {}
+    }
 
     // Save file if present
     let fileUrl: string | undefined
