@@ -56,7 +56,8 @@ const nextConfig = {
         ignoreDuringBuilds: true,
     },
     typescript: {
-        ignoreBuildErrors: false,
+        // Allow disabling type-check during build via env to avoid OOM on small builders
+        ignoreBuildErrors: process.env.DISABLE_TYPECHECK === 'true',
     },
 }
 
