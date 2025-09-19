@@ -77,8 +77,16 @@
         .container {
             @apply mx-auto px-4;
         }
-        @screen sm { .container { @apply px-6; } }
-        @screen lg { .container { @apply px-8; } }
+        @screen sm {
+            .container {
+                @apply px-6;
+            }
+        }
+        @screen lg {
+            .container {
+                @apply px-8;
+            }
+        }
         /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
@@ -227,39 +235,127 @@
             line-height: 1.4;
         }
         /* Mobile-optimized card layouts */
-        .mobile-card { @apply w-full mx-auto max-w-md; }
-        @screen sm { .mobile-card { @apply max-w-lg; } }
-        @screen lg { .mobile-card { @apply max-w-4xl; } }
+        .mobile-card {
+            @apply w-full mx-auto max-w-md;
+        }
+        @screen sm {
+            .mobile-card {
+                @apply max-w-lg;
+            }
+        }
+        @screen lg {
+            .mobile-card {
+                @apply max-w-4xl;
+            }
+        }
         /* Responsive text sizing */
-        .responsive-text-sm { @apply text-sm; }
-        @screen sm { .responsive-text-sm { @apply text-base; } }
-        .responsive-text-base { @apply text-base; }
-        @screen sm { .responsive-text-base { @apply text-lg; } }
-        .responsive-text-lg { @apply text-lg; }
-        @screen sm { .responsive-text-lg { @apply text-xl; } }
-        .responsive-text-xl { @apply text-xl; }
-        @screen sm { .responsive-text-xl { @apply text-2xl; } }
-        .responsive-text-2xl { @apply text-2xl; }
-        @screen sm { .responsive-text-2xl { @apply text-3xl; } }
+        .responsive-text-sm {
+            @apply text-sm;
+        }
+        @screen sm {
+            .responsive-text-sm {
+                @apply text-base;
+            }
+        }
+        .responsive-text-base {
+            @apply text-base;
+        }
+        @screen sm {
+            .responsive-text-base {
+                @apply text-lg;
+            }
+        }
+        .responsive-text-lg {
+            @apply text-lg;
+        }
+        @screen sm {
+            .responsive-text-lg {
+                @apply text-xl;
+            }
+        }
+        .responsive-text-xl {
+            @apply text-xl;
+        }
+        @screen sm {
+            .responsive-text-xl {
+                @apply text-2xl;
+            }
+        }
+        .responsive-text-2xl {
+            @apply text-2xl;
+        }
+        @screen sm {
+            .responsive-text-2xl {
+                @apply text-3xl;
+            }
+        }
         /* Mobile-friendly button layouts */
-        .mobile-button-stack { @apply flex flex-col space-y-3; }
-        @screen sm { .mobile-button-stack { @apply flex-row space-y-0 space-x-3; } }
+        .mobile-button-stack {
+            @apply flex flex-col space-y-3;
+        }
+        @screen sm {
+            .mobile-button-stack {
+                @apply flex-row space-y-0 space-x-3;
+            }
+        }
         /* Responsive grid layouts */
         .responsive-grid-1 {
             @apply grid grid-cols-1;
         }
-        .responsive-grid-2 { @apply grid grid-cols-1; }
-        @screen sm { .responsive-grid-2 { @apply grid-cols-2; } }
-        .responsive-grid-3 { @apply grid grid-cols-1; }
-        @screen sm { .responsive-grid-3 { @apply grid-cols-2; } }
-        @screen lg { .responsive-grid-3 { @apply grid-cols-3; } }
-        .responsive-grid-4 { @apply grid grid-cols-1; }
-        @screen sm { .responsive-grid-4 { @apply grid-cols-2; } }
-        @screen lg { .responsive-grid-4 { @apply grid-cols-4; } }
+        .responsive-grid-2 {
+            @apply grid grid-cols-1;
+        }
+        @screen sm {
+            .responsive-grid-2 {
+                @apply grid-cols-2;
+            }
+        }
+        .responsive-grid-3 {
+            @apply grid grid-cols-1;
+        }
+        @screen sm {
+            .responsive-grid-3 {
+                @apply grid-cols-2;
+            }
+        }
+        @screen lg {
+            .responsive-grid-3 {
+                @apply grid-cols-3;
+            }
+        }
+        .responsive-grid-4 {
+            @apply grid grid-cols-1;
+        }
+        @screen sm {
+            .responsive-grid-4 {
+                @apply grid-cols-2;
+            }
+        }
+        @screen lg {
+            .responsive-grid-4 {
+                @apply grid-cols-4;
+            }
+        }
         /* Mobile-optimized spacing */
-        .mobile-section-spacing { @apply space-y-6; }
-        @screen sm { .mobile-section-spacing { @apply space-y-8; } }
-        @screen lg { .mobile-section-spacing { @apply space-y-12; } }
-        .mobile-element-spacing { @apply space-y-4; }
-        @screen sm { .mobile-element-spacing { @apply space-y-6; } }
+        .mobile-section-spacing {
+            @apply space-y-6;
+        }
+        @screen sm {
+            .mobile-section-spacing {
+                @apply space-y-8;
+            }
+        }
+        @screen lg {
+            .mobile-section-spacing {
+                @apply space-y-12;
+            }
+        }
+        .mobile-element-spacing {
+            @apply space-y-4;
+        }
+        @screen sm {
+            .mobile-element-spacing {
+                @apply space-y-6;
+            }
+        }
     }

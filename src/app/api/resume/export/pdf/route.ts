@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 
 export async function POST(request: NextRequest) {
 	try {
@@ -33,17 +34,10 @@ export async function POST(request: NextRequest) {
 			return base.endsWith('.pdf') ? base : `${base || 'resume'}.pdf`
 		}
 
-		const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
 		const browser = await puppeteer.launch({
+			args: chromium.args,
+			executablePath: await chromium.executablePath(),
 			headless: true,
-			executablePath: executablePath || undefined,
-			args: [
-				'--no-sandbox',
-				'--disable-setuid-sandbox',
-				'--disable-dev-shm-usage',
-				'--no-zygote',
-				'--disable-gpu',
-			],
 		})
 
 		const page = await browser.newPage()

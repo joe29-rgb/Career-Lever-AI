@@ -5,7 +5,8 @@ import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
 import Resume from '@/models/Resume'
 import CoverLetter from '@/models/CoverLetter'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 
 export async function GET(
   _req: NextRequest,
@@ -59,11 +60,10 @@ export async function GET(
       talkingPoints,
     })
 
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH
     const browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
       headless: true,
-      executablePath: executablePath || undefined,
-      args: ['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--no-zygote','--disable-gpu']
     })
     const page = await browser.newPage()
     await page.setContent(html, { waitUntil: 'networkidle0' })

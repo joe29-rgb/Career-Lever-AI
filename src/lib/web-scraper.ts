@@ -1,4 +1,5 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 import { CompanyData } from '@/types';
 
 export interface ScrapedCompanyData {
@@ -64,23 +65,13 @@ export class WebScraperService {
   private browser: Browser | null = null;
 
   async initialize(): Promise<void> {
-    if (!this.browser) {
-      const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-
-      this.browser = await puppeteer.launch({
-        headless: true,
-        executablePath: executablePath || undefined,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu'
-        ]
-      });
-    }
+    if (this.browser) return
+    const executablePath = await chromium.executablePath()
+    this.browser = await puppeteer.launch({
+      args: chromium.args,
+      executablePath,
+      headless: true,
+    })
   }
 
   // Scrape a single job detail page from a public URL (best-effort)
@@ -98,7 +89,7 @@ export class WebScraperService {
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
       await page.goto(jobUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-      await page.waitForTimeout(1500);
+      await new Promise(r => setTimeout(r, 1500));
 
       const host = new URL(jobUrl).hostname.replace('www.', '');
       const data = await page.evaluate((host) => {
@@ -157,7 +148,7 @@ export class WebScraperService {
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
       await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-      await page.waitForTimeout(1500);
+      await new Promise(r => setTimeout(r, 1500));
       const host = new URL(searchUrl).hostname.replace('www.', '');
 
       if (/indeed\.com|indeed\.ca/i.test(host)) {
@@ -339,7 +330,7 @@ export class WebScraperService {
       for (const url of candidates) {
         try {
           await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
-          await page.waitForTimeout(1000);
+          await new Promise(r => setTimeout(r, 1000));
           const html = await page.content();
           // Emails from mailto and plain text
           const mailtos = await page.$$eval('a[href^="mailto:"]', els => els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''));
@@ -376,7 +367,7 @@ export class WebScraperService {
       const query = `${companyName} ${roleHints.join(' OR ')} site:linkedin.com/in ${locationHint || ''}`.trim();
       const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
-      await page.waitForTimeout(2000);
+      await new Promise(r => setTimeout(r, 2000));
       const results = await page.evaluate(() => {
         const items: Array<{ title: string; href: string; snippet: string }> = [];
         const nodes = document.querySelectorAll('a[href^="http"]');
@@ -413,7 +404,7 @@ export class WebScraperService {
     try {
       const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
       await page.goto(searchUrl, { waitUntil: 'networkidle2', timeout: 15000 });
-      await page.waitForTimeout(2000);
+      await new Promise(r => setTimeout(r, 2000));
       const data = await page.evaluate(() => {
         const textContent = document.body.innerText || '';
         const pros: string[] = [];
@@ -457,7 +448,7 @@ export class WebScraperService {
       });
 
       // Wait for content to load
-      await page.waitForTimeout(2000);
+      await new Promise(r => setTimeout(r, 2000));
 
       const data = await page.evaluate(() => {
         const result: any = {};
@@ -552,7 +543,7 @@ export class WebScraperService {
       });
 
       // Wait for content to load
-      await page.waitForTimeout(3000);
+      await new Promise(r => setTimeout(r, 3000));
 
       const data = await page.evaluate(() => {
         const result: any = {
@@ -649,7 +640,7 @@ export class WebScraperService {
       });
 
       // Wait for content to load
-      await page.waitForTimeout(2000);
+      await new Promise(r => setTimeout(r, 2000));
 
       const data = await page.evaluate(() => {
         const result: any = {};
@@ -749,7 +740,7 @@ export class WebScraperService {
         timeout: 15000
       });
 
-      await page.waitForTimeout(2000);
+      await new Promise(r => setTimeout(r, 2000));
 
       const newsData = await page.evaluate(() => {
         const articles: Array<{

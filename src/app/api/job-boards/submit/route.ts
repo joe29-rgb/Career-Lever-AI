@@ -5,7 +5,8 @@ import JobApplication from '@/models/JobApplication'
 import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { authOptions } from '@/lib/auth'
 import { createJobBoardService } from '@/lib/job-board-service'
-import puppeteer from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
 import { isSameOrigin } from '@/lib/security'
@@ -313,16 +314,9 @@ async function submitToJobBoard({
   }
 
   const browser = await puppeteer.launch({
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
-      '--no-first-run',
-      '--no-zygote',
-      '--disable-gpu'
-    ]
   })
 
   try {
@@ -339,14 +333,14 @@ async function submitToJobBoard({
     })
 
     // Wait for page to load
-    await page.waitForTimeout(3000)
+    await new Promise(r => setTimeout(r, 3000))
 
     // Try to find and click apply button
     try {
       const applyButton = await page.$(boardConfig.selectors.applyButton)
       if (applyButton) {
         await applyButton.click()
-        await page.waitForTimeout(2000)
+        await new Promise(r => setTimeout(r, 2000))
       } else {
         // Try alternative selectors
         const alternativeSelectors = [
@@ -359,7 +353,7 @@ async function submitToJobBoard({
         for (const selector of alternativeSelectors) {
           try {
             await page.click(selector)
-            await page.waitForTimeout(2000)
+            await new Promise(r => setTimeout(r, 2000))
             break
           } catch {
             continue

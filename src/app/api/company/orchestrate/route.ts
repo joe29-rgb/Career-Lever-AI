@@ -11,6 +11,8 @@ import { AIService } from '@/lib/ai-service'
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'build-placeholder' })
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const requestId = getOrCreateRequestId(request.headers)
