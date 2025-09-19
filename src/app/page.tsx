@@ -12,13 +12,8 @@ export default async function HomePage() {
     redirect('/dashboard')
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <HeroSection />
-      <FeaturesSection />
-      <StatsSection />
-    </div>
-  )
+  // If not authenticated, send users straight to sign-in with a dashboard callback
+  redirect('/auth/signin?callbackUrl=/dashboard')
 }
 
 
