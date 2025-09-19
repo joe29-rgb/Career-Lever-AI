@@ -76,28 +76,14 @@ export async function POST(request: NextRequest) {
       extractedText = ''
       }
 
-      // If pdf-parse yields no text (scanned PDF), try OCR via Tesseract
-      if (!extractedText || extractedText.length < 50) {
-        try {
-          const { createWorker } = await import('tesseract.js')
-          const worker = await createWorker()
-          await worker.load()
-          await worker.loadLanguage('eng')
-          await worker.initialize('eng')
-          const { data } = await worker.recognize(buffer)
-          extractedText = (data.text || '').trim()
-          await worker.terminate()
-        } catch (e) {
-          console.error('OCR fallback failed:', e)
-        }
-      }
+      // If pdf-parse yields no text (likely image-only PDF), rely on pasted text path instead of OCR on server
     } else if (pastedText) {
       extractedText = pastedText.trim()
     }
 
     if (!extractedText || extractedText.trim().length < 50) {
       return NextResponse.json(
-        { error: 'PDF appears to be empty or contains insufficient text. Please upload a valid resume or paste your resume text instead.' },
+        { error: 'Resume text could not be extracted. Please paste your resume text or upload a text-based PDF.' },
         { status: 400 }
       );
     }
