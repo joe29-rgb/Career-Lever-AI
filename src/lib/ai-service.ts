@@ -3,8 +3,10 @@ import crypto from 'crypto';
 import { extractKeywords, calculateMatchScore } from './utils';
 import { logAIUsage } from './observability'
 
+// Instantiate with a safe fallback so build doesn't fail when OPENAI_API_KEY is not set.
+// At runtime, provide a real key via env; calls will fail if the placeholder is used.
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'build-placeholder',
 });
 
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;

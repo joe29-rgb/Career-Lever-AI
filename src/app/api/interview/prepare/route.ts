@@ -10,7 +10,7 @@ import { isRateLimited } from '@/lib/rate-limit'
 import { z } from 'zod'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'build-placeholder',
 })
 
 interface InterviewPreparation {

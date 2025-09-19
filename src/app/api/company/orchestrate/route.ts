@@ -9,7 +9,7 @@ import { redisGetJSON, redisSetJSON } from '@/lib/redis'
 import { webScraper } from '@/lib/web-scraper'
 import { AIService } from '@/lib/ai-service'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'build-placeholder' })
 
 export async function POST(request: NextRequest) {
   try {

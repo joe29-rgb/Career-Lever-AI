@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || 'build-placeholder',
 })
 
 interface SkillGapAnalysis {
@@ -464,5 +464,6 @@ async function generateMarketInsights(job: string, industry: string) {
     jobMarketFit
   }
 }
+
 
 
