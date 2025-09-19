@@ -1,22 +1,26 @@
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const queryClient = new QueryClient()
   return (
     <SessionProvider>
-      {children}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-        }}
-      />
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
+      </QueryClientProvider>
     </SessionProvider>
   )
 }
