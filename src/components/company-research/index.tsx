@@ -211,11 +211,12 @@ export function CompanyResearchPanel({
             </Alert>
 
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="culture">Culture</TabsTrigger>
                 <TabsTrigger value="news">News</TabsTrigger>
                 <TabsTrigger value="insights">Insights</TabsTrigger>
+                <TabsTrigger value="contacts">Contacts</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-4">
@@ -447,6 +448,40 @@ export function CompanyResearchPanel({
                           As a {researchResult.industry.toLowerCase()} company, emphasize relevant technical skills and industry knowledge in your resume.
                         </p>
                       </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="contacts" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Hiring Contacts</CardTitle>
+                    <CardDescription>
+                      Publicly discoverable contacts to reach out with your cover letter
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {Array.isArray((researchResult as any).hiringContacts) && (researchResult as any).hiringContacts.length ? (
+                      <div className="space-y-3">
+                        {(researchResult as any).hiringContacts.map((p: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between border rounded p-3">
+                            <div>
+                              <div className="font-medium text-sm">{p.name}</div>
+                              <div className="text-xs text-gray-600">{p.title}</div>
+                            </div>
+                            {p.profileUrl && (
+                              <Button asChild size="sm" variant="outline">
+                                <a href={p.profileUrl} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="h-4 w-4 mr-1" /> Profile
+                                </a>
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600">No contacts found</p>
                     )}
                   </CardContent>
                 </Card>

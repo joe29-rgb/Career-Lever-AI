@@ -81,6 +81,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If scraping yielded little due to timeouts, enrich via lightweight fallbacks
+    if (!companyData.glassdoorRating || !companyData.linkedinData) {
+      try {
+        const [gd, li] = await Promise.allSettled([
+          webScraper.scrapeGlassdoorReviewsSummary(companyName),
+          webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hr','hiring manager'])
+        ])
+        if (gd.status === 'fulfilled' && gd.value) {
+          companyData.culture = companyData.culture || []
+          companyData.culture = Array.from(new Set([...(companyData.culture || []), ...(gd.value.pros || []), ...(gd.value.cons || [])])).slice(0, 8)
+        }
+        if (li.status === 'fulfilled' && Array.isArray(li.value) && li.value.length) {
+          companyData.linkedinData = companyData.linkedinData || { companyPage: '' } as any
+          ;(companyData as any).hiringContacts = li.value.slice(0, 5)
+        }
+      } catch {}
+    }
+
     // Save to database
     const savedData = new CompanyData({
       ...companyData,

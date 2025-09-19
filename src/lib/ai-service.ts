@@ -396,10 +396,16 @@ export class AIService {
         max_tokens: 1500,
       }), AI_TIMEOUT_MS);
 
-      const analysisText = completion.choices[0]?.message?.content?.trim();
+      let analysisText = completion.choices[0]?.message?.content?.trim();
       logAIUsage('job-analysis', undefined, completion)
       if (!analysisText) {
         throw new Error('Failed to get analysis from OpenAI');
+      }
+
+      // Strip markdown fences if present
+      if (/^```/m.test(analysisText)) {
+        const match = analysisText.match(/```[a-zA-Z]*\n([\s\S]*?)\n```/)
+        if (match && match[1]) analysisText = match[1].trim()
       }
 
       let analysis: JobAnalysisResult;

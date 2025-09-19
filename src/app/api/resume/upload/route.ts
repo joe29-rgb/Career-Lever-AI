@@ -81,12 +81,7 @@ export async function POST(request: NextRequest) {
       extractedText = pastedText.trim()
     }
 
-    if (!extractedText || extractedText.trim().length < 50) {
-      return NextResponse.json(
-        { error: 'Resume text could not be extracted. Please paste your resume text or upload a text-based PDF.' },
-        { status: 400 }
-      );
-    }
+    const tooShort = !extractedText || extractedText.trim().length < 50
 
     // Save file if present
     let fileUrl: string | undefined
@@ -118,11 +113,12 @@ export async function POST(request: NextRequest) {
         _id: resume._id,
         originalFileName: resume.originalFileName,
         fileUrl: resume.fileUrl,
-        extractedText: extractedText.substring(0, 500) + '...', // Truncate for response
+        extractedText: (extractedText || '').substring(0, 500) + ((extractedText || '').length > 500 ? '...' : ''),
         customizedVersions: resume.customizedVersions,
         createdAt: resume.createdAt,
       },
-      message: 'Resume uploaded successfully',
+      message: tooShort ? 'Uploaded, but text extraction was limited.' : 'Resume uploaded successfully',
+      extractionWarning: tooShort,
     });
 
   } catch (error) {
