@@ -279,3 +279,4 @@ CompanyDataSchema.index({ cachedAt: -1 });
 
 export default mongoose.models.CompanyData || mongoose.model<ICompanyData>('CompanyData', CompanyDataSchema);
 
+

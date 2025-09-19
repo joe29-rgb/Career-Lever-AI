@@ -78,10 +78,21 @@ export const authOptions: NextAuthOptions = {
       const base = new URL(appBase)
       try {
         // Internal path → join with base origin
-        if (url.startsWith('/')) return `${base.origin}${url}`
+        if (url.startsWith('/')) {
+          // If NextAuth tries to send users to home or any auth route, land on dashboard instead
+          if (url === '/' || url === '' || url.startsWith('/auth')) {
+            return `${base.origin}/dashboard`
+          }
+          return `${base.origin}${url}`
+        }
         const target = new URL(url)
-        // Same origin → allow
-        if (target.origin === base.origin) return target.toString()
+        // Same origin → coerce auth/home to dashboard
+        if (target.origin === base.origin) {
+          if (target.pathname === '/' || target.pathname.startsWith('/auth')) {
+            return `${base.origin}/dashboard`
+          }
+          return target.toString()
+        }
       } catch {
         // ignore parse errors
       }

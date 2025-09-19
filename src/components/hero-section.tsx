@@ -20,6 +20,12 @@ export function HeroSection() {
     window.location.href = target
   }
 
+  const handleGoogle = async () => {
+    try {
+      await signIn('google', { callbackUrl: '/dashboard' })
+    } catch {}
+  }
+
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800">
       {/* Background Pattern */}
@@ -30,9 +36,9 @@ export function HeroSection() {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
-        {/* Top Nav with brand + auth actions */}
-        <div className="absolute left-0 right-0 -top-6 sm:top-0">
-          <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-6">
+        {/* Top Nav with brand + auth actions (visible on all viewports) */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src="/icon-192.svg" alt="Career Lever AI" className="h-8 w-8" />
               <span className="text-white font-semibold text-lg">Career Lever AI</span>
@@ -90,6 +96,15 @@ export function HeroSection() {
                 className="bg-white text-blue-600 hover:bg-blue-50"
               >
                 Get Started
+              </Button>
+            </div>
+            <div className="mt-4">
+              <Button
+                onClick={handleGoogle}
+                size="lg"
+                className="w-full bg-white/90 text-blue-700 hover:bg-white"
+              >
+                Continue with Google
               </Button>
             </div>
             <div className="mt-4 flex items-center justify-center gap-4 text-sm">

@@ -465,3 +465,4 @@ async function generateMarketInsights(job: string, industry: string) {
   }
 }
 
+

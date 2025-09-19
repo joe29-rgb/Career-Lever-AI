@@ -65,3 +65,4 @@ NetworkConnectionSchema.pre('save', function(next) {
 
 export default mongoose.models.NetworkConnection || mongoose.model<INetworkConnection>('NetworkConnection', NetworkConnectionSchema)
 
+

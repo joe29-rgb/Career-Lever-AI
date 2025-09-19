@@ -188,3 +188,4 @@ JobBoardIntegrationSchema.methods.incrementApplications = function(success: bool
 
 export default mongoose.models.JobBoardIntegration || mongoose.model<IJobBoardIntegration>('JobBoardIntegration', JobBoardIntegrationSchema)
 
+
