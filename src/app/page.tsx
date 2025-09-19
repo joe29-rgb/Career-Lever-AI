@@ -1,8 +1,16 @@
-import { redirect } from 'next/navigation'
 export const dynamic = 'force-dynamic'
+import { HeroSection } from '@/components/hero-section'
+import { FeaturesSection } from '@/components/features-section'
+import { StatsSection } from '@/components/stats-section'
 
 export default function HomePage() {
-  redirect('/auth/signin?callbackUrl=/dashboard')
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <HeroSection />
+      <FeaturesSection />
+      <StatsSection />
+    </div>
+  )
 }
 
 
