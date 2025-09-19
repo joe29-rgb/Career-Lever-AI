@@ -13,7 +13,7 @@ export interface Resume {
   _id?: string;
   userId: string;
   originalFileName: string;
-  fileUrl: string;
+  fileUrl?: string;
   extractedText: string;
   customizedVersions: CustomizedResume[];
   createdAt: Date;
