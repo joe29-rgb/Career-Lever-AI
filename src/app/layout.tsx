@@ -29,6 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
           {children}
         </Providers>

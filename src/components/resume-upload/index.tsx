@@ -210,10 +210,21 @@ export function ResumeUpload({
             {uploadedFile && !isUploading && !uploadedResume && (
               <div className="mt-4 flex gap-2">
                 <Button onClick={handleUpload} className="flex-1">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Upload Resume
                 </Button>
                 <Button variant="outline" onClick={clearFile}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+
+            {uploadedFile && isUploading && (
+              <div className="mt-4 flex gap-2">
+                <Button disabled className="flex-1">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </Button>
+                <Button variant="outline" disabled>
                   Cancel
                 </Button>
               </div>
