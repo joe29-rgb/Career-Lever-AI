@@ -88,13 +88,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
       ...prev,
       ...data
     }))
-
-    // Auto-advance to next step if not the last step
-    if (stepIndex < STEPS.length - 1) {
-      setTimeout(() => {
-        setCurrentStep(stepIndex + 1)
-      }, 1500)
-    }
+    // Do not auto-advance; keep results visible for user
   }
 
   const handleNext = () => {
@@ -387,6 +381,27 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
                 </div>
               )}
             </div>
+
+            {/* Rich details */}
+            {workflowData.jobAnalysis && (
+              <div className="mt-4 p-4 border rounded-lg">
+                <div className="text-sm font-semibold mb-2">Job Details</div>
+                <div className="text-xs text-gray-700">{workflowData.jobAnalysis.analysis.companyName} — {workflowData.jobAnalysis.analysis.jobTitle}</div>
+                <div className="mt-2 text-xs text-gray-600">Key Requirements: {workflowData.jobAnalysis.analysis.keyRequirements.join(', ')}</div>
+                <div className="mt-1 text-xs text-gray-600">Preferred Skills: {workflowData.jobAnalysis.analysis.preferredSkills.join(', ')}</div>
+              </div>
+            )}
+
+            {workflowData.companyData && (
+              <div className="mt-4 p-4 border rounded-lg">
+                <div className="text-sm font-semibold mb-2">Company Insights</div>
+                <div className="text-xs text-gray-700">Industry: {workflowData.companyData.industry || 'N/A'}</div>
+                <div className="mt-1 text-xs text-gray-600">Culture: {(workflowData.companyData.culture || []).join(', ')}</div>
+                {workflowData.companyData.recentNews && workflowData.companyData.recentNews.length > 0 && (
+                  <div className="mt-2 text-xs text-gray-600">Recent News: {workflowData.companyData.recentNews.slice(0,3).map((n:any)=>n.title).join(' • ')}</div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

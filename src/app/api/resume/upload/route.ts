@@ -33,71 +33,93 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectToDatabase();
 
-    // Handle file upload
+    // Handle file upload or pasted text
     const formData = await request.formData();
     const file = formData.get('resume') as File;
+    const pastedText = (formData.get('pastedText') as string) || ''
 
-    if (!file) {
+    if (!file && !pastedText) {
+      return NextResponse.json({ error: 'No file or text provided' }, { status: 400 })
+    }
+
+    if (file) {
+      // Validate file type (server-side MIME is not fully trustworthy; enforce extension + size too)
+      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+        return NextResponse.json(
+          { error: 'Only PDF files are allowed' },
+          { status: 400 }
+        );
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: 'File size too large. Maximum 10MB allowed.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    let extractedText: string = ''
+    if (file) {
+      // Convert file to buffer
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      // Extract text from PDF
+      try {
+      const pdfParse = (await import('pdf-parse')).default
+      const pdfData = await pdfParse(buffer)
+      extractedText = pdfData.text?.trim() || ''
+      } catch (error) {
+      console.error('PDF parsing error, falling back to OCR:', error)
+      extractedText = ''
+      }
+
+      // If pdf-parse yields no text (scanned PDF), try OCR via Tesseract
+      if (!extractedText || extractedText.length < 50) {
+        try {
+          const { createWorker } = await import('tesseract.js')
+          const worker = await createWorker()
+          await worker.load()
+          await worker.loadLanguage('eng')
+          await worker.initialize('eng')
+          const { data } = await worker.recognize(buffer)
+          extractedText = (data.text || '').trim()
+          await worker.terminate()
+        } catch (e) {
+          console.error('OCR fallback failed:', e)
+        }
+      }
+    } else if (pastedText) {
+      extractedText = pastedText.trim()
+    }
+
+    if (!extractedText || extractedText.trim().length < 50) {
       return NextResponse.json(
-        { error: 'No file uploaded' },
+        { error: 'PDF appears to be empty or contains insufficient text. Please upload a valid resume or paste your resume text instead.' },
         { status: 400 }
       );
     }
 
-    // Validate file type (server-side MIME is not fully trustworthy; enforce extension + size too)
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      return NextResponse.json(
-        { error: 'Only PDF files are allowed' },
-        { status: 400 }
-      );
+    // Save file if present
+    let fileUrl: string | undefined
+    if (file) {
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'resumes');
+      await fs.mkdir(uploadsDir, { recursive: true });
+      const fileName = `${Date.now()}-${file.name}`;
+      const filePath = path.join(uploadsDir, fileName);
+      await fs.writeFile(filePath, buffer);
+      fileUrl = `/uploads/resumes/${fileName}`
     }
-
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'File size too large. Maximum 10MB allowed.' },
-        { status: 400 }
-      );
-    }
-
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Extract text from PDF
-    let extractedText: string;
-    try {
-      const pdfParse = (await import('pdf-parse')).default;
-      const pdfData = await pdfParse(buffer);
-      extractedText = pdfData.text;
-    } catch (error) {
-      console.error('PDF parsing error:', error);
-      return NextResponse.json(
-        { error: 'Failed to parse PDF. Please ensure it contains readable text.' },
-        { status: 400 }
-      );
-    }
-
-    if (!extractedText || extractedText.trim().length < 100) {
-      return NextResponse.json(
-        { error: 'PDF appears to be empty or contains insufficient text. Please upload a valid resume.' },
-        { status: 400 }
-      );
-    }
-
-    // Save file to uploads directory
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'resumes');
-    await fs.mkdir(uploadsDir, { recursive: true });
-
-    const fileName = `${Date.now()}-${file.name}`;
-    const filePath = path.join(uploadsDir, fileName);
-    await fs.writeFile(filePath, buffer);
 
     // Create resume record in database
     const resume = new Resume({
       userId: session.user.id,
-      originalFileName: file.name,
-      fileUrl: `/uploads/resumes/${fileName}`,
+      originalFileName: file ? file.name : 'pasted-text.txt',
+      fileUrl: fileUrl,
       extractedText,
       customizedVersions: [],
     });

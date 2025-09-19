@@ -29,6 +29,7 @@ export function ResumeUpload({
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
+  const [pastedText, setPastedText] = useState('')
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
@@ -64,7 +65,10 @@ export function ResumeUpload({
   })
 
   const handleUpload = async () => {
-    if (!uploadedFile) return
+    if (!uploadedFile && !pastedText.trim()) {
+      setError('Please upload a PDF or paste your resume text')
+      return
+    }
 
     setIsUploading(true)
     setUploadProgress(0)
@@ -83,7 +87,8 @@ export function ResumeUpload({
       }, 200)
 
       const formData = new FormData()
-      formData.append('resume', uploadedFile)
+      if (uploadedFile) formData.append('resume', uploadedFile)
+      if (pastedText.trim()) formData.append('pastedText', pastedText.trim())
 
       const response = await fetch('/api/resume/upload', {
         method: 'POST',
@@ -123,6 +128,7 @@ export function ResumeUpload({
     setUploadedResume(null)
     setError(null)
     setUploadProgress(0)
+    setPastedText('')
   }
 
   const formatFileSize = (bytes: number) => {
@@ -206,8 +212,21 @@ export function ResumeUpload({
               </div>
             )}
 
+            {/* Paste Text Area */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Or paste your resume text</label>
+              <textarea
+                className="w-full border rounded-md p-3 text-sm h-40"
+                placeholder="Paste your resume here if your PDF is scanned or not readable..."
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                disabled={isUploading}
+              />
+              <div className="text-xs text-gray-500">We’ll create a resume record from your pasted text.</div>
+            </div>
+
             {/* Upload Button */}
-            {uploadedFile && !isUploading && !uploadedResume && (
+            {(uploadedFile || pastedText.trim()) && !isUploading && !uploadedResume && (
               <div className="mt-4 flex gap-2">
                 <Button onClick={handleUpload} className="flex-1">
                   Upload Resume
