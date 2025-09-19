@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth/next'
 import { redirect } from 'next/navigation'
+export const dynamic = 'force-dynamic'
 import { authOptions } from '@/lib/auth'
 import { HeroSection } from '@/components/hero-section'
 import { FeaturesSection } from '@/components/features-section'

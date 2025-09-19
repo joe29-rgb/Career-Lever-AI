@@ -32,7 +32,24 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
-        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
+        {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
+          <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
+        ) : (
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function(){
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs){
+                  regs.forEach(function(r){ r.unregister().catch(function(){}) })
+                }).catch(function(){})
+              }
+              if (window.caches && caches.keys) {
+                caches.keys().then(function(keys){
+                  keys.forEach(function(k){ caches.delete(k).catch(function(){}) })
+                }).catch(function(){})
+              }
+            })();
+          ` }} />
+        )}
       </body>
     </html>
   )
