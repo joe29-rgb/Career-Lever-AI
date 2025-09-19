@@ -10,6 +10,7 @@ import { EnterpriseSidebar } from './components/enterprise-sidebar'
 import { MetricsHero } from './components/metrics-hero'
 import { TrendsChart } from './components/trends-chart'
 import { AIInsights } from './components/ai-insights'
+import { ActionCenter } from './components/action-center'
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
@@ -28,6 +29,7 @@ export default async function DashboardPage() {
           <div className="space-y-8">
             <MetricsHero />
             <QuickActions />
+            <ActionCenter />
             <TrendsChart />
             <RecentApplications />
           </div>

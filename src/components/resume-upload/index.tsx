@@ -161,28 +161,67 @@ export function ResumeUpload({
 
         {/* Upload Area */}
         {!uploadedFile ? (
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-              isDragActive
-                ? 'border-blue-400 bg-blue-50'
-                : 'border-gray-300 hover:border-gray-400'
-            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-          >
-            <input {...getInputProps()} />
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <div className="space-y-2">
-              <p className="text-lg font-medium text-gray-900">
-                {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
-              </p>
-              <p className="text-sm text-gray-600">
-                Drag and drop your PDF file here, or click to browse
-              </p>
-              <p className="text-xs text-gray-500">
-                Maximum file size: {maxFileSize / (1024 * 1024)}MB
-              </p>
+          <>
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                isDragActive
+                  ? 'border-blue-400 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
+            >
+              <input {...getInputProps()} />
+              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <div className="space-y-2">
+                <p className="text-lg font-medium text-gray-900">
+                  {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Drag and drop your PDF file here, or click to browse
+                </p>
+                <p className="text-xs text-gray-500">
+                  Maximum file size: {maxFileSize / (1024 * 1024)}MB
+                </p>
+              </div>
             </div>
-          </div>
+
+            {/* Paste Text Area (available without file) */}
+            <div className="space-y-2 mt-4">
+              <label className="text-sm font-medium text-gray-700">Or paste your resume text</label>
+              <textarea
+                className="w-full border rounded-md p-3 text-sm h-40"
+                placeholder="Paste your resume here if your PDF is scanned or not readable..."
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                disabled={isUploading}
+              />
+              <div className="text-xs text-gray-500">We’ll create a resume record from your pasted text.</div>
+            </div>
+
+            {/* Upload Button when using pasted text */}
+            {(pastedText.trim()) && !isUploading && !uploadedResume && (
+              <div className="mt-4 flex gap-2">
+                <Button onClick={handleUpload} className="flex-1">
+                  Upload Resume
+                </Button>
+                <Button variant="outline" onClick={clearFile}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+
+            {isUploading && (
+              <div className="mt-4 flex gap-2">
+                <Button disabled className="flex-1">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </Button>
+                <Button variant="outline" disabled>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           /* File Preview */
           <div className="border rounded-lg p-4">
