@@ -274,7 +274,6 @@ const CompanyDataSchema: Schema = new Schema({
 
 // Add indexes for better query performance
 // Keep a single unique index; avoid duplicate definitions elsewhere
-CompanyDataSchema.index({ companyName: 1 }, { unique: true });
 CompanyDataSchema.index({ expiresAt: 1 });
 CompanyDataSchema.index({ cachedAt: -1 });
 

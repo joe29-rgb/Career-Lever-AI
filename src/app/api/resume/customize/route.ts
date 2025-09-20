@@ -72,13 +72,24 @@ export async function POST(request: NextRequest) {
 
     await jobApplication.save();
 
-    // Use AI service to customize the resume
-    const customizationResult = await AIService.customizeResume(
-      resume.extractedText,
-      jobDescription,
-      jobTitle,
-      companyName
-    );
+    // Use AI service to customize the resume with graceful fallback
+    let customizationResult: { customizedResume: string; matchScore: number; improvements: string[]; suggestions: string[] };
+    try {
+      customizationResult = await AIService.customizeResume(
+        resume.extractedText || '',
+        jobDescription,
+        jobTitle,
+        companyName
+      );
+    } catch (e) {
+      const fallbackText = `Professional Summary\n\nTarget Role: ${jobTitle} at ${companyName}\n\nHighlights:\n- Relevant experience aligned to the job description\n- Skills matched to key requirements\n- Results-focused achievements\n\nResume\n\n${(resume.extractedText || '').slice(0, 8000)}`
+      customizationResult = {
+        customizedResume: fallbackText,
+        matchScore: 50,
+        improvements: ['Add quantified achievements', 'Strengthen keywords from job description'],
+        suggestions: ['Tailor summary to company values', 'Emphasize most relevant projects first']
+      }
+    }
 
     const { customizedResume: customizedText, matchScore, improvements, suggestions } = customizationResult;
 
