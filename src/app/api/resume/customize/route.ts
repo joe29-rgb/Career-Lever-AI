@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
       matchScore,
       improvements,
       suggestions,
+      originalResumeText: resume.extractedText,
     });
     resp.headers.set('x-request-id', requestId)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))

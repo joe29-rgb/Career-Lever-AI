@@ -300,7 +300,7 @@ export function ResumeCustomizer({
                   Original Resume
                 </h4>
                 <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-red-50">
-                  {resume.extractedText.substring(0, 500)}...
+                  {(customizedResult.originalResumeText || resume.extractedText || '').substring(0, 1000)}{(customizedResult.originalResumeText || resume.extractedText || '').length > 1000 ? '...' : ''}
                 </div>
               </div>
 
@@ -310,7 +310,7 @@ export function ResumeCustomizer({
                   Customized Resume
                 </h4>
                 <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-green-50">
-                  {customizedResult.customizedResume.customizedText.substring(0, 500)}...
+                  {customizedResult.customizedResume.customizedText.substring(0, 1000)}{customizedResult.customizedResume.customizedText.length > 1000 ? '...' : ''}
                 </div>
               </div>
             </div>

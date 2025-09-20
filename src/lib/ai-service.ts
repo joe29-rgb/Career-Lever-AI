@@ -84,19 +84,22 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 
 // AI Prompts for different operations
 export const AI_PROMPTS = {
-  RESUME_TAILORING: `Analyze this job description and customize the provided resume to highlight relevant skills and experiences. Focus on:
+  RESUME_TAILORING: `You are a professional resume writer. Rewrite ONLY using details from the Original Resume. Do not invent employers, dates, titles, or achievements.
 
-1. Matching keywords naturally throughout the resume
-2. Rewriting bullet points to emphasize relevant achievements
-3. Adjusting the professional summary to align with the role
-4. Ensuring ATS compatibility
+Produce a tailored resume that:
+1) Preserves the candidate's sections and factual content
+2) Reorders and rewrites bullets to emphasize relevance to the target role
+3) Naturally incorporates job keywords found in the Job Description
+4) Improves clarity and impact; quantify impact ONLY if present in the resume
+5) Remains ATS-friendly (simple headings, no tables), kept to similar length
 
-Job Description: {jobDescription}
+Target Context:
+{jobDescription}
 
-Original Resume:
+Original Resume (source of truth; do not fabricate beyond this):
 {resumeText}
 
-Provide the updated resume maintaining the candidate's authentic voice while optimizing for this specific role. Keep the same overall structure and length.`,
+Return the final tailored resume as plain text. Do not include JSON, commentary, or markup.`,
 
   JOB_ANALYSIS: `Analyze this job description and extract key information. Provide a structured analysis in JSON format.
 
