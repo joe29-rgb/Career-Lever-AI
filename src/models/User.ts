@@ -51,8 +51,7 @@ const UserSchema: Schema = new Schema({
   timestamps: true,
 });
 
-// Add indexes for better query performance
-UserSchema.index({ email: 1 });
+// Add indexes for better query performance (email is already indexed via unique: true)
 UserSchema.index({ createdAt: -1 });
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

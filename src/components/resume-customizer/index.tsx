@@ -60,14 +60,7 @@ export function ResumeCustomizer({
         },
         body: JSON.stringify({
           resumeId: resume._id,
-          jobDescription: [
-            jobAnalysis.analysis.jobTitle,
-            jobAnalysis.analysis.companyName,
-            ...jobAnalysis.analysis.keyRequirements,
-            ...jobAnalysis.analysis.preferredSkills,
-            ...jobAnalysis.analysis.responsibilities,
-            ...jobAnalysis.analysis.companyCulture
-          ].filter(Boolean).join('. '),
+          jobDescription: `Title: ${jobAnalysis.analysis.jobTitle}\nCompany: ${jobAnalysis.analysis.companyName}\n\nRequirements: ${jobAnalysis.analysis.keyRequirements.join(', ')}\nSkills: ${jobAnalysis.analysis.preferredSkills.join(', ')}\nResponsibilities: ${jobAnalysis.analysis.responsibilities.join(', ')}\nCulture: ${jobAnalysis.analysis.companyCulture.join(', ')}`,
           jobTitle: jobAnalysis.analysis.jobTitle,
           companyName: jobAnalysis.analysis.companyName,
         }),
