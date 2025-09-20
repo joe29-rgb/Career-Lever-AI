@@ -532,7 +532,12 @@ export class AIService {
     length: 'same' | 'shorter' | 'longer' = 'same'
   ): Promise<ResumeCustomizationResult> {
     if (ASSISTANT_RESUME_TAILOR_ID) {
-      return this.customizeResumeWithAssistant(resumeText, jobDescription, jobTitle, companyName, tone, length);
+      try {
+        return await this.customizeResumeWithAssistant(resumeText, jobDescription, jobTitle, companyName, tone, length);
+      } catch (e) {
+        // Fallback to model path on any assistant error
+        return this.customizeResumeWithModel(resumeText, jobDescription);
+      }
     }
     return this.customizeResumeWithModel(resumeText, jobDescription);
   }
@@ -638,12 +643,13 @@ JOB DESCRIPTION:\n${jobDescription}\n
 RESUME:\n${resumeText}`;
     await openai.beta.threads.messages.create(thread.id, {
       role: 'user',
-      content: userContent,
+      content: userContent + "\n\nReturn the final tailored resume as plain text (not JSON).",
     });
 
     // Start assistant run
     let run: any = await openai.beta.threads.runs.create(thread.id, {
       assistant_id: ASSISTANT_RESUME_TAILOR_ID as string,
+      response_format: { type: 'text' } as any,
     });
 
     // Handle tool calls and poll until completion
