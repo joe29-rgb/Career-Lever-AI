@@ -42,6 +42,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const [isImporting, setIsImporting] = useState(false)
   const [psychology, setPsychology] = useState<any | null>(null)
   const [competition, setCompetition] = useState<any | null>(null)
+  const [painpoints, setPainpoints] = useState<any | null>(null)
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) {
@@ -93,14 +94,16 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
       setAnalysisResult(result)
       onAnalysisComplete(result)
 
-      // Fetch psychology and competition insights in parallel
+      // Fetch psychology, competition, and pain points in parallel
       try {
-        const [psyRes, compRes] = await Promise.all([
+        const [psyRes, compRes, painRes] = await Promise.all([
           fetch('/api/insights/psychology', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription }) }),
-          fetch('/api/insights/competition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, jobUrl: importUrl || undefined }) })
+          fetch('/api/insights/competition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, jobUrl: importUrl || undefined }) }),
+          fetch('/api/insights/painpoints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobTitle: jobTitle || result.analysis.jobTitle, jobDescription }) })
         ])
         if (psyRes.ok) { const pj = await psyRes.json(); setPsychology(pj.psychology || null) }
         if (compRes.ok) { const cj = await compRes.json(); setCompetition(cj.competition || null) }
+        if (painRes.ok) { const pj2 = await painRes.json(); setPainpoints(pj2.painpoints || null) }
       } catch {}
 
       toast.success('Job analysis completed successfully!')
@@ -455,7 +458,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
           </div>
         )}
 
-        {(psychology || competition) && (
+        {(psychology || competition || painpoints) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {psychology && (
               <Card>
@@ -491,6 +494,33 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                     <div>
                       <div className="font-medium">Differentiation</div>
                       <ul className="list-disc ml-5 mt-1">{competition.differentiation.slice(0,4).map((d:string,i:number)=>(<li key={i}>{d}</li>))}</ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            {painpoints && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Pain Points & Angles</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm text-gray-700">
+                  {Array.isArray(painpoints.companyPainPoints) && painpoints.companyPainPoints.length > 0 && (
+                    <div>
+                      <div className="font-medium">Company Pain Points</div>
+                      <ul className="list-disc ml-5 mt-1">{painpoints.companyPainPoints.slice(0,6).map((p:string,i:number)=>(<li key={i}>{p}</li>))}</ul>
+                    </div>
+                  )}
+                  {Array.isArray(painpoints.rolePainPoints) && painpoints.rolePainPoints.length > 0 && (
+                    <div>
+                      <div className="font-medium">Role Pain Points</div>
+                      <ul className="list-disc ml-5 mt-1">{painpoints.rolePainPoints.slice(0,6).map((p:string,i:number)=>(<li key={i}>{p}</li>))}</ul>
+                    </div>
+                  )}
+                  {Array.isArray(painpoints.solutionAngles) && painpoints.solutionAngles.length > 0 && (
+                    <div>
+                      <div className="font-medium">Solution Angles</div>
+                      <ul className="list-disc ml-5 mt-1">{painpoints.solutionAngles.slice(0,6).map((p:string,i:number)=>(<li key={i}>{p}</li>))}</ul>
                     </div>
                   )}
                 </CardContent>

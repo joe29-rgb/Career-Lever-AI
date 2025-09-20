@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   Wand2,
   FileText,
@@ -42,6 +43,7 @@ export function ResumeCustomizer({
   const [customizedResult, setCustomizedResult] = useState<any>(null)
   const [activeTab, setActiveTab] = useState('preview')
   const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
+  const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -64,6 +66,7 @@ export function ResumeCustomizer({
           jobDescription: `Title: ${jobAnalysis.analysis.jobTitle}\nCompany: ${jobAnalysis.analysis.companyName}\n\nRequirements: ${jobAnalysis.analysis.keyRequirements.join(', ')}\nSkills: ${jobAnalysis.analysis.preferredSkills.join(', ')}\nResponsibilities: ${jobAnalysis.analysis.responsibilities.join(', ')}\nCulture: ${jobAnalysis.analysis.companyCulture.join(', ')}`,
           jobTitle: jobAnalysis.analysis.jobTitle,
           companyName: jobAnalysis.analysis.companyName,
+          tone,
         }),
       })
 
@@ -135,6 +138,19 @@ export function ResumeCustomizer({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Tone guidance</p>
+              <Select value={tone} onValueChange={(v)=>setTone(v as any)}>
+                <SelectTrigger><SelectValue placeholder="Select tone" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="professional">Professional</SelectItem>
+                  <SelectItem value="enthusiastic">Enthusiastic</SelectItem>
+                  <SelectItem value="concise">Concise</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           {/* Job Match Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="p-4">

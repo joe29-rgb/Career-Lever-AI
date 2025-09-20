@@ -11,6 +11,7 @@ export const resumeCustomizeSchema = z.object({
   jobDescription: z.string().min(50),
   jobTitle: z.string().min(2),
   companyName: z.string().min(2),
+  tone: z.enum(['professional','enthusiastic','concise']).optional(),
 })
 
 export const coverLetterRawSchema = z.object({
