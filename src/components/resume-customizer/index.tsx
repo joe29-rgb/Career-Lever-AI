@@ -41,6 +41,7 @@ export function ResumeCustomizer({
   const [error, setError] = useState<string | null>(null)
   const [customizedResult, setCustomizedResult] = useState<any>(null)
   const [activeTab, setActiveTab] = useState('preview')
+  const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -77,6 +78,15 @@ export function ResumeCustomizer({
       const data = await response.json()
       setCustomizedResult(data)
       onCustomizationComplete(data.customizedResume)
+
+      // Authenticity scoring
+      try {
+        const ar = await fetch('/api/insights/authenticity', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalText: resume.extractedText, generatedText: data.customizedResume.customizedText })
+        })
+        if (ar.ok) { const aj = await ar.json(); setAuthenticity(aj.authenticity) }
+      } catch {}
 
       toast.success('Resume customized successfully!')
 
@@ -245,6 +255,16 @@ export function ResumeCustomizer({
                   <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white">
                     {customizedResult.customizedResume.customizedText}
                   </div>
+                  {authenticity && (
+                    <div className="mt-3 text-sm text-gray-700">
+                      <div className="font-medium">Authenticity Score: {authenticity.score}/100</div>
+                      {authenticity.suggestions.length > 0 && (
+                        <ul className="list-disc ml-5 mt-1">
+                          {authenticity.suggestions.slice(0,3).map((s, i)=>(<li key={i}>{s}</li>))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
