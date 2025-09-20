@@ -40,6 +40,8 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const [compare, setCompare] = useState<{ score: number; matched: string[]; missing: string[] } | null>(null)
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
+  const [psychology, setPsychology] = useState<any | null>(null)
+  const [competition, setCompetition] = useState<any | null>(null)
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) {
@@ -90,6 +92,16 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
 
       setAnalysisResult(result)
       onAnalysisComplete(result)
+
+      // Fetch psychology and competition insights in parallel
+      try {
+        const [psyRes, compRes] = await Promise.all([
+          fetch('/api/insights/psychology', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription }) }),
+          fetch('/api/insights/competition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, jobUrl: importUrl || undefined }) })
+        ])
+        if (psyRes.ok) { const pj = await psyRes.json(); setPsychology(pj.psychology || null) }
+        if (compRes.ok) { const cj = await compRes.json(); setCompetition(cj.competition || null) }
+      } catch {}
 
       toast.success('Job analysis completed successfully!')
 
@@ -440,6 +452,50 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {(psychology || competition) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {psychology && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Psychology & Tone</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-700">
+                  <div><span className="font-medium">Tone:</span> {psychology.tone} (formality {psychology.formality})</div>
+                  {Array.isArray(psychology.values) && psychology.values.length > 0 && (
+                    <div>
+                      <div className="font-medium">Values</div>
+                      <div className="flex flex-wrap gap-2 mt-1">{psychology.values.map((v:string,i:number)=>(<Badge key={i} variant="outline">{v}</Badge>))}</div>
+                    </div>
+                  )}
+                  {Array.isArray(psychology.languageGuidance) && psychology.languageGuidance.length > 0 && (
+                    <div>
+                      <div className="font-medium">Language Guidance</div>
+                      <ul className="list-disc ml-5 mt-1">{psychology.languageGuidance.map((g:string,i:number)=>(<li key={i}>{g}</li>))}</ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            {competition && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Competition & Urgency</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-700">
+                  <div><span className="font-medium">Applicants (est):</span> {competition.applicantsEstimate} ({competition.competitionBand})</div>
+                  <div><span className="font-medium">Urgency:</span> {competition.urgency}/100</div>
+                  {Array.isArray(competition.differentiation) && competition.differentiation.length > 0 && (
+                    <div>
+                      <div className="font-medium">Differentiation</div>
+                      <ul className="list-disc ml-5 mt-1">{competition.differentiation.slice(0,4).map((d:string,i:number)=>(<li key={i}>{d}</li>))}</ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </CardContent>

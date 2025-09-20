@@ -243,6 +243,19 @@ export interface CompanyInsightsResult {
 }
 
 export class AIService {
+  static async generateText(prompt: string): Promise<string> {
+    // Minimal helper for quick text generations where assistants are not required
+    const completion = await openai.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [
+        { role: 'system', content: 'You write concise outputs. If JSON requested, return valid JSON only.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.3,
+      max_tokens: 800
+    })
+    return completion.choices[0]?.message?.content?.trim() || ''
+  }
   static async analyzeJobDescription(jobDescription: string): Promise<JobAnalysisResult> {
     try {
       if (ASSISTANT_JOB_ANALYSIS_ID) {
