@@ -110,7 +110,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
           fetch('/api/insights/painpoints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobTitle: jobTitle || result.analysis.jobTitle, jobDescription }) }),
           resumeText ? fetch('/api/insights/success', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, resumeText }) }) : Promise.resolve({ ok: false }) as any
         ])
-        if (psyRes.ok) { const pj = await psyRes.json(); setPsychology(pj.psychology || null) }
+        if (psyRes.ok) { const pj = await psyRes.json(); setPsychology(pj.psychology || null); try { localStorage.setItem('analyze:psychology', JSON.stringify(pj.psychology || {})) } catch {} }
         if (compRes.ok) { const cj = await compRes.json(); setCompetition(cj.competition || null) }
         if (painRes.ok) { const pj2 = await painRes.json(); setPainpoints(pj2.painpoints || null) }
         if ((sucRes as any).ok) { const sj = await (sucRes as Response).json(); setSuccess(sj.successScore || null) }

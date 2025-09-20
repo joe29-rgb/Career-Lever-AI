@@ -44,6 +44,7 @@ export function ResumeCustomizer({
   const [activeTab, setActiveTab] = useState('preview')
   const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
   const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
+  const [autoTone, setAutoTone] = useState<boolean>(false)
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -51,6 +52,20 @@ export function ResumeCustomizer({
     setError(null)
 
     try {
+      if (autoTone) {
+        try {
+          const stored = localStorage.getItem('analyze:psychology')
+          if (stored) {
+            const pj = JSON.parse(stored)
+            if (pj?.tone) {
+              const normalized = String(pj.tone).toLowerCase()
+              if (normalized.includes('enthusias')) setTone('enthusiastic')
+              else if (normalized.includes('concise') || normalized.includes('direct')) setTone('concise')
+              else setTone('professional')
+            }
+          }
+        } catch {}
+      }
       // Simulate progress updates
       const progressInterval = setInterval(() => {
         setCustomizationProgress(prev => Math.min(prev + 20, 90))
@@ -149,6 +164,13 @@ export function ResumeCustomizer({
                   <SelectItem value="concise">Concise</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Auto-tone from Psychology</p>
+              <button type="button" onClick={()=>setAutoTone(v=>!v)} className={`px-3 py-2 border rounded text-sm ${autoTone ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{autoTone ? 'Enabled' : 'Disabled'}</button>
+              {autoTone && (
+                <p className="text-xs text-gray-500">We’ll use the Analyze page’s tone if available</p>
+              )}
             </div>
           </div>
           {/* Job Match Summary */}

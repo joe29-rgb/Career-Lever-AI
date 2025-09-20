@@ -279,11 +279,14 @@ export class WebScraperService {
 
     try {
       // Scrape multiple sources in parallel
-      const [glassdoorData, linkedinData, websiteData, newsData] = await Promise.allSettled([
+      const [glassdoorData, linkedinData, websiteData, newsData, instaData, fbData, gRev] = await Promise.allSettled([
         this.scrapeGlassdoorData(companyName),
         this.scrapeLinkedInData(companyName),
         website ? this.scrapeCompanyWebsite(website) : Promise.resolve(null),
-        this.scrapeNewsData(companyName)
+        this.scrapeNewsData(companyName),
+        this.scrapeInstagramPublic(companyName),
+        this.scrapeFacebookPublic(companyName),
+        this.scrapeGoogleReviewsSummary(companyName)
       ]);
 
       // Merge the data
@@ -313,6 +316,21 @@ export class WebScraperService {
 
       if (newsData.status === 'fulfilled' && newsData.value) {
         data.recentNews = newsData.value;
+      }
+
+      if (instaData.status === 'fulfilled' && instaData.value) {
+        data.socialMedia = data.socialMedia || {}
+        data.socialMedia.instagram = instaData.value as any
+      }
+
+      if (fbData.status === 'fulfilled' && fbData.value) {
+        data.socialMedia = data.socialMedia || {}
+        data.socialMedia.facebook = fbData.value as any
+      }
+
+      if (gRev.status === 'fulfilled' && gRev.value) {
+        ;(data as any).googleReviewsRating = (gRev.value as any).rating
+        ;(data as any).googleReviewsCount = (gRev.value as any).count
       }
 
       // Generate fallback data if we don't have enough info
@@ -676,6 +694,136 @@ export class WebScraperService {
       return null;
     } finally {
       await page.close();
+    }
+  }
+
+  private async scrapeInstagramPublic(companyName: string): Promise<{
+    handle: string;
+    followers: number;
+    recentPosts: Array<{ caption: string; postedAt: Date; likes: number; comments: number }>;
+  } | null> {
+    if (!this.browser) return null;
+    const page = await this.browser.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:instagram.com')}`
+      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await new Promise(r=>setTimeout(r,1000))
+      const igUrl = await page.$$eval('a[href^="http"]', els => {
+        const urls = els.map(a => (a as HTMLAnchorElement).href)
+        const candidate = urls.find(h => /instagram\.com\//i.test(h)) || ''
+        return candidate
+      })
+      if (!igUrl) return null
+      await page.goto(igUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await new Promise(r=>setTimeout(r,1200))
+      const result = await page.evaluate(() => {
+        function parseCount(s: string): number {
+          const m = s.trim().toLowerCase().replace(/,/g,'');
+          if (/k$/.test(m)) return Math.round(parseFloat(m) * 1000)
+          if (/m$/.test(m)) return Math.round(parseFloat(m) * 1000000)
+          const n = parseFloat(m)
+          return isNaN(n) ? 0 : Math.round(n)
+        }
+        const handle = window.location.pathname.split('/').filter(Boolean)[0] || ''
+        const meta = document.querySelector('meta[property="og:description"]') as HTMLMetaElement | null
+        let followers = 0
+        if (meta?.content) {
+          const m = meta.content.match(/([\d.,]+\s*[kKmM]?)\s+Followers?/)
+          if (m) followers = parseCount(m[1])
+        }
+        const captions: string[] = []
+        document.querySelectorAll('article img[alt]').forEach(img => {
+          const alt = (img as HTMLImageElement).alt
+          if (alt && alt.length > 5) captions.push(alt.substring(0, 200))
+        })
+        const recentPosts = captions.slice(0,6).map(c => ({ caption: c, postedAt: new Date(), likes: 0, comments: 0 }))
+        return { handle, followers, recentPosts }
+      })
+      return result
+    } catch (e) {
+      return null
+    } finally {
+      await page.close()
+    }
+  }
+
+  private async scrapeFacebookPublic(companyName: string): Promise<{
+    pageUrl: string;
+    followers: number;
+    recentPosts: Array<{ content: string; postedAt: Date; reactions: number }>;
+  } | null> {
+    if (!this.browser) return null;
+    const page = await this.browser.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:facebook.com')}`
+      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await new Promise(r=>setTimeout(r,1000))
+      const fbUrl = await page.$$eval('a[href^="http"]', els => {
+        const urls = els.map(a => (a as HTMLAnchorElement).href)
+        const candidate = urls.find(h => /facebook\.com\//i.test(h)) || ''
+        return candidate
+      })
+      if (!fbUrl) return null
+      await page.goto(fbUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await new Promise(r=>setTimeout(r,1500))
+      const result = await page.evaluate(() => {
+        const pageUrl = window.location.href
+        const text = document.body.innerText || ''
+        let followers = 0
+        const m = text.match(/([\d.,]+)\s+followers/i)
+        if (m) followers = parseInt(m[1].replace(/,/g,''))
+        const posts: Array<{ content: string; postedAt: Date; reactions: number }> = []
+        const articles = Array.from(document.querySelectorAll('div[role="article"]'))
+        for (const a of articles.slice(0,5)) {
+          const content = (a.textContent || '').trim().replace(/\s+/g,' ').substring(0, 300)
+          if (content.length > 20) posts.push({ content, postedAt: new Date(), reactions: 0 })
+        }
+        return { pageUrl, followers, recentPosts: posts }
+      })
+      return result
+    } catch (e) {
+      return null
+    } finally {
+      await page.close()
+    }
+  }
+
+  private async scrapeGoogleReviewsSummary(companyName: string): Promise<{ rating?: number; count?: number } | null> {
+    if (!this.browser) return null;
+    const page = await this.browser.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' reviews')}`
+      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await new Promise(r=>setTimeout(r,1500))
+      const data = await page.evaluate(() => {
+        const txt = document.body.innerText || ''
+        let rating: number | undefined
+        let count: number | undefined
+        const ratingMatch = txt.match(/([0-9]\.[0-9])\s*\(?(?:based on\s*)?([\d,]+)\s+Google reviews\)?/i) || txt.match(/([0-9]\.[0-9])\s+rating\s+from\s+([\d,]+)\s+Google reviews/i)
+        if (ratingMatch) {
+          rating = parseFloat(ratingMatch[1])
+          count = parseInt(ratingMatch[2].replace(/,/g,''))
+        } else {
+          const countOnly = txt.match(/([\d,]+)\s+Google reviews/i)
+          if (countOnly) count = parseInt(countOnly[1].replace(/,/g,''))
+        }
+        return { rating, count }
+      })
+      if (!data.rating && !data.count) return null
+      return data
+    } catch (e) {
+      return null
+    } finally {
+      await page.close()
     }
   }
 
