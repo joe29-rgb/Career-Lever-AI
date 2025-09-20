@@ -37,6 +37,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<{ analysis: JobAnalysis; keywords: string[] } | null>(null)
+  const [compare, setCompare] = useState<{ score: number; matched: string[]; missing: string[] } | null>(null)
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) {
@@ -99,6 +100,21 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
     } finally {
       setIsAnalyzing(false)
       setTimeout(() => setAnalysisProgress(0), 1000)
+    }
+  }
+
+  const runComparison = async () => {
+    try {
+      if (!analysisResult) return
+      const resp = await fetch('/api/job/compare', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobAnalysis: analysisResult })
+      })
+      if (!resp.ok) throw new Error('Compare failed')
+      const json = await resp.json()
+      setCompare({ score: json.score, matched: json.matchedKeywords || [], missing: json.missingKeywords || [] })
+    } catch (e) {
+      setCompare(null)
     }
   }
 
@@ -204,6 +220,11 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
           {(analysisResult || error) && (
             <Button variant="outline" onClick={resetForm}>
               Reset
+            </Button>
+          )}
+          {analysisResult && (
+            <Button variant="outline" onClick={runComparison} disabled={isAnalyzing}>
+              Compare with Resume
             </Button>
           )}
         </div>
@@ -351,6 +372,33 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                 </CardContent>
               </Card>
             )}
+          </div>
+        )}
+
+        {compare && (
+          <div className="space-y-3 mt-4 p-4 border rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Match Score</span>
+              <span className="text-sm">{compare.score}%</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <div className="text-xs font-semibold mb-1">Matched Keywords</div>
+                <div className="flex flex-wrap gap-2">
+                  {compare.matched.slice(0, 20).map((kw, i) => (
+                    <Badge key={i} variant="secondary">{kw}</Badge>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold mb-1">Missing Keywords</div>
+                <div className="flex flex-wrap gap-2">
+                  {compare.missing.slice(0, 20).map((kw, i) => (
+                    <Badge key={i} variant="outline">{kw}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>

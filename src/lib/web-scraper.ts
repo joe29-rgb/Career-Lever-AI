@@ -565,7 +565,9 @@ export class WebScraperService {
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
 
-      const searchUrl = `https://www.linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '')}`;
+      // Prefer company vanity, but allow a Google fallback if page lacks data
+      const vanity = companyName.toLowerCase().replace(/\s+/g, '')
+      const searchUrl = `https://www.linkedin.com/company/${vanity}`;
 
       await page.goto(searchUrl, {
         waitUntil: 'domcontentloaded',
@@ -575,7 +577,7 @@ export class WebScraperService {
       // Wait for content to load
       await new Promise(r => setTimeout(r, 3000));
 
-      const data = await page.evaluate(() => {
+      let data = await page.evaluate(() => {
         const result: any = {
           companyPage: window.location.href
         };
@@ -642,6 +644,31 @@ export class WebScraperService {
 
         return result;
       });
+      if (!data || (!data.followers && !data.employeeCount)) {
+        try {
+          const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:linkedin.com/company')}`
+          await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+          await new Promise(r=>setTimeout(r,1500))
+          const link = await page.$$eval('a[href^="http"]', els => {
+            const cand = els.map(a => (a as HTMLAnchorElement).href)
+            const good = cand.find(h => /linkedin\.com\/company\//i.test(h))
+            return good || ''
+          })
+          if (link) {
+            await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 30000 })
+            await new Promise(r=>setTimeout(r,1200))
+            const data2 = await page.evaluate(() => {
+              const out: any = { companyPage: window.location.href }
+              const followersEl = document.querySelector('.org-top-card-summary__follower-count, .org-top-card-summary-info-list__info-item')
+              const t = followersEl?.textContent || ''
+              const m = t.match(/([\d,]+)\s*(followers|people)/i)
+              if (m) out.followers = parseInt(m[1].replace(/,/g, ''))
+              return out
+            })
+            data = { ...data, ...data2 }
+          }
+        } catch {}
+      }
 
       return data;
     } catch (error) {
