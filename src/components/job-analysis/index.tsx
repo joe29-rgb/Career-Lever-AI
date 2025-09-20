@@ -38,6 +38,8 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const [error, setError] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<{ analysis: JobAnalysis; keywords: string[] } | null>(null)
   const [compare, setCompare] = useState<{ score: number; matched: string[]; missing: string[] } | null>(null)
+  const [importUrl, setImportUrl] = useState('')
+  const [isImporting, setIsImporting] = useState(false)
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) {
@@ -106,9 +108,19 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const runComparison = async () => {
     try {
       if (!analysisResult) return
+      // Try to load latest resume id
+      let resumeId: string | undefined
+      try {
+        const rl = await fetch('/api/resume/list')
+        if (rl.ok) {
+          const rj = await rl.json()
+          resumeId = rj.resumes?.[0]?._id
+        }
+      } catch {}
+
       const resp = await fetch('/api/job/compare', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobAnalysis: analysisResult })
+        body: JSON.stringify({ jobAnalysis: analysisResult, resumeId })
       })
       if (!resp.ok) throw new Error('Compare failed')
       const json = await resp.json()
@@ -127,6 +139,25 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
     setAnalysisProgress(0)
   }
 
+  const importJob = async () => {
+    if (!importUrl || !/^https?:\/\//i.test(importUrl)) {
+      toast.error('Enter a valid job URL')
+      return
+    }
+    setIsImporting(true)
+    try {
+      const resp = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: importUrl }) })
+      const json = await resp.json()
+      if (!resp.ok || !json.success) throw new Error(json.error || 'Import failed')
+      // We cannot fetch full application easily here; prompt user to Analyze with scraped description
+      toast.success('Imported job. Paste its description to analyze or proceed if prefilled.')
+    } catch (e) {
+      toast.error('Failed to import job')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -139,6 +170,16 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Import by URL */}
+        <div className="space-y-2">
+          <Label htmlFor="importUrl">Import Job by URL (optional)</Label>
+          <div className="flex gap-2">
+            <Input id="importUrl" placeholder="https://..." value={importUrl} onChange={(e)=>setImportUrl(e.target.value)} disabled={isAnalyzing || isImporting} />
+            <Button variant="outline" onClick={importJob} disabled={isAnalyzing || isImporting}>
+              {isImporting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Importing...</>) : 'Import'}
+            </Button>
+          </div>
+        </div>
         {/* Error Alert */}
         {error && (
           <Alert variant="destructive">
