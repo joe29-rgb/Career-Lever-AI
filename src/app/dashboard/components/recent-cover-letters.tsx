@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Download, FileText, Loader2 } from 'lucide-react'
+import { Download, FileText } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import toast from 'react-hot-toast'
 
 export function RecentCoverLetters() {
@@ -52,7 +53,11 @@ export function RecentCoverLetters() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-gray-600"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-16" />
+            ))}
+          </div>
         ) : letters.length === 0 ? (
           <div className="text-sm text-gray-600">No cover letters yet.</div>
         ) : (
