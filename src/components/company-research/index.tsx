@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Building,
@@ -191,6 +192,11 @@ export function CompanyResearchPanel({
               <span className="text-sm text-gray-600">{researchProgress}%</span>
             </div>
             <Progress value={researchProgress} className="w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-32 md:col-span-2" />
+            </div>
           </div>
         )}
 
@@ -645,6 +651,12 @@ export function CompanyResearchPanel({
                 </Card>
               </TabsContent>
             </Tabs>
+          </div>
+        )}
+
+        {!isResearching && !researchResult && !error && (
+          <div className="text-sm text-gray-600 border rounded-lg p-4">
+            Enter a company name and click Research to get reviews, social signals, and contacts.
           </div>
         )}
       </CardContent>

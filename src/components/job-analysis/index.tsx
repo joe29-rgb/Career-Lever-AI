@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Search,
   Briefcase,
@@ -261,6 +262,12 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
               <span className="text-sm text-gray-600">{analysisProgress}%</span>
             </div>
             <Progress value={analysisProgress} className="w-full" />
+            {/* Skeletons while loading */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <Skeleton className="h-40" />
+              <Skeleton className="h-40" />
+              <Skeleton className="h-28 md:col-span-2" />
+            </div>
           </div>
         )}
 
@@ -438,6 +445,13 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                 </CardContent>
               </Card>
             )}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isAnalyzing && !analysisResult && !error && (
+          <div className="text-sm text-gray-600 border rounded-lg p-4">
+            Paste a full job description and click Analyze to see requirements, skills, and company insights.
           </div>
         )}
 
