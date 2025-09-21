@@ -59,10 +59,17 @@ export interface ScrapedCompanyData {
       }>;
     };
   };
+  sources?: string[];
 }
 
 export class WebScraperService {
   private browser: Browser | null = null;
+  private userAgents: string[] = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0',
+  ];
 
   async initialize(): Promise<void> {
     if (this.browser) return
@@ -73,6 +80,26 @@ export class WebScraperService {
       headless: true,
     })
   }
+
+  private async configurePage(page: any) {
+    page.setDefaultNavigationTimeout(45000)
+    page.setDefaultTimeout(45000)
+    const ua = this.userAgents[Math.floor(Math.random() * this.userAgents.length)]
+    await page.setUserAgent(ua)
+    await page.setViewport({ width: 1366, height: 768 })
+    await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' })
+    await page.setRequestInterception(true)
+    page.on('request', (req: any) => {
+      const type = req.resourceType()
+      if (type === 'image' || type === 'media' || type === 'font' || type === 'stylesheet') {
+        req.abort().catch(()=>{})
+      } else {
+        req.continue().catch(()=>{})
+      }
+    })
+  }
+
+  private async sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
 
   // Scrape a single job detail page from a public URL (best-effort)
   async scrapeJobDetailFromUrl(jobUrl: string): Promise<{
@@ -86,21 +113,9 @@ export class WebScraperService {
     if (!this.browser) await this.initialize();
     const page = await this.browser!.newPage();
     try {
-      page.setDefaultNavigationTimeout(45000)
-      page.setDefaultTimeout(45000)
-      await page.setRequestInterception(true)
-      page.on('request', (req) => {
-        const type = req.resourceType()
-        if (type === 'image' || type === 'media' || type === 'font' || type === 'stylesheet') {
-          req.abort().catch(()=>{})
-        } else {
-          req.continue().catch(()=>{})
-        }
-      })
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      await page.setViewport({ width: 1366, height: 768 });
+      await this.configurePage(page)
       await page.goto(jobUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await new Promise(r => setTimeout(r, 1500));
+      await this.sleep(800 + Math.random()*600)
 
       const host = new URL(jobUrl).hostname.replace('www.', '');
       const data = await page.evaluate((host) => {
@@ -156,21 +171,9 @@ export class WebScraperService {
     const page = await this.browser!.newPage();
     const results: any[] = [];
     try {
-      page.setDefaultNavigationTimeout(45000)
-      page.setDefaultTimeout(45000)
-      await page.setRequestInterception(true)
-      page.on('request', (req) => {
-        const type = req.resourceType()
-        if (type === 'image' || type === 'media' || type === 'font' || type === 'stylesheet') {
-          req.abort().catch(()=>{})
-        } else {
-          req.continue().catch(()=>{})
-        }
-      })
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      await page.setViewport({ width: 1366, height: 768 });
+      await this.configurePage(page)
       await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      await new Promise(r => setTimeout(r, 1500));
+      await this.sleep(800 + Math.random()*700)
       const host = new URL(searchUrl).hostname.replace('www.', '');
 
       if (/indeed\.com|indeed\.ca/i.test(host)) {
@@ -278,6 +281,15 @@ export class WebScraperService {
     };
 
     try {
+      const sources: string[] = []
+      const addSource = (s: string) => { if (!sources.includes(s)) sources.push(s) }
+      // Try to discover official website if missing
+      if (!website) {
+        try {
+          const found = await this.discoverOfficialWebsite(companyName)
+          if (found) website = found
+        } catch {}
+      }
       // Scrape multiple sources in parallel
       const [glassdoorData, linkedinData, websiteData, newsData, instaData, fbData, gRev] = await Promise.allSettled([
         this.scrapeGlassdoorData(companyName),
@@ -295,6 +307,7 @@ export class WebScraperService {
         data.glassdoorReviews = glassdoorData.value.reviews;
         data.culture = glassdoorData.value.culture;
         data.benefits = glassdoorData.value.benefits;
+        addSource('glassdoor')
       }
 
       if (linkedinData.status === 'fulfilled' && linkedinData.value) {
@@ -305,6 +318,7 @@ export class WebScraperService {
         if (!data.size && linkedinData.value.size) {
           data.size = linkedinData.value.size;
         }
+        addSource('linkedin')
       }
 
       if (websiteData.status === 'fulfilled' && websiteData.value) {
@@ -312,25 +326,30 @@ export class WebScraperService {
         if (!data.industry && websiteData.value.industry) {
           data.industry = websiteData.value.industry;
         }
+        addSource('website')
       }
 
       if (newsData.status === 'fulfilled' && newsData.value) {
         data.recentNews = newsData.value;
+        addSource('google-news')
       }
 
       if (instaData.status === 'fulfilled' && instaData.value) {
         data.socialMedia = data.socialMedia || {}
         data.socialMedia.instagram = instaData.value as any
+        addSource('instagram')
       }
 
       if (fbData.status === 'fulfilled' && fbData.value) {
         data.socialMedia = data.socialMedia || {}
         data.socialMedia.facebook = fbData.value as any
+        addSource('facebook')
       }
 
       if (gRev.status === 'fulfilled' && gRev.value) {
         ;(data as any).googleReviewsRating = (gRev.value as any).rating
         ;(data as any).googleReviewsCount = (gRev.value as any).count
+        addSource('google-reviews')
       }
 
       // Generate fallback data if we don't have enough info
@@ -346,6 +365,7 @@ export class WebScraperService {
         data.description = this.generateFallbackDescription(companyName);
       }
 
+      data.sources = sources
     } catch (error) {
       console.error('Error scraping company data:', error);
       // Return basic data with fallbacks
@@ -359,6 +379,29 @@ export class WebScraperService {
     }
 
     return data;
+  }
+
+  private async discoverOfficialWebsite(companyName: string): Promise<string | null> {
+    if (!this.browser) return null
+    const page = await this.browser.newPage()
+    try {
+      await this.configurePage(page)
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName)}`
+      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.sleep(800 + Math.random()*700)
+      const url = await page.$$eval('a[href^="http"]', els => {
+        const badHosts = ['linkedin.com','facebook.com','instagram.com','glassdoor.com','crunchbase.com','wikipedia.org','news.google.com','youtube.com','twitter.com','x.com']
+        const candidates = els.map(a => (a as HTMLAnchorElement).href).filter(h => {
+          try {
+            const u = new URL(h)
+            return !badHosts.some(b => u.hostname.includes(b))
+          } catch { return false }
+        })
+        return candidates[0] || ''
+      })
+      if (!url) return null
+      try { const u = new URL(url); return `${u.protocol}//${u.hostname}` } catch { return null }
+    } catch { return null } finally { await page.close() }
   }
 
   async scrapeContactInfoFromWebsite(website: string): Promise<{ emails: string[]; phones: string[]; addresses: string[] }> {
