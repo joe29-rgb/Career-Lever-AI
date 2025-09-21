@@ -10,7 +10,6 @@ import { EnterpriseSidebar } from './components/enterprise-sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MetricsHero } from './components/metrics-hero'
 import dynamic from 'next/dynamic'
-import { AIInsights } from './components/ai-insights'
 import { ActionCenter } from './components/action-center'
 
 export default async function DashboardPage() {
@@ -28,6 +27,28 @@ export default async function DashboardPage() {
         <Skeleton className="h-64 w-full" />
       </div>
     ),
+  })
+
+  const AIInsights = dynamic(() => import('./components/ai-insights').then(m => m.AIInsights), {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-3">
+        <Skeleton className="h-4 w-2/5" />
+        <Skeleton className="h-14 w-full" />
+        <Skeleton className="h-14 w-full" />
+      </div>
+    )
+  })
+
+  const RecentCoverLetters = dynamic(() => import('./components/recent-cover-letters').then(m => m.RecentCoverLetters), {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    )
   })
 
   return (
