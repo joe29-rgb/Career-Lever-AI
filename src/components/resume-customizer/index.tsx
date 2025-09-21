@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -237,6 +238,11 @@ export function ResumeCustomizer({
                 <span className="text-sm text-gray-600">{customizationProgress}%</span>
               </div>
               <Progress value={customizationProgress} className="w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-40 md:col-span-2" />
+              </div>
             </div>
           )}
 
