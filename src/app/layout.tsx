@@ -32,10 +32,12 @@ export default function RootLayout({
       <body className={inter.className + ' bg-[--surface] min-h-screen'}>
         <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
+          <a href="#main" className="skip-link">Skip to content</a>
+          <div aria-live="polite" aria-atomic="true" className="sr-only" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
               <EnterpriseSidebar />
-              <main>{children}</main>
+              <main id="main" role="main">{children}</main>
             </div>
           </div>
         </Providers>
