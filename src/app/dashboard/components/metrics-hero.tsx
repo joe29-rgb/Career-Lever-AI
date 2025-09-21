@@ -1,10 +1,11 @@
 'use client'
 
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useQuery } from '@tanstack/react-query'
 
 export function MetricsHero() {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       const res = await fetch('/api/analytics/dashboard')
@@ -18,24 +19,35 @@ export function MetricsHero() {
   return (
     <Card className="glass-card">
       <CardContent className="p-6">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div>
-            <div className="text-caption text-gray-500">Total Applications</div>
-            <div className="text-3xl font-semibold">{stats.totalApplications}</div>
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-8 w-16" />
+              </div>
+            ))}
           </div>
-          <div>
-            <div className="text-caption text-gray-500">Applied This Week</div>
-            <div className="text-3xl font-semibold">{stats.appliedThisWeek}</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <div className="text-caption text-gray-500">Total Applications</div>
+              <div className="text-3xl font-semibold">{stats.totalApplications}</div>
+            </div>
+            <div>
+              <div className="text-caption text-gray-500">Applied This Week</div>
+              <div className="text-3xl font-semibold">{stats.appliedThisWeek}</div>
+            </div>
+            <div>
+              <div className="text-caption text-gray-500">Interview Rate</div>
+              <div className="text-3xl font-semibold">{stats.interviewRate}%</div>
+            </div>
+            <div>
+              <div className="text-caption text-gray-500">Avg Response Time</div>
+              <div className="text-3xl font-semibold">{stats.averageResponseTime}d</div>
+            </div>
           </div>
-          <div>
-            <div className="text-caption text-gray-500">Interview Rate</div>
-            <div className="text-3xl font-semibold">{stats.interviewRate}%</div>
-          </div>
-          <div>
-            <div className="text-caption text-gray-500">Avg Response Time</div>
-            <div className="text-3xl font-semibold">{stats.averageResponseTime}d</div>
-          </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   )
