@@ -123,11 +123,11 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-    // Save to database
+    // Save to database with shorter TTL (2 days) to keep social/contact data fresh
     const savedData = new CompanyData({
       ...companyData,
       cachedAt: new Date(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
     });
 
     await savedData.save();
