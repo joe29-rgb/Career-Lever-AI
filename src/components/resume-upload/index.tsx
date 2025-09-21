@@ -67,9 +67,11 @@ export function ResumeUpload({
 
   const extractPdfClientSide = async (file: File): Promise<string> => {
     try {
-      const pdfjs = await import('pdfjs-dist/build/pdf') as any
-      const worker = await import('pdfjs-dist/build/pdf.worker.mjs')
-      pdfjs.GlobalWorkerOptions.workerSrc = worker
+      const pdfjs: any = await import('pdfjs-dist')
+      // Use CDN worker to avoid bundling worker file in Next
+      if (pdfjs?.GlobalWorkerOptions) {
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+      }
       const arrayBuf = await file.arrayBuffer()
       const loadingTask = pdfjs.getDocument({ data: arrayBuf })
       const pdf = await loadingTask.promise
