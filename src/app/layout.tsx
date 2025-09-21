@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
-import { EnterpriseSidebar } from '@/app/dashboard/components/enterprise-sidebar'
+import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -35,10 +35,7 @@ export default function RootLayout({
           <a href="#main" className="skip-link">Skip to content</a>
           <div aria-live="polite" aria-atomic="true" className="sr-only" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
-              <EnterpriseSidebar />
-              <main id="main" role="main">{children}</main>
-            </div>
+            <AppShell>{children}</AppShell>
           </div>
         </Providers>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
