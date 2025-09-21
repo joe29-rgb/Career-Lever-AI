@@ -103,6 +103,8 @@ Hard rules:
 - Never output placeholders like [Your Name], [Previous Company], [Month, Year]. If the original resume is missing a field, omit it rather than invent or placeholder it.
 - Use the candidate's exact employer names and titles as provided; if a section is unknown, skip it.
 - Keep bullets factual; no made-up metrics.
+- Do not copy or quote any sentences from the Target Context/Job Description. Use it only to guide selection and ordering of content from the Original Resume.
+- Do not restate job requirements or benefits in the resume. Do not include the words Requirements, Preferred Skills, Responsibilities, Company, or Title as sections derived from the job description.
 
 Return the final tailored resume as plain text. Do not include JSON, commentary, or markup.`,
 
@@ -620,7 +622,11 @@ Company insights (use for relevance, not fabrication): ${JSON.stringify(companyD
         throw new Error('Failed to get customized resume from OpenAI');
       }
 
-      const matchScore = calculateMatchScore(customizedText, jobDescription);
+      // Guard against job description leakage by reducing score impact if JD phrases appear verbatim
+      const jdPhrases = (jobDescription || '').split(/[^a-zA-Z0-9]+/).filter(w => w.length > 6).slice(0, 30)
+      const jdLeak = jdPhrases.some(p => customizedText.includes(p))
+      const matchScoreRaw = calculateMatchScore(customizedText, jobDescription);
+      const matchScore = jdLeak ? Math.max(0, Math.round(matchScoreRaw * 0.8)) : matchScoreRaw;
       const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
 
       const result = {
