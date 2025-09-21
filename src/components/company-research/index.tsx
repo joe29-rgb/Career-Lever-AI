@@ -211,12 +211,13 @@ export function CompanyResearchPanel({
             </Alert>
 
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="culture">Culture</TabsTrigger>
                 <TabsTrigger value="news">News</TabsTrigger>
                 <TabsTrigger value="insights">Insights</TabsTrigger>
                 <TabsTrigger value="contacts">Contacts</TabsTrigger>
+                <TabsTrigger value="sources">Sources</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-4">
@@ -565,6 +566,62 @@ export function CompanyResearchPanel({
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="sources" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Sources</CardTitle>
+                    <CardDescription>Primary links and timestamps for this research</CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {researchResult.website && (
+                      <div className="flex items-center justify-between border rounded p-3">
+                        <span className="font-medium">Website</span>
+                        <Button asChild size="sm" variant="outline"><a href={researchResult.website} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                      </div>
+                    )}
+                    {researchResult.linkedinData?.companyPage && (
+                      <div className="flex items-center justify-between border rounded p-3">
+                        <span className="font-medium">LinkedIn</span>
+                        <Button asChild size="sm" variant="outline"><a href={researchResult.linkedinData.companyPage} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                      </div>
+                    )}
+                    {researchResult.socialMedia?.facebook?.pageUrl && (
+                      <div className="flex items-center justify-between border rounded p-3">
+                        <span className="font-medium">Facebook</span>
+                        <Button asChild size="sm" variant="outline"><a href={researchResult.socialMedia.facebook.pageUrl} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                      </div>
+                    )}
+                    {researchResult.socialMedia?.instagram?.handle && (
+                      <div className="flex items-center justify-between border rounded p-3">
+                        <span className="font-medium">Instagram</span>
+                        <Button asChild size="sm" variant="outline"><a href={`https://instagram.com/${researchResult.socialMedia.instagram.handle}`} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                      </div>
+                    )}
+                    {researchResult.recentNews && researchResult.recentNews.length > 0 && (
+                      <div className="md:col-span-2">
+                        <div className="font-medium mb-2">Recent News</div>
+                        <div className="space-y-2">
+                          {researchResult.recentNews.slice(0,5).map((n, i)=> (
+                            <div key={i} className="flex items-center justify-between border rounded p-3">
+                              <div className="pr-3">
+                                <div className="text-sm font-medium line-clamp-1">{n.title}</div>
+                                <div className="text-xs text-gray-500">{new Date(n.publishedAt).toLocaleString()}</div>
+                              </div>
+                              {n.url && (
+                                <Button asChild size="sm" variant="outline"><a href={n.url} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {(researchResult as any).cachedAt && (
+                      <div className="text-xs text-gray-500 md:col-span-2">Cached: {new Date((researchResult as any).cachedAt).toLocaleString()}</div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
             </Tabs>
           </div>
