@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
     }
-    const { resumeId, jobDescription, jobTitle, companyName, tone } = parsed.data;
+    const { resumeId, jobDescription, jobTitle, companyName, tone, overrideResumeText } = parsed.data;
 
     const rl = isRateLimited((session.user as any).id, 'resume-customize');
     if (rl.limited) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     let customizationResult: { customizedResume: string; matchScore: number; improvements: string[]; suggestions: string[] };
     try {
       customizationResult = await AIService.customizeResume(
-        resume.extractedText || '',
+        (overrideResumeText && overrideResumeText.length > 50 ? overrideResumeText : (resume.extractedText || '')),
         jobDescription,
         jobTitle,
         companyName,

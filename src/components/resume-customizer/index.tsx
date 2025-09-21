@@ -45,6 +45,7 @@ export function ResumeCustomizer({
   const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
   const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
   const [autoTone, setAutoTone] = useState<boolean>(false)
+  const [overrideText, setOverrideText] = useState<string>('')
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -82,6 +83,7 @@ export function ResumeCustomizer({
           jobTitle: jobAnalysis.analysis.jobTitle,
           companyName: jobAnalysis.analysis.companyName,
           tone,
+          overrideResumeText: overrideText && overrideText.length > 50 ? overrideText : undefined,
         }),
       })
 
@@ -172,6 +174,12 @@ export function ResumeCustomizer({
                 <p className="text-xs text-gray-500">We’ll use the Analyze page’s tone if available</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-600">Optional: Override Resume Text</p>
+            <Textarea rows={6} placeholder="Paste clean resume text to override extraction (optional)" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
+            <p className="text-xs text-gray-500">Use this if the PDF text extraction contained gibberish. Minimum 50 characters.</p>
           </div>
           {/* Job Match Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

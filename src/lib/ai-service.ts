@@ -99,6 +99,11 @@ Target Context:
 Original Resume (source of truth; do not fabricate beyond this):
 {resumeText}
 
+Hard rules:
+- Never output placeholders like [Your Name], [Previous Company], [Month, Year]. If the original resume is missing a field, omit it rather than invent or placeholder it.
+- Use the candidate's exact employer names and titles as provided; if a section is unknown, skip it.
+- Keep bullets factual; no made-up metrics.
+
 Return the final tailored resume as plain text. Do not include JSON, commentary, or markup.`,
 
   JOB_ANALYSIS: `Analyze this job description and extract key information. Provide a structured analysis in JSON format.
