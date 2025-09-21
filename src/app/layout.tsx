@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { EnterpriseSidebar } from '@/app/dashboard/components/enterprise-sidebar'
 import { initSentry } from '@/lib/sentry'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -28,10 +29,15 @@ export default function RootLayout({
   }
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className + ' bg-[--surface] min-h-screen'}>
         <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
-          {children}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+              <EnterpriseSidebar />
+              <main>{children}</main>
+            </div>
+          </div>
         </Providers>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
           <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
