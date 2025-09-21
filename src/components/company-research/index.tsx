@@ -283,6 +283,27 @@ export function CompanyResearchPanel({
                   )}
                 </div>
 
+                {/* Google Reviews */}
+                {(researchResult as any).googleReviewsRating && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Google Reviews</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">Rating</span>
+                        <span className="font-medium">{(researchResult as any).googleReviewsRating}/5</span>
+                      </div>
+                      {(researchResult as any).googleReviewsCount && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Reviews</span>
+                          <span className="font-medium">{(researchResult as any).googleReviewsCount.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Description */}
                 {researchResult.description && (
                   <Card>
@@ -451,6 +472,36 @@ export function CompanyResearchPanel({
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Social Media */}
+                {(researchResult.socialMedia?.instagram || researchResult.socialMedia?.facebook) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Social Signals</CardTitle>
+                      <CardDescription>Followers and recent public posts</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {researchResult.socialMedia?.instagram && (
+                        <div>
+                          <div className="text-sm font-medium">Instagram: @{researchResult.socialMedia.instagram.handle}</div>
+                          <div className="text-xs text-gray-600 mb-2">Followers: {researchResult.socialMedia.instagram.followers.toLocaleString()}</div>
+                          <ul className="list-disc ml-5 text-sm space-y-1">
+                            {researchResult.socialMedia.instagram.recentPosts.slice(0,3).map((p, i)=>(<li key={i}>{p.caption}</li>))}
+                          </ul>
+                        </div>
+                      )}
+                      {researchResult.socialMedia?.facebook && (
+                        <div>
+                          <div className="text-sm font-medium">Facebook</div>
+                          <div className="text-xs text-gray-600 mb-2">Followers: {researchResult.socialMedia.facebook.followers.toLocaleString()}</div>
+                          <ul className="list-disc ml-5 text-sm space-y-1">
+                            {researchResult.socialMedia.facebook.recentPosts.slice(0,3).map((p, i)=>(<li key={i}>{p.content}</li>))}
+                          </ul>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="contacts" className="space-y-4">
@@ -485,6 +536,35 @@ export function CompanyResearchPanel({
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Contact Info */}
+                {(researchResult as any).contactInfo && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Contact Info</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <div className="font-medium mb-1">Emails</div>
+                        <ul className="space-y-1">
+                          {(researchResult as any).contactInfo.emails.slice(0,5).map((e:string,i:number)=>(<li key={i} className="truncate">{e}</li>))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="font-medium mb-1">Phones</div>
+                        <ul className="space-y-1">
+                          {(researchResult as any).contactInfo.phones.slice(0,5).map((p:string,i:number)=>(<li key={i} className="truncate">{p}</li>))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="font-medium mb-1">Addresses</div>
+                        <ul className="space-y-1">
+                          {(researchResult as any).contactInfo.addresses.slice(0,5).map((a:string,i:number)=>(<li key={i} className="truncate">{a}</li>))}
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           </div>

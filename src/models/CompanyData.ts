@@ -77,6 +77,10 @@ export interface ICompanyData extends Document {
   glassdoorReviews?: number;
   linkedinData?: ILinkedInData;
   socialMedia?: ISocialMediaData;
+  hiringContacts?: Array<{ name: string; title: string; profileUrl?: string; source: string }>;
+  contactInfo?: { emails: string[]; phones: string[]; addresses: string[] };
+  googleReviewsRating?: number;
+  googleReviewsCount?: number;
   cachedAt: Date;
   expiresAt: Date;
 }
@@ -260,6 +264,14 @@ const CompanyDataSchema: Schema = new Schema({
   glassdoorReviews: Number,
   linkedinData: LinkedInDataSchema,
   socialMedia: SocialMediaDataSchema,
+  hiringContacts: [{ name: String, title: String, profileUrl: String, source: String }],
+  contactInfo: {
+    emails: [String],
+    phones: [String],
+    addresses: [String],
+  },
+  googleReviewsRating: Number,
+  googleReviewsCount: Number,
   cachedAt: {
     type: Date,
     default: Date.now,

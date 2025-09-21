@@ -70,6 +70,10 @@ export interface CompanyData {
   glassdoorReviews?: number;
   linkedinData?: LinkedInData;
   socialMedia?: SocialMediaData;
+  hiringContacts?: Array<{ name: string; title: string; profileUrl?: string; source: string }>;
+  contactInfo?: { emails: string[]; phones: string[]; addresses: string[] };
+  googleReviewsRating?: number;
+  googleReviewsCount?: number;
   cachedAt: Date;
   expiresAt: Date;
 }

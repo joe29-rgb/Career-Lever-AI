@@ -99,6 +99,20 @@ export async function POST(request: NextRequest) {
       } catch {}
     }
 
+    // Enrich contact info from website if present
+    try {
+      if (companyData.website) {
+        const ci = await webScraper.scrapeContactInfoFromWebsite(companyData.website)
+        companyData.contactInfo = ci
+      } else if (companyData.linkedinData?.companyPage) {
+        // Try to infer website from LinkedIn about section quickly via google
+        try {
+          const guess = await webScraper.scrapeCompanyWebsite(`https://${new URL(companyData.linkedinData.companyPage).hostname}`)
+          if (guess?.description && !companyData.description) companyData.description = guess.description
+        } catch {}
+      }
+    } catch {}
+
     // Save to database
     const savedData = new CompanyData({
       ...companyData,
