@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Guard: ensure we have sufficient resume text unless override is provided
+    const resumeTextForTailoring = (overrideResumeText && overrideResumeText.length > 50 ? overrideResumeText : (resume.extractedText || ''))
+    if (!resumeTextForTailoring || resumeTextForTailoring.trim().length < 80) {
+      return NextResponse.json({ error: 'Your resume text could not be read. Please paste clean text in the override box and retry.' }, { status: 400 })
+    }
+
     // Create job application record
     const jobApplication = new JobApplication({
       userId: session.user.id,
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
     let customizationResult: { customizedResume: string; matchScore: number; improvements: string[]; suggestions: string[] };
     try {
       customizationResult = await AIService.customizeResume(
-        (overrideResumeText && overrideResumeText.length > 50 ? overrideResumeText : (resume.extractedText || '')),
+        resumeTextForTailoring,
         jobDescription,
         jobTitle,
         companyName,
