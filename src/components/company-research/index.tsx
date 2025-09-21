@@ -111,10 +111,31 @@ export function CompanyResearchPanel({
     }
   }
 
-  const refreshResearch = () => {
-    if (researchResult) {
-      setResearchResult(null)
-      handleResearch()
+  const refreshResearch = async () => {
+    if (!companyName.trim()) return
+    setIsResearching(true)
+    setError(null)
+    setResearchProgress(0)
+    try {
+      const response = await fetch(`/api/company/research?refresh=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyName: companyName.trim(), website: website.trim() || undefined })
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(()=>({}))
+        throw new Error((data as any).error || 'Refresh failed')
+      }
+      const data = await response.json()
+      setResearchResult(data.companyData)
+      onResearchComplete(data.companyData)
+      toast.success('Research refreshed!')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Refresh failed'
+      setError(msg)
+      toast.error(msg)
+    } finally {
+      setIsResearching(false)
     }
   }
 

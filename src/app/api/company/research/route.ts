@@ -37,11 +37,15 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectToDatabase();
 
+    // TTL override through query param `refresh=true`
+    const { searchParams } = new URL(request.url)
+    const forceRefresh = searchParams.get('refresh') === 'true'
+
     // Check if we have cached data that's still valid
-    const cachedData = await CompanyData.findOne({
+    const cachedData = !forceRefresh ? await CompanyData.findOne({
       companyName: new RegExp(companyName, 'i'),
       expiresAt: { $gt: new Date() }
-    });
+    }) : null;
 
     if (cachedData) {
       return NextResponse.json({
