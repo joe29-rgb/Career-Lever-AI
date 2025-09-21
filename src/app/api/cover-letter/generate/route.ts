@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save } = body;
+    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save, psychology } = body;
 
     const rl = isRateLimited((session.user as any).id, 'cover-letter');
     if (rl.limited) {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         companyName,
         jobDescription,
         resumeText,
-        undefined,
+        { ...(psychology ? { psychology } : {}) },
         tone,
         length
       );
@@ -125,6 +125,10 @@ export async function POST(request: NextRequest) {
     let companyData = null;
     if (jobApplication.companyResearch) {
       companyData = await CompanyData.findById(jobApplication.companyResearch);
+    }
+    // Merge stored context (psychology) if present
+    if (!companyData && jobApplication.context?.companyData) {
+      companyData = { ...(jobApplication.context.companyData || {}) } as any
     }
 
     // Generate cover letter using AI service

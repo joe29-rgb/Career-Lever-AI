@@ -74,6 +74,10 @@ export async function POST(request: NextRequest) {
       applicationStatus: 'saved',
       appliedDate: new Date(),
       followUpDates: [],
+      context: {
+        psychology: psychology || null,
+        companyData: companyData || null,
+      }
     });
 
     await jobApplication.save();

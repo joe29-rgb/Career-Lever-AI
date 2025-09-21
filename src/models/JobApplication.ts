@@ -20,6 +20,7 @@ export interface IJobApplication extends Document {
   notes?: string
   companyResearch?: mongoose.Types.ObjectId
   analysis?: any
+  context?: any
   coverLetterId?: mongoose.Types.ObjectId
   resumeVersionId?: mongoose.Types.ObjectId
   createdAt: Date
@@ -72,6 +73,10 @@ const JobApplicationSchema = new Schema<IJobApplication>({
     ref: 'CompanyData',
   },
   analysis: {
+    type: Schema.Types.Mixed,
+    default: null,
+  },
+  context: {
     type: Schema.Types.Mixed,
     default: null,
   },
