@@ -13,6 +13,8 @@ export const resumeCustomizeSchema = z.object({
   companyName: z.string().min(2),
   tone: z.enum(['professional','enthusiastic','concise']).optional(),
   overrideResumeText: z.string().min(50).optional(),
+  psychology: z.any().optional(),
+  companyData: z.any().optional(),
 })
 
 export const coverLetterRawSchema = z.object({

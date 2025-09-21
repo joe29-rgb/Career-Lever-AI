@@ -72,6 +72,9 @@ export function ResumeCustomizer({
         setCustomizationProgress(prev => Math.min(prev + 20, 90))
       }, 300)
 
+      // Prepare psychology/companyData if available
+      let psychology: any | undefined
+      try { const stored = localStorage.getItem('analyze:psychology'); if (stored) psychology = JSON.parse(stored) } catch {}
       const response = await fetch('/api/resume/customize', {
         method: 'POST',
         headers: {
@@ -84,6 +87,7 @@ export function ResumeCustomizer({
           companyName: jobAnalysis.analysis.companyName,
           tone,
           overrideResumeText: overrideText && overrideText.length > 50 ? overrideText : undefined,
+          psychology
         }),
       })
 

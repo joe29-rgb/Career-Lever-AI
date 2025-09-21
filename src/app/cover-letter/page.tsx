@@ -24,6 +24,8 @@ export default function CoverLetterPage() {
   const generate = async () => {
     setIsLoading(true)
     try {
+      let psychology: any | undefined
+      try { const stored = localStorage.getItem('analyze:psychology'); if (stored) psychology = JSON.parse(stored) } catch {}
       const resp = await fetch('/api/cover-letter/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,6 +37,7 @@ export default function CoverLetterPage() {
           resumeText,
           tone,
           length,
+          psychology
         })
       })
       if (!resp.ok) {

@@ -550,7 +550,9 @@ export class AIService {
     jobTitle: string,
     companyName: string,
     tone: 'professional' | 'enthusiastic' | 'concise' = 'professional',
-    length: 'same' | 'shorter' | 'longer' = 'same'
+    length: 'same' | 'shorter' | 'longer' = 'same',
+    psychology?: any,
+    companyData?: any
   ): Promise<ResumeCustomizationResult> {
     if (ASSISTANT_RESUME_TAILOR_ID) {
       try {
@@ -560,12 +562,15 @@ export class AIService {
         return this.customizeResumeWithModel(resumeText, jobDescription);
       }
     }
-    return this.customizeResumeWithModel(resumeText, jobDescription);
+    return this.customizeResumeWithModel(resumeText, jobDescription, psychology, companyData, tone);
   }
 
   private static async customizeResumeWithModel(
     resumeText: string,
-    jobDescription: string
+    jobDescription: string,
+    psychology?: any,
+    companyData?: any,
+    tone: 'professional' | 'enthusiastic' | 'concise' = 'professional'
   ): Promise<ResumeCustomizationResult> {
     if (DEMO_MODE) {
       const customized = `Summary: Experienced engineer aligned to role.\n\n${resumeText}`;
@@ -576,14 +581,21 @@ export class AIService {
         suggestions: ['Tighten summary', 'Reorder skills'],
       };
     }
-    const cacheKey = makeKey('resume-tailor', JSON.stringify({ resumeText, jobDescription }));
+    const cacheKey = makeKey('resume-tailor', JSON.stringify({ resumeText, jobDescription, tone, psychology: !!psychology, companyData: !!companyData }));
     const cached = getCache(cacheKey);
     if (cached) return cached as ResumeCustomizationResult;
     const rcached = await getCacheFromRedis(cacheKey)
     if (rcached) return rcached as ResumeCustomizationResult
     try {
+      const toneLine = `Preferred tone: ${tone}.`;
+      const psychLine = psychology ? `
+Psychology guidance (tone, formality, values): ${JSON.stringify(psychology).slice(0, 1000)}
+` : ''
+      const companyLine = companyData ? `
+Company insights (use for relevance, not fabrication): ${JSON.stringify(companyData).slice(0, 1200)}
+` : ''
       const prompt = AI_PROMPTS.RESUME_TAILORING
-        .replace('{jobDescription}', jobDescription)
+        .replace('{jobDescription}', jobDescription + '\n' + toneLine + psychLine + companyLine)
         .replace('{resumeText}', resumeText);
 
       const completion = await withTimeout(openai.chat.completions.create({
@@ -686,7 +698,7 @@ RESUME:\n${resumeText}`;
                 const args = JSON.parse(fn.arguments || '{}');
                 const rd = typeof args.resumeText === 'string' ? args.resumeText : resumeText;
                 const jd = typeof args.jobDescription === 'string' ? args.jobDescription : jobDescription;
-                const result = await this.customizeResumeWithModel(rd, jd);
+        const result = await this.customizeResumeWithModel(rd, jd, undefined, undefined, tone);
                 return { tool_call_id: toolCall.id, output: result.customizedResume };
               }
               return { tool_call_id: toolCall.id, output: '' };

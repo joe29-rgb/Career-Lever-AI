@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
     }
-    const { resumeId, jobDescription, jobTitle, companyName, tone, overrideResumeText } = parsed.data;
+    const { resumeId, jobDescription, jobTitle, companyName, tone, overrideResumeText, psychology, companyData } = parsed.data;
 
     const rl = isRateLimited((session.user as any).id, 'resume-customize');
     if (rl.limited) {
@@ -80,7 +80,10 @@ export async function POST(request: NextRequest) {
         jobDescription,
         jobTitle,
         companyName,
-        tone || 'professional'
+        tone || 'professional',
+        'same',
+        psychology,
+        companyData
       );
     } catch (e) {
       const fallbackText = `Professional Summary\n\nTarget Role: ${jobTitle} at ${companyName}\n\nHighlights:\n- Relevant experience aligned to the job description\n- Skills matched to key requirements\n- Results-focused achievements\n\nResume\n\n${(resume.extractedText || '').slice(0, 8000)}`
