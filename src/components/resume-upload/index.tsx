@@ -30,6 +30,7 @@ export function ResumeUpload({
   const [error, setError] = useState<string | null>(null)
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
   const [pastedText, setPastedText] = useState('')
+  const [clientExtract, setClientExtract] = useState('')
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
@@ -64,6 +65,29 @@ export function ResumeUpload({
     disabled: isUploading
   })
 
+  const extractPdfClientSide = async (file: File): Promise<string> => {
+    try {
+      const pdfjs = await import('pdfjs-dist/build/pdf') as any
+      const worker = await import('pdfjs-dist/build/pdf.worker.mjs')
+      pdfjs.GlobalWorkerOptions.workerSrc = worker
+      const arrayBuf = await file.arrayBuffer()
+      const loadingTask = pdfjs.getDocument({ data: arrayBuf })
+      const pdf = await loadingTask.promise
+      let text = ''
+      const clampLen = 400000
+      for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        const pageText = content.items.map((it: any) => it.str).join(' ')
+        text += '\n' + pageText
+        if (text.length > clampLen) break
+      }
+      return text.trim()
+    } catch {
+      return ''
+    }
+  }
+
   const handleUpload = async () => {
     if (!uploadedFile && !pastedText.trim()) {
       setError('Please upload a PDF or paste your resume text')
@@ -87,7 +111,15 @@ export function ResumeUpload({
       }, 200)
 
       const formData = new FormData()
-      if (uploadedFile) formData.append('resume', uploadedFile)
+      if (uploadedFile) {
+        // Try client-side extraction first
+        const clientText = clientExtract || await extractPdfClientSide(uploadedFile)
+        if (clientText && clientText.length >= 50) {
+          formData.append('clientText', clientText)
+          setClientExtract(clientText)
+        }
+        formData.append('resume', uploadedFile)
+      }
       if (pastedText.trim()) formData.append('pastedText', pastedText.trim())
 
       const response = await fetch('/api/resume/upload', {

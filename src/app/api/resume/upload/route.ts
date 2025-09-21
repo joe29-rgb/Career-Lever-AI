@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('resume') as File;
     const pastedText = (formData.get('pastedText') as string) || ''
+    const clientText = (formData.get('clientText') as string) || ''
 
     if (!file && !pastedText) {
       return NextResponse.json({ error: 'No file or text provided' }, { status: 400 })
@@ -68,17 +69,23 @@ export async function POST(request: NextRequest) {
 
       // Extract text from PDF
       try {
-      const pdfParse = (await import('pdf-parse')).default
-      const pdfData = await pdfParse(buffer)
-      extractedText = pdfData.text?.trim() || ''
+        const pdfParse = (await import('pdf-parse')).default
+        const pdfData = await pdfParse(buffer)
+        extractedText = pdfData.text?.trim() || ''
       } catch (error) {
-      console.error('PDF parsing error, skipping OCR on server:', error)
-      extractedText = ''
+        // Quiet noisy environment errors; rely on clientText/paste when available
+        console.warn('PDF parsing failed on server; will rely on client text if provided')
+        extractedText = ''
       }
 
       // If pdf-parse yields no text (likely image-only PDF), rely on pasted text path instead of OCR on server
     } else if (pastedText) {
       extractedText = pastedText.trim()
+    }
+
+    // Prefer client-extracted text when supplied
+    if (clientText && clientText.trim().length >= 50) {
+      extractedText = clientText.trim()
     }
 
     const tooShort = !extractedText || extractedText.trim().length < 50
