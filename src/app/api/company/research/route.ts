@@ -70,7 +70,13 @@ export async function POST(request: NextRequest) {
     // available in the container fall back to lightweight heuristics
     let companyData: any
     try {
-      companyData = await webScraper.scrapeCompanyData(companyName, website);
+      // Retry/backoff wrapper to increase robustness
+      const attempt = async () => webScraper.scrapeCompanyData(companyName, website)
+      try {
+        companyData = await (webScraper as any).withRetry(attempt, 2, 600)
+      } catch {
+        companyData = await attempt()
+      }
     } catch (e) {
       companyData = {
         companyName,

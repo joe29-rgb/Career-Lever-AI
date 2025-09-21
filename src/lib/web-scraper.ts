@@ -101,6 +101,14 @@ export class WebScraperService {
 
   private async sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
 
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelay = 500): Promise<T> {
+    let lastErr: any
+    for (let i = 0; i < attempts; i++) {
+      try { return await fn() } catch (e) { lastErr = e; await this.sleep(baseDelay * Math.pow(2, i) + Math.random()*200) }
+    }
+    throw lastErr
+  }
+
   // Scrape a single job detail page from a public URL (best-effort)
   async scrapeJobDetailFromUrl(jobUrl: string): Promise<{
     title?: string;
