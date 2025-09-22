@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  const TrendsChart = dynamic(() => import('./components/trends-chart').then(m => m.TrendsChart), {
+  const TrendsChart = dynamic(() => import('./components/trends-chart'), {
     ssr: false,
     loading: () => (
       <div className="space-y-3">
@@ -29,7 +29,7 @@ export default async function DashboardPage() {
     ),
   })
 
-  const AIInsights = dynamic(() => import('./components/ai-insights').then(m => m.AIInsights), {
+  const AIInsights = dynamic(() => import('./components/ai-insights'), {
     ssr: false,
     loading: () => (
       <div className="space-y-3">
