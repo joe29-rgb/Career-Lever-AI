@@ -109,6 +109,156 @@ export class WebScraperService {
     throw lastErr
   }
 
+  // Generic Google search helper returning title, url, and snippet
+  async googleSearch(query: string, limit: number = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    if (!this.browser) await this.initialize();
+    const page = await this.browser!.newPage();
+    try {
+      await this.configurePage(page)
+      const qs = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
+      await page.goto(qs, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await this.sleep(900 + Math.random()*600)
+      const results = await page.evaluate((max: number) => {
+        const out: Array<{ title: string; url: string; snippet: string }> = []
+        const blocks = document.querySelectorAll('div.g, div[data-header-feature], div[data-snf]');
+        for (const block of Array.from(blocks)) {
+          const a = block.querySelector('a[href^="http"]') as HTMLAnchorElement | null
+          const h3 = block.querySelector('h3') as HTMLElement | null
+          const sn = block.querySelector('div[data-content-feature] div, .VwiC3b, .IsZvec') as HTMLElement | null
+          const url = a?.href || ''
+          const title = h3?.textContent?.trim() || ''
+          const snippet = sn?.textContent?.trim() || ''
+          if (url && title) out.push({ title, url, snippet })
+          if (out.length >= max) break
+        }
+        return out
+      }, Math.max(1, Math.min(limit, 50)))
+      // De-duplicate and filter tracking
+      const seen = new Set<string>()
+      const cleaned = results.filter(r => {
+        try {
+          const u = new URL(r.url)
+          const key = `${u.hostname}${u.pathname}`
+          if (seen.has(key)) return false
+          seen.add(key)
+          return true
+        } catch { return false }
+      })
+      return cleaned
+    } catch (e) {
+      return []
+    } finally {
+      await page.close()
+    }
+  }
+
+  // Build advanced Google queries for job discovery across ATS/job boards
+  buildJobSearchQueries(options: {
+    jobTitle: string;
+    location?: string;
+    after?: string; // YYYY-MM-DD
+    remote?: boolean;
+    excludeSenior?: boolean;
+    salaryBands?: string[]; // like ["$60,000","$80,000"]
+    atsDomains?: string[]; // ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com']
+  }): string[] {
+    const after = options.after || ''
+    const jt = options.jobTitle
+    const loc = options.location || ''
+    const remote = options.remote ? '"remote"' : ''
+    const exclude = options.excludeSenior ? '-"senior" -"staff" -"principal"' : ''
+    const parts: string[] = []
+    const ats = (options.atsDomains && options.atsDomains.length ? options.atsDomains : ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com']).slice(0,6)
+    for (const d of ats) {
+      const q = `site:${d} "${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
+      parts.push(q)
+    }
+    // broad query
+    const broad = `"${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
+    parts.push(broad)
+    // salary based queries
+    if (options.salaryBands && options.salaryBands.length) {
+      const salaryExpr = options.salaryBands.slice(0,3).map(s => `"${s}"`).join(' OR ')
+      parts.push(`${salaryExpr} "${jt}" ${loc ? '"'+loc+'"' : ''} filetype:pdf`)
+    }
+    return parts
+  }
+
+  // Run Google queries and aggregate unique job posting links, preferring ATS domains
+  async searchJobsByGoogle(options: {
+    jobTitle: string;
+    location?: string;
+    after?: string;
+    remote?: boolean;
+    excludeSenior?: boolean;
+    salaryBands?: string[];
+    limit?: number;
+  }): Promise<Array<{ title?: string; url: string; snippet?: string; source: string }>> {
+    const queries = this.buildJobSearchQueries({
+      jobTitle: options.jobTitle,
+      location: options.location,
+      after: options.after,
+      remote: options.remote,
+      excludeSenior: options.excludeSenior,
+      salaryBands: options.salaryBands,
+    })
+    const preferredHosts = ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com','boards.greenhouse.io','myworkdayjobs.com','smartrecruiters.com']
+    const results: Array<{ title?: string; url: string; snippet?: string; source: string }> = []
+    const seen = new Set<string>()
+    for (const q of queries) {
+      const res = await this.withRetry(() => this.googleSearch(q, 12), 2, 700)
+      for (const r of res) {
+        try {
+          const u = new URL(r.url)
+          const host = u.hostname.replace('www.','')
+          const key = `${host}${u.pathname}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          results.push({ title: r.title, url: r.url, snippet: r.snippet, source: host })
+        } catch { /* ignore */ }
+      }
+      // small delay to avoid being blocked
+      await this.sleep(800 + Math.random()*400)
+      if (results.length >= (options.limit || 30)) break
+    }
+    // Sort: prefer ATS hosts first
+    results.sort((a, b) => {
+      const aPref = preferredHosts.some(h => (a.source||'').includes(h)) ? 0 : 1
+      const bPref = preferredHosts.some(h => (b.source||'').includes(h)) ? 0 : 1
+      return aPref - bPref
+    })
+    return results.slice(0, options.limit || 30)
+  }
+
+  // Build Google intel queries and gather categorized signals when direct sites are unavailable
+  async searchCompanyIntelByGoogle(companyName: string, opts?: { after?: string }): Promise<{
+    financial: Array<{ title: string; url: string; snippet: string }>;
+    culture: Array<{ title: string; url: string; snippet: string }>;
+    news: Array<{ title: string; url: string; snippet: string }>;
+    leadership: Array<{ title: string; url: string; snippet: string }>;
+    growth: Array<{ title: string; url: string; snippet: string }>;
+    benefits: Array<{ title: string; url: string; snippet: string }>;
+  }> {
+    const after = opts?.after || ''
+    const qFinancial = `"${companyName}" ("funding" OR "investment" OR "revenue") ${after ? 'after:'+after : ''}`
+    const qCulture = `site:glassdoor.com "${companyName}" ("culture" OR "management" OR "benefits")`
+    const qNews = `"${companyName}" ("press release" OR "announcement") ${after ? 'after:'+after : ''}`
+    const qLeadership = `"${companyName}" ("CEO" OR "founder" OR "executive" OR "leadership team") ${after ? 'after:'+after : ''}`
+    const qGrowth = `"${companyName}" ("hiring" OR "expansion" OR "new office" OR "acquired" OR "partnership") ${after ? 'after:'+after : ''}`
+    const qBenefits = `"${companyName}" ("salary" OR "compensation" OR "benefits" OR "PTO")`
+
+    const [financial, culture, news, leadership, growth, benefits] = await Promise.all([
+      this.googleSearch(qFinancial, 8),
+      this.googleSearch(qCulture, 8),
+      this.googleSearch(qNews, 8),
+      this.googleSearch(qLeadership, 8),
+      this.googleSearch(qGrowth, 8),
+      this.googleSearch(qBenefits, 8),
+    ])
+
+    return { financial, culture, news, leadership, growth, benefits }
+  }
+
   // Scrape a single job detail page from a public URL (best-effort)
   async scrapeJobDetailFromUrl(jobUrl: string): Promise<{
     title?: string;
