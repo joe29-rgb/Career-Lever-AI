@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
     }
-    const { resumeId, jobDescription, jobTitle, companyName, tone, overrideResumeText, psychology, companyData } = parsed.data;
+    const { resumeId, jobDescription, jobTitle, companyName, tone, overrideResumeText, psychology, companyData, atsTarget, optimizationLevel, industryFocus, experienceLevel, keyMetrics, skillsPriority, antiAIDetection, formatStyle, lengthTarget } = parsed.data as any;
 
     const rl = isRateLimited((session.user as any).id, 'resume-customize');
     if (rl.limited) {
@@ -91,9 +91,19 @@ export async function POST(request: NextRequest) {
         jobTitle,
         companyName,
         tone || 'professional',
-        'same',
+        lengthTarget || 'same',
         psychology,
-        companyData
+        {
+          ...(companyData || {}),
+          atsTarget: atsTarget || 'generic',
+          optimizationLevel: optimizationLevel || 'moderate',
+          industryFocus,
+          experienceLevel,
+          keyMetrics,
+          skillsPriority,
+          antiAIDetection: antiAIDetection !== false,
+          formatStyle: formatStyle || 'traditional'
+        }
       );
     } catch (e) {
       const fallbackText = `Professional Summary\n\nTarget Role: ${jobTitle} at ${companyName}\n\nHighlights:\n- Relevant experience aligned to the job description\n- Skills matched to key requirements\n- Results-focused achievements\n\nResume\n\n${(resume.extractedText || '').slice(0, 8000)}`

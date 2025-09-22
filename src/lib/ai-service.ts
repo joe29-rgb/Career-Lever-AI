@@ -858,13 +858,13 @@ RESUME:\n${resumeText}`;
       if (rcached) return rcached as CoverLetterResult
       let companyInfo = '';
       if (companyData) {
-        companyInfo = `
-Company Research:
-- Industry: ${companyData.industry || 'Not available'}
-- Size: ${companyData.size || 'Not available'}
-- Description: ${companyData.description || 'Not available'}
-- Culture: ${companyData.culture?.join(', ') || 'Not available'}
-- Recent News: ${companyData.recentNews?.map((news: any) => news.title).join(', ') || 'Not available'}`;
+        const lines: string[] = []
+        if (companyData.industry) lines.push(`- Industry: ${companyData.industry}`)
+        if (companyData.size) lines.push(`- Size: ${companyData.size}`)
+        if (companyData.description) lines.push(`- Description: ${companyData.description}`)
+        if (Array.isArray(companyData.culture) && companyData.culture.length) lines.push(`- Culture: ${companyData.culture.join(', ')}`)
+        if (Array.isArray(companyData.recentNews) && companyData.recentNews.length) lines.push(`- Recent News: ${companyData.recentNews.map((n: any)=> n.title).join(', ')}`)
+        if (lines.length) companyInfo = `\nCompany Research:\n${lines.join('\n')}`
       }
 
       const prompt = AI_PROMPTS.COVER_LETTER_GENERATION

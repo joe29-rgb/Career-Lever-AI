@@ -185,8 +185,6 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
               body: JSON.stringify({
                 jobApplicationId: appId,
                 jobBoards: [boardId],
-                resumeId: 'mock-resume-id', // In real implementation, get from application
-                coverLetterId: 'mock-cover-id',
                 customizations: {}
               }),
             })

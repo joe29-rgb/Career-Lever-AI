@@ -15,6 +15,16 @@ export const resumeCustomizeSchema = z.object({
   overrideResumeText: z.string().min(50).optional(),
   psychology: z.any().optional(),
   companyData: z.any().optional(),
+  // Advanced optimization controls (all optional)
+  atsTarget: z.enum(['workday','greenhouse','lever','taleo','icims','generic']).optional(),
+  optimizationLevel: z.enum(['conservative','moderate','aggressive']).optional(),
+  industryFocus: z.string().optional(),
+  experienceLevel: z.enum(['entry','mid','senior','executive']).optional(),
+  keyMetrics: z.array(z.string().min(1)).optional(),
+  skillsPriority: z.array(z.string().min(1)).optional(),
+  antiAIDetection: z.boolean().optional(),
+  formatStyle: z.enum(['traditional','modern','technical','creative']).optional(),
+  lengthTarget: z.enum(['1-page','2-page','same','optimized']).optional(),
 })
 
 export const coverLetterRawSchema = z.object({
