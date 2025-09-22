@@ -97,11 +97,18 @@ export class WebScraperService {
         this.redis.connect().catch(()=>{})
       } catch {}
     }
+    const launchArgs = [...chromium.args]
+    if (proxyArg) {
+      launchArgs.push(proxyArg)
+    } else {
+      // Some hosts set proxy env vars by default; ensure direct connection
+      launchArgs.push('--no-proxy-server')
+      launchArgs.push('--proxy-bypass-list=*')
+    }
     this.browser = await puppeteer.launch({
-      args: chromium.args,
+      args: launchArgs,
       executablePath,
       headless: true,
-      ...(proxyArg ? { args: [...chromium.args, proxyArg] } : {} as any),
     })
   }
 

@@ -222,7 +222,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                     <Building className="h-8 w-8 text-blue-600" />
                     <div>
                       <p className="text-sm font-medium text-gray-600">Company</p>
-                      <p className="text-lg font-semibold">{researchResult.companyName}</p>
+                      <p className="text-lg font-semibold line-clamp-2">{researchResult.companyName}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -284,7 +284,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                   <CardTitle className="text-lg">Company Description</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-700 leading-relaxed">{researchResult.description}</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{researchResult.description}</p>
                 </CardContent>
               </Card>
             )}
@@ -344,7 +344,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                           </div>
                         </div>
                         {profileIndex === idx && (
-                          <div className="text-xs text-gray-700 bg-gray-50 rounded p-3">
+                          <div className="text-xs text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 rounded p-3 no-text-bleed">
                             {profileLoading && <div>Loading insights…</div>}
                             {!profileLoading && profileData && (
                               profileData.error ? <div className="text-red-600">{profileData.error}</div> : (
