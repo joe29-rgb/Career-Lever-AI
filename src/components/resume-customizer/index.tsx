@@ -86,7 +86,7 @@ export function ResumeCustomizer({
           resumeId: resume._id,
           jobDescription: `Title: ${jobAnalysis.analysis.jobTitle}\nCompany: ${jobAnalysis.analysis.companyName}\n\nRequirements: ${jobAnalysis.analysis.keyRequirements.join(', ')}\nSkills: ${jobAnalysis.analysis.preferredSkills.join(', ')}\nResponsibilities: ${jobAnalysis.analysis.responsibilities.join(', ')}\nCulture: ${jobAnalysis.analysis.companyCulture.join(', ')}`,
           jobTitle: jobAnalysis.analysis.jobTitle,
-          companyName: '',
+          companyName: jobAnalysis.analysis.companyName,
           tone,
           overrideResumeText: overrideText && overrideText.length > 50 ? overrideText : undefined,
           psychology
@@ -110,23 +110,24 @@ export function ResumeCustomizer({
         const afterText = data.customizedResume.customizedText as string
         const beforeTokens = beforeText.split(/\s+/)
         const afterTokens = afterText.split(/\s+/)
-        const maxLen = Math.max(beforeTokens.length, afterTokens.length)
         const pieces: string[] = []
-        for (let i = 0, j = 0; i < afterTokens.length && j < beforeTokens.length; ) {
-          if (afterTokens[i] === beforeTokens[j]) {
-            pieces.push(afterTokens[i])
-            i++; j++
+        let ai = 0
+        let bi = 0
+        while (ai < afterTokens.length && bi < beforeTokens.length) {
+          if (afterTokens[ai] === beforeTokens[bi]) {
+            pieces.push(afterTokens[ai])
+            ai++; bi++
           } else {
-            // mark additions until tokens realign or a short window
-            const start = i
+            const start = ai
             let window = 0
-            while (i < afterTokens.length && window < 20 && afterTokens[i] !== beforeTokens[j]) { i++; window++ }
-            const added = afterTokens.slice(start, i).join(' ')
+            while (ai < afterTokens.length && window < 20 && afterTokens[ai] !== beforeTokens[bi]) { ai++; window++ }
+            const added = afterTokens.slice(start, ai).join(' ')
             if (added) pieces.push(`<mark class=\"bg-yellow-200\">${added}</mark>`) 
           }
         }
-        // Append trailing tail
-        if (i < afterTokens.length) pieces.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(i).join(' ')}</mark>`) 
+        if (ai < afterTokens.length) {
+          pieces.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(ai).join(' ')}</mark>`)
+        }
         setDiffHtml(pieces.join(' '))
       } catch {}
 
