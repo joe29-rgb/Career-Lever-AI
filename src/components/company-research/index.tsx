@@ -8,11 +8,12 @@ export default function CompanyResearch() {
   const [data, setData] = useState<any>(null)
   const [companyName, setCompanyName] = useState('')
   const [jobTitle, setJobTitle] = useState('')
+  const [location, setLocation] = useState('')
 
   const fetchResearch = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/v2/company/deep-research', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName, jobTitle }) })
+      const res = await fetch('/api/v2/company/deep-research', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName, jobTitle, location }) })
       const json = await res.json()
       setData(json?.companyData || json?.research || json)
     } catch (e) {
@@ -24,9 +25,10 @@ export default function CompanyResearch() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <input className="w-full border rounded p-2" placeholder="Company name" value={companyName} onChange={e => setCompanyName(e.target.value)} />
         <input className="w-full border rounded p-2" placeholder="Target role (optional)" value={jobTitle} onChange={e => setJobTitle(e.target.value)} />
+        <input className="w-full border rounded p-2" placeholder="Location (optional) e.g., Edmonton, AB" value={location} onChange={e => setLocation(e.target.value)} />
       </div>
       <Button onClick={fetchResearch} disabled={loading}>{loading ? 'Researching…' : 'Deep Research'}</Button>
 

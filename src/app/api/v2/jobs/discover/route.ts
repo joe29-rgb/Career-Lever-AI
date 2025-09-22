@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       limit: typeof limit === 'number' ? limit : 24,
     })
 
-    return NextResponse.json({ success: true, results })
+    return NextResponse.json({ success: true, results, location: location || null })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to discover jobs' }, { status: 500 })
   }

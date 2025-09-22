@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const { companyName, jobTitle, website } = await req.json()
+    const { companyName, jobTitle, website, location } = await req.json()
     if (!companyName || companyName.trim().length < 2) return NextResponse.json({ error: 'companyName required' }, { status: 400 })
 
     // Core scrape (aggregates multiple sources internally)
@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     // Hiring contacts best-effort
     let contacts: Array<{ name: string; title: string; profileUrl?: string; source: string }> = []
     try {
-      contacts = await webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hiring manager', jobTitle || ''])
+      contacts = await webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hiring manager', jobTitle || ''], location || undefined)
     } catch {}
 
     // Glassdoor pros/cons enrichment
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         size: companyData.size || null,
         description: companyData.description || null,
         website: companyData.website || null,
-        locations: [],
+        locations: location ? [location] : [],
       },
       financialHealth: {
         fundingStatus: null,
