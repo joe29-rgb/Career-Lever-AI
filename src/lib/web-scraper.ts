@@ -638,6 +638,11 @@ export class WebScraperService {
         this.scrapeFacebookPublic(companyName),
         this.scrapeGoogleReviewsSummary(companyName)
       ]);
+      // Contact info (best effort) if website known
+      let contactInfo: { emails: string[]; phones: string[]; addresses: string[] } | null = null
+      try {
+        if (website) contactInfo = await this.scrapeContactInfoFromWebsite(website)
+      } catch {}
 
       // Merge the data
       if (glassdoorData.status === 'fulfilled' && glassdoorData.value) {
@@ -665,6 +670,10 @@ export class WebScraperService {
           data.industry = websiteData.value.industry;
         }
         addSource('website')
+      }
+      if (contactInfo && (contactInfo.emails.length || contactInfo.phones.length || contactInfo.addresses.length)) {
+        ;(data as any).contactInfo = contactInfo
+        addSource('website-contact')
       }
 
       if (newsData.status === 'fulfilled' && newsData.value) {

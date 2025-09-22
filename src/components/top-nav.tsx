@@ -52,7 +52,7 @@ export function TopNav() {
   return (
     <nav role="navigation" aria-label="Main" className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="font-semibold text-gray-900 dark:text-gray-100">CareerLever</Link>
+        <Link href="/" className="font-semibold text-gray-900 dark:text-white">CareerLever</Link>
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-4 text-sm text-gray-700 dark:text-gray-200">
@@ -61,7 +61,7 @@ export function TopNav() {
               key={link.href}
               href={link.href}
               aria-current={isActive(link.href) ? 'page' : undefined}
-              className={`hover:underline ${isActive(link.href) ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}
+              className={`hover:underline ${isActive(link.href) ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
             >
               {link.label}
             </Link>

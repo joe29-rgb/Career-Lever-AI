@@ -226,7 +226,7 @@ export function ResumeCustomizer({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Tone guidance</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Tone guidance</p>
               <Select value={tone} onValueChange={(v)=>setTone(v as any)}>
                 <SelectTrigger><SelectValue placeholder="Select tone" /></SelectTrigger>
                 <SelectContent>
@@ -237,21 +237,21 @@ export function ResumeCustomizer({
               </Select>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Auto-tone from Psychology</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Auto-tone from Psychology</p>
               <button type="button" onClick={()=>setAutoTone(v=>!v)} className={`px-3 py-2 border rounded text-sm ${autoTone ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{autoTone ? 'Enabled' : 'Disabled'}</button>
               {autoTone && (
                 <p className="text-xs text-gray-500">We’ll use the Analyze page’s tone if available</p>
               )}
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600">Generate A/B Variants</p>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Generate A/B Variants</p>
               <button type="button" onClick={()=>setGenerateVariantB(v=>!v)} className={`px-3 py-2 border rounded text-sm ${generateVariantB ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>{generateVariantB ? 'A & B' : 'A only'}</button>
               <p className="text-xs text-gray-500">Two tailored variants for side-by-side comparison</p>
             </div>
           </div>
 
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-600">Optional: Override Resume Text</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Optional: Override Resume Text</p>
             <Textarea rows={6} placeholder="Paste clean resume text to override extraction (optional)" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
             <p className="text-xs text-gray-500">Use this if the PDF text extraction contained gibberish. Minimum 50 characters.</p>
           </div>

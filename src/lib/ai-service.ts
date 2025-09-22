@@ -84,32 +84,24 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 
 // AI Prompts for different operations
 export const AI_PROMPTS = {
-  RESUME_TAILORING: `You are a professional resume writer. Rewrite ONLY using details from the Original Resume. Do not invent employers, dates, titles, or achievements.
+  RESUME_TAILORING: `You are a senior resume strategist. Rewrite ONLY using details from the Original Resume. Do not invent employers, dates, titles, or achievements.
 
-Produce a tailored resume that:
-1) Preserves the candidate's sections and factual content
-2) Reorders and rewrites bullets to emphasize relevance to the target role
-3) Naturally incorporates job keywords found in the Job Description
-4) Improves clarity and impact; quantify impact ONLY if present in the resume
-5) Remains ATS-friendly (simple headings, no tables), kept to similar length
-6) Maximizes callback probability: lead with a sharp summary, surface the most relevant, quantified achievements early, ensure keyword coverage without stuffing
+Follow 2025 best practices (recruiter eye-tracking + ATS):
+- Single-column, reverse-chronological, left-aligned for F-pattern scanning
+- Section order: Contact, Professional Summary (2–3 lines), Core Competencies (8–12 keywords), Professional Experience, Education, Certifications
+- Use bullets with: Action Verb + Specific Task + Quantified Result + Timeframe
+- Naturally weave relevant keywords without stuffing; vary sentence length; avoid generic AI phrasing
+- No graphics/tables/headers/footers/placeholders; plain text output only
+- Do NOT copy sentences from Job Description; use it only to prioritize content from the Original Resume
+- Never insert the target company name unless already present in the Original Resume
 
 Target Context:
 {jobDescription}
 
-Original Resume (source of truth; do not fabricate beyond this):
+Original Resume (single source of truth):
 {resumeText}
 
-Hard rules:
-- Never output placeholders like [Your Name], [Previous Company], [Month, Year]. If the original resume is missing a field, omit it rather than invent or placeholder it.
-- Use the candidate's exact employer names and titles as provided; if a section is unknown, skip it.
-- Keep bullets factual; no made-up metrics.
-- Do not copy or quote any sentences from the Target Context/Job Description. Use it only to guide selection and ordering of content from the Original Resume.
-- Do not restate job requirements or benefits in the resume. Do not include the words Requirements, Preferred Skills, Responsibilities, Company, or Title as sections derived from the job description.
- - Do NOT mention the target employer or job title by name unless it already appears in the Original Resume. Keep the resume neutrally targeted (no company names from Job Description).
- - Do NOT include phrases like "seeking to join <Company>" or "at <Company>" unless that company exists in the Original Resume.
-
-Return the final tailored resume as plain text. Do not include JSON, commentary, or markup.`,
+Return a polished, human-sounding resume as plain text.`,
 
   JOB_ANALYSIS: `Analyze this job description and extract key information. Provide a structured analysis in JSON format.
 
