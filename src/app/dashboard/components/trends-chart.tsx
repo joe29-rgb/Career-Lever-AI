@@ -15,7 +15,7 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler)
 
-export function TrendsChart() {
+export default function TrendsChart() {
   const data = useMemo(() => {
     return {
       labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'],

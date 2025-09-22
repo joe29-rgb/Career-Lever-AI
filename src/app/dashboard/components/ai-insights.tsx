@@ -8,7 +8,7 @@ interface Insight {
   detail: string
 }
 
-export function AIInsights() {
+export default function AIInsights() {
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(true)
 

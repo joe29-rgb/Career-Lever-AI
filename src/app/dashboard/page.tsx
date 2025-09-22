@@ -19,7 +19,7 @@ export default async function DashboardPage() {
     redirect('/auth/signin')
   }
 
-  const TrendsChart = dynamic(() => import('./components/trends-chart'), {
+  const TrendsChart = dynamic(() => import('./components/trends-chart').then(m => m.TrendsChart), {
     ssr: false,
     loading: () => (
       <div className="space-y-3">
