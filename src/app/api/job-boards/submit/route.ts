@@ -158,11 +158,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate cover letter if provided
-    let coverLetter = null
+    // Validate cover letter if provided (best-effort load)
+    let coverLetter: any = null
     if (coverLetterId) {
-      // Assuming there's a CoverLetter model - for now we'll skip validation
-      // In a real implementation, you'd validate the cover letter exists
+      try {
+        const CoverLetter = (await import('@/models/CoverLetter')).default as any
+        coverLetter = await CoverLetter.findOne({ _id: coverLetterId, userId: session.user.id })
+      } catch {}
     }
 
     // Submit to multiple job boards
@@ -381,8 +383,8 @@ async function submitToJobBoard({
       try {
         const coverLetterField = await page.$(boardConfig.selectors.coverLetterField)
         if (coverLetterField) {
-          // In a real implementation, we'd fetch and insert the cover letter
-          await page.type(boardConfig.selectors.coverLetterField, 'Generated cover letter would go here...')
+          const text = typeof coverLetter.content === 'string' ? coverLetter.content : ''
+          if (text) await page.type(boardConfig.selectors.coverLetterField, text.slice(0, 4000))
         }
       } catch (error) {
         console.log(`Cover letter field not found on ${jobBoard}`)

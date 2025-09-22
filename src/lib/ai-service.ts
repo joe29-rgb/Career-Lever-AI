@@ -5,9 +5,10 @@ import { logAIUsage } from './observability'
 
 // Instantiate with a safe fallback so build doesn't fail when OPENAI_API_KEY is not set.
 // At runtime, provide a real key via env; calls will fail if the placeholder is used.
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'build-placeholder',
-});
+if (!process.env.OPENAI_API_KEY) {
+  throw new Error('OPENAI_API_KEY is required')
+}
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
 const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
@@ -19,8 +20,7 @@ const ASSISTANT_COMPANY_INSIGHTS_ID = process.env.OPENAI_ASSISTANT_COMPANY_INSIG
 // Runtime controls
 const DEFAULT_MODEL = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o-mini';
 const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS || 20000);
-const NO_OPENAI = !process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'build-placeholder';
-const DEMO_MODE = NO_OPENAI || String(process.env.DEMO_MODE || 'false').toLowerCase() === 'true';
+const DEMO_MODE = false;
 const CACHE_TTL_MS = Number(process.env.AI_CACHE_TTL_MS || 10 * 60 * 1000);
 
 // Simple in-memory cache (ephemeral). Optionally back with Redis if configured.

@@ -9,7 +9,8 @@ import { redisGetJSON, redisSetJSON } from '@/lib/redis'
 import { webScraper } from '@/lib/web-scraper'
 import { AIService } from '@/lib/ai-service'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || 'build-placeholder' })
+if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required')
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 export const dynamic = 'force-dynamic'
 
