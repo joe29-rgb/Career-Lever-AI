@@ -136,11 +136,11 @@ Candidate Background:
 {companyData}
 
 Requirements:
-- Tone: {tone} (professional, casual, enthusiastic)
+- Tone: {tone} (professional, casual, enthusiastic) with varied sentence lengths and natural voice
 - Length: {length} (short: 200-300 words, medium: 300-400 words, long: 400-500 words)
-- Include specific company insights and demonstrate genuine interest
-- Highlight 2-3 key achievements that match the job requirements
-- Reference company values or recent developments if available
+- Include specific company insights and demonstrate genuine interest (from Company Data if provided)
+- Highlight 2-3 quantified achievements that match the job requirements
+- Avoid generic AI phrasing; keep it human, specific, and concise
 
 Structure the cover letter professionally with:
 1. Strong opening paragraph introducing yourself and the position
@@ -160,8 +160,8 @@ Generate 3-5 key talking points that demonstrate knowledge of the company and ge
   FOLLOW_UP_EMAIL: `Create a professional follow-up email for a job application that:
 - References specific aspects of our previous interaction
 - Includes relevant company research insights
-- Maintains professional tone while showing continued interest
-- Includes a clear call-to-action
+- Maintains professional tone while sounding human (vary sentence starts, keep it short)
+- Includes a clear call-to-action and offers value (additional info, availability)
 
 Context:
 - Applied for: {jobTitle}
@@ -170,7 +170,7 @@ Context:
 - Application highlights: {applicationHighlights}
 - Company insights: {companyInsights}
 
-Keep the email concise (100-150 words) and professional.`,
+Return strictly with a first line "Subject: ..." then the email body on subsequent lines. Keep the email concise (80-140 words), specific, and polite.`,
 
   RESUME_IMPROVEMENT_SUGGESTIONS: `Analyze this resume and provide specific improvement suggestions for the given job description:
 
