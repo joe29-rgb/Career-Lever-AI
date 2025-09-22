@@ -76,7 +76,34 @@ export async function POST(req: NextRequest) {
       },
     }
 
-    return NextResponse.json({ success: true, research: out })
+    // Also return a normalized CompanyData shape so existing UI can consume it directly
+    const companyDataNormalized = {
+      companyName: out.companyProfile.name,
+      website: out.companyProfile.website,
+      industry: out.companyProfile.industry || undefined,
+      size: out.companyProfile.size || undefined,
+      description: out.companyProfile.description || undefined,
+      culture: companyData.culture || [],
+      benefits: companyData.benefits || [],
+      recentNews: (companyData.recentNews || []).map((n: any) => ({
+        title: n.title,
+        url: n.url,
+        publishedAt: n.publishedAt,
+        summary: n.summary
+      })),
+      glassdoorRating: companyData.glassdoorRating,
+      glassdoorReviews: companyData.glassdoorReviews,
+      linkedinData: companyData.linkedinData || undefined,
+      socialMedia: companyData.socialMedia || undefined,
+      hiringContacts: contacts,
+      contactInfo: (companyData as any).contactInfo || undefined,
+      googleReviewsRating: (companyData as any).googleReviewsRating,
+      googleReviewsCount: (companyData as any).googleReviewsCount,
+      cachedAt: new Date(),
+      expiresAt: new Date(Date.now() + 24*60*60*1000)
+    }
+
+    return NextResponse.json({ success: true, research: out, companyData: companyDataNormalized })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to run deep research' }, { status: 500 })
   }
