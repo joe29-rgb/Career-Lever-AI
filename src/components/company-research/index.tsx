@@ -1,43 +1,408 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Progress } from '@/components/ui/progress'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Building,
+  Search,
+  Star,
+  Users,
+  TrendingUp,
+  Globe,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+  ExternalLink,
+  RefreshCw
+} from 'lucide-react'
 
 export default function CompanyResearch() {
-  const [loading, setLoading] = useState(false)
-  const [data, setData] = useState<any>(null)
   const [companyName, setCompanyName] = useState('')
+  const [website, setWebsite] = useState('')
   const [jobTitle, setJobTitle] = useState('')
   const [location, setLocation] = useState('')
+  const [isResearching, setIsResearching] = useState(false)
+  const [researchProgress, setResearchProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [researchResult, setResearchResult] = useState<any | null>(null)
+  const [profileIndex, setProfileIndex] = useState<number | null>(null)
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileData, setProfileData] = useState<any | null>(null)
 
-  const fetchResearch = async () => {
+  const handleResearch = async () => {
+    if (!companyName.trim()) {
+      setError('Please enter a company name')
+      return
+    }
+    setIsResearching(true)
+    setResearchProgress(0)
+    setError(null)
+
     try {
-      setLoading(true)
-      const res = await fetch('/api/v2/company/deep-research', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName, jobTitle, location }) })
-      const json = await res.json()
-      setData(json?.companyData || json?.research || json)
+      const progressInterval = setInterval(() => {
+        setResearchProgress((p) => (p >= 90 ? 90 : p + 15))
+      }, 500)
+
+      const response = await fetch('/api/v2/company/deep-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyName.trim(),
+          website: website.trim() || undefined,
+          jobTitle: jobTitle.trim() || undefined,
+          location: location.trim() || undefined,
+        })
+      })
+
+      clearInterval(progressInterval)
+      setResearchProgress(100)
+
+      if (!response.ok) {
+        const data = await response.json().catch(()=>({}))
+        throw new Error((data as any).error || 'Research failed')
+      }
+
+      const data = await response.json()
+      setResearchResult(data.companyData || data.research)
     } catch (e) {
-      console.error('Research error', e)
+      const msg = e instanceof Error ? e.message : 'Research failed'
+      setError(msg)
     } finally {
-      setLoading(false)
+      setIsResearching(false)
+      setTimeout(() => setResearchProgress(0), 800)
+    }
+  }
+
+  const refreshResearch = async () => {
+    if (!companyName.trim()) return
+    setIsResearching(true)
+    setError(null)
+    setResearchProgress(0)
+    try {
+      const response = await fetch('/api/v2/company/deep-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyName: companyName.trim(), website: website.trim() || undefined, jobTitle: jobTitle.trim() || undefined, location: location.trim() || undefined })
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(()=>({}))
+        throw new Error((data as any).error || 'Refresh failed')
+      }
+      const data = await response.json()
+      setResearchResult(data.companyData || data.research)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Refresh failed'
+      setError(msg)
+    } finally {
+      setIsResearching(false)
+    }
+  }
+
+  const showProfileForContact = async (index: number, person: any) => {
+    setProfileIndex(index)
+    setProfileLoading(true)
+    setProfileData(null)
+    try {
+      const res = await fetch('/api/insights/hiring/profile', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: person.name, companyName: companyName.trim(), roleType: jobTitle.trim() || undefined, linkedinUrl: person.profileUrl || undefined })
+      })
+      if (!res.ok) throw new Error('Profile fetch failed')
+      const json = await res.json()
+      setProfileData(json.profile)
+    } catch (e) {
+      setProfileData({ error: 'Failed to load profile' })
+    } finally {
+      setProfileLoading(false)
     }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <input className="w-full border rounded p-2" placeholder="Company name" value={companyName} onChange={e => setCompanyName(e.target.value)} />
-        <input className="w-full border rounded p-2" placeholder="Target role (optional)" value={jobTitle} onChange={e => setJobTitle(e.target.value)} />
-        <input className="w-full border rounded p-2" placeholder="Location (optional) e.g., Edmonton, AB" value={location} onChange={e => setLocation(e.target.value)} />
-      </div>
-      <Button onClick={fetchResearch} disabled={loading}>{loading ? 'Researching…' : 'Deep Research'}</Button>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building className="h-5 w-5" />
+          Company Research
+        </CardTitle>
+        <CardDescription>
+          Get comprehensive insights about companies from multiple sources
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Error */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-      {data && (
-        <div className="mt-4 space-y-3">
-          <pre className="text-xs whitespace-pre-wrap bg-gray-50 p-3 rounded border">{JSON.stringify(data, null, 2)}</pre>
+        {/* Form */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="companyName">Company Name *</Label>
+            <Input id="companyName" placeholder="e.g., Google" value={companyName} onChange={(e)=>setCompanyName(e.target.value)} disabled={isResearching} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="website">Website (Optional)</Label>
+            <Input id="website" placeholder="https://company.com" value={website} onChange={(e)=>setWebsite(e.target.value)} disabled={isResearching} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="jobTitle">Target Role (Optional)</Label>
+            <Input id="jobTitle" placeholder="e.g., Senior AE" value={jobTitle} onChange={(e)=>setJobTitle(e.target.value)} disabled={isResearching} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location (Optional)</Label>
+            <Input id="location" placeholder="e.g., Edmonton, AB" value={location} onChange={(e)=>setLocation(e.target.value)} disabled={isResearching} />
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Progress */}
+        {isResearching && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Researching company...</span>
+              <span className="text-sm text-gray-600">{researchProgress}%</span>
+            </div>
+            <Progress value={researchProgress} className="w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <Skeleton className="h-24" />
+              <Skeleton className="h-24" />
+              <Skeleton className="h-32 md:col-span-2" />
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-3">
+          <Button onClick={handleResearch} disabled={isResearching || !companyName.trim()} className="flex-1">
+            {isResearching ? (<><Search className="mr-2 h-4 w-4" /> Researching...</>) : (<><Search className="mr-2 h-4 w-4" /> Research Company</>) }
+          </Button>
+          {researchResult && (
+            <Button variant="outline" onClick={refreshResearch} disabled={isResearching}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Refresh
+            </Button>
+          )}
+        </div>
+
+        {/* Results */}
+        {researchResult && (
+          <div className="space-y-4">
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>Research completed successfully!</AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Company */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Building className="h-8 w-8 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Company</p>
+                      <p className="text-lg font-semibold">{researchResult.companyName}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Glassdoor Rating */}
+              {researchResult.glassdoorRating && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Star className="h-8 w-8 text-yellow-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Glassdoor Rating</p>
+                        <p className="text-lg font-semibold">{researchResult.glassdoorRating}/5</p>
+                        {researchResult.glassdoorReviews && (
+                          <p className="text-xs text-gray-600">{researchResult.glassdoorReviews} reviews</p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Size */}
+              {researchResult.size && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-8 w-8 text-green-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Company Size</p>
+                        <p className="text-lg font-semibold">{researchResult.size}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Industry */}
+              {researchResult.industry && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="h-8 w-8 text-purple-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-600">Industry</p>
+                        <p className="text-lg font-semibold">{researchResult.industry}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Description */}
+            {researchResult.description && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Company Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-700 leading-relaxed">{researchResult.description}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* LinkedIn */}
+            {researchResult.linkedinData && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    LinkedIn Presence
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {researchResult.linkedinData.followers && (
+                    <div className="flex justify-between"><span className="text-sm text-gray-600">Followers</span><span className="font-medium">{researchResult.linkedinData.followers.toLocaleString()}</span></div>
+                  )}
+                  {researchResult.linkedinData.employeeCount && (
+                    <div className="flex justify-between"><span className="text-sm text-gray-600">Employees</span><span className="font-medium">{researchResult.linkedinData.employeeCount.toLocaleString()}</span></div>
+                  )}
+                  {researchResult.linkedinData.companyPage && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={researchResult.linkedinData.companyPage} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="mr-2 h-4 w-4" /> View on LinkedIn
+                      </a>
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Contacts */}
+            {Array.isArray(researchResult.hiringContacts) && researchResult.hiringContacts.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Hiring Contacts</CardTitle>
+                  <CardDescription>Publicly discoverable recruiter/manager leads</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {researchResult.hiringContacts.map((p: any, idx: number) => (
+                      <div key={idx} className="border rounded p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium text-sm">{p.name}</div>
+                            <div className="text-xs text-gray-600">{p.title}</div>
+                          </div>
+                          <div className="flex gap-2">
+                            {p.profileUrl && (
+                              <Button asChild size="sm" variant="outline">
+                                <a href={p.profileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" /> Profile</a>
+                              </Button>
+                            )}
+                            <Button size="sm" variant="secondary" onClick={() => showProfileForContact(idx, p)} disabled={profileLoading && profileIndex === idx}>
+                              {profileLoading && profileIndex === idx ? 'Loading…' : 'Insights'}
+                            </Button>
+                          </div>
+                        </div>
+                        {profileIndex === idx && (
+                          <div className="text-xs text-gray-700 bg-gray-50 rounded p-3">
+                            {profileLoading && <div>Loading insights…</div>}
+                            {!profileLoading && profileData && (
+                              profileData.error ? <div className="text-red-600">{profileData.error}</div> : (
+                                <div className="space-y-1">
+                                  <div><span className="font-semibold">Personality:</span> {profileData.personalityType}</div>
+                                  <div><span className="font-semibold">Style:</span> {profileData.communicationStyle}</div>
+                                  <div><span className="font-semibold">Red flags:</span> {(profileData.redFlags || []).join(', ')}</div>
+                                  <div><span className="font-semibold">Approach:</span> {profileData.optimizedApproach}</div>
+                                </div>
+                              )
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Sources */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Sources</CardTitle>
+                <CardDescription>Primary links and timestamps</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {researchResult.website && (
+                  <div className="flex items-center justify-between border rounded p-3">
+                    <span className="font-medium">Website</span>
+                    <Button asChild size="sm" variant="outline"><a href={researchResult.website} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                  </div>
+                )}
+                {researchResult.linkedinData?.companyPage && (
+                  <div className="flex items-center justify-between border rounded p-3">
+                    <span className="font-medium">LinkedIn</span>
+                    <Button asChild size="sm" variant="outline"><a href={researchResult.linkedinData.companyPage} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                  </div>
+                )}
+                {Array.isArray(researchResult.recentNews) && researchResult.recentNews.length > 0 && (
+                  <div className="md:col-span-2">
+                    <div className="font-medium mb-2">Recent News</div>
+                    <div className="space-y-2">
+                      {researchResult.recentNews.slice(0,5).map((n: any, i: number)=> (
+                        <div key={i} className="flex items-center justify-between border rounded p-3">
+                          <div className="pr-3">
+                            <div className="text-sm font-medium line-clamp-1">{n.title}</div>
+                            <div className="text-xs text-gray-500 flex items-center gap-2"><Calendar className="h-3 w-3" /> {new Date(n.publishedAt).toLocaleString()}</div>
+                          </div>
+                          {n.url && (
+                            <Button asChild size="sm" variant="outline"><a href={n.url} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {researchResult.cachedAt && (
+                  <div className="text-xs text-gray-500 md:col-span-2">Cached: {new Date(researchResult.cachedAt).toLocaleString()}</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {!isResearching && !researchResult && !error && (
+          <div className="text-sm text-gray-600 border rounded-lg p-4">
+            Enter a company name and click Research to get reviews, social signals, contacts, and sources.
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
