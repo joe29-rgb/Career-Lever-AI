@@ -42,12 +42,18 @@ export function ResumeCustomizer({
   const [customizationProgress, setCustomizationProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [customizedResult, setCustomizedResult] = useState<any>(null)
+  const [customizedResultB, setCustomizedResultB] = useState<any>(null)
   const [diffHtml, setDiffHtml] = useState<string>('')
+  const [diffHtmlB, setDiffHtmlB] = useState<string>('')
   const [ats, setAts] = useState<any>(null)
+  const [atsB, setAtsB] = useState<any>(null)
   const [activeTab, setActiveTab] = useState('preview')
+  const [activeVariant, setActiveVariant] = useState<'A' | 'B'>('A')
   const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
+  const [authenticityB, setAuthenticityB] = useState<{ score: number; suggestions: string[] } | null>(null)
   const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
   const [autoTone, setAutoTone] = useState<boolean>(false)
+  const [generateVariantB, setGenerateVariantB] = useState<boolean>(true)
   const [overrideText, setOverrideText] = useState<string>('')
 
   const handleCustomize = async () => {
@@ -70,86 +76,105 @@ export function ResumeCustomizer({
           }
         } catch {}
       }
-      // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setCustomizationProgress(prev => Math.min(prev + 20, 90))
+        setCustomizationProgress(prev => Math.min(prev + 15, 88))
       }, 300)
 
-      // Prepare psychology/companyData if available
       let psychology: any | undefined
       try { const stored = localStorage.getItem('analyze:psychology'); if (stored) psychology = JSON.parse(stored) } catch {}
-      const response = await fetch('/api/resume/customize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resumeId: resume._id,
-          jobDescription: `Title: ${jobAnalysis.analysis.jobTitle}\nCompany: ${jobAnalysis.analysis.companyName}\n\nRequirements: ${jobAnalysis.analysis.keyRequirements.join(', ')}\nSkills: ${jobAnalysis.analysis.preferredSkills.join(', ')}\nResponsibilities: ${jobAnalysis.analysis.responsibilities.join(', ')}\nCulture: ${jobAnalysis.analysis.companyCulture.join(', ')}`,
-          jobTitle: jobAnalysis.analysis.jobTitle,
-          companyName: jobAnalysis.analysis.companyName,
-          tone,
-          overrideResumeText: overrideText && overrideText.length > 50 ? overrideText : undefined,
-          psychology
-        }),
+
+      const requestPayload = (t: 'professional'|'enthusiastic'|'concise') => ({
+        resumeId: resume._id,
+        jobDescription: `Title: ${jobAnalysis.analysis.jobTitle}\nCompany: ${jobAnalysis.analysis.companyName}\n\nRequirements: ${jobAnalysis.analysis.keyRequirements.join(', ')}\nSkills: ${jobAnalysis.analysis.preferredSkills.join(', ')}\nResponsibilities: ${jobAnalysis.analysis.responsibilities.join(', ')}\nCulture: ${jobAnalysis.analysis.companyCulture.join(', ')}`,
+        jobTitle: jobAnalysis.analysis.jobTitle,
+        companyName: jobAnalysis.analysis.companyName,
+        tone: t,
+        overrideResumeText: overrideText && overrideText.length > 50 ? overrideText : undefined,
+        psychology
       })
 
-      clearInterval(progressInterval)
-      setCustomizationProgress(100)
+      // Variant A
+      const resA = await fetch('/api/resume/customize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestPayload(tone)) })
+      if (!resA.ok) { const e = await resA.json().catch(()=>({})); throw new Error((e as any).error || 'Customization failed') }
+      const dataA = await resA.json()
+      setCustomizedResult(dataA)
+      onCustomizationComplete(dataA.customizedResume)
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Customization failed')
-      }
-
-      const data = await response.json()
-      setCustomizedResult(data)
-      onCustomizationComplete(data.customizedResume)
-      // Compute diff (simple client-side highlighting)
+      // Diff A
       try {
-        const beforeText = (data.originalResumeText || resume.extractedText || '') as string
-        const afterText = data.customizedResume.customizedText as string
+        const beforeText = (dataA.originalResumeText || resume.extractedText || '') as string
+        const afterText = dataA.customizedResume.customizedText as string
         const beforeTokens = beforeText.split(/\s+/)
         const afterTokens = afterText.split(/\s+/)
         const pieces: string[] = []
-        let ai = 0
-        let bi = 0
+        let ai = 0, bi = 0
         while (ai < afterTokens.length && bi < beforeTokens.length) {
-          if (afterTokens[ai] === beforeTokens[bi]) {
-            pieces.push(afterTokens[ai])
-            ai++; bi++
-          } else {
+          if (afterTokens[ai] === beforeTokens[bi]) { pieces.push(afterTokens[ai]); ai++; bi++ } else {
             const start = ai
             let window = 0
             while (ai < afterTokens.length && window < 20 && afterTokens[ai] !== beforeTokens[bi]) { ai++; window++ }
             const added = afterTokens.slice(start, ai).join(' ')
-            if (added) pieces.push(`<mark class=\"bg-yellow-200\">${added}</mark>`) 
+            if (added) pieces.push(`<mark class="bg-yellow-200">${added}</mark>`) 
           }
         }
-        if (ai < afterTokens.length) {
-          pieces.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(ai).join(' ')}</mark>`)
-        }
+        if (ai < afterTokens.length) { pieces.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(ai).join(' ')}</mark>`) }
         setDiffHtml(pieces.join(' '))
       } catch {}
 
-      // ATS score
+      // ATS A
       try {
-        const resp = await fetch('/api/insights/ats/score', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resumeText: data.customizedResume.customizedText, jobAnalysis })
-        })
+        const resp = await fetch('/api/insights/ats/score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resumeText: dataA.customizedResume.customizedText, jobAnalysis }) })
         if (resp.ok) { const j = await resp.json(); setAts(j.ats) }
       } catch {}
 
-      // Authenticity scoring
+      // Authenticity A
       try {
-        const ar = await fetch('/api/insights/authenticity', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ originalText: resume.extractedText, generatedText: data.customizedResume.customizedText })
-        })
+        const ar = await fetch('/api/insights/authenticity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalText: resume.extractedText, generatedText: dataA.customizedResume.customizedText }) })
         if (ar.ok) { const aj = await ar.json(); setAuthenticity(aj.authenticity) }
       } catch {}
 
+      // Variant B (optional)
+      if (generateVariantB) {
+        const altTone: 'professional'|'enthusiastic'|'concise' = tone === 'professional' ? 'concise' : 'professional'
+        const resB = await fetch('/api/resume/customize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestPayload(altTone)) })
+        if (resB.ok) {
+          const dataB = await resB.json()
+          setCustomizedResultB(dataB)
+          // Diff B
+          try {
+            const beforeText = (dataB.originalResumeText || resume.extractedText || '') as string
+            const afterText = dataB.customizedResume.customizedText as string
+            const beforeTokens = beforeText.split(/\s+/)
+            const afterTokens = afterText.split(/\s+/)
+            const piecesB: string[] = []
+            let ai = 0, bi = 0
+            while (ai < afterTokens.length && bi < beforeTokens.length) {
+              if (afterTokens[ai] === beforeTokens[bi]) { piecesB.push(afterTokens[ai]); ai++; bi++ } else {
+                const start = ai
+                let window = 0
+                while (ai < afterTokens.length && window < 20 && afterTokens[ai] !== beforeTokens[bi]) { ai++; window++ }
+                const added = afterTokens.slice(start, ai).join(' ')
+                if (added) piecesB.push(`<mark class=\"bg-yellow-200\">${added}</mark>`) 
+              }
+            }
+            if (ai < afterTokens.length) { piecesB.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(ai).join(' ')}</mark>`) }
+            setDiffHtmlB(piecesB.join(' '))
+          } catch {}
+          // ATS B
+          try {
+            const respB = await fetch('/api/insights/ats/score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resumeText: dataB.customizedResume.customizedText, jobAnalysis }) })
+            if (respB.ok) { const j = await respB.json(); setAtsB(j.ats) }
+          } catch {}
+          // Authenticity B
+          try {
+            const arB = await fetch('/api/insights/authenticity', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ originalText: resume.extractedText, generatedText: dataB.customizedResume.customizedText }) })
+            if (arB.ok) { const ajB = await arB.json(); setAuthenticityB(ajB.authenticity) }
+          } catch {}
+        }
+      }
+
+      clearInterval(progressInterval)
+      setCustomizationProgress(100)
       toast.success('Resume customized successfully!')
 
     } catch (error) {
@@ -164,22 +189,23 @@ export function ResumeCustomizer({
     }
   }
 
-  const downloadResume = () => {
-    if (!customizedResult) return
+  const activeData = activeVariant === 'A' ? customizedResult : customizedResultB
+  const activeAts = activeVariant === 'A' ? ats : atsB
+  const activeDiff = activeVariant === 'A' ? diffHtml : diffHtmlB
+  const activeAuth = activeVariant === 'A' ? authenticity : authenticityB
 
-    // Create a simple text file for download
-    const blob = new Blob([customizedResult.customizedResume.customizedText], {
-      type: 'text/plain'
-    })
+  const downloadResume = () => {
+    const data = activeData
+    if (!data) return
+    const blob = new Blob([data.customizedResume.customizedText], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `customized-resume-${jobAnalysis.analysis.companyName}.txt`
+    a.download = `customized-resume-${jobAnalysis.analysis.companyName}-variant-${activeVariant}.txt`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-
     toast.success('Resume downloaded!')
   }
 
@@ -215,6 +241,11 @@ export function ResumeCustomizer({
               {autoTone && (
                 <p className="text-xs text-gray-500">We’ll use the Analyze page’s tone if available</p>
               )}
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600">Generate A/B Variants</p>
+              <button type="button" onClick={()=>setGenerateVariantB(v=>!v)} className={`px-3 py-2 border rounded text-sm ${generateVariantB ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>{generateVariantB ? 'A & B' : 'A only'}</button>
+              <p className="text-xs text-gray-500">Two tailored variants for side-by-side comparison</p>
             </div>
           </div>
 
@@ -259,7 +290,6 @@ export function ResumeCustomizer({
             </Card>
           </div>
 
-          {/* Error Alert */}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -267,7 +297,6 @@ export function ResumeCustomizer({
             </Alert>
           )}
 
-          {/* Progress Bar */}
           {isCustomizing && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -283,31 +312,14 @@ export function ResumeCustomizer({
             </div>
           )}
 
-          {/* Action Button */}
           {!customizedResult && (
-            <Button
-              onClick={handleCustomize}
-              disabled={isCustomizing}
-              size="lg"
-              className="w-full"
-            >
-              {isCustomizing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Customizing Resume...
-                </>
-              ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Customize Resume with AI
-                </>
-              )}
+            <Button onClick={handleCustomize} disabled={isCustomizing} size="lg" className="w-full">
+              {isCustomizing ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Customizing Resume...</>) : (<><Wand2 className="mr-2 h-4 w-4" /> Customize Resume with AI</>) }
             </Button>
           )}
         </CardContent>
       </Card>
 
-      {/* Results */}
       {customizedResult && (
         <Card>
           <CardHeader>
@@ -341,19 +353,21 @@ export function ResumeCustomizer({
                 <div className="bg-gray-50 rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-medium text-gray-900">Customized Resume</h4>
-                    <Badge variant="secondary">
-                      {customizedResult.matchScore}% Match Score
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant={activeVariant === 'A' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('A')}>Variant A</Button>
+                      <Button size="sm" variant={activeVariant === 'B' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('B')} disabled={!customizedResultB}>Variant B</Button>
+                      <Badge variant="secondary">{(activeData?.matchScore ?? 0)}% Match Score</Badge>
+                    </div>
                   </div>
                   <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white">
-                    {customizedResult.customizedResume.customizedText}
+                    {activeData?.customizedResume?.customizedText}
                   </div>
-                  {authenticity && (
+                  {activeAuth && (
                     <div className="mt-3 text-sm text-gray-700">
-                      <div className="font-medium">Authenticity Score: {authenticity.score}/100</div>
-                      {authenticity.suggestions.length > 0 && (
+                      <div className="font-medium">Authenticity Score: {activeAuth.score}/100</div>
+                      {activeAuth.suggestions.length > 0 && (
                         <ul className="list-disc ml-5 mt-1">
-                          {authenticity.suggestions.slice(0,3).map((s, i)=>(<li key={i}>{s}</li>))}
+                          {activeAuth.suggestions.slice(0,3).map((s, i)=>(<li key={i}>{s}</li>))}
                         </ul>
                       )}
                     </div>
@@ -361,26 +375,32 @@ export function ResumeCustomizer({
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Changes Highlighted</h4>
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white" dangerouslySetInnerHTML={{ __html: diffHtml || customizedResult.customizedResume.customizedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-gray-900">Changes Highlighted</h4>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant={activeVariant === 'A' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('A')}>Variant A</Button>
+                      <Button size="sm" variant={activeVariant === 'B' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('B')} disabled={!customizedResultB}>Variant B</Button>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white" dangerouslySetInnerHTML={{ __html: activeDiff || activeData?.customizedResume?.customizedText?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '' }} />
                   <div className="text-xs text-gray-500 mt-2">New or significantly changed text is highlighted.</div>
                 </div>
 
-                {ats && (
+                {activeAts && (
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">ATS Optimization</h4>
-                      <Badge variant="secondary">{ats.score}/100</Badge>
+                      <Badge variant="secondary">{activeAts.score}/100</Badge>
                     </div>
                     <div className="text-xs text-gray-700">Missing keywords:</div>
                     <div className="mt-1 flex flex-wrap gap-2">
-                      {ats.missingKeywords.slice(0, 20).map((k: string, i: number) => (
+                      {activeAts.missingKeywords.slice(0, 20).map((k: string, i: number) => (
                         <Badge key={i} variant="outline">{k}</Badge>
                       ))}
                     </div>
-                    {ats.suggestions?.length > 0 && (
+                    {activeAts.suggestions?.length > 0 && (
                       <ul className="list-disc ml-5 mt-2 text-sm text-gray-700">
-                        {ats.suggestions.map((s: string, i: number) => (<li key={i}>{s}</li>))}
+                        {activeAts.suggestions.map((s: string, i: number) => (<li key={i}>{s}</li>))}
                       </ul>
                     )}
                   </div>
@@ -389,9 +409,9 @@ export function ResumeCustomizer({
 
               <TabsContent value="improvements" className="space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Applied Improvements</h4>
+                  <h4 className="font-medium text-gray-900">Applied Improvements ({activeVariant})</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {customizedResult.improvements.map((improvement: string, index: number) => (
+                    {(activeData?.improvements || []).map((improvement: string, index: number) => (
                       <div key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
                         <span className="text-sm text-green-800">{improvement}</span>
@@ -403,9 +423,9 @@ export function ResumeCustomizer({
 
               <TabsContent value="suggestions" className="space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Additional Suggestions</h4>
+                  <h4 className="font-medium text-gray-900">Additional Suggestions ({activeVariant})</h4>
                   <div className="space-y-3">
-                    {customizedResult.suggestions.map((suggestion: string, index: number) => (
+                    {(activeData?.suggestions || []).map((suggestion: string, index: number) => (
                       <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
                         <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                         <span className="text-sm text-blue-800">{suggestion}</span>
@@ -419,7 +439,6 @@ export function ResumeCustomizer({
         </Card>
       )}
 
-      {/* Comparison View */}
       {customizedResult && (
         <Card>
           <CardHeader>
@@ -432,6 +451,10 @@ export function ResumeCustomizer({
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="flex items-center gap-2 mb-3">
+              <Button size="sm" variant={activeVariant === 'A' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('A')}>Variant A</Button>
+              <Button size="sm" variant={activeVariant === 'B' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('B')} disabled={!customizedResultB}>Variant B</Button>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2">
@@ -446,10 +469,10 @@ export function ResumeCustomizer({
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-900 flex items-center gap-2">
                   <Wand2 className="h-4 w-4" />
-                  Customized Resume
+                  Customized Resume (Variant {activeVariant})
                 </h4>
                 <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-green-50">
-                  {customizedResult.customizedResume.customizedText.substring(0, 1000)}{customizedResult.customizedResume.customizedText.length > 1000 ? '...' : ''}
+                  {(activeData?.customizedResume?.customizedText || '').substring(0, 1000)}{(activeData?.customizedResume?.customizedText || '').length > 1000 ? '...' : ''}
                 </div>
               </div>
             </div>
