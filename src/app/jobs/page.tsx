@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { JobsActions } from './components/jobs-actions'
+import { LocalDiscover } from './components/local-discover'
 import { t, type Locale } from '@/lib/i18n'
 
 export default async function JobsPage() {
@@ -13,6 +14,9 @@ export default async function JobsPage() {
       <h1 className="text-2xl font-bold">{t(locale, 'jobs.pageTitle', 'Jobs')}</h1>
       <JobImport />
       <SearchImport />
+      <section className="space-y-3">
+        <LocalDiscover />
+      </section>
       <CalendarQuick />
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Import from Connected Boards</h2>
