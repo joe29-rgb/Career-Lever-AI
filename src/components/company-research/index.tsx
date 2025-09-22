@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { CompanyData, CompanyResearchPanelProps } from '@/types'
 import {
   Building,
   Search,
@@ -23,8 +24,14 @@ import {
   RefreshCw
 } from 'lucide-react'
 
-export default function CompanyResearch() {
-  const [companyName, setCompanyName] = useState('')
+type CompanyResearchProps = {
+  initialCompanyName?: string
+  onResearchComplete?: (data: CompanyData) => void
+  onError?: (error: string) => void
+}
+
+export default function CompanyResearch({ initialCompanyName, onResearchComplete, onError }: CompanyResearchProps = {}) {
+  const [companyName, setCompanyName] = useState(initialCompanyName || '')
   const [website, setWebsite] = useState('')
   const [jobTitle, setJobTitle] = useState('')
   const [location, setLocation] = useState('')
@@ -39,6 +46,7 @@ export default function CompanyResearch() {
   const handleResearch = async () => {
     if (!companyName.trim()) {
       setError('Please enter a company name')
+      onError?.('Please enter a company name')
       return
     }
     setIsResearching(true)
@@ -70,10 +78,13 @@ export default function CompanyResearch() {
       }
 
       const data = await response.json()
-      setResearchResult(data.companyData || data.research)
+      const result: CompanyData = (data.companyData || data.research)
+      setResearchResult(result)
+      onResearchComplete?.(result)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Research failed'
       setError(msg)
+      onError?.(msg)
     } finally {
       setIsResearching(false)
       setTimeout(() => setResearchProgress(0), 800)
@@ -96,10 +107,13 @@ export default function CompanyResearch() {
         throw new Error((data as any).error || 'Refresh failed')
       }
       const data = await response.json()
-      setResearchResult(data.companyData || data.research)
+      const result: CompanyData = (data.companyData || data.research)
+      setResearchResult(result)
+      onResearchComplete?.(result)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Refresh failed'
       setError(msg)
+      onError?.(msg)
     } finally {
       setIsResearching(false)
     }
@@ -403,6 +417,16 @@ export default function CompanyResearch() {
         )}
       </CardContent>
     </Card>
+  )
+}
+
+export function CompanyResearchPanel({ companyName, onResearchComplete, onError }: CompanyResearchPanelProps) {
+  return (
+    <CompanyResearch
+      initialCompanyName={companyName}
+      onResearchComplete={onResearchComplete}
+      onError={onError}
+    />
   )
 }
 
