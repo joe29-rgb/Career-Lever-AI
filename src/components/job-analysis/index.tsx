@@ -31,9 +31,15 @@ interface JobAnalysisFormProps {
 }
 
 export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisFormProps) {
-  const [jobDescription, setJobDescription] = useState('')
-  const [jobTitle, setJobTitle] = useState('')
-  const [companyName, setCompanyName] = useState('')
+  const [jobDescription, setJobDescription] = useState<string>(()=>{
+    try { return localStorage.getItem('job:description') || '' } catch { return '' }
+  })
+  const [jobTitle, setJobTitle] = useState<string>(()=>{
+    try { return localStorage.getItem('job:title') || '' } catch { return '' }
+  })
+  const [companyName, setCompanyName] = useState<string>(()=>{
+    try { return localStorage.getItem('job:company') || '' } catch { return '' }
+  })
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -95,6 +101,11 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
       }
 
       setAnalysisResult(result)
+      try {
+        localStorage.setItem('job:description', jobDescription)
+        if (jobTitle) localStorage.setItem('job:title', jobTitle)
+        if (companyName) localStorage.setItem('job:company', companyName)
+      } catch {}
       onAnalysisComplete(result)
 
       // Fetch psychology, competition, pain points, and success probability in parallel

@@ -31,9 +31,9 @@ type CompanyResearchProps = {
 }
 
 export default function CompanyResearch({ initialCompanyName, onResearchComplete, onError }: CompanyResearchProps = {}) {
-  const [companyName, setCompanyName] = useState(initialCompanyName || '')
-  const [website, setWebsite] = useState('')
-  const [jobTitle, setJobTitle] = useState('')
+  const [companyName, setCompanyName] = useState(initialCompanyName || (typeof window !== 'undefined' ? localStorage.getItem('job:company') || '' : ''))
+  const [website, setWebsite] = useState<string>(()=>{ try { return localStorage.getItem('job:website') || '' } catch { return '' } })
+  const [jobTitle, setJobTitle] = useState<string>(()=>{ try { return localStorage.getItem('job:title') || '' } catch { return '' } })
   const [location, setLocation] = useState('')
   const [isResearching, setIsResearching] = useState(false)
   const [researchProgress, setResearchProgress] = useState(0)
@@ -81,6 +81,11 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
       const result: CompanyData = (data.companyData || data.research)
       setResearchResult(result)
       onResearchComplete?.(result)
+      try {
+        if (companyName) localStorage.setItem('job:company', companyName)
+        if (website) localStorage.setItem('job:website', website)
+        if (jobTitle) localStorage.setItem('job:title', jobTitle)
+      } catch {}
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Research failed'
       setError(msg)

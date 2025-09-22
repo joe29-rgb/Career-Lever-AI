@@ -16,7 +16,7 @@ export function EnterpriseSidebar() {
   ]
 
   return (
-    <aside className="hidden lg:block sidebar">
+    <aside className="hidden lg:block sidebar bg-card text-card-foreground dark:bg-gray-900 dark:text-gray-100">
       <div className="nav-group">
         <div className="nav-group-title">Navigation</div>
         <nav>

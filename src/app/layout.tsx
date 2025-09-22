@@ -30,7 +30,7 @@ export default function RootLayout({
   }
   return (
     <html lang="en">
-      <body className={inter.className + ' bg-[--surface] min-h-screen'}>
+      <body className={inter.className + ' bg-background text-foreground min-h-screen'}>
         <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>

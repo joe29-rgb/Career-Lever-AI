@@ -54,7 +54,7 @@ export function ResumeCustomizer({
   const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
   const [autoTone, setAutoTone] = useState<boolean>(false)
   const [generateVariantB, setGenerateVariantB] = useState<boolean>(true)
-  const [overrideText, setOverrideText] = useState<string>('')
+  const [overrideText, setOverrideText] = useState<string>(()=>{ try { return localStorage.getItem('resume:override') || '' } catch { return '' } })
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -175,6 +175,7 @@ export function ResumeCustomizer({
 
       clearInterval(progressInterval)
       setCustomizationProgress(100)
+      try { if (overrideText) localStorage.setItem('resume:override', overrideText) } catch {}
       toast.success('Resume customized successfully!')
 
     } catch (error) {

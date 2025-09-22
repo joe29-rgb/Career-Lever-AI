@@ -50,12 +50,12 @@ export function TopNav() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <nav role="navigation" aria-label="Main" className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/80 backdrop-blur border-b">
+    <nav role="navigation" aria-label="Main" className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
         <Link href="/" className="font-semibold text-gray-900 dark:text-gray-100">CareerLever</Link>
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-4 text-sm">
+        <div className="hidden md:flex items-center gap-4 text-sm text-gray-700 dark:text-gray-200">
           {LINKS.map(link => (
             <Link
               key={link.href}
@@ -69,7 +69,7 @@ export function TopNav() {
         </div>
 
         {/* Right side */}
-        <div className="ml-auto hidden md:flex items-center gap-3">
+        <div className="ml-auto hidden md:flex items-center gap-3 text-gray-700 dark:text-gray-200">
           <ThemeToggle />
           <div className="text-xs text-gray-500 dark:text-gray-400">AI job assistant</div>
         </div>
