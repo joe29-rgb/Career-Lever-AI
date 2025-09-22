@@ -42,6 +42,7 @@ export function ResumeCustomizer({
   const [customizationProgress, setCustomizationProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [customizedResult, setCustomizedResult] = useState<any>(null)
+  const [diffHtml, setDiffHtml] = useState<string>('')
   const [activeTab, setActiveTab] = useState('preview')
   const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
   const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
@@ -103,6 +104,31 @@ export function ResumeCustomizer({
       const data = await response.json()
       setCustomizedResult(data)
       onCustomizationComplete(data.customizedResume)
+      // Compute diff (simple client-side highlighting)
+      try {
+        const beforeText = (data.originalResumeText || resume.extractedText || '') as string
+        const afterText = data.customizedResume.customizedText as string
+        const beforeTokens = beforeText.split(/\s+/)
+        const afterTokens = afterText.split(/\s+/)
+        const maxLen = Math.max(beforeTokens.length, afterTokens.length)
+        const pieces: string[] = []
+        for (let i = 0, j = 0; i < afterTokens.length && j < beforeTokens.length; ) {
+          if (afterTokens[i] === beforeTokens[j]) {
+            pieces.push(afterTokens[i])
+            i++; j++
+          } else {
+            // mark additions until tokens realign or a short window
+            const start = i
+            let window = 0
+            while (i < afterTokens.length && window < 20 && afterTokens[i] !== beforeTokens[j]) { i++; window++ }
+            const added = afterTokens.slice(start, i).join(' ')
+            if (added) pieces.push(`<mark class=\"bg-yellow-200\">${added}</mark>`) 
+          }
+        }
+        // Append trailing tail
+        if (i < afterTokens.length) pieces.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(i).join(' ')}</mark>`) 
+        setDiffHtml(pieces.join(' '))
+      } catch {}
 
       // Authenticity scoring
       try {
@@ -321,6 +347,12 @@ export function ResumeCustomizer({
                       )}
                     </div>
                   )}
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Changes Highlighted</h4>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white" dangerouslySetInnerHTML={{ __html: diffHtml || customizedResult.customizedResume.customizedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
+                  <div className="text-xs text-gray-500 mt-2">New or significantly changed text is highlighted.</div>
                 </div>
               </TabsContent>
 

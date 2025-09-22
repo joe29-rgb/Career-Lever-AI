@@ -92,6 +92,7 @@ Produce a tailored resume that:
 3) Naturally incorporates job keywords found in the Job Description
 4) Improves clarity and impact; quantify impact ONLY if present in the resume
 5) Remains ATS-friendly (simple headings, no tables), kept to similar length
+6) Maximizes callback probability: lead with a sharp summary, surface the most relevant, quantified achievements early, ensure keyword coverage without stuffing
 
 Target Context:
 {jobDescription}
