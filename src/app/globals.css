@@ -114,6 +114,11 @@
             border: 1px solid rgba(229, 231, 235, 0.7);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
         }
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.72);
+            border: 1px solid rgba(55, 65, 81, 0.7);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
         .brand-gradient {
             background-image: var(--accent-gradient);
             color: white;
@@ -165,6 +170,16 @@
         *:focus-visible {
             @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
         }
+        /* Text safety utilities */
+        .no-text-bleed {
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
+        }
+        .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         /* Custom scrollbar */
          ::-webkit-scrollbar {
             width: 6px;

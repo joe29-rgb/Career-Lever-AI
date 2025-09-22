@@ -141,10 +141,10 @@ export function StatsOverview() {
                 {stats.appliedThisWeek}/5
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
               <div
-                className="bg-blue-600 h-2 rounded-full"
-                style={{ width: `${(stats.appliedThisWeek / 5) * 100}%` }}
+                className="bg-blue-600 h-2 rounded-full progress-fill"
+                style={{ width: `${Math.max(0, Math.min(100, (stats.appliedThisWeek / 5) * 100))}%` }}
               ></div>
             </div>
 
@@ -152,9 +152,9 @@ export function StatsOverview() {
               <span className="text-sm">Network connections</span>
               <span className="text-sm font-medium">2/3</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
               <div
-                className="bg-green-600 h-2 rounded-full"
+                className="bg-green-600 h-2 rounded-full progress-fill"
                 style={{ width: '67%' }}
               ></div>
             </div>

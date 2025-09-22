@@ -94,15 +94,15 @@ export function QuickActions() {
             <Button
               key={index}
               size="lg"
-              className="w-full h-auto p-6 flex items-center gap-4 hover:shadow-lg transition-all"
+              className="w-full h-auto p-6 flex items-center gap-4 hover:shadow-lg transition-all text-left no-text-bleed"
               onClick={() => router.push(action.href)}
             >
               <div className={`rounded-lg p-3 ${action.bgColor}`}>
                 <action.icon className={`h-6 w-6 ${action.color}`} />
               </div>
               <div className="text-left">
-                <div className="font-semibold text-lg text-gray-900">{action.title}</div>
-                <div className="text-sm text-gray-600 mt-1">
+                <div className="font-semibold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">{action.title}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
                   {action.description}
                 </div>
               </div>
@@ -118,15 +118,15 @@ export function QuickActions() {
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-auto p-4 flex flex-col items-start gap-3 hover:shadow-md transition-all"
+                  className="h-auto p-4 flex flex-col items-start gap-3 hover:shadow-md transition-all text-left no-text-bleed"
                   onClick={() => router.push(action.href)}
                 >
                   <div className={`rounded-lg p-2 ${action.bgColor}`}>
                     <action.icon className={`h-5 w-5 ${action.color}`} />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-sm text-gray-900">{action.title}</div>
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-1">{action.title}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
                       {action.description}
                     </div>
                   </div>
