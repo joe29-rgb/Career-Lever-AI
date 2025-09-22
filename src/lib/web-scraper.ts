@@ -70,14 +70,38 @@ export class WebScraperService {
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0',
   ];
+  // Simple in-memory cache for OSINT requests
+  private osintCache: Map<string, { expiresAt: number; value: any }> = new Map();
+  private osintCacheTtlMs: number = Number(process.env.OSINT_CACHE_TTL_MS || 15 * 60 * 1000);
+  // Optional Redis client
+  private redis: any = null;
 
   async initialize(): Promise<void> {
     if (this.browser) return
     const executablePath = await chromium.executablePath()
+    // Optional proxy rotation: read one proxy from PROXY_URLS
+    let proxyArg: string | undefined
+    try {
+      const proxies = (process.env.PROXY_URLS || '').split(',').map(s => s.trim()).filter(Boolean)
+      if (proxies.length) {
+        const pick = proxies[Math.floor(Math.random() * proxies.length)]
+        proxyArg = `--proxy-server=${pick}`
+      }
+    } catch {}
+    // Optional Redis (cache)
+    if (!this.redis && process.env.REDIS_URL) {
+      try {
+        const { createClient } = require('redis')
+        this.redis = createClient({ url: process.env.REDIS_URL })
+        this.redis.on('error', () => {})
+        this.redis.connect().catch(()=>{})
+      } catch {}
+    }
     this.browser = await puppeteer.launch({
       args: chromium.args,
       executablePath,
       headless: true,
+      ...(proxyArg ? { args: [...chromium.args, proxyArg] } : {} as any),
     })
   }
 
@@ -111,6 +135,21 @@ export class WebScraperService {
 
   // Generic Google search helper returning title, url, and snippet
   async googleSearch(query: string, limit: number = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    // Cache lookup
+    const cacheKey = `g:${query}:${limit}`
+    const now = Date.now()
+    const cached = this.osintCache.get(cacheKey)
+    if (cached && cached.expiresAt > now) return cached.value
+    if (this.redis) {
+      try {
+        const raw = await this.redis.get(`osint:${cacheKey}`)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: parsed })
+          return parsed
+        }
+      } catch {}
+    }
     if (!this.browser) await this.initialize();
     const page = await this.browser!.newPage();
     try {
@@ -144,6 +183,11 @@ export class WebScraperService {
           return true
         } catch { return false }
       })
+      // Set cache
+      this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: cleaned })
+      if (this.redis) {
+        try { await this.redis.setEx(`osint:${cacheKey}`, Math.floor(this.osintCacheTtlMs/1000), JSON.stringify(cleaned)) } catch {}
+      }
       return cleaned
     } catch (e) {
       return []
@@ -292,6 +336,44 @@ export class WebScraperService {
     ])
 
     return { financial, culture, news, leadership, growth, benefits }
+  }
+
+  // Twitter/X mentions via Google
+  async searchTwitterMentions(companyName: string, limit: number = 8): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    const q = `"${companyName}" (site:twitter.com OR site:x.com)`
+    return this.googleSearch(q, limit)
+  }
+
+  // Indeed company page/reviews via Google
+  async searchIndeedCompany(companyName: string, limit: number = 8): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    const q = `site:indeed.com/cmp "${companyName}" (review OR salaries OR interviews)`
+    return this.googleSearch(q, limit)
+  }
+
+  // Reddit employee/interview mentions via Google
+  async searchRedditMentions(companyName: string, limit: number = 8): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    const q = `site:reddit.com "${companyName}" ("working at" OR interview OR employee)`
+    return this.googleSearch(q, limit)
+  }
+
+  // Financials OSINT: funding, revenue, valuation, investors via Google
+  async searchFinancials(companyName: string): Promise<{
+    funding: Array<{ title: string; url: string; snippet: string }>;
+    revenue: Array<{ title: string; url: string; snippet: string }>;
+    valuation: Array<{ title: string; url: string; snippet: string }>;
+    investors: Array<{ title: string; url: string; snippet: string }>;
+  }> {
+    const qFunding = `"${companyName}" (funding OR investment OR "Series A" OR "Series B" OR "Series C") after:2018-01-01`
+    const qRevenue = `"${companyName}" (revenue OR ARR OR MRR) filetype:pdf OR site:crunchbase.com`
+    const qValuation = `"${companyName}" valuation OR "valued at"`
+    const qInvestors = `"${companyName}" investors OR backers OR "led by"`
+    const [funding, revenue, valuation, investors] = await Promise.all([
+      this.googleSearch(qFunding, 10),
+      this.googleSearch(qRevenue, 10),
+      this.googleSearch(qValuation, 10),
+      this.googleSearch(qInvestors, 10),
+    ])
+    return { funding, revenue, valuation, investors }
   }
 
   // Geocode a location string to lat/lng using Mapbox (if configured) or OpenStreetMap Nominatim

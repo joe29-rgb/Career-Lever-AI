@@ -45,6 +45,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const [competition, setCompetition] = useState<any | null>(null)
   const [painpoints, setPainpoints] = useState<any | null>(null)
   const [success, setSuccess] = useState<{ score:number; reasons:string[]; riskFactors:string[]; improvements:string[] } | null>(null)
+  const [timing, setTiming] = useState<{ score:number; bestWindows:Array<{window:string;reason:string}>; notes:string[] } | null>(null)
 
   const handleAnalyze = async () => {
     if (!jobDescription.trim()) {
@@ -105,16 +106,18 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
           if (rl.ok) { const rj = await rl.json(); resumeText = rj.resumes?.[0]?.extractedText }
         } catch {}
 
-        const [psyRes, compRes, painRes, sucRes] = await Promise.all([
+        const [psyRes, compRes, painRes, sucRes, timRes] = await Promise.all([
           fetch('/api/insights/psychology', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription }) }),
           fetch('/api/insights/competition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, jobUrl: importUrl || undefined }) }),
           fetch('/api/insights/painpoints', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobTitle: jobTitle || result.analysis.jobTitle, jobDescription }) }),
-          resumeText ? fetch('/api/insights/success', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, resumeText }) }) : Promise.resolve({ ok: false }) as any
+          resumeText ? fetch('/api/insights/success', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription, resumeText }) }) : Promise.resolve({ ok: false }) as any,
+          fetch('/api/insights/timing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobTitle: jobTitle || result.analysis.jobTitle, companyName: companyName || result.analysis.companyName, location: companyName ? undefined : '', urgency: competition?.urgency, applicants: competition?.applicantsEstimate }) })
         ])
         if (psyRes.ok) { const pj = await psyRes.json(); setPsychology(pj.psychology || null); try { localStorage.setItem('analyze:psychology', JSON.stringify(pj.psychology || {})) } catch {} }
         if (compRes.ok) { const cj = await compRes.json(); setCompetition(cj.competition || null) }
         if (painRes.ok) { const pj2 = await painRes.json(); setPainpoints(pj2.painpoints || null) }
         if ((sucRes as any).ok) { const sj = await (sucRes as Response).json(); setSuccess(sj.successScore || null) }
+        if (timRes.ok) { const tj = await timRes.json(); setTiming(tj.timing || null) }
       } catch {}
 
       toast.success('Job analysis completed successfully!')
@@ -570,6 +573,35 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                     <div>
                       <div className="font-medium">Improvements</div>
                       <ul className="list-disc ml-5 mt-1">{success.improvements.slice(0,4).map((r:string,i:number)=>(<li key={i}>{r}</li>))}</ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            {timing && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Optimal Timing</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Timing Score</span>
+                    <span>{timing.score}/100</span>
+                  </div>
+                  {Array.isArray(timing.bestWindows) && timing.bestWindows.length > 0 && (
+                    <div>
+                      <div className="font-medium">Best Windows</div>
+                      <ul className="list-disc ml-5 mt-1">
+                        {timing.bestWindows.slice(0,3).map((w,i)=>(<li key={i}>{w.window} — {w.reason}</li>))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(timing.notes) && timing.notes.length > 0 && (
+                    <div>
+                      <div className="font-medium">Notes</div>
+                      <ul className="list-disc ml-5 mt-1">
+                        {timing.notes.slice(0,3).map((n,i)=>(<li key={i}>{n}</li>))}
+                      </ul>
                     </div>
                   )}
                 </CardContent>

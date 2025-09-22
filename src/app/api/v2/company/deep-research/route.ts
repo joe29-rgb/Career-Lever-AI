@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
     let gd: any = null
     try { gd = await webScraper.scrapeGlassdoorReviewsSummary(companyName) } catch {}
 
+    // Supplement with OSINT bundles for richer output
+    let osint: any = null
+    try { osint = await webScraper.searchCompanyIntelByGoogle(companyName, { after: '2025-01-01' }) } catch {}
+
     const out = {
       companyProfile: {
         name: companyData.companyName || companyName,
@@ -56,7 +60,9 @@ export async function POST(req: NextRequest) {
           summary: n.summary,
           relevance: 'Potential talking point for outreach',
           url: n.url,
-        })),
+        })).concat((osint?.news || []).map((n: any) => ({
+          title: n.title, date: undefined, summary: n.snippet, relevance: 'Press/coverage', url: n.url
+        }))).slice(0, 12),
         socialActivity: companyData.linkedinData?.followers ? `LinkedIn followers: ${companyData.linkedinData.followers}` : null,
         hiringTrends: null,
       },
