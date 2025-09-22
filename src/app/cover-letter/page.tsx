@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Download, Loader2 } from 'lucide-react'
+import { useResumeContext } from '@/components/resume-context'
 import toast from 'react-hot-toast'
 
 export default function CoverLetterPage() {
+  const { selectedResume, resumes, setSelectedResumeId, refresh } = useResumeContext()
   const [jobTitle, setJobTitle] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [jobDescription, setJobDescription] = useState('')
@@ -22,6 +24,10 @@ export default function CoverLetterPage() {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
 
   const generate = async () => {
+    // Auto-fill resume text if user has uploaded one
+    if (!resumeText && selectedResume?.extractedText) {
+      setResumeText(selectedResume.extractedText)
+    }
     setIsLoading(true)
     try {
       let psychology: any | undefined
@@ -139,7 +145,10 @@ export default function CoverLetterPage() {
 
           <div className="space-y-2">
             <Label>Resume Text</Label>
-            <Textarea value={resumeText} onChange={(e) => setResumeText(e.target.value)} rows={8} placeholder="Paste your resume text here" />
+            <Textarea value={resumeText || selectedResume?.extractedText || ''} onChange={(e) => setResumeText(e.target.value)} rows={8} placeholder={selectedResume ? 'Using your uploaded resume. You can override here.' : 'Paste your resume text here'} />
+            {!selectedResume && (
+              <div className="text-xs text-gray-600">Tip: upload a resume first so it’s auto-filled across the app.</div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

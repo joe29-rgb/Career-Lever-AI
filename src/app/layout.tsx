@@ -33,6 +33,20 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
+          <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+              <a href="/" className="font-semibold">CareerLever</a>
+              <div className="hidden md:flex items-center gap-4 text-sm">
+                <a href="/dashboard" className="hover:underline">Dashboard</a>
+                <a href="/create-application" className="hover:underline">Applications</a>
+                <a href="/resume-builder" className="hover:underline">Resume</a>
+                <a href="/cover-letter" className="hover:underline">Cover Letter</a>
+                <a href="/skill-analysis" className="hover:underline">Skills</a>
+                <a href="/analytics" className="hover:underline">Analytics</a>
+              </div>
+              <div className="ml-auto text-xs text-gray-500">AI job assistant</div>
+            </div>
+          </nav>
           <div aria-live="polite" aria-atomic="true" className="sr-only" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
             <AppShell>{children}</AppShell>
