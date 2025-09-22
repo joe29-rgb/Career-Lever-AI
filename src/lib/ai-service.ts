@@ -105,6 +105,8 @@ Hard rules:
 - Keep bullets factual; no made-up metrics.
 - Do not copy or quote any sentences from the Target Context/Job Description. Use it only to guide selection and ordering of content from the Original Resume.
 - Do not restate job requirements or benefits in the resume. Do not include the words Requirements, Preferred Skills, Responsibilities, Company, or Title as sections derived from the job description.
+ - Do NOT mention the target employer or job title by name unless it already appears in the Original Resume. Keep the resume neutrally targeted (no company names from Job Description).
+ - Do NOT include phrases like "seeking to join <Company>" or "at <Company>" unless that company exists in the Original Resume.
 
 Return the final tailored resume as plain text. Do not include JSON, commentary, or markup.`,
 
