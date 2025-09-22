@@ -253,6 +253,107 @@ export interface CompanyInsightsResult {
 }
 
 export class AIService {
+  // Bridge assistant tool calls to our REST endpoints and local model helpers
+  private static async handleAssistantToolCalls(threadId: string, run: any, context?: any): Promise<Array<{ tool_call_id: string; output: string }>> {
+    const toolCalls = run.required_action?.submit_tool_outputs?.tool_calls || []
+    const outputs: Array<{ tool_call_id: string; output: string }> = []
+    for (const tc of toolCalls) {
+      const name = tc.function?.name as string
+      let args: any = {}
+      try { args = JSON.parse(tc.function?.arguments || '{}') } catch { args = {} }
+      try {
+        // 1) Built-in tools we already support
+        if (name === 'analyze_job_description') {
+          const jd = typeof args.jobDescription === 'string' && args.jobDescription.trim().length > 0 ? args.jobDescription : (context?.jobDescription || '')
+          const result = await this.analyzeJobDescriptionWithModel(jd)
+          outputs.push({ tool_call_id: tc.id, output: JSON.stringify(result) })
+          continue
+        }
+        if (name === 'tailor_resume') {
+          const rd = typeof args.resumeText === 'string' && args.resumeText.trim().length > 0 ? args.resumeText : (context?.resumeText || '')
+          const jd = typeof args.jobDescription === 'string' && args.jobDescription.trim().length > 0 ? args.jobDescription : (context?.jobDescription || '')
+          const tone = (context?.tone || 'professional') as 'professional' | 'enthusiastic' | 'concise'
+          const result = await this.customizeResumeWithModel(rd, jd, undefined, undefined, tone)
+          outputs.push({ tool_call_id: tc.id, output: result.customizedResume })
+          continue
+        }
+        if (name === 'generate_cover_letter') {
+          const title = typeof args.jobTitle === 'string' ? args.jobTitle : (context?.jobTitle || '')
+          const company = typeof args.companyName === 'string' ? args.companyName : (context?.companyName || '')
+          const jd = typeof args.jobDescription === 'string' ? args.jobDescription : (context?.jobDescription || '')
+          const rt = typeof args.resumeText === 'string' ? args.resumeText : (context?.resumeText || '')
+          const cdRaw = typeof args.companyData === 'string' ? args.companyData : (context?.companyData || '')
+          const tone = (args.tone || context?.tone || 'professional') as 'professional' | 'casual' | 'enthusiastic'
+          const length = (args.length || context?.length || 'medium') as 'short' | 'medium' | 'long'
+          const result = await this.generateCoverLetter(title, company, jd, rt, cdRaw ? { raw: cdRaw } : undefined, tone, length)
+          outputs.push({ tool_call_id: tc.id, output: result.coverLetter })
+          continue
+        }
+        if (name === 'generate_negotiation_plan') {
+          const merged = {
+            jobTitle: args.jobTitle || context?.jobTitle,
+            companyName: args.companyName || context?.companyName,
+            location: args.location || context?.location || '',
+            seniority: args.seniority || context?.seniority || 'mid',
+            offer: args.offer || context?.offer || { base: 'TBD' },
+            marketData: args.marketData || context?.marketData,
+            candidateHighlights: args.candidateHighlights || context?.candidateHighlights || '',
+            constraints: args.constraints || context?.constraints,
+            tone: args.tone || context?.tone || 'professional'
+          }
+          const plan = await this.generateSalaryNegotiationPlanWithModel(merged as any)
+          outputs.push({ tool_call_id: tc.id, output: JSON.stringify(plan) })
+          continue
+        }
+
+        // 2) Company OSINT tools -> our REST endpoints
+        if (name === 'scrape_linkedin_company' || name === 'identify_hiring_contacts' || name === 'scrape_glassdoor_insights') {
+          const payload = { companyName: args.companyName, jobTitle: args.roleType || args.jobTitle, location: args.location }
+          const res = await fetch('/api/v2/company/deep-research', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+          const json = await res.json()
+          if (name === 'identify_hiring_contacts') {
+            const contacts = (json.companyData?.hiringContacts || json.research?.keyContacts || [])
+            outputs.push({ tool_call_id: tc.id, output: JSON.stringify(contacts) })
+          } else if (name === 'scrape_glassdoor_insights') {
+            const out = {
+              glassdoorRating: json.companyData?.glassdoorRating ?? null,
+              glassdoorReviews: json.companyData?.glassdoorReviews ?? null,
+              culture: json.companyData?.culture ?? [],
+              benefits: json.companyData?.benefits ?? []
+            }
+            outputs.push({ tool_call_id: tc.id, output: JSON.stringify(out) })
+          } else {
+            outputs.push({ tool_call_id: tc.id, output: JSON.stringify(json.companyData || json.research || {}) })
+          }
+          continue
+        }
+        if (name === 'analyze_company_financials') {
+          const res = await fetch('/api/v2/company/financials', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName: args.companyName }) })
+          const json = await res.json()
+          outputs.push({ tool_call_id: tc.id, output: JSON.stringify(json.financials || {}) })
+          continue
+        }
+        if (name === 'scrape_company_news') {
+          const res = await fetch('/api/v2/company/google-intel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName: args.companyName }) })
+          const json = await res.json()
+          outputs.push({ tool_call_id: tc.id, output: JSON.stringify(json.intel?.news || []) })
+          continue
+        }
+        if (name === 'research_interviewer_profiles') {
+          const res = await fetch('/api/v2/interviewers/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ names: args.interviewerNames || [], companyName: args.companyName }) })
+          const json = await res.json()
+          outputs.push({ tool_call_id: tc.id, output: JSON.stringify(json.profiles || []) })
+          continue
+        }
+
+        // Unknown tool: return empty
+        outputs.push({ tool_call_id: tc.id, output: '{}' })
+      } catch {
+        outputs.push({ tool_call_id: tc.id, output: '{}' })
+      }
+    }
+    return outputs
+  }
   static async generateText(prompt: string): Promise<string> {
     // Minimal helper for quick text generations where assistants are not required
     const completion = await openai.chat.completions.create({
@@ -698,30 +799,8 @@ RESUME:\n${resumeText}`;
     // eslint-disable-next-line no-constant-condition
     while (true) {
       if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
-        const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
-        const toolOutputs = await Promise.all(
-          toolCalls.map(async (toolCall: any) => {
-            try {
-              const fn = toolCall.function;
-              if (fn?.name === 'tailor_resume') {
-                const args = JSON.parse(fn.arguments || '{}');
-                const rd = typeof args.resumeText === 'string' ? args.resumeText : resumeText;
-                const jd = typeof args.jobDescription === 'string' ? args.jobDescription : jobDescription;
-        const result = await this.customizeResumeWithModel(rd, jd, undefined, undefined, tone);
-                return { tool_call_id: toolCall.id, output: result.customizedResume };
-              }
-              return { tool_call_id: toolCall.id, output: '' };
-            } catch {
-              return { tool_call_id: toolCall.id, output: '' };
-            }
-          })
-        );
-
-        run = await openai.beta.threads.runs.submitToolOutputs(
-          thread.id,
-          run.id,
-          { tool_outputs: toolOutputs }
-        );
+        const tool_outputs = await this.handleAssistantToolCalls(thread.id, run, { resumeText, jobDescription, tone })
+        run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs })
         continue;
       }
 
@@ -876,35 +955,8 @@ Company Research:
     // eslint-disable-next-line no-constant-condition
     while (true) {
       if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
-        const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
-        const toolOutputs = await Promise.all(
-          toolCalls.map(async (toolCall: any) => {
-            try {
-              const fn = toolCall.function;
-              if (fn?.name === 'generate_cover_letter') {
-                const args = JSON.parse(fn.arguments || '{}');
-                const title = typeof args.jobTitle === 'string' ? args.jobTitle : jobTitle;
-                const company = typeof args.companyName === 'string' ? args.companyName : companyName;
-                const jd = typeof args.jobDescription === 'string' ? args.jobDescription : jobDescription;
-                const rt = typeof args.resumeText === 'string' ? args.resumeText : resumeText;
-                const cd = typeof args.companyData === 'string' ? args.companyData : (companyInfo || '');
-                const t = typeof args.tone === 'string' ? args.tone : tone;
-                const l = typeof args.length === 'string' ? args.length : length;
-                const result = await this.generateCoverLetter(title, company, jd, rt, cd ? { raw: cd } : undefined, t, l);
-                return { tool_call_id: toolCall.id, output: result.coverLetter };
-              }
-              return { tool_call_id: toolCall.id, output: '' };
-            } catch {
-              return { tool_call_id: toolCall.id, output: '' };
-            }
-          })
-        );
-
-        run = await openai.beta.threads.runs.submitToolOutputs(
-          thread.id,
-          run.id,
-          { tool_outputs: toolOutputs }
-        );
+        const tool_outputs = await this.handleAssistantToolCalls(thread.id, run, { jobTitle, companyName, jobDescription, resumeText, tone, length, companyData: companyInfo })
+        run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs })
         continue;
       }
 
