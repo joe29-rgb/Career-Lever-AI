@@ -193,15 +193,50 @@ export class WebScraperService {
     excludeSenior?: boolean;
     salaryBands?: string[];
     limit?: number;
+    radiusKm?: number;
   }): Promise<Array<{ title?: string; url: string; snippet?: string; source: string }>> {
-    const queries = this.buildJobSearchQueries({
-      jobTitle: options.jobTitle,
-      location: options.location,
-      after: options.after,
-      remote: options.remote,
-      excludeSenior: options.excludeSenior,
-      salaryBands: options.salaryBands,
-    })
+    let queries: string[] = []
+    const radiusKm = typeof options.radiusKm === 'number' ? Math.max(1, Math.min(500, options.radiusKm)) : undefined
+    if (options.location && radiusKm) {
+      try {
+        const geo = await this.geocodeLocation(options.location)
+        let placeNames: string[] = [ options.location ]
+        if (geo) {
+          const nearby = await this.getNearbyLocalities(geo.lat, geo.lng, radiusKm, 10)
+          const names = nearby.map(p => p.name).filter(Boolean)
+          placeNames = Array.from(new Set([options.location, ...names]))
+        }
+        for (const name of placeNames) {
+          const qs = this.buildJobSearchQueries({
+            jobTitle: options.jobTitle,
+            location: name,
+            after: options.after,
+            remote: options.remote,
+            excludeSenior: options.excludeSenior,
+            salaryBands: options.salaryBands,
+          })
+          queries.push(...qs)
+        }
+      } catch {
+        queries = this.buildJobSearchQueries({
+          jobTitle: options.jobTitle,
+          location: options.location,
+          after: options.after,
+          remote: options.remote,
+          excludeSenior: options.excludeSenior,
+          salaryBands: options.salaryBands,
+        })
+      }
+    } else {
+      queries = this.buildJobSearchQueries({
+        jobTitle: options.jobTitle,
+        location: options.location,
+        after: options.after,
+        remote: options.remote,
+        excludeSenior: options.excludeSenior,
+        salaryBands: options.salaryBands,
+      })
+    }
     const preferredHosts = ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com','boards.greenhouse.io','myworkdayjobs.com','smartrecruiters.com']
     const results: Array<{ title?: string; url: string; snippet?: string; source: string }> = []
     const seen = new Set<string>()
@@ -257,6 +292,62 @@ export class WebScraperService {
     ])
 
     return { financial, culture, news, leadership, growth, benefits }
+  }
+
+  // Geocode a location string to lat/lng using Mapbox (if configured) or OpenStreetMap Nominatim
+  async geocodeLocation(location: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
+    const q = location.trim()
+    if (!q) return null
+    const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN
+    try {
+      if (mapboxToken) {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?limit=1&access_token=${mapboxToken}`
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } as any })
+        if (res.ok) {
+          const json: any = await res.json()
+          const f = json.features?.[0]
+          if (f?.center && Array.isArray(f.center)) {
+            return { lat: f.center[1], lng: f.center[0], displayName: f.place_name || q }
+          }
+        }
+      }
+    } catch {}
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`
+      const res = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'CareerLeverAI/1.0 (contact: support@careerlever.ai)' } as any })
+      if (res.ok) {
+        const arr: any[] = await res.json() as any
+        const it: any = arr?.[0]
+        if (it?.lat && it?.lon) {
+          return { lat: parseFloat(it.lat), lng: parseFloat(it.lon), displayName: it.display_name || q }
+        }
+      }
+    } catch {}
+    return null
+  }
+
+  // Fetch nearby locality names within radius using Overpass API (best-effort)
+  async getNearbyLocalities(lat: number, lng: number, radiusKm: number, maxPlaces: number = 10): Promise<Array<{ name: string; country?: string }>> {
+    const radiusMeters = Math.round(radiusKm * 1000)
+    const body = `[out:json][timeout:25];\n(\n  node["place"~"city|town|village"](around:${radiusMeters},${lat},${lng});\n);\nout body ${Math.max(5, maxPlaces)};`;
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain', 'User-Agent': 'CareerLeverAI/1.0 (contact: support@careerlever.ai)' } as any,
+        body
+      })
+      if (!res.ok) throw new Error('overpass error')
+      const json: any = await res.json()
+      const names: string[] = []
+      for (const el of (json.elements || [])) {
+        const name = el?.tags?.name
+        if (name && !names.includes(name)) names.push(name)
+        if (names.length >= maxPlaces) break
+      }
+      return names.map(n => ({ name: n }))
+    } catch {
+      return []
+    }
   }
 
   // Scrape a single job detail page from a public URL (best-effort)
