@@ -43,6 +43,7 @@ export function ResumeCustomizer({
   const [error, setError] = useState<string | null>(null)
   const [customizedResult, setCustomizedResult] = useState<any>(null)
   const [diffHtml, setDiffHtml] = useState<string>('')
+  const [ats, setAts] = useState<any>(null)
   const [activeTab, setActiveTab] = useState('preview')
   const [authenticity, setAuthenticity] = useState<{ score: number; suggestions: string[] } | null>(null)
   const [tone, setTone] = useState<'professional'|'enthusiastic'|'concise'>('professional')
@@ -129,6 +130,15 @@ export function ResumeCustomizer({
           pieces.push(`<mark class=\"bg-yellow-200\">${afterTokens.slice(ai).join(' ')}</mark>`)
         }
         setDiffHtml(pieces.join(' '))
+      } catch {}
+
+      // ATS score
+      try {
+        const resp = await fetch('/api/insights/ats/score', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resumeText: data.customizedResume.customizedText, jobAnalysis })
+        })
+        if (resp.ok) { const j = await resp.json(); setAts(j.ats) }
       } catch {}
 
       // Authenticity scoring
@@ -355,6 +365,26 @@ export function ResumeCustomizer({
                   <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white" dangerouslySetInnerHTML={{ __html: diffHtml || customizedResult.customizedResume.customizedText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
                   <div className="text-xs text-gray-500 mt-2">New or significantly changed text is highlighted.</div>
                 </div>
+
+                {ats && (
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">ATS Optimization</h4>
+                      <Badge variant="secondary">{ats.score}/100</Badge>
+                    </div>
+                    <div className="text-xs text-gray-700">Missing keywords:</div>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {ats.missingKeywords.slice(0, 20).map((k: string, i: number) => (
+                        <Badge key={i} variant="outline">{k}</Badge>
+                      ))}
+                    </div>
+                    {ats.suggestions?.length > 0 && (
+                      <ul className="list-disc ml-5 mt-2 text-sm text-gray-700">
+                        {ats.suggestions.map((s: string, i: number) => (<li key={i}>{s}</li>))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="improvements" className="space-y-4">
