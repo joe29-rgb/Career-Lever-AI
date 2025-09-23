@@ -20,10 +20,12 @@ export async function POST(req: NextRequest) {
       limit: z.number().min(1).max(50).optional(),
       radiusKm: z.number().min(1).max(500).optional(),
       sources: z.array(z.enum(['indeed','linkedin','ziprecruiter','jobbank','workopolis','google'])).optional(),
+      commuteFrom: z.string().optional(),
+      commuteMode: z.enum(['driving','walking','transit']).optional(),
     })
     const parsed = schema.safeParse(await req.json())
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
-    const { jobTitle, location, after, remote, excludeSenior, salaryBands, limit, radiusKm, sources } = parsed.data as any
+    const { jobTitle, location, after, remote, excludeSenior, salaryBands, limit, radiusKm, sources, commuteFrom, commuteMode } = parsed.data as any
 
     const resultsAll = await webScraper.searchJobsByGoogle({
       jobTitle: String(jobTitle),
@@ -44,7 +46,12 @@ export async function POST(req: NextRequest) {
     const filtered = Array.isArray(sources) && sources.length
       ? resultsAll.filter(r => sources.some((s:string)=> (r.source||'').includes(s)))
       : resultsAll
-    const results = filtered.slice(0, cap)
+    let results = filtered.slice(0, cap)
+    // Optional commute ranking (best-effort; simple string include until full API enabled)
+    if (commuteFrom && location) {
+      // lightweight heuristic: prefer items where snippet mentions the city
+      results = results.sort((a,b)=> (b.snippet||'').includes(location) ? 1 : 0 - ((a.snippet||'').includes(location) ? 1 : 0))
+    }
 
     return NextResponse.json({ success: true, results, location: location || null, radiusKm: typeof radiusKm === 'number' ? Math.max(1, Math.min(500, radiusKm)) : null, sources: sources || [], plan })
   } catch (e) {

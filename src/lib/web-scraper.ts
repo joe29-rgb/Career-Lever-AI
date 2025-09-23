@@ -340,6 +340,8 @@ export class WebScraperService {
     leadership: Array<{ title: string; url: string; snippet: string }>;
     growth: Array<{ title: string; url: string; snippet: string }>;
     benefits: Array<{ title: string; url: string; snippet: string }>;
+    crunchbase?: Array<{ title: string; url: string; snippet: string }>;
+    pitchbook?: Array<{ title: string; url: string; snippet: string }>;
   }> {
     const after = opts?.after || ''
     const qFinancial = `"${companyName}" ("funding" OR "investment" OR "revenue") ${after ? 'after:'+after : ''}`
@@ -358,7 +360,10 @@ export class WebScraperService {
       this.googleSearch(qBenefits, 8),
     ])
 
-    return { financial, culture, news, leadership, growth, benefits }
+    const crunchbase = await this.googleSearch(`site:crunchbase.com "${companyName}"`, 4)
+    const pitchbook = await this.googleSearch(`site:pitchbook.com "${companyName}"`, 4)
+
+    return { financial, culture, news, leadership, growth, benefits, crunchbase, pitchbook }
   }
 
   // Twitter/X mentions via Google
@@ -874,6 +879,12 @@ export class WebScraperService {
     } finally {
       await page.close();
     }
+  }
+
+  computeSentimentFromProsCons(pros: string[] = [], cons: string[] = []): number {
+    const p = pros.length, c = cons.length
+    if (p + c === 0) return 50
+    return Math.max(0, Math.min(100, Math.round((p / (p + c)) * 100)))
   }
 
   private async scrapeGlassdoorData(companyName: string): Promise<{

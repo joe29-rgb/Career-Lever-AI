@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
         glassdoorRating: companyData.glassdoorRating || null,
         pros: gd?.pros || [],
         cons: gd?.cons || [],
+        sentiment: gd ? (webScraper as any).computeSentimentFromProsCons?.(gd.pros, gd.cons) ?? null : null,
         interviewProcess: null,
       },
       recentDevelopments: {
@@ -122,6 +123,8 @@ export async function POST(req: NextRequest) {
         growth: osint.growth || [],
         benefits: osint.benefits || [],
         news: osint.news || [],
+        crunchbase: osint.crunchbase || [],
+        pitchbook: osint.pitchbook || [],
       } : undefined,
       sources: companyData.sources || [],
       cachedAt: new Date(),
