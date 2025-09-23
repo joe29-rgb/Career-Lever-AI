@@ -90,6 +90,7 @@ Follow 2025 best practices (recruiter eye-tracking + ATS):
 - Single-column, reverse-chronological, left-aligned for F-pattern scanning
 - Section order: Contact, Professional Summary (2–3 lines), Core Competencies (8–12 keywords), Professional Experience, Education, Certifications
 - Use bullets with: Action Verb + Specific Task + Quantified Result + Timeframe
+ - Bullets must use professional bullet characters (•) with proper spacing, not hyphens (-) or asterisks (*)
 - Naturally weave relevant keywords without stuffing; vary sentence length; avoid generic AI phrasing
 - No graphics/tables/headers/footers/placeholders; plain text output only
 - Do NOT copy sentences from Job Description; use it only to prioritize content from the Original Resume
@@ -123,12 +124,14 @@ Please respond with a JSON object containing:
 
 Focus on technical skills, experience requirements, and cultural indicators.`,
 
-  COVER_LETTER_GENERATION: `Create a professional cover letter using the following information:
+  COVER_LETTER_GENERATION: `Create a professional cover letter using the following information. Address it to a real hiring contact if provided (use their name), otherwise use "Hiring Manager":
 
 Job Details:
 - Position: {jobTitle}
 - Company: {companyName}
 - Job Description: {jobDescription}
+ - Candidate: {candidateName} — {candidateEmail} — {candidatePhone}
+ - Hiring Contact: {hiringContact}
 
 Candidate Background:
 {resumeText}
@@ -886,13 +889,15 @@ RESUME:\n${resumeText}`;
         if (Array.isArray(companyData.recentNews) && companyData.recentNews.length) lines.push(`- Recent News: ${companyData.recentNews.map((n: any)=> n.title).join(', ')}`)
         if (lines.length) companyInfo = `\nCompany Research:\n${lines.join('\n')}`
       }
+      const candidateName = (companyData && companyData.candidateName) ? `\nCandidate: ${companyData.candidateName} — ${companyData.candidateEmail || ''} ${companyData.candidatePhone ? ' — '+companyData.candidatePhone : ''}` : ''
+      const hiringContact = (companyData && companyData.hiringContact) ? `\nHiring Contact: ${companyData.hiringContact}` : ''
 
       const prompt = AI_PROMPTS.COVER_LETTER_GENERATION
         .replace('{jobTitle}', jobTitle)
         .replace('{companyName}', companyName)
         .replace('{jobDescription}', jobDescription)
         .replace('{resumeText}', resumeText)
-        .replace('{companyData}', companyInfo)
+        .replace('{companyData}', companyInfo + candidateName + hiringContact)
         .replace('{tone}', tone)
         .replace('{length}', length);
 

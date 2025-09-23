@@ -47,12 +47,23 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // personalize with candidate + hiring contact if saved in context
+      let candidateName = session.user.name || ''
+      const candidateEmail = session.user.email || ''
+      const candidatePhone = ''
+      let hiringContact = ''
+      try {
+        const ja = (await import('@/models/JobApplication')).default
+        const recent = await ja.findOne({ userId: session.user.id }).sort({ createdAt: -1 })
+        if (recent?.context?.hiringContactName) hiringContact = recent.context.hiringContactName
+      } catch {}
+
       const result = await AIService.generateCoverLetter(
         jobTitle,
         companyName,
         jobDescription,
         resumeText,
-        { ...(psychology ? { psychology } : {}) },
+        { ...(psychology ? { psychology } : {}), candidateName, candidateEmail, candidatePhone, hiringContact },
         tone,
         length
       );
@@ -132,12 +143,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate cover letter using AI service
+    let candidateName = session.user.name || ''
+    const candidateEmail = session.user.email || ''
+    const candidatePhone = ''
+    const hiringContact = ''
     const coverLetterResult = await AIService.generateCoverLetter(
       jobApplication.jobTitle,
       jobApplication.companyName,
       jobApplication.jobDescription,
       resume.extractedText,
-      companyData?.toObject(),
+      { ...(companyData ? companyData.toObject() : {}), candidateName, candidateEmail, candidatePhone, hiringContact },
       tone,
       length
     );

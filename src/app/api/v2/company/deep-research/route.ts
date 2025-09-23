@@ -28,6 +28,16 @@ export async function POST(req: NextRequest) {
     // Supplement with OSINT bundles for richer output
     let osint: any = null
     try { osint = await webScraper.searchCompanyIntelByGoogle(companyName, { after: '2025-01-01' }) } catch {}
+    // Supplement socials via Google when direct scrape sparse
+    try {
+      if (!companyData.socialMedia?.facebook) {
+        const fb = await webScraper.searchTwitterMentions(companyName, 3)
+        if (fb?.length) {
+          ;(companyData as any).socialMedia = (companyData as any).socialMedia || {}
+          ;(companyData as any).socialMedia.twitter = { handle: '', followers: 0, recentTweets: fb.map(f=>({ text: f.title || f.snippet, createdAt: new Date(), likes: 0, retweets: 0 })) }
+        }
+      }
+    } catch {}
 
     const out = {
       companyProfile: {

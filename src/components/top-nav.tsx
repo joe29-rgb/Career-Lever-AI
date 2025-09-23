@@ -55,13 +55,13 @@ export function TopNav() {
         <Link href="/" className="font-semibold text-gray-900 dark:text-white">CareerLever</Link>
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-4 text-sm text-gray-700 dark:text-gray-200">
+        <div className="hidden md:flex items-center gap-4 text-sm text-gray-700 dark:text-white">
           {LINKS.map(link => (
             <Link
               key={link.href}
               href={link.href}
               aria-current={isActive(link.href) ? 'page' : undefined}
-              className={`hover:underline ${isActive(link.href) ? 'text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-200'}`}
+              className={`hover:underline ${isActive(link.href) ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-white'}`}
             >
               {link.label}
             </Link>
@@ -69,9 +69,9 @@ export function TopNav() {
         </div>
 
         {/* Right side */}
-        <div className="ml-auto hidden md:flex items-center gap-3 text-gray-700 dark:text-gray-200">
+        <div className="ml-auto hidden md:flex items-center gap-3 text-gray-700 dark:text-white">
           <ThemeToggle />
-          <div className="text-xs text-gray-500 dark:text-gray-400">AI job assistant</div>
+          <div className="text-xs text-gray-500 dark:text-gray-300">AI job assistant</div>
         </div>
 
         {/* Mobile controls */}
@@ -84,7 +84,7 @@ export function TopNav() {
             aria-expanded={open}
             onClick={() => setOpen(v => !v)}
             ref={menuButtonRef}
-            className="p-2 rounded border text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700"
+            className="p-2 rounded border text-gray-700 dark:text-white border-gray-200 dark:border-gray-700"
           >
             {open ? 'Close' : 'Menu'}
           </button>
@@ -105,7 +105,7 @@ export function TopNav() {
               href={link.href}
               aria-current={isActive(link.href) ? 'page' : undefined}
               ref={idx === 0 ? firstMobileLinkRef : undefined}
-              className={`block px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/60 ${isActive(link.href) ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300' : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`block px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/60 ${isActive(link.href) ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300' : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'}`}
             >
               {link.label}
             </Link>
