@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const { jobTitle, location, after, remote, excludeSenior, salaryBands, limit, radiusKm, sources } = parsed.data as any
 
-    const results = await webScraper.searchJobsByGoogle({
+    const resultsAll = await webScraper.searchJobsByGoogle({
       jobTitle: String(jobTitle),
       location: location ? String(location) : undefined,
       after: after ? String(after) : undefined,
@@ -37,11 +37,17 @@ export async function POST(req: NextRequest) {
       radiusKm: typeof radiusKm === 'number' ? radiusKm : undefined,
     })
 
-    const filtered = Array.isArray(sources) && sources.length
-      ? results.filter(r => sources.some((s:string)=> (r.source||'').includes(s)))
-      : results
+    // Plan gating: free plan returns up to 20 items, pro 60, company 120
+    const prof = await (await import('@/models/Profile')).default.findOne({ userId: (session.user as any).id }) as any
+    const plan = (prof?.plan || 'free') as 'free'|'pro'|'company'
+    const cap = plan === 'company' ? 120 : plan === 'pro' ? 60 : 20
 
-    return NextResponse.json({ success: true, results: filtered, location: location || null, radiusKm: typeof radiusKm === 'number' ? Math.max(1, Math.min(500, radiusKm)) : null, sources: sources || [] })
+    const filtered = Array.isArray(sources) && sources.length
+      ? resultsAll.filter(r => sources.some((s:string)=> (r.source||'').includes(s)))
+      : resultsAll
+    const results = filtered.slice(0, cap)
+
+    return NextResponse.json({ success: true, results, location: location || null, radiusKm: typeof radiusKm === 'number' ? Math.max(1, Math.min(500, radiusKm)) : null, sources: sources || [], plan })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to discover jobs' }, { status: 500 })
   }
