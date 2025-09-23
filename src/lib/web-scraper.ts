@@ -127,11 +127,9 @@ export class WebScraperService {
     await page.setRequestInterception(true)
     page.on('request', (req: any) => {
       const type = req.resourceType()
-      if (type === 'image' || type === 'media' || type === 'font' || type === 'stylesheet') {
-        req.abort().catch(()=>{})
-      } else {
-        req.continue().catch(()=>{})
-      }
+      // Allow CSS (for layout) but block images/media/fonts
+      if (type === 'image' || type === 'media' || type === 'font') { req.abort().catch(()=>{}) }
+      else { req.continue().catch(()=>{}) }
     })
   }
 
