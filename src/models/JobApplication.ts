@@ -23,6 +23,12 @@ export interface IJobApplication extends Document {
   context?: any
   coverLetterId?: mongoose.Types.ObjectId
   resumeVersionId?: mongoose.Types.ObjectId
+  // Outcomes & tracking
+  applicationSource?: string
+  variantUsed?: 'A' | 'B' | 'C'
+  views?: number
+  interviews?: number
+  offers?: number
   createdAt: Date
   updatedAt: Date
 }
@@ -87,6 +93,11 @@ const JobApplicationSchema = new Schema<IJobApplication>({
   resumeVersionId: {
     type: Schema.Types.ObjectId,
   },
+  applicationSource: { type: String, trim: true },
+  variantUsed: { type: String, enum: ['A','B','C'], default: undefined },
+  views: { type: Number, default: 0 },
+  interviews: { type: Number, default: 0 },
+  offers: { type: Number, default: 0 },
 }, {
   timestamps: true,
 })
