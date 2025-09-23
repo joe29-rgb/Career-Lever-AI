@@ -150,22 +150,25 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
       if (!analysisResult) return
       // Try to load latest resume id
       let resumeId: string | undefined
+      let resumeText: string | undefined
       try {
         const rl = await fetch('/api/resume/list')
         if (rl.ok) {
           const rj = await rl.json()
           resumeId = rj.resumes?.[0]?._id
+          resumeText = rj.resumes?.[0]?.extractedText
         }
       } catch {}
 
       const resp = await fetch('/api/job/compare', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobAnalysis: analysisResult, resumeId })
+        body: JSON.stringify({ jobAnalysis: analysisResult, resumeId, resumeText })
       })
       if (!resp.ok) throw new Error('Compare failed')
       const json = await resp.json()
       setCompare({ score: json.score, matched: json.matchedKeywords || [], missing: json.missingKeywords || [] })
     } catch (e) {
+      toast.error('Comparison failed. Upload or select a resume and try again.')
       setCompare(null)
     }
   }

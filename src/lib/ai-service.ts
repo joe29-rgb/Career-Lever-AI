@@ -718,15 +718,35 @@ Company insights (use for relevance, not fabrication): ${JSON.stringify(companyD
         throw new Error('Failed to get customized resume from OpenAI');
       }
 
+      // Optional humanization step to reduce AI-detectable patterns
+      let humanized = customizedText
+      try {
+        const wantsHumanize = !!(companyData && (companyData as any).antiAIDetection)
+        if (wantsHumanize && humanized) {
+          const hPrompt = `Rewrite the following resume to sound more human and less AI-generated while preserving all facts, employers, dates, and achievements. Vary sentence lengths, reduce template phrasing, and increase specificity without inventing anything. Keep plain text only.\n\n${humanized}`
+          const h = await withTimeout(openai.chat.completions.create({
+            model: DEFAULT_MODEL,
+            messages: [
+              { role: 'system', content: 'You rewrite text to be more human and less AI-detectable without changing facts.' },
+              { role: 'user', content: hPrompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+          }), Math.min(AI_TIMEOUT_MS, 12000))
+          const hv = h.choices[0]?.message?.content?.trim()
+          if (hv && hv.length > 100) humanized = hv
+        }
+      } catch { /* non-fatal */ }
+
       // Guard against job description leakage by reducing score impact if JD phrases appear verbatim
       const jdPhrases = (jobDescription || '').split(/[^a-zA-Z0-9]+/).filter(w => w.length > 6).slice(0, 30)
-      const jdLeak = jdPhrases.some(p => customizedText.includes(p))
-      const matchScoreRaw = calculateMatchScore(customizedText, jobDescription);
+      const jdLeak = jdPhrases.some(p => humanized?.includes(p))
+      const matchScoreRaw = calculateMatchScore(humanized || customizedText || '', jobDescription);
       const matchScore = jdLeak ? Math.max(0, Math.round(matchScoreRaw * 0.8)) : matchScoreRaw;
       const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
 
       const result = {
-        customizedResume: customizedText,
+        customizedResume: humanized || customizedText || '',
         matchScore,
         improvements: [
           'Keywords optimized for ATS',

@@ -370,6 +370,48 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
               </Card>
             )}
 
+            {/* Contact Info from Website */}
+            {researchResult.contactInfo && (Array.isArray(researchResult.contactInfo.emails) || Array.isArray(researchResult.contactInfo.phones) || Array.isArray(researchResult.contactInfo.addresses)) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Contact Information</CardTitle>
+                  <CardDescription>Discovered from website pages</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  {Array.isArray(researchResult.contactInfo.emails) && researchResult.contactInfo.emails.length > 0 && (
+                    <div>
+                      <div className="font-medium mb-1">Emails</div>
+                      <ul className="space-y-1">
+                        {researchResult.contactInfo.emails.slice(0,8).map((e:string,i:number)=> (
+                          <li key={i} className="break-all">{e}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(researchResult.contactInfo.phones) && researchResult.contactInfo.phones.length > 0 && (
+                    <div>
+                      <div className="font-medium mb-1">Phones</div>
+                      <ul className="space-y-1">
+                        {researchResult.contactInfo.phones.slice(0,8).map((p:string,i:number)=> (
+                          <li key={i}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {Array.isArray(researchResult.contactInfo.addresses) && researchResult.contactInfo.addresses.length > 0 && (
+                    <div className="md:col-span-1">
+                      <div className="font-medium mb-1">Addresses</div>
+                      <ul className="space-y-1">
+                        {researchResult.contactInfo.addresses.slice(0,6).map((a:string,i:number)=> (
+                          <li key={i}>{a}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Sources */}
             <Card>
               <CardHeader>

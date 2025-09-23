@@ -105,6 +105,7 @@ export async function POST(req: NextRequest) {
       contactInfo: (companyData as any).contactInfo || undefined,
       googleReviewsRating: (companyData as any).googleReviewsRating,
       googleReviewsCount: (companyData as any).googleReviewsCount,
+      sources: companyData.sources || [],
       cachedAt: new Date(),
       expiresAt: new Date(Date.now() + 24*60*60*1000)
     }

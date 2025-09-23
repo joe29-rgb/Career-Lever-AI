@@ -24,8 +24,12 @@ export default function CoverLetterPage() {
   const [previewHtml, setPreviewHtml] = useState<string | null>(null)
 
   const generate = async () => {
-    // Auto-fill resume text if user has uploaded one
+    // Use current state or fall back to selected resume text immediately
+    const rt = (resumeText && resumeText.trim().length > 0)
+      ? resumeText
+      : (selectedResume?.extractedText || '')
     if (!resumeText && selectedResume?.extractedText) {
+      // Update state for UI, but don't wait for it to set before sending request
       setResumeText(selectedResume.extractedText)
     }
     setIsLoading(true)
@@ -40,7 +44,7 @@ export default function CoverLetterPage() {
           jobTitle,
           companyName,
           jobDescription,
-          resumeText,
+          resumeText: rt,
           tone,
           length,
           psychology
