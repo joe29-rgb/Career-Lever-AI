@@ -20,6 +20,7 @@ export function LocalDiscover() {
   const [sources, setSources] = useState<string[]>(['indeed','linkedin','google'])
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<Result[]>([])
+  const [ranked, setRanked] = useState<Array<{ url: string; title?: string; companyName?: string; score: number; reasons: string[] }>>([])
   const [error, setError] = useState<string | null>(null)
 
   const toggleSource = (id: string) => {
@@ -35,7 +36,14 @@ export function LocalDiscover() {
       })
       const json = await resp.json()
       if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')
-      setResults(json.results || [])
+      const items = (json.results || []) as Result[]
+      setResults(items)
+      // Rank against latest resume
+      try {
+        const rankResp = await fetch('/api/v2/jobs/rank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobs: items }) })
+        const rj = await rankResp.json()
+        if (rankResp.ok && rj.success) setRanked(rj.rankings || [])
+      } catch {}
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
     } finally {
@@ -66,17 +74,29 @@ export function LocalDiscover() {
       {error && <div className="text-red-600 text-sm">{error}</div>}
       {!loading && results.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {results.map((r, i) => (
+          {results.map((r, i) => {
+            const scored = ranked.find(x => x.url === r.url)
+            return (
             <div key={`${r.url}-${i}`} className="border rounded p-3 bg-white dark:bg-gray-900">
               <div className="text-sm text-gray-500 mb-1">{r.source}</div>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 dark:text-blue-300 line-clamp-2">{r.title || r.url}</a>
               {r.snippet && <div className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-3">{r.snippet}</div>}
+              {scored && (
+                <div className="mt-2 text-xs">
+                  <div className="font-medium">Fit Score: {scored.score}%</div>
+                  {scored.reasons && scored.reasons.length > 0 && (
+                    <ul className="list-disc ml-5 mt-1">
+                      {scored.reasons.slice(0,2).map((rs,idx)=>(<li key={idx}>{rs}</li>))}
+                    </ul>
+                  )}
+                </div>
+              )}
               <div className="mt-2 flex gap-2">
                 <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-xs px-2 py-1 border rounded">Open</a>
                 <a href="/create-application?step=analyze" className="text-xs px-2 py-1 border rounded">Analyze</a>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>
