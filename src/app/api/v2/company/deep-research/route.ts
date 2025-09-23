@@ -122,7 +122,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, research: out, companyData: companyDataNormalized })
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to run deep research' }, { status: 500 })
+    // Return minimal structure so UI still renders and invites refresh
+    const { companyName } = await req.json().catch(()=>({})) as any
+    return NextResponse.json({ success: false, research: null, companyData: { companyName, culture: [], benefits: [], recentNews: [] } }, { status: 200 })
   }
 }
 

@@ -248,6 +248,33 @@ export interface CompanyInsightsResult {
 }
 
 export class AIService {
+  // Helpers to post-process AI outputs
+  private static stripMarkdown(input: string): string {
+    let out = input
+    // Remove bold/italic markers
+    out = out.replace(/\*\*(.*?)\*\*/g, '$1')
+    out = out.replace(/\*(.*?)\*/g, '$1')
+    out = out.replace(/__(.*?)__/g, '$1')
+    out = out.replace(/_(.*?)_/g, '$1')
+    // Remove headings like ###, ***, etc.
+    out = out.replace(/^\s*#{1,6}\s+/gm, '')
+    out = out.replace(/^\s*-\s*\[.?\]\s*/gm, '')
+    return out
+  }
+  private static normalizeBullets(input: string): string {
+    const lines = input.split(/\r?\n/)
+    const out = lines.map(l => {
+      const t = l.trimStart()
+      if (/^[*-]\s+/.test(t) || /^[–—-]\s+/.test(t)) return '• ' + t.replace(/^([*–—-])\s+/, '')
+      // bullets like "•" already
+      return l
+    })
+    return out.join('\n')
+  }
+  private static tidyWhitespace(input: string): string {
+    // Collapse >2 blank lines to just 2, trim trailing spaces
+    return input.replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').trim()
+  }
   // Bridge assistant tool calls to our REST endpoints and local model helpers
   private static async handleAssistantToolCalls(threadId: string, run: any, context?: any): Promise<Array<{ tool_call_id: string; output: string }>> {
     const toolCalls = run.required_action?.submit_tool_outputs?.tool_calls || []
@@ -741,15 +768,18 @@ Company insights (use for relevance, not fabrication): ${JSON.stringify(companyD
         }
       } catch { /* non-fatal */ }
 
+      // Normalize formatting (remove markdown, enforce professional bullets, tidy whitespace)
+      humanized = this.tidyWhitespace(this.normalizeBullets(this.stripMarkdown(humanized || '')))
+
       // Guard against job description leakage by reducing score impact if JD phrases appear verbatim
       const jdPhrases = (jobDescription || '').split(/[^a-zA-Z0-9]+/).filter(w => w.length > 6).slice(0, 30)
-      const jdLeak = jdPhrases.some(p => humanized?.includes(p))
-      const matchScoreRaw = calculateMatchScore(humanized || customizedText || '', jobDescription);
+      const jdLeak = jdPhrases.some(p => (humanized || '').includes(p))
+      const matchScoreRaw = calculateMatchScore(humanized || '', jobDescription);
       const matchScore = jdLeak ? Math.max(0, Math.round(matchScoreRaw * 0.8)) : matchScoreRaw;
       const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
 
       const result = {
-        customizedResume: humanized || customizedText || '',
+        customizedResume: humanized || '',
         matchScore,
         improvements: [
           'Keywords optimized for ATS',
@@ -824,7 +854,9 @@ RESUME:\n${resumeText}`;
         const last = messages.data.find((m) => m.role === 'assistant');
         const content = last?.content?.[0];
         const text = (content && 'text' in content) ? content.text.value : undefined;
-        const customizedResume = text && text.trim().length > 0 ? text.trim() : (await this.customizeResumeWithModel(resumeText, jobDescription)).customizedResume;
+        let customizedResume = text && text.trim().length > 0 ? text.trim() : (await this.customizeResumeWithModel(resumeText, jobDescription)).customizedResume;
+        // Normalize formatting
+        customizedResume = this.tidyWhitespace(this.normalizeBullets(this.stripMarkdown(customizedResume)))
         const matchScore = calculateMatchScore(customizedResume, jobDescription);
         const suggestions = await this.getResumeImprovementSuggestions(resumeText, jobDescription);
         return {
@@ -917,11 +949,12 @@ RESUME:\n${resumeText}`;
         max_tokens: 2000,
       }), AI_TIMEOUT_MS);
 
-      const coverLetter = completion.choices[0]?.message?.content?.trim();
+      let coverLetter = completion.choices[0]?.message?.content?.trim();
       logAIUsage('cover-letter', undefined, completion)
       if (!coverLetter) {
         throw new Error('Failed to generate cover letter from OpenAI');
       }
+      coverLetter = this.tidyWhitespace(this.stripMarkdown(coverLetter))
 
       // Extract key points
       const keyPoints = await this.extractKeyPointsFromCoverLetter(coverLetter);

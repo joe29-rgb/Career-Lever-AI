@@ -168,6 +168,11 @@ export class WebScraperService {
       await this.configurePage(page)
       const qs = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
       await page.goto(qs, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      // Accept consent if shown, best-effort
+      try { await page.evaluate(() => {
+        const btn = Array.from(document.querySelectorAll('button, input[type="submit"]')).find(el => /agree|accept|consent/i.test(el.textContent || '')) as HTMLButtonElement | undefined
+        btn?.click()
+      }) } catch {}
       await this.sleep(900 + Math.random()*600)
       const results = await page.evaluate((max: number) => {
         const out: Array<{ title: string; url: string; snippet: string }> = []
