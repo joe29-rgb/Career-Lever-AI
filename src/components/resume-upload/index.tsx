@@ -145,6 +145,16 @@ export function ResumeUpload({
       setUploadedResume(resume)
       onUploadSuccess(resume)
 
+      // Auto-suggest jobs using resume content
+      try {
+        const resp = await fetch('/api/v2/jobs/suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resumeId: resume._id }) })
+        const js = await resp.json()
+        if (resp.ok && js.success) {
+          try { localStorage.setItem('jobs:lastSuggest', JSON.stringify(js)) } catch {}
+          toast.success(`Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`)
+        }
+      } catch {}
+
       toast.success('Resume uploaded successfully!')
 
     } catch (error) {
@@ -332,7 +342,10 @@ export function ResumeUpload({
             <CheckCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between">
               <span>Resume uploaded and processed successfully!</span>
-              <Badge variant="secondary">Ready for customization</Badge>
+              <div className="flex items-center gap-2">
+                <a href="/jobs" className="text-xs px-2 py-1 border rounded">Find Jobs Near Me</a>
+                <Badge variant="secondary">Ready for customization</Badge>
+              </div>
             </AlertDescription>
           </Alert>
         )}

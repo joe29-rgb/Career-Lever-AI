@@ -12,6 +12,7 @@ export default async function JobsPage() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">{t(locale, 'jobs.pageTitle', 'Jobs')}</h1>
+      <PrefillSuggestBanner />
       <JobImport />
       <SearchImport />
       <section className="space-y-3">
@@ -23,6 +24,27 @@ export default async function JobsPage() {
         <JobsActions />
       </section>
       <Recommendations />
+    </div>
+  )
+}
+
+function PrefillSuggestBanner() {
+  if (typeof window === 'undefined') return null as any
+  let last: any = null
+  try { const raw = localStorage.getItem('jobs:lastSuggest'); if (raw) last = JSON.parse(raw) } catch {}
+  if (!last || !Array.isArray(last.results) || last.results.length === 0) return null as any
+  return (
+    <div className="border rounded p-3 bg-blue-50 text-sm">
+      <div className="font-medium mb-1">Suggested jobs for {last.titles?.join(', ')}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {last.results.slice(0,6).map((r:any,i:number)=> (
+          <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="border rounded p-2 bg-white hover:shadow">
+            <div className="text-gray-500 text-xs mb-1">{r.source}</div>
+            <div className="font-medium line-clamp-1">{r.title || r.url}</div>
+            {r.snippet && <div className="text-xs text-gray-600 line-clamp-2 mt-1">{r.snippet}</div>}
+          </a>
+        ))}
+      </div>
     </div>
   )
 }
