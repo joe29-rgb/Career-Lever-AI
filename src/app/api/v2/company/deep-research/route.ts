@@ -115,6 +115,14 @@ export async function POST(req: NextRequest) {
       contactInfo: (companyData as any).contactInfo || undefined,
       googleReviewsRating: (companyData as any).googleReviewsRating,
       googleReviewsCount: (companyData as any).googleReviewsCount,
+      osint: osint ? {
+        financial: osint.financial || [],
+        culture: osint.culture || [],
+        leadership: osint.leadership || [],
+        growth: osint.growth || [],
+        benefits: osint.benefits || [],
+        news: osint.news || [],
+      } : undefined,
       sources: companyData.sources || [],
       cachedAt: new Date(),
       expiresAt: new Date(Date.now() + 24*60*60*1000)

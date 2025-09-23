@@ -412,6 +412,33 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
               </Card>
             )}
 
+            {/* Google OSINT Bundles */}
+            {researchResult.osint && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Public Web Signals</CardTitle>
+                  <CardDescription>Financials, culture, leadership, growth, benefits, news</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  {['financial','culture','leadership','growth','benefits','news'].map((k) => (
+                    Array.isArray(researchResult.osint[k]) && researchResult.osint[k].length > 0 ? (
+                      <div key={k}>
+                        <div className="font-medium mb-1 capitalize">{k}</div>
+                        <ul className="space-y-1">
+                          {researchResult.osint[k].slice(0,5).map((it:any,i:number)=> (
+                            <li key={i} className="flex items-center justify-between gap-2">
+                              <div className="line-clamp-1">{it.title || it.snippet}</div>
+                              {it.url && <Button asChild size="sm" variant="outline"><a href={it.url} target="_blank" rel="noopener noreferrer">Open</a></Button>}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Sources */}
             <Card>
               <CardHeader>
