@@ -55,7 +55,9 @@ export default function CoverLetterPage() {
         throw new Error((data as any).error || 'Failed to generate cover letter')
       }
       const data = await resp.json()
-      setPreviewHtml(data.preview?.html || null)
+      const txt: string = data.coverLetter || ''
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;color:#111;max-width:8.5in;margin:0 auto;padding:0.7in;white-space:pre-wrap}</style></head><body>${txt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
+      setPreviewHtml(html)
       toast.success('Cover letter generated!')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to generate')

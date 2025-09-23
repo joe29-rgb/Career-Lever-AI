@@ -105,6 +105,11 @@ export class WebScraperService {
       launchArgs.push('--no-proxy-server')
       launchArgs.push('--proxy-bypass-list=*')
     }
+    // Ensure no proxy is used if none configured; fix ERR_NO_SUPPORTED_PROXIES
+    process.env.HTTP_PROXY = ''
+    process.env.http_proxy = ''
+    process.env.HTTPS_PROXY = ''
+    process.env.https_proxy = ''
     this.browser = await puppeteer.launch({
       args: launchArgs,
       executablePath,

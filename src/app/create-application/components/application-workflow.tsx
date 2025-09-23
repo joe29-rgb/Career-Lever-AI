@@ -21,6 +21,8 @@ import { ResumeCustomizer } from '@/components/resume-customizer'
 import { Resume, JobAnalysis, CompanyData } from '@/types'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { useResumeContext } from '@/components/resume-context'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const STEPS = [
   {
@@ -117,14 +119,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
     switch (currentStep) {
       case 0:
         return (
-          <ResumeUpload
-            onUploadSuccess={(resume) => {
-              handleStepComplete(0, { resume })
-            }}
-            onUploadError={(error) => {
-              toast.error(error)
-            }}
-          />
+          <ExistingResumeOrUpload onComplete={(resume)=>handleStepComplete(0,{ resume })} />
         )
 
       case 1:
@@ -405,6 +400,44 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+function ExistingResumeOrUpload({ onComplete }: { onComplete: (resume: Resume) => void }) {
+  const { resumes, selectedResumeId, setSelectedResumeId, refresh } = useResumeContext()
+  const [saving, setSaving] = useState(false)
+  useEffect(() => { refresh() }, [])
+  const current = resumes.find(r => r._id === selectedResumeId) || resumes[0]
+  return (
+    <div className="space-y-4">
+      {resumes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Select Existing Resume</CardTitle>
+            <CardDescription>Use a previously uploaded resume or upload a new one below.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select value={current?._id} onValueChange={(v)=>setSelectedResumeId(v)}>
+              <SelectTrigger className="w-full"><SelectValue placeholder="Choose a resume" /></SelectTrigger>
+              <SelectContent>
+                {resumes.map(r => (
+                  <SelectItem key={r._id} value={r._id!}>{r.originalFileName} — {new Date(r.createdAt||'').toLocaleDateString()}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button disabled={!current || saving} onClick={() => { if (current) onComplete(current as any) }}>Use Selected Resume</Button>
+          </CardContent>
+        </Card>
+      )}
+      <ResumeUpload
+        onUploadSuccess={(resume) => {
+          onComplete(resume)
+        }}
+        onUploadError={(error) => {
+          toast.error(error)
+        }}
+      />
     </div>
   )
 }

@@ -118,15 +118,15 @@ export function QuickActions() {
                 <Button
                   key={index}
                   variant="outline"
-                  className="min-h-[120px] p-4 flex flex-col items-start gap-3 hover:shadow-md transition-all text-left no-text-bleed"
+                  className="min-h-[140px] p-4 flex flex-col items-start gap-3 hover:shadow-md transition-all text-left no-text-bleed whitespace-pre-wrap break-words"
                   onClick={() => router.push(action.href)}
                 >
                   <div className={`rounded-lg p-2 ${action.bgColor}`}>
                     <action.icon className={`h-5 w-5 ${action.color}`} />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-sm text-gray-900 dark:text-gray-100 line-clamp-2 leading-snug">{action.title}</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-3 leading-snug">
+                    <div className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-normal">{action.title}</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-normal">
                       {action.description}
                     </div>
                   </div>

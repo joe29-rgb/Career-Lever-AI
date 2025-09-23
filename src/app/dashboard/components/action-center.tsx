@@ -74,7 +74,7 @@ export function ActionCenter() {
                 <Button
                   key={action.title}
                   variant="outline"
-                  className="h-auto p-4 flex items-center justify-between hover:shadow-md transition"
+                  className="h-auto p-4 flex items-center justify-between hover:shadow-md transition whitespace-pre-wrap break-words text-left"
                   onClick={() => router.push(action.href)}
                 >
                   <div className="flex items-center gap-3">
@@ -82,8 +82,8 @@ export function ActionCenter() {
                       <action.icon className={`h-5 w-5 ${action.color}`} />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium text-gray-900">{action.title}</div>
-                      <div className="text-xs text-gray-600">{action.description}</div>
+                      <div className="font-medium text-gray-900 leading-normal">{action.title}</div>
+                      <div className="text-xs text-gray-600 leading-normal">{action.description}</div>
                     </div>
                   </div>
                   <ArrowRight className="h-4 w-4" />

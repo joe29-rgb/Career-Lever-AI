@@ -711,7 +711,7 @@ Company insights (use for relevance, not fabrication): ${JSON.stringify(companyD
             content: prompt
           }
         ],
-        temperature: 0.7,
+        temperature: 0.5,
         max_tokens: 3000,
       }), AI_TIMEOUT_MS);
 
@@ -927,11 +927,8 @@ RESUME:\n${resumeText}`;
       const keyPoints = await this.extractKeyPointsFromCoverLetter(coverLetter);
       const wordCount = coverLetter.split(/\s+/).length;
 
-      const result = {
-        coverLetter,
-        keyPoints,
-        wordCount
-      };
+      // Minimal HTML wrapping moved to caller; return raw text only
+      const result = { coverLetter, keyPoints, wordCount };
       setCache(cacheKey, result)
       return result
     } catch (error) {
