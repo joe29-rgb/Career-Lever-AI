@@ -722,8 +722,9 @@ Psychology guidance (tone, formality, values): ${JSON.stringify(psychology).slic
       const companyLine = companyData ? `
 Company insights (use for relevance, not fabrication): ${JSON.stringify(companyData).slice(0, 1200)}
 ` : ''
+      const style = (companyData && (companyData as any).styleProfile) ? `\nUser writing fingerprint (tone, vocabulary, cadence): ${JSON.stringify((companyData as any).styleProfile).slice(0, 800)}\n` : ''
       const prompt = AI_PROMPTS.RESUME_TAILORING
-        .replace('{jobDescription}', jobDescription + '\n' + toneLine + psychLine + companyLine)
+        .replace('{jobDescription}', jobDescription + '\n' + toneLine + psychLine + companyLine + style)
         .replace('{resumeText}', resumeText);
 
       const completion = await withTimeout(openai.chat.completions.create({

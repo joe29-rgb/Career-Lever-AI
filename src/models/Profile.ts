@@ -8,6 +8,12 @@ export interface IProfile extends Document {
   title?: string;
   location?: string;
   preferences?: Record<string, any>;
+  styleProfile?: {
+    tone?: string;
+    sentenceLength?: string;
+    vocabulary?: string;
+    examples?: string[];
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +26,7 @@ const ProfileSchema: Schema = new Schema({
   title: { type: String },
   location: { type: String },
   preferences: { type: Schema.Types.Mixed },
+  styleProfile: { type: Schema.Types.Mixed },
 }, { timestamps: true })
 
 export default mongoose.models.Profile || mongoose.model<IProfile>('Profile', ProfileSchema);
