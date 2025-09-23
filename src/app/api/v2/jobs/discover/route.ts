@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { webScraper } from '@/lib/web-scraper'
 import { z } from 'zod'
-import { webScraper } from '@/lib/web-scraper'
 
 export const dynamic = 'force-dynamic'
 
