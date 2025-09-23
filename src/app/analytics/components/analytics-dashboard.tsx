@@ -25,7 +25,7 @@ import {
   Lightbulb
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+// Removed Recharts dependency for serverless build stability
 
 interface AnalyticsData {
   overview: {
@@ -463,25 +463,27 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             </Card>
           </div>
 
-          {/* Variant Performance Chart */}
+          {/* Variant Performance (simple) */}
           {analytics.performance.variantPerformance && analytics.performance.variantPerformance.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>Resume Variant Performance</CardTitle>
                 <CardDescription>Views/Interviews/Offers by variant</CardDescription>
               </CardHeader>
-              <CardContent style={{ width: '100%', height: 280 }}>
-                <ResponsiveContainer>
-                  <LineChart data={analytics.performance.variantPerformance}>
-                    <XAxis dataKey="variant" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="views" stroke="#3b82f6" />
-                    <Line type="monotone" dataKey="interviews" stroke="#f59e0b" />
-                    <Line type="monotone" dataKey="offers" stroke="#10b981" />
-                  </LineChart>
-                </ResponsiveContainer>
+              <CardContent>
+                <div className="space-y-3">
+                  {analytics.performance.variantPerformance.map((row:any)=> (
+                    <div key={row.variant} className="space-y-1">
+                      <div className="text-sm font-medium">Variant {row.variant}</div>
+                      <div className="text-xs text-gray-600">Views</div>
+                      <div className="w-full bg-gray-200 rounded h-2"><div className="bg-blue-600 h-2 rounded" style={{ width: `${Math.min(100, row.views)}%` }} /></div>
+                      <div className="text-xs text-gray-600 mt-1">Interviews</div>
+                      <div className="w-full bg-gray-200 rounded h-2"><div className="bg-yellow-500 h-2 rounded" style={{ width: `${Math.min(100, row.interviews*10)}%` }} /></div>
+                      <div className="text-xs text-gray-600 mt-1">Offers</div>
+                      <div className="w-full bg-gray-200 rounded h-2"><div className="bg-green-600 h-2 rounded" style={{ width: `${Math.min(100, row.offers*20)}%` }} /></div>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}

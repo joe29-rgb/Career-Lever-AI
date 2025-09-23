@@ -1,33 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import chromium from '@sparticuz/chromium'
-import puppeteer from 'puppeteer-core'
-
-export const dynamic = 'force-dynamic'
-
-export async function POST(req: NextRequest) {
-  try {
-    const { html, filename } = await req.json()
-    if (!html || typeof html !== 'string') return NextResponse.json({ error: 'html required' }, { status: 400 })
-    const name = (filename && typeof filename === 'string' ? filename : 'document.pdf')
-    const executablePath = await chromium.executablePath()
-    const browser = await puppeteer.launch({ args: chromium.args, executablePath, headless: true })
-    const page = await browser.newPage()
-    await page.setContent(html, { waitUntil: 'domcontentloaded' })
-    const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '12mm', bottom: '12mm', left: '12mm', right: '12mm' } })
-    await page.close(); await browser.close()
-    return new NextResponse(pdf as any, { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${name}"` } })
-  } catch (e) {
-    return NextResponse.json({ error: 'Failed to export PDF' }, { status: 500 })
-  }
-}
-
-import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
 import puppeteer from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
 	try {
