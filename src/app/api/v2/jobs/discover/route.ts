@@ -49,8 +49,14 @@ export async function POST(req: NextRequest) {
     let results = filtered.slice(0, cap)
     // Optional commute ranking (best-effort; simple string include until full API enabled)
     if (commuteFrom && location) {
-      // lightweight heuristic: prefer items where snippet mentions the city
-      results = results.sort((a,b)=> (b.snippet||'').includes(location) ? 1 : 0 - ((a.snippet||'').includes(location) ? 1 : 0))
+      try {
+        // Use Mapbox geocode + heuristic distance by place matching (simplified)
+        const geo = await webScraper.geocodeLocation(commuteFrom)
+        if (geo) {
+          const city = (location || '').split(',')[0].trim().toLowerCase()
+          results = results.sort((a,b)=> ((b.snippet||'').toLowerCase().includes(city) ? 1 : 0) - ((a.snippet||'').toLowerCase().includes(city) ? 1 : 0))
+        }
+      } catch {}
     }
 
     return NextResponse.json({ success: true, results, location: location || null, radiusKm: typeof radiusKm === 'number' ? Math.max(1, Math.min(500, radiusKm)) : null, sources: sources || [], plan })

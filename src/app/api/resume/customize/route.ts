@@ -83,6 +83,14 @@ export async function POST(request: NextRequest) {
 
     await jobApplication.save();
 
+    // Load user style profile (if any)
+    let styleProfile: any = null
+    try {
+      const Profile = (await import('@/models/Profile')).default as any
+      const prof = await Profile.findOne({ userId: (session.user as any).id }).lean()
+      styleProfile = prof?.styleProfile || null
+    } catch {}
+
     // Use AI service to customize the resume with graceful fallback
     let customizationResult: { customizedResume: string; matchScore: number; improvements: string[]; suggestions: string[] };
     try {
@@ -103,7 +111,8 @@ export async function POST(request: NextRequest) {
           keyMetrics,
           skillsPriority,
           antiAIDetection: antiAIDetection !== false,
-          formatStyle: formatStyle || 'traditional'
+          formatStyle: formatStyle || 'traditional',
+          ...(styleProfile ? { styleProfile } : {}),
         }
       );
     } catch (e) {
