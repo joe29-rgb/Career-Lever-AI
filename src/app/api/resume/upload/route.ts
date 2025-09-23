@@ -117,12 +117,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create resume record in database
+    const emailFromText = (extractedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) || [])[0]
+    const phoneFromText = (extractedText.match(/(\+?\d[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}/) || [])[0]
     const resume = new Resume({
       userId: session.user.id,
       originalFileName: file ? file.name : 'pasted-text.txt',
       fileUrl: fileUrl,
       extractedText,
       customizedVersions: [],
+      userName: session.user.name || undefined,
+      contactEmail: emailFromText || session.user.email || undefined,
+      contactPhone: phoneFromText || undefined,
     });
 
     await resume.save();

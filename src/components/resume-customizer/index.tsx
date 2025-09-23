@@ -195,19 +195,51 @@ export function ResumeCustomizer({
   const activeDiff = activeVariant === 'A' ? diffHtml : diffHtmlB
   const activeAuth = activeVariant === 'A' ? authenticity : authenticityB
 
-  const downloadResume = () => {
+  const downloadResume = async () => {
     const data = activeData
     if (!data) return
-    const blob = new Blob([data.customizedResume.customizedText], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `customized-resume-${jobAnalysis.analysis.companyName}-variant-${activeVariant}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    toast.success('Resume downloaded!')
+    const safeUser = (resume.userName || '').replace(/\s+/g,'_')
+    const safeCompany = (jobAnalysis.analysis.companyName || 'Company').replace(/\s+/g,'_')
+    const fileName = `${safeUser ? safeUser + '_' : ''}Resume_${safeCompany}`
+    try {
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;color:#111;max-width:8.5in;margin:0 auto;padding:0.7in;white-space:pre-wrap}</style></head><body>${data.customizedResume.customizedText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
+      const resp = await fetch('/api/resume/export/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html, filename: `${fileName}.pdf` }) })
+      if (resp.ok) {
+        const blob = await resp.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${fileName}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success('Resume PDF downloaded!')
+      } else {
+        // Fallback to .txt
+        const blob = new Blob([data.customizedResume.customizedText], { type: 'text/plain' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${fileName}.txt`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        toast.success('Resume downloaded!')
+      }
+    } catch {
+      const blob = new Blob([data.customizedResume.customizedText], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${fileName}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Resume downloaded!')
+    }
   }
 
   return (

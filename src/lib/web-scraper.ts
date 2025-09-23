@@ -235,6 +235,14 @@ export class WebScraperService {
     // broad query
     const broad = `"${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
     parts.push(broad)
+    // major job boards
+    const boards = ['indeed.com','linkedin.com/jobs','ziprecruiter.com','jobbank.gc.ca','workopolis.com','glassdoor.com/Job']
+    for (const b of boards) {
+      const q = `site:${b} "${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
+      parts.push(q)
+    }
+    // generic careers pages
+    parts.push(`inurl:careers "${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim())
     // salary based queries
     if (options.salaryBands && options.salaryBands.length) {
       const salaryExpr = options.salaryBands.slice(0,3).map(s => `"${s}"`).join(' OR ')

@@ -7,6 +7,7 @@ export interface ICustomizedResume extends Document {
   companyName: string;
   matchScore: number;
   createdAt: Date;
+  fileName?: string;
 }
 
 export interface IResume extends Document {
@@ -15,6 +16,9 @@ export interface IResume extends Document {
   fileUrl: string;
   extractedText: string;
   customizedVersions: ICustomizedResume[];
+  userName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +47,7 @@ const CustomizedResumeSchema: Schema = new Schema({
     max: 100,
     default: 0,
   },
+  fileName: { type: String, trim: true },
 }, {
   timestamps: true,
 });
@@ -67,6 +72,9 @@ const ResumeSchema: Schema = new Schema({
     type: String,
     required: true,
   },
+  userName: { type: String, trim: true },
+  contactEmail: { type: String, trim: true },
+  contactPhone: { type: String, trim: true },
   customizedVersions: [CustomizedResumeSchema],
 }, {
   timestamps: true,

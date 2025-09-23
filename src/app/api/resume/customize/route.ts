@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
     const { customizedResume: customizedText, matchScore, improvements, suggestions } = customizationResult;
 
     // Create customized version
+    const displayName = `${(session.user.name || 'User').replace(/\s+/g,'_')}_Resume_${companyName.replace(/\s+/g,'_')}`
     const customizedVersion = {
       jobApplicationId: jobApplication._id,
       customizedText,
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
       companyName,
       matchScore,
       createdAt: new Date(),
+      fileName: `${displayName}.txt`,
     };
 
     // Add to resume
@@ -145,6 +147,7 @@ export async function POST(request: NextRequest) {
         companyName,
         matchScore,
         createdAt: customizedVersion.createdAt,
+        fileName: customizedVersion.fileName,
       },
       jobApplication: {
         _id: jobApplication._id,
