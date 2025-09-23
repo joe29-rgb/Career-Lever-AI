@@ -44,7 +44,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
   const [analysisProgress, setAnalysisProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [analysisResult, setAnalysisResult] = useState<{ analysis: JobAnalysis; keywords: string[] } | null>(null)
-  const [compare, setCompare] = useState<{ score: number; matched: string[]; missing: string[] } | null>(null)
+  const [compare, setCompare] = useState<{ score: number; matched: string[]; missing: string[]; suggestions?: string[] } | null>(null)
   const [importUrl, setImportUrl] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const [psychology, setPsychology] = useState<any | null>(null)
@@ -166,7 +166,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
       })
       if (!resp.ok) throw new Error('Compare failed')
       const json = await resp.json()
-      setCompare({ score: json.score, matched: json.matchedKeywords || [], missing: json.missingKeywords || [] })
+      setCompare({ score: json.score, matched: json.matchedKeywords || [], missing: json.missingKeywords || [], suggestions: json.suggestions || [] })
     } catch (e) {
       toast.error('Comparison failed. Upload or select a resume and try again.')
       setCompare(null)
@@ -496,6 +496,14 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                 </div>
               </div>
             </div>
+            {compare.suggestions && compare.suggestions.length > 0 && (
+              <div className="mt-2">
+                <div className="text-xs font-semibold mb-1">What to fix</div>
+                <ul className="list-disc ml-5 text-sm text-gray-700">
+                  {compare.suggestions.map((s, i)=>(<li key={i}>{s}</li>))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
