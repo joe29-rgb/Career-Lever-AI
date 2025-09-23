@@ -1,6 +1,23 @@
 let client: any = null
 
 export async function getRedis() {
+  if (client) return client
+  const url = process.env.REDIS_URL
+  if (!url) return null
+  try {
+    const { createClient } = require('redis')
+    client = createClient({ url })
+    client.on('error', () => {})
+    await client.connect()
+    return client
+  } catch {
+    return null
+  }
+}
+
+let client: any = null
+
+export async function getRedis() {
   if (!process.env.REDIS_URL) return null
   if (client) return client
   try {

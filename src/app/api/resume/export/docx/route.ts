@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const { content, filename } = parsed.data
 
-    // Minimal DOCX: return as .doc with text/plain to avoid heavy libs in serverless
-    const name = (filename || 'resume') + (filename?.endsWith('.docx') ? '' : '.doc')
+    // ATS-friendly: return as .doc for ATS that prefer legacy Word, or .docx if requested
+    const name = (filename || 'resume') + ((filename && /\.docx$/i.test(filename)) ? '' : '.doc')
     const blob = Buffer.from(content, 'utf8')
     const arrayBuffer = blob.buffer.slice(blob.byteOffset, blob.byteOffset + blob.byteLength)
     return new NextResponse(arrayBuffer as ArrayBuffer, {

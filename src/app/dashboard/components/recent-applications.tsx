@@ -117,6 +117,9 @@ export function RecentApplications() {
                   <p className="text-sm text-gray-600 mb-2">
                     {application.companyName}
                   </p>
+                  {application.applicationStatus === 'saved' && (
+                    <div className="text-xs text-gray-500">Tip: Apply on the employer site, then run Inbox Sync to auto-update status.</div>
+                  )}
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
@@ -142,6 +145,7 @@ export function RecentApplications() {
                   <Button variant="outline" size="sm">
                     Edit
                   </Button>
+                  <Button variant="outline" size="sm" onClick={async ()=>{ try { const r = await fetch('/api/inbox/run', { method: 'POST' }); if (r.ok) { fetchApplications() } } catch {} }}>Sync Inbox</Button>
                   <a href={`/applications/${application._id}`} className="inline-flex items-center px-3 py-2 border rounded text-sm">
                     View Details
                   </a>

@@ -152,3 +152,23 @@ For Railway-specific issues, check:
 
 For Career Lever AI issues, refer to the main README.md file.
 
+## Scheduled Jobs / Cron
+
+To run daily alerts, add a cron that hits the alerts runner endpoint:
+
+- Path: `/api/alerts/run`
+- Method: GET
+- Schedule: `0 13 * * *` (daily 13:00 UTC)
+
+Optional: schedule the inbox poller for auto status updates:
+
+- Path: `/api/inbox/run`
+- Method: POST
+- Schedule: `*/30 * * * *` (every 30 minutes)
+
+Ensure variables are set:
+
+- `MAPBOX_ACCESS_TOKEN` (commute time estimates)
+- `REDIS_URL` (optional, caching)
+- `OPENAI_API_KEY`, `MONGODB_URI`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+

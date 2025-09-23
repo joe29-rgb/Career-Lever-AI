@@ -25,6 +25,7 @@ import {
   Lightbulb
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 interface AnalyticsData {
   overview: {
@@ -51,6 +52,8 @@ interface AnalyticsData {
     monthlyGoalProgress: number
     improvementAreas: string[]
     strengths: string[]
+    variantPerformance?: Array<{ variant: string; views: number; interviews: number; offers: number }>
+    sourceLift?: Array<{ source: string; lift: number }>
   }
 }
 
@@ -62,6 +65,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [ops, setOps] = useState<{avgLatencyMs:number; p95LatencyMs:number; counters: Record<string, number>}|null>(null)
 
   useEffect(() => {
     fetchAnalytics()
@@ -77,6 +81,10 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       } else {
         toast.error('Failed to load analytics')
       }
+      try {
+        const r2 = await fetch('/api/ops/metrics')
+        if (r2.ok) { const j = await r2.json(); setOps({ avgLatencyMs: j.avgLatencyMs || 0, p95LatencyMs: j.p95LatencyMs || 0, counters: j.counters || {} }) }
+      } catch {}
     } catch (error) {
       console.error('Analytics fetch error:', error)
       toast.error('Failed to load analytics')
@@ -227,6 +235,22 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             </div>
           </CardContent>
         </Card>
+        {ops && (
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">AI Latency (p95)</p>
+                  <p className="text-3xl font-bold text-gray-900">{ops.p95LatencyMs}ms</p>
+                  <div className="text-sm text-gray-600">Avg {ops.avgLatencyMs}ms</div>
+                </div>
+                <div className="p-3 bg-sky-100 rounded-full">
+                  <BarChart3 className="h-6 w-6 text-sky-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Tabs defaultValue="trends" className="w-full">
@@ -438,6 +462,49 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
               </CardContent>
             </Card>
           </div>
+
+          {/* Variant Performance Chart */}
+          {analytics.performance.variantPerformance && analytics.performance.variantPerformance.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Resume Variant Performance</CardTitle>
+                <CardDescription>Views/Interviews/Offers by variant</CardDescription>
+              </CardHeader>
+              <CardContent style={{ width: '100%', height: 280 }}>
+                <ResponsiveContainer>
+                  <LineChart data={analytics.performance.variantPerformance}>
+                    <XAxis dataKey="variant" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="views" stroke="#3b82f6" />
+                    <Line type="monotone" dataKey="interviews" stroke="#f59e0b" />
+                    <Line type="monotone" dataKey="offers" stroke="#10b981" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Source Lift */}
+          {analytics.performance.sourceLift && analytics.performance.sourceLift.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Source Lift</CardTitle>
+                <CardDescription>Relative interview/offer lift by source</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {analytics.performance.sourceLift.map((s, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{s.source}</span>
+                      <Badge variant={s.lift >= 0 ? 'secondary' : 'destructive'}>{(s.lift >= 0 ? '+' : '')}{Math.round(s.lift * 100)}%</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Strengths and Areas for Improvement */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

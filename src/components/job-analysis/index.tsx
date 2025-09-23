@@ -422,7 +422,7 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
             {/* Keywords */}
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
+              <CardTitle className="text-lg flex items-center gap-2">
                   <Search className="h-4 w-4" />
                   Keywords Found
                 </CardTitle>
@@ -438,6 +438,14 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
                     </Badge>
                   ))}
                 </div>
+                {compare?.suggestions && compare.suggestions.length > 0 && (
+                  <div className="mt-3">
+                    <div className="text-sm font-medium mb-1">What to fix</div>
+                    <ul className="list-disc ml-5 text-sm text-gray-700">
+                      {compare.suggestions.slice(0,4).map((s, i)=>(<li key={i}>{s}</li>))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

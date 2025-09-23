@@ -5,6 +5,8 @@ import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
 import Resume from '@/models/Resume'
 import CoverLetter from '@/models/CoverLetter'
+import CompanyData from '@/models/CompanyData'
+import { AIService } from '@/lib/ai-service'
 import puppeteer from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
 
@@ -52,12 +54,31 @@ export async function GET(
     const analysis = application.analysis || {}
     const talkingPoints = Array.isArray(analysis.companyCulture) ? analysis.companyCulture : []
 
+    // Load company research (OSINT) if available
+    let company: any = null
+    if (application.companyResearch) {
+      company = await CompanyData.findById(application.companyResearch).lean()
+    } else {
+      company = await CompanyData.findOne({ companyName: application.companyName }).lean()
+    }
+
+    // Generate outreach email (follow-up) best-effort
+    let outreach = { subject: '', body: '' }
+    try {
+      const days = application.appliedDate ? Math.max(0, Math.round((Date.now() - new Date(application.appliedDate).getTime()) / (24*60*60*1000))) : 3
+      outreach = await AIService.generateFollowUpEmail(application.jobTitle, application.companyName, days, [
+        'ATS-aligned resume', 'Quantified impact', 'Culture fit'
+      ], talkingPoints.slice(0,3))
+    } catch {}
+
     const html = buildPackHtml({
       jobTitle: application.jobTitle,
       companyName: application.companyName,
       tailoredResumeText,
       coverLetterText,
       talkingPoints,
+      company,
+      outreach,
     })
 
     const browser = await puppeteer.launch({
@@ -84,8 +105,8 @@ export async function GET(
   }
 }
 
-function buildPackHtml(params: { jobTitle: string; companyName: string; tailoredResumeText: string; coverLetterText: string; talkingPoints: string[] }) {
-  const { jobTitle, companyName, tailoredResumeText, coverLetterText, talkingPoints } = params
+function buildPackHtml(params: { jobTitle: string; companyName: string; tailoredResumeText: string; coverLetterText: string; talkingPoints: string[]; company?: any; outreach?: { subject: string; body: string } }) {
+  const { jobTitle, companyName, tailoredResumeText, coverLetterText, talkingPoints, company, outreach } = params
   const esc = (s: string) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;')
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${companyName} - ${jobTitle} Pack</title>
   <style>
@@ -110,6 +131,23 @@ function buildPackHtml(params: { jobTitle: string; companyName: string; tailored
     <h2>Talking Points</h2>
     ${talkingPoints && talkingPoints.length ? `<ul>${talkingPoints.map(tp => `<li>${esc(tp)}</li>`).join('')}</ul>` : '<div>No saved talking points.</div>'}
   </div>
+  ${company ? `
+  <div class="section">
+    <h2>Company Insights (OSINT)</h2>
+    <div><strong>Glassdoor:</strong> ${company.glassdoorRating || 'N/A'} (${company.glassdoorReviews || 0} reviews)</div>
+    ${Array.isArray(company.culture) && company.culture.length ? `<div><strong>Culture:</strong> ${company.culture.slice(0,6).map(esc).join(', ')}</div>` : ''}
+    ${Array.isArray(company.recentNews) && company.recentNews.length ? `<div><strong>Recent News:</strong><ul>${company.recentNews.slice(0,5).map((n:any)=>`<li><a href="${n.url}" target="_blank">${esc(n.title)}</a></li>`).join('')}</ul></div>` : ''}
+    ${Array.isArray(company.hiringContacts) && company.hiringContacts.length ? `<div><strong>Contacts:</strong><ul>${company.hiringContacts.slice(0,5).map((c:any)=>`<li>${esc(c.name)} — ${esc(c.title||'')}</li>`).join('')}</ul></div>` : ''}
+  </div>
+  ` : ''}
+  ${outreach && outreach.subject ? `
+  <div class="section">
+    <h2>Outreach Email</h2>
+    <pre>Subject: ${esc(outreach.subject)}
+
+${esc(outreach.body)}</pre>
+  </div>
+  ` : ''}
   </body></html>`
 }
 

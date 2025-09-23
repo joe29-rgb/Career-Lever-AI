@@ -21,7 +21,8 @@ import {
   AlertCircle,
   CheckCircle,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Twitter
 } from 'lucide-react'
 
 type CompanyResearchProps = {
@@ -434,6 +435,28 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                         </ul>
                       </div>
                     ) : null
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Twitter/X Mentions */}
+            {researchResult.osint?.twitter && Array.isArray(researchResult.osint.twitter) && researchResult.osint.twitter.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Twitter className="h-4 w-4 text-sky-500" />
+                    Twitter/X Mentions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {researchResult.osint.twitter.slice(0,6).map((t:any,i:number)=> (
+                    <div key={i} className="flex items-center justify-between border rounded p-3">
+                      <div className="pr-3 text-sm line-clamp-1">{t.title || t.snippet}</div>
+                      {t.url && (
+                        <Button asChild size="sm" variant="outline"><a href={t.url} target="_blank" rel="noopener noreferrer">Open</a></Button>
+                      )}
+                    </div>
                   ))}
                 </CardContent>
               </Card>

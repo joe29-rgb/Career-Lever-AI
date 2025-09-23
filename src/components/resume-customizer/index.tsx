@@ -55,6 +55,22 @@ export function ResumeCustomizer({
   const [autoTone, setAutoTone] = useState<boolean>(false)
   const [generateVariantB, setGenerateVariantB] = useState<boolean>(true)
   const [overrideText, setOverrideText] = useState<string>(()=>{ try { return localStorage.getItem('resume:override') || '' } catch { return '' } })
+  const [templateId, setTemplateId] = useState<string>(()=>{ try { return localStorage.getItem('resume:template') || 'classic' } catch { return 'classic' } })
+  const [styleHumanize, setStyleHumanize] = useState<boolean>(true)
+  const [styleTone, setStyleTone] = useState<'professional'|'enthusiastic'|'concise'>(tone)
+  const [availableTemplates, setAvailableTemplates] = useState<Array<{ id: string; name: string }>>([])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const r = await fetch('/api/resume/templates')
+        if (r.ok) {
+          const j = await r.json()
+          setAvailableTemplates((j.templates || []).map((t: any)=>({ id: t.id, name: t.name })))
+        }
+      } catch {}
+    })()
+  }, [])
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -90,7 +106,9 @@ export function ResumeCustomizer({
         companyName: jobAnalysis.analysis.companyName,
         tone: t,
         overrideResumeText: overrideText && overrideText.length > 50 ? overrideText : undefined,
-        psychology
+        psychology,
+        style: { humanize: styleHumanize, tone: styleTone },
+        templateId
       })
 
       // Variant A
@@ -202,7 +220,29 @@ export function ResumeCustomizer({
     const safeCompany = (jobAnalysis.analysis.companyName || 'Company').replace(/\s+/g,'_')
     const fileName = `${safeUser ? safeUser + '_' : ''}Resume_${safeCompany}`
     try {
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.6;color:#111;max-width:8.5in;margin:0 auto;padding:0.7in;white-space:pre-wrap}</style></head><body>${data.customizedResume.customizedText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
+      const esc = (s: string) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      const lines = (data.customizedResume.customizedText || '').split(/\r?\n/)
+      const headingRe = /^(Professional Summary|Core Competencies|Skills|Professional Experience|Experience|Education|Certifications)\s*$/i
+      const parts: string[] = []
+      for (const line of lines) {
+        if (!line.trim()) { parts.push('<div class="sp">&nbsp;</div>'); continue }
+        if (headingRe.test(line.trim())) {
+          parts.push(`<div class="section"><strong>${esc(line.trim())}</strong></div>`)
+          continue
+        }
+        if (line.trim().startsWith('• ')) {
+          parts.push(`<div class="bullet">${esc(line.trim())}</div>`)
+          continue
+        }
+        parts.push(`<div class="line">${esc(line)}</div>`)
+      }
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title><style>
+        body{font-family:Arial,Segoe UI,Helvetica,sans-serif;font-size:11pt;line-height:1.55;color:#111;max-width:8.5in;margin:0 auto;padding:0.7in;background:#fff}
+        .section{margin-top:14px;margin-bottom:4px;font-size:11.2pt}
+        .bullet{margin-left:14px;text-indent:-10px;padding-left:10px}
+        .line{white-space:pre-wrap}
+        .sp{height:6px}
+      </style></head><body>${parts.join('')}</body></html>`
       const resp = await fetch('/api/resume/export/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html, filename: `${fileName}.pdf` }) })
       if (resp.ok) {
         const blob = await resp.blob()
@@ -269,11 +309,31 @@ export function ResumeCustomizer({
               </Select>
             </div>
             <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Template</p>
+              <Select value={templateId} onValueChange={(v)=>{ setTemplateId(v); try { localStorage.setItem('resume:template', v) } catch {} }}>
+                <SelectTrigger><SelectValue placeholder="Select template" /></SelectTrigger>
+                <SelectContent>
+                  {(availableTemplates.length ? availableTemplates : [
+                    { id: 'classic', name: 'Classic (ATS Safe)' },
+                    { id: 'modern', name: 'Modern (ATS Safe)' },
+                    { id: 'compact', name: 'Compact (ATS Safe)' },
+                  ]).map(t => (
+                    <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Auto-tone from Psychology</p>
               <button type="button" onClick={()=>setAutoTone(v=>!v)} className={`px-3 py-2 border rounded text-sm ${autoTone ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{autoTone ? 'Enabled' : 'Disabled'}</button>
               {autoTone && (
                 <p className="text-xs text-gray-500">We’ll use the Analyze page’s tone if available</p>
               )}
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Humanize Style</p>
+              <button type="button" onClick={()=>setStyleHumanize(v=>!v)} className={`px-3 py-2 border rounded text-sm ${styleHumanize ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{styleHumanize ? 'Enabled' : 'Disabled'}</button>
+              <p className="text-xs text-gray-500">Reduce AI detectability patterns</p>
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Generate A/B Variants</p>
@@ -370,6 +430,34 @@ export function ResumeCustomizer({
                 <Button variant="outline" onClick={downloadResume}>
                   <Download className="mr-2 h-4 w-4" />
                   Download
+                </Button>
+                <Button variant="outline" onClick={async ()=>{
+                  try {
+                    const appId = customizedResult?.jobApplication?._id || customizedResultB?.jobApplication?._id
+                    if (!appId) { toast.error('Missing application id'); return }
+                    const resp = await fetch(`/api/applications/${appId}/export/pack`)
+                    if (resp.ok) {
+                      const blob = await resp.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${jobAnalysis.analysis.companyName}_${jobAnalysis.analysis.jobTitle}_ApplicationPack.pdf`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); toast.success('Pack downloaded')
+                    } else {
+                      toast.error('Failed to export pack')
+                    }
+                  } catch { toast.error('Failed to export pack') }
+                }}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Generate Pack
+                </Button>
+                <Button variant="outline" onClick={async ()=>{
+                  try {
+                    const appId = customizedResult?.jobApplication?._id || customizedResultB?.jobApplication?._id
+                    if (!appId) { toast.error('Missing application id'); return }
+                    const resp = await fetch(`/api/applications/${appId}/export/zip`)
+                    if (resp.ok) {
+                      const blob = await resp.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${jobAnalysis.analysis.companyName}_${jobAnalysis.analysis.jobTitle}_ApplicationPack.bundle`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); toast.success('Bundle downloaded')
+                    } else { toast.error('Failed to export bundle') }
+                  } catch { toast.error('Failed to export bundle') }
+                }}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Bundle
                 </Button>
               </div>
             </div>

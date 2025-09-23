@@ -266,11 +266,37 @@ function calculatePerformanceMetrics(applications: any[]) {
     strengths.push('Successfully securing interviews')
   }
 
+  // Variant performance
+  const byVariant: Record<string, { views: number; interviews: number; offers: number }> = {}
+  applications.forEach(app => {
+    const v = app.variantUsed || 'A'
+    if (!byVariant[v]) byVariant[v] = { views: 0, interviews: 0, offers: 0 }
+    byVariant[v].views += app.views || 0
+    byVariant[v].interviews += app.interviews || 0
+    byVariant[v].offers += app.offers || 0
+  })
+  const variantPerformance = Object.entries(byVariant).map(([variant, vals]) => ({ variant, ...vals }))
+
+  // Source lift: compute (interviews+offers)/views per source vs overall
+  const bySource: Record<string, { views: number; conv: number }> = {}
+  applications.forEach(app => {
+    const s = app.applicationSource || 'unknown'
+    if (!bySource[s]) bySource[s] = { views: 0, conv: 0 }
+    bySource[s].views += app.views || 0
+    bySource[s].conv += (app.interviews || 0) + (app.offers || 0)
+  })
+  const overallViews = Object.values(bySource).reduce((a,b)=>a+b.views,0) || 1
+  const overallConv = Object.values(bySource).reduce((a,b)=>a+b.conv,0)
+  const overallRate = overallConv / overallViews
+  const sourceLift = Object.entries(bySource).map(([source, vals]) => ({ source, lift: (vals.views ? (vals.conv/vals.views) : 0) - overallRate }))
+
   return {
     weeklyGoalProgress: Math.round(weeklyGoalProgress),
     monthlyGoalProgress: Math.round(monthlyGoalProgress),
     improvementAreas,
-    strengths
+    strengths,
+    variantPerformance,
+    sourceLift
   }
 }
 

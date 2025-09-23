@@ -28,6 +28,9 @@ export async function POST(req: NextRequest) {
     // Supplement with OSINT bundles for richer output
     let osint: any = null
     try { osint = await webScraper.searchCompanyIntelByGoogle(companyName, { after: '2025-01-01' }) } catch {}
+    // Twitter/X mentions
+    let twitter: any[] = []
+    try { twitter = await webScraper.searchTwitterMentions(companyName, 6) } catch {}
     // Supplement socials via Google when direct scrape sparse
     try {
       if (!companyData.socialMedia?.facebook) {
@@ -125,6 +128,7 @@ export async function POST(req: NextRequest) {
         news: osint.news || [],
         crunchbase: osint.crunchbase || [],
         pitchbook: osint.pitchbook || [],
+        twitter: twitter || [],
       } : undefined,
       sources: companyData.sources || [],
       cachedAt: new Date(),

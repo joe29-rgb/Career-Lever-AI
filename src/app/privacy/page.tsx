@@ -1,10 +1,34 @@
 export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Privacy Policy</h1>
-      <p className="text-sm text-gray-700">Career Lever AI respects your privacy. This policy explains how we collect, use, and protect your information. We do not sell personal data. You can request export or deletion at any time.</p>
+      <h1 className="text-2xl font-bold">Privacy & Data Controls</h1>
+      <p className="text-sm text-gray-700">You control your data. Manage consent, exports, and deletion here.</p>
 
-      <h2 className="text-lg font-semibold mt-4">Information We Collect</h2>
+      <h2 className="text-lg font-semibold mt-4">Consent</h2>
+      <div className="text-sm text-gray-700 space-y-2">
+        <p>We request consent to process your application data to provide core features (customization, analytics, alerts). You can withdraw consent anytime.</p>
+        <div className="space-x-2">
+          <button className="px-3 py-2 border rounded text-sm" onClick={()=>{ try { localStorage.setItem('consent:processing','granted'); alert('Consent saved'); } catch {} }}>Grant Consent</button>
+          <button className="px-3 py-2 border rounded text-sm" onClick={()=>{ try { localStorage.setItem('consent:processing','withdrawn'); alert('Consent withdrawn'); } catch {} }}>Withdraw</button>
+        </div>
+      </div>
+
+      <h2 className="text-lg font-semibold mt-6">Export Your Data</h2>
+      <div className="text-sm text-gray-700 space-y-2">
+        <p>Download a JSON export of your account data.</p>
+        <a href="/api/privacy/export" className="px-3 py-2 border rounded text-sm inline-block">Export JSON</a>
+      </div>
+
+      <h2 className="text-lg font-semibold mt-6">Request Deletion</h2>
+      <div className="text-sm text-gray-700 space-y-2">
+        <p>Submit a deletion request. We’ll confirm via your account email.</p>
+        <form onSubmit={async(e)=>{ e.preventDefault(); const email=(e.target as any).email.value; const r = await fetch('/api/privacy/delete',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); alert(r.ok?'Request submitted':'Failed'); }} className="space-x-2">
+          <input name="email" type="email" required placeholder="Your email" className="border rounded p-2" />
+          <button type="submit" className="px-3 py-2 border rounded text-sm">Request</button>
+        </form>
+      </div>
+
+      <h2 className="text-lg font-semibold mt-6">Information We Collect</h2>
       <ul className="list-disc ml-6 text-sm text-gray-700 space-y-1">
         <li>Account data (name, email, auth identifiers)</li>
         <li>Resumes, cover letters, job applications and related artifacts you upload or generate</li>

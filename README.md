@@ -203,6 +203,16 @@ career-lever-ai/
 - `POST /api/cover-letter/generate` - Create personalized cover letters
 - `GET/POST /api/applications` - Manage job applications
 
+## Browser Extension (Import Job Pages)
+
+A minimal endpoint exists to import job details from the current tab URL:
+
+- Endpoint: `POST /api/jobs/import`
+- Body: `{ "jobUrl": "https://..." }`
+- Behavior: Scrapes page best-effort, creates a saved application with extracted details.
+
+Build a simple extension that posts the current tab URL to this endpoint when the user clicks "Import Job".
+
 ## Database Schema
 
 - **Users**: Authentication and profile data

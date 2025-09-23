@@ -25,6 +25,7 @@ export async function GET(
     const resumeText = versions[0]?.customizedText || ''
     const cover = app.coverLetterId ? ((await CoverLetter.findById(app.coverLetterId).lean()) as any)?.content || '' : ''
     const company: any = app.companyResearch ? await CompanyData.findById(app.companyResearch).lean() : null
+    // Include outreach and OSINT in summary
     const summary = { jobTitle: app.jobTitle, companyName: app.companyName, date: new Date().toISOString(), company }
 
     const files = [

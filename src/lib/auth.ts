@@ -135,6 +135,8 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         (session as any).user.id = token.id as string;
+        ;(session as any).user.role = (token as any).role || 'user'
+        ;(session as any).user.teamId = (token as any).teamId || null
         // Do not expose tokens to the client; server routes can use next-auth/jwt getToken
       }
       return session;

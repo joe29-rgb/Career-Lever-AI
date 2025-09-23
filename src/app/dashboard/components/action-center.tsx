@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ArrowRight, ClipboardList, Sparkles, Target } from 'lucide-react'
+import { ArrowRight, ClipboardList, Sparkles, Target, Bell, Route } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function ActionCenter() {
@@ -44,6 +44,22 @@ export function ActionCenter() {
       href: '/create-application?step=customize',
       color: 'text-purple-600',
       bg: 'bg-purple-100',
+    },
+    {
+      title: 'Alerts & Preferences',
+      description: 'Manage job alerts, locations, and frequency to get daily finds.',
+      icon: Bell,
+      href: '/settings/alerts',
+      color: 'text-blue-600',
+      bg: 'bg-blue-100',
+    },
+    {
+      title: 'Commute Filters',
+      description: 'Filter jobs by travel time and preferred mode from your address.',
+      icon: Route,
+      href: '/jobs?commute=1',
+      color: 'text-sky-600',
+      bg: 'bg-sky-100',
     },
   ]
 

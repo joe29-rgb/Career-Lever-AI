@@ -34,6 +34,9 @@ export function logAIUsage(label: string, requestId: string | undefined, respons
     if (response?.model) payload.model = response.model
     if (response?.usage) payload.usage = response.usage
     console.info(JSON.stringify(payload))
+    // best-effort push to metrics endpoint for latency charting
+    const ms = Number(response?.usage?.total_time_ms || response?.response_ms || 0)
+    try { fetch('/api/ops/metrics', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: `ai:${label}`, latencyMs: ms }) }).catch(()=>{}) } catch {}
   } catch {}
 }
 

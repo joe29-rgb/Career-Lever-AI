@@ -18,9 +18,12 @@ export function LocalDiscover() {
   const [location, setLocation] = useState('')
   const [radiusKm, setRadiusKm] = useState(25)
   const [sources, setSources] = useState<string[]>(['indeed','linkedin','google'])
+  const [commuteFrom, setCommuteFrom] = useState('')
+  const [commuteMode, setCommuteMode] = useState<'driving'|'walking'|'transit'>('driving')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<Result[]>([])
   const [ranked, setRanked] = useState<Array<{ url: string; title?: string; companyName?: string; score: number; reasons: string[] }>>([])
+  const [commutes, setCommutes] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
 
   const toggleSource = (id: string) => {
@@ -32,7 +35,7 @@ export function LocalDiscover() {
     try {
       const resp = await fetch('/api/v2/jobs/discover', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobTitle, location, radiusKm, sources })
+        body: JSON.stringify({ jobTitle, location, radiusKm, sources, commuteFrom: commuteFrom || undefined, commuteMode })
       })
       const json = await resp.json()
       if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')
@@ -44,6 +47,18 @@ export function LocalDiscover() {
         const rj = await rankResp.json()
         if (rankResp.ok && rj.success) setRanked(rj.rankings || [])
       } catch {}
+      // Commute estimates
+      if (commuteFrom && items.length) {
+        const out: Record<string, number> = {}
+        for (const it of items.slice(0, 12)) {
+          try {
+            const c = await fetch('/api/commute/estimate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ origin: commuteFrom, destination: `${it.title || ''} ${location}`.trim(), mode: commuteMode }) })
+            const cj = await c.json()
+            if (c.ok && cj.success) out[it.url] = cj.minutes
+          } catch {}
+        }
+        setCommutes(out)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Search failed')
     } finally {
@@ -64,6 +79,14 @@ export function LocalDiscover() {
         </div>
         <button onClick={runSearch} disabled={loading || !jobTitle} className="border rounded p-2 bg-blue-600 text-white disabled:opacity-50">{loading ? 'Searching…' : 'Search'}</button>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <input className="border rounded p-2" placeholder="Commute from (address/city)" value={commuteFrom} onChange={e=>setCommuteFrom(e.target.value)} />
+        <select className="border rounded p-2" value={commuteMode} onChange={e=>setCommuteMode(e.target.value as any)}>
+          <option value="driving">Driving</option>
+          <option value="walking">Walking</option>
+          <option value="transit">Transit</option>
+        </select>
+      </div>
       <div className="flex flex-wrap gap-3">
         {SOURCE_OPTIONS.map(s => (
           <label key={s.id} className={`px-3 py-1 border rounded text-sm cursor-pointer ${sources.includes(s.id) ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-white'}`}>
@@ -81,9 +104,10 @@ export function LocalDiscover() {
               <div className="text-sm text-gray-500 mb-1">{r.source}</div>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 dark:text-blue-300 line-clamp-2">{r.title || r.url}</a>
               {r.snippet && <div className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-3">{r.snippet}</div>}
-              {scored && (
+              {(scored || commutes[r.url] != null) && (
                 <div className="mt-2 text-xs">
-                  <div className="font-medium">Fit Score: {scored.score}%</div>
+                  {scored && <div className="font-medium">Fit Score: {scored.score}%</div>}
+                  {commutes[r.url] != null && <div className="text-gray-600">Commute: {commutes[r.url]} mins ({commuteMode})</div>}
                   {scored.reasons && scored.reasons.length > 0 && (
                     <ul className="list-disc ml-5 mt-1">
                       {scored.reasons.slice(0,2).map((rs,idx)=>(<li key={idx}>{rs}</li>))}
