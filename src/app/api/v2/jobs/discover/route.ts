@@ -50,12 +50,15 @@ export async function POST(req: NextRequest) {
     // Optional commute ranking (best-effort; simple string include until full API enabled)
     if (commuteFrom && location) {
       try {
-        // Use Mapbox geocode + heuristic distance by place matching (simplified)
-        const geo = await webScraper.geocodeLocation(commuteFrom)
-        if (geo) {
-          const city = (location || '').split(',')[0].trim().toLowerCase()
-          results = results.sort((a,b)=> ((b.snippet||'').toLowerCase().includes(city) ? 1 : 0) - ((a.snippet||'').toLowerCase().includes(city) ? 1 : 0))
-        }
+        // Compute travel durations for top 20 entries (best-effort)
+        const sample = results.slice(0, 20)
+        const durations: Record<string, number> = {}
+        await Promise.all(sample.map(async (r) => {
+          const dest = location
+          const mins = await (webScraper as any).getTravelDurationMins?.(commuteFrom, dest, 'driving')
+          if (typeof mins === 'number') durations[r.url] = mins
+        }))
+        results = results.sort((a,b)=> (durations[a.url] || 1e9) - (durations[b.url] || 1e9))
       } catch {}
     }
 

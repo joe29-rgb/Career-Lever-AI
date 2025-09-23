@@ -460,6 +460,25 @@ export class WebScraperService {
     }
   }
 
+  // Compute travel duration (minutes) between two text locations using Mapbox Directions
+  async getTravelDurationMins(origin: string, destination: string, profile: 'driving'|'walking'|'cycling' = 'driving'): Promise<number | null> {
+    try {
+      const o = await this.geocodeLocation(origin)
+      const d = await this.geocodeLocation(destination)
+      const token = process.env.MAPBOX_ACCESS_TOKEN
+      if (!o || !d || !token) return null
+      const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${o.lng},${o.lat};${d.lng},${d.lat}?annotations=duration&overview=false&access_token=${token}`
+      const res = await fetch(url)
+      if (!res.ok) return null
+      const json: any = await res.json()
+      const secs = json?.routes?.[0]?.duration
+      if (typeof secs !== 'number') return null
+      return Math.round(secs / 60)
+    } catch {
+      return null
+    }
+  }
+
   // Scrape a single job detail page from a public URL (best-effort)
   async scrapeJobDetailFromUrl(jobUrl: string): Promise<{
     title?: string;
