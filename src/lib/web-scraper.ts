@@ -1427,7 +1427,7 @@ export class WebScraperService {
   }
 
   private generateFallbackDescription(companyName: string): string {
-    return `${companyName} is a dynamic organization committed to delivering innovative solutions and exceptional service. We foster a collaborative environment where talented individuals can grow professionally while contributing to meaningful projects that make a positive impact.`;
+    return '';
   }
 }
 
