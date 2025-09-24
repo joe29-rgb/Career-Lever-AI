@@ -73,7 +73,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
     progress: 0
   })
   const [isLoading, setIsLoading] = useState(true)
-  const [autoPilotEnabled, setAutoPilotEnabled] = useState(false)
+  const [autoPilotEnabled, setAutoPilotEnabled] = useState(true)
   const [autoPilotSettings, setAutoPilotSettings] = useState({
     dailyLimit: 10,
     jobBoards: [],
@@ -86,6 +86,37 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
   useEffect(() => {
     loadData()
   }, [])
+
+  // When Auto-Pilot is enabled, try to prefill keywords/locations from resume/profile
+  useEffect(() => {
+    if (!autoPilotEnabled) return
+    (async () => {
+      try {
+        // Prefill location from profile
+        const prof = await fetch('/api/profile')
+        if (prof.ok) {
+          const pj = await prof.json()
+          if (pj?.profile?.location) {
+            setAutoPilotSettings(prev => ({ ...prev, locations: pj.profile.location }))
+          }
+        }
+      } catch {}
+      try {
+        // Prefill keywords from resume titles (best-effort)
+        const res = await fetch('/api/resume/list')
+        if (res.ok) {
+          const rj = await res.json()
+          const txt: string = rj?.resumes?.[0]?.extractedText || ''
+          if (txt && txt.length > 50) {
+            const firstLines = txt.split(/\n|\r/).slice(0, 12).join(' ')
+            const words = firstLines.match(/[A-Za-z][A-Za-z+\-]{2,}/g) || []
+            const top = Array.from(new Set(words)).slice(0, 8).join(', ')
+            if (top) setAutoPilotSettings(prev => ({ ...prev, keywords: top }))
+          }
+        }
+      } catch {}
+    })()
+  }, [autoPilotEnabled])
 
   const loadData = async () => {
     setIsLoading(true)
