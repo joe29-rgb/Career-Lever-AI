@@ -58,12 +58,20 @@ export async function POST(request: NextRequest) {
         if (recent?.context?.hiringContactName) hiringContact = recent.context.hiringContactName
       } catch {}
 
+      // Try to include yearsExperience from the latest resume
+      let yearsExperience: number | undefined = undefined
+      try {
+        await connectToDatabase()
+        const latest = await Resume.findOne({ userId: session.user.id }).sort({ createdAt: -1 }).lean()
+        if (typeof (latest as any)?.yearsExperience === 'number') yearsExperience = (latest as any).yearsExperience
+      } catch {}
+
       const result = await AIService.generateCoverLetter(
         jobTitle,
         companyName,
         jobDescription,
         resumeText,
-        { ...(psychology ? { psychology } : {}), candidateName, candidateEmail, candidatePhone, hiringContact },
+        { ...(psychology ? { psychology } : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(yearsExperience ? { yearsExperience } : {}) },
         tone,
         length
       );

@@ -151,6 +151,24 @@ export default function ApplicationDetailsPage() {
     }
   }
 
+  const saveFollowUp = async () => {
+    if (!followEmail) { toast.error('Generate a follow-up first'); return }
+    setSavingFollows(true)
+    try {
+      const resp = await fetch(`/api/applications/${params.id}/followup/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: followEmail, dates: (followDates || []).map(d => d.toISOString()) }) })
+      if (!resp.ok) throw new Error('Save failed')
+      toast.success('Follow-up saved')
+    } catch { toast.error('Failed to save follow-up') } finally { setSavingFollows(false) }
+  }
+
+  const copyFollowUp = async () => {
+    if (!followEmail) return
+    try {
+      await navigator.clipboard.writeText(`Subject: ${followEmail.subject}\n\n${followEmail.body}`)
+      toast.success('Copied to clipboard')
+    } catch { toast.error('Copy failed') }
+  }
+
   const loadCompanyInsights = async () => {
     if (!data?.application) return
     setInsightsLoading(true)
@@ -273,6 +291,36 @@ export default function ApplicationDetailsPage() {
             <Button onClick={attachCoverLetter} disabled={attaching}>{attaching ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Attaching...</>) : 'Attach'}</Button>
             <a className="inline-flex items-center justify-center border rounded px-3 py-2" href="/cover-letter">Create New</a>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Follow-up Email */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Follow-up Email</CardTitle>
+              <CardDescription>Generate and save a tailored follow-up with suggested dates</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={suggestFollowUp}>Suggest Follow-up</Button>
+              <Button variant="outline" onClick={copyFollowUp} disabled={!followEmail}>Copy</Button>
+              <Button onClick={saveFollowUp} disabled={!followEmail || savingFollows}>{savingFollows ? (<><Loader2 className="h-4 w-4 mr-1 animate-spin"/> Saving...</>) : 'Save'}</Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {followEmail ? (
+            <div className="space-y-2 text-sm">
+              <div><span className="font-medium">Subject:</span> {followEmail.subject}</div>
+              <pre className="whitespace-pre-wrap border rounded p-2 bg-white">{followEmail.body}</pre>
+              {followDates && followDates.length > 0 && (
+                <div className="text-xs text-gray-600">Suggested dates: {followDates.map(d => d.toLocaleDateString()).join(', ')}</div>
+              )}
+            </div>
+          ) : (
+            <div className="text-sm text-gray-600">No follow-up generated yet. Click Suggest Follow-up.</div>
+          )}
         </CardContent>
       </Card>
 

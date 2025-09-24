@@ -113,6 +113,7 @@ export async function POST(request: NextRequest) {
           antiAIDetection: antiAIDetection !== false,
           formatStyle: formatStyle || 'traditional',
           ...(styleProfile ? { styleProfile } : {}),
+          yearsExperience: typeof (resume as any).yearsExperience === 'number' ? (resume as any).yearsExperience : undefined,
         }
       );
     } catch (e) {
