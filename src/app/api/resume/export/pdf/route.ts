@@ -36,11 +36,21 @@ export async function POST(request: NextRequest) {
 			return base.endsWith('.pdf') ? base : `${base || 'resume'}.pdf`
 		}
 
-		const browser = await puppeteer.launch({
-			args: chromium.args,
-			executablePath: await chromium.executablePath(),
-			headless: true,
-		})
+    // Ensure proxy is disabled for PDF generation to avoid ERR_NO_SUPPORTED_PROXIES
+    const args = [...chromium.args, '--no-proxy-server', '--proxy-bypass-list=*', '--proxy-server="direct://"']
+    process.env.HTTP_PROXY = ''
+    process.env.http_proxy = ''
+    process.env.HTTPS_PROXY = ''
+    process.env.https_proxy = ''
+    process.env.ALL_PROXY = ''
+    process.env.all_proxy = ''
+    process.env.NO_PROXY = '*'
+    process.env.no_proxy = '*'
+    const browser = await puppeteer.launch({
+      args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    })
 
 		const page = await browser.newPage()
 		await page.setContent(html, { waitUntil: 'networkidle0' })

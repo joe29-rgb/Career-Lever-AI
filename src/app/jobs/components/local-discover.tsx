@@ -33,9 +33,17 @@ export function LocalDiscover() {
   const runSearch = async () => {
     setLoading(true); setError(null); setResults([])
     try {
+      // Auto-fill location from profile if empty
+      let effectiveLocation = location
+      if (!effectiveLocation) {
+        try {
+          const prof = await fetch('/api/profile')
+          if (prof.ok) { const pj = await prof.json(); if (pj?.profile?.location) effectiveLocation = pj.profile.location }
+        } catch {}
+      }
       const resp = await fetch('/api/v2/jobs/discover', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobTitle, location, radiusKm, sources, commuteFrom: commuteFrom || undefined, commuteMode })
+        body: JSON.stringify({ jobTitle, location: effectiveLocation, radiusKm, sources, commuteFrom: commuteFrom || undefined, commuteMode })
       })
       const json = await resp.json()
       if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')

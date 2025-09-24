@@ -85,7 +85,10 @@ export class WebScraperService {
       const proxies = (process.env.PROXY_URLS || '').split(',').map(s => s.trim()).filter(Boolean)
       if (proxies.length) {
         const pick = proxies[Math.floor(Math.random() * proxies.length)]
-        proxyArg = `--proxy-server=${pick}`
+        // Only accept well-formed proxy URLs
+        if (/^(https?:|socks5:\/\/)/i.test(pick)) {
+          proxyArg = `--proxy-server=${pick}`
+        }
       }
     } catch {}
     // Optional Redis (cache)
@@ -104,12 +107,19 @@ export class WebScraperService {
       // Some hosts set proxy env vars by default; ensure direct connection
       launchArgs.push('--no-proxy-server')
       launchArgs.push('--proxy-bypass-list=*')
+      // Explicitly force direct connection
+      launchArgs.push('--proxy-server="direct://"')
     }
     // Ensure no proxy is used if none configured; fix ERR_NO_SUPPORTED_PROXIES
     process.env.HTTP_PROXY = ''
     process.env.http_proxy = ''
     process.env.HTTPS_PROXY = ''
     process.env.https_proxy = ''
+    process.env.ALL_PROXY = ''
+    process.env.all_proxy = ''
+    // Bypass any residual system proxy
+    process.env.NO_PROXY = '*'
+    process.env.no_proxy = '*'
     this.browser = await puppeteer.launch({
       args: launchArgs,
       executablePath,
@@ -160,54 +170,82 @@ export class WebScraperService {
         }
       } catch {}
     }
-    if (!this.browser) await this.initialize();
-    const page = await this.browser!.newPage();
+    // Primary path: headless Google via Puppeteer
     try {
-      await this.configurePage(page)
-      const qs = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
-      await page.goto(qs, { waitUntil: 'domcontentloaded', timeout: 45000 });
-      // Accept consent if shown, best-effort
-      try { await page.evaluate(() => {
-        const btn = Array.from(document.querySelectorAll('button, input[type="submit"]')).find(el => /agree|accept|consent/i.test(el.textContent || '')) as HTMLButtonElement | undefined
-        btn?.click()
-      }) } catch {}
-      await this.sleep(900 + Math.random()*600)
-      const results = await page.evaluate((max: number) => {
-        const out: Array<{ title: string; url: string; snippet: string }> = []
-        const blocks = document.querySelectorAll('div.g, div[data-header-feature], div[data-snf]');
-        for (const block of Array.from(blocks)) {
-          const a = block.querySelector('a[href^="http"]') as HTMLAnchorElement | null
-          const h3 = block.querySelector('h3') as HTMLElement | null
-          const sn = block.querySelector('div[data-content-feature] div, .VwiC3b, .IsZvec') as HTMLElement | null
-          const url = a?.href || ''
-          const title = h3?.textContent?.trim() || ''
-          const snippet = sn?.textContent?.trim() || ''
-          if (url && title) out.push({ title, url, snippet })
-          if (out.length >= max) break
+      if (!this.browser) await this.initialize();
+      const page = await this.browser!.newPage();
+      try {
+        await this.configurePage(page)
+        const qs = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
+        await page.goto(qs, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        // Accept consent if shown, best-effort
+        try { await page.evaluate(() => {
+          const btn = Array.from(document.querySelectorAll('button, input[type="submit"]')).find(el => /agree|accept|consent/i.test(el.textContent || '')) as HTMLButtonElement | undefined
+          btn?.click()
+        }) } catch {}
+        await this.sleep(900 + Math.random()*600)
+        const results = await page.evaluate((max: number) => {
+          const out: Array<{ title: string; url: string; snippet: string }> = []
+          const blocks = document.querySelectorAll('div.g, div[data-header-feature], div[data-snf]');
+          for (const block of Array.from(blocks)) {
+            const a = block.querySelector('a[href^="http"]') as HTMLAnchorElement | null
+            const h3 = block.querySelector('h3') as HTMLElement | null
+            const sn = block.querySelector('div[data-content-feature] div, .VwiC3b, .IsZvec') as HTMLElement | null
+            const url = a?.href || ''
+            const title = h3?.textContent?.trim() || ''
+            const snippet = sn?.textContent?.trim() || ''
+            if (url && title) out.push({ title, url, snippet })
+            if (out.length >= max) break
+          }
+          return out
+        }, Math.max(1, Math.min(limit, 50)))
+        // De-duplicate and filter tracking
+        const seen = new Set<string>()
+        const cleaned = results.filter(r => {
+          try {
+            const u = new URL(r.url)
+            const key = `${u.hostname}${u.pathname}`
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          } catch { return false }
+        })
+        // Set cache
+        this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: cleaned })
+        if (this.redis) {
+          try { await this.redis.setEx(`osint:${cacheKey}`, Math.floor(this.osintCacheTtlMs/1000), JSON.stringify(cleaned)) } catch {}
         }
-        return out
-      }, Math.max(1, Math.min(limit, 50)))
-      // De-duplicate and filter tracking
-      const seen = new Set<string>()
-      const cleaned = results.filter(r => {
-        try {
-          const u = new URL(r.url)
-          const key = `${u.hostname}${u.pathname}`
-          if (seen.has(key)) return false
-          seen.add(key)
-          return true
-        } catch { return false }
-      })
-      // Set cache
-      this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: cleaned })
-      if (this.redis) {
-        try { await this.redis.setEx(`osint:${cacheKey}`, Math.floor(this.osintCacheTtlMs/1000), JSON.stringify(cleaned)) } catch {}
+        return cleaned
+      } finally {
+        try { await page.close() } catch {}
       }
-      return cleaned
     } catch (e) {
-      return []
-    } finally {
-      await page.close()
+      // Fallback: DuckDuckGo HTML (no JS) to avoid proxy/consent issues
+      try {
+        const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CareerLeverAI/1.0)' } as any })
+        if (!res.ok) return []
+        const html = await res.text()
+        const items: Array<{ title: string; url: string; snippet: string }> = []
+        const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi
+        let m: RegExpExecArray | null
+        const strip = (s: string) => s.replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, ' ').trim()
+        while ((m = re.exec(html)) && items.length < Math.max(1, Math.min(limit, 50))) {
+          const href = m[1]
+          const title = strip(m[2])
+          const snippet = strip(m[3])
+          if (href && title) items.push({ title, url: href, snippet })
+        }
+        const seen = new Set<string>()
+        const cleaned = items.filter(r => {
+          try { const u = new URL(r.url); const key = `${u.hostname}${u.pathname}`; if (seen.has(key)) return false; seen.add(key); return true } catch { return false }
+        })
+        this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: cleaned })
+        if (this.redis) { try { await this.redis.setEx(`osint:${cacheKey}`, Math.floor(this.osintCacheTtlMs/1000), JSON.stringify(cleaned)) } catch {} }
+        return cleaned
+      } catch {
+        return []
+      }
     }
   }
 
@@ -1350,6 +1388,25 @@ export class WebScraperService {
 
         return result;
       });
+
+      // If description is still missing, crawl common subpages best-effort
+      if (!data.description) {
+        const links = await page.$$eval('a[href^="/"]', els => Array.from(new Set(els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''))).slice(0, 30))
+        const candidates = links.filter(h => /about|company|who|mission|values|culture|careers/i.test(h)).slice(0, 5)
+        for (const rel of candidates) {
+          try {
+            const url = new URL(rel, window.location.origin).toString()
+            // fetch content via XHR inside the page context to avoid new navigation
+            const html = await fetch(url, { credentials: 'omit' }).then(r => r.text()).catch(()=> '')
+            const text = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ')
+            const cleaned = text.split(/\s+/).join(' ').trim()
+            if (cleaned.length > 200 && !data.description) {
+              data.description = cleaned.slice(0, 600)
+            }
+            if (data.description) break
+          } catch {}
+        }
+      }
 
       return data;
     } catch (error) {

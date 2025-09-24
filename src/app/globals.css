@@ -148,11 +148,21 @@
         .nav-item {
             @apply flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition;
         }
-        .dark .nav-item { @apply text-white; }
-        .nav-item:hover { @apply bg-gray-100; }
-        .dark .nav-item:hover { @apply bg-gray-800; }
-        .nav-item.active { @apply bg-blue-50 text-blue-700; }
-        .dark .nav-item.active { @apply bg-blue-950/30 text-blue-300; }
+        .dark .nav-item {
+            @apply text-white;
+        }
+        .nav-item:hover {
+            @apply bg-gray-100;
+        }
+        .dark .nav-item:hover {
+            @apply bg-gray-800;
+        }
+        .nav-item.active {
+            @apply bg-blue-50 text-blue-700;
+        }
+        .dark .nav-item.active {
+            @apply bg-blue-950/30 text-blue-300;
+        }
         .container {
             @apply mx-auto px-4;
         }

@@ -36,6 +36,12 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
           const found = list.find(r => r._id === lastSaved) ? lastSaved : list[0]._id
           setSelectedResumeIdState(found)
         }
+      } else if (resp.status === 401) {
+        // Redirect to sign-in if not authenticated
+        if (typeof window !== 'undefined') {
+          const back = encodeURIComponent(window.location.pathname + window.location.search)
+          window.location.href = `/auth/signin?callbackUrl=${back}`
+        }
       }
     } catch {}
   }

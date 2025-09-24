@@ -32,6 +32,14 @@ export default function CoverLetterPage() {
       // Update state for UI, but don't wait for it to set before sending request
       setResumeText(selectedResume.extractedText)
     }
+    if (!jobTitle.trim() || !companyName.trim() || !jobDescription || jobDescription.trim().length < 50) {
+      toast.error('Fill job title, company, and at least 50 chars of job description')
+      return
+    }
+    if (!rt || rt.trim().length < 50) {
+      toast.error('Add your resume text (50+ chars) or upload/select a resume')
+      return
+    }
     setIsLoading(true)
     try {
       let psychology: any | undefined
