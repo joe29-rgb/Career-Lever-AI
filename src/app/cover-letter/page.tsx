@@ -74,6 +74,23 @@ export default function CoverLetterPage() {
     }
   }
 
+  useEffect(() => {
+    // Auto-fill Resume Text from selected resume when available
+    const fill = async () => {
+      try {
+        if (!selectedResume && (!resumes || resumes.length === 0)) {
+          await refresh()
+        }
+        const current = selectedResume || (resumes && resumes[0])
+        if (current && !resumeText) {
+          setResumeText(current.extractedText || '')
+        }
+      } catch {}
+    }
+    fill()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedResume, resumes])
+
   const downloadPdf = async () => {
     if (!previewHtml) return
     try {
