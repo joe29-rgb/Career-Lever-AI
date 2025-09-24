@@ -7,6 +7,7 @@ import { webScraper } from '@/lib/web-scraper'
 import { extractKeywords, calculateMatchScore } from '@/lib/utils'
 import crypto from 'crypto'
 import OpenAI from 'openai'
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 let redis: any = null
@@ -54,6 +55,10 @@ function makeResponseKey(resumeText: string, jobs: any[]): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(req.headers as any)
+    const startedAt = now()
+    const routeKey = 'jobs:rank'
+    logRequestStart(routeKey, requestId)
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const body = await req.json()
@@ -76,7 +81,10 @@ export async function POST(req: NextRequest) {
       const respKey = makeResponseKey(resumeText, jobs)
       const cached = await cacheGet(respKey)
       if (cached && Array.isArray(cached.rankings)) {
-        return NextResponse.json({ success: true, rankings: cached.rankings })
+        const respCached = NextResponse.json({ success: true, rankings: cached.rankings })
+        respCached.headers.set('x-request-id', requestId)
+        logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+        return respCached
       }
     } catch {}
 
@@ -169,7 +177,10 @@ export async function POST(req: NextRequest) {
     }
     out.sort((a,b)=> b.score - a.score)
     try { const respKey = makeResponseKey(resumeText, jobs); await cacheSet(respKey, { rankings: out }, 600) } catch {}
-    return NextResponse.json({ success: true, rankings: out })
+    const resp = NextResponse.json({ success: true, rankings: out })
+    resp.headers.set('x-request-id', requestId)
+    logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+    return resp
   } catch (e) {
     return NextResponse.json({ error: 'Failed to rank jobs' }, { status: 500 })
   }

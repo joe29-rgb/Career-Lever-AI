@@ -3,11 +3,16 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { webScraper } from '@/lib/web-scraper'
 import { z } from 'zod'
+import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
+    const requestId = getOrCreateRequestId(req.headers as any)
+    const startedAt = now()
+    const routeKey = 'jobs:discover'
+    logRequestStart(routeKey, requestId)
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const schema = z.object({
@@ -55,14 +60,18 @@ export async function POST(req: NextRequest) {
         const durations: Record<string, number> = {}
         await Promise.all(sample.map(async (r) => {
           const dest = location
-          const mins = await (webScraper as any).getTravelDurationMins?.(commuteFrom, dest, 'driving')
+          const mode = (commuteMode === 'walking' ? 'walking' : commuteMode === 'transit' ? 'driving' : 'driving') as 'driving'|'walking'|'cycling'
+          const mins = await (webScraper as any).getTravelDurationMins?.(commuteFrom, dest, mode)
           if (typeof mins === 'number') durations[r.url] = mins
         }))
         results = results.sort((a,b)=> (durations[a.url] || 1e9) - (durations[b.url] || 1e9))
       } catch {}
     }
 
-    return NextResponse.json({ success: true, results, location: location || null, radiusKm: typeof radiusKm === 'number' ? Math.max(1, Math.min(500, radiusKm)) : null, sources: sources || [], plan })
+    const resp = NextResponse.json({ success: true, results, location: location || null, radiusKm: typeof radiusKm === 'number' ? Math.max(1, Math.min(500, radiusKm)) : null, sources: sources || [], plan })
+    resp.headers.set('x-request-id', requestId)
+    logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
+    return resp
   } catch (e) {
     return NextResponse.json({ error: 'Failed to discover jobs' }, { status: 500 })
   }

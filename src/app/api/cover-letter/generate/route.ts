@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
       jobApplication.companyName,
       jobApplication.jobDescription,
       resume.extractedText,
-      { ...(companyData ? companyData.toObject() : {}), candidateName, candidateEmail, candidatePhone, hiringContact },
+      { ...(companyData ? companyData.toObject() : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(typeof (resume as any).yearsExperience === 'number' ? { yearsExperience: (resume as any).yearsExperience } : {}) },
       tone,
       length
     );
