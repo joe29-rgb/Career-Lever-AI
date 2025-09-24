@@ -116,6 +116,18 @@ export async function POST(request: NextRequest) {
       fileUrl = `/uploads/resumes/${fileName}`
     }
 
+    // Compute rough years of experience from work history timelines (best-effort)
+    let yearsExperience: number | undefined = undefined
+    try {
+      const years = Array.from(new Set((extractedText.match(/\b(19\d{2}|20\d{2})\b/g) || []).map(y => parseInt(y, 10)).filter(y => y >= 1970 && y <= new Date().getFullYear())))
+      if (years.length >= 2) {
+        const minY = Math.min(...years)
+        const maxY = Math.max(...years)
+        const span = Math.max(0, Math.min(50, (maxY - minY) + 1))
+        yearsExperience = span >= 1 ? span : undefined
+      }
+    } catch {}
+
     // Create resume record in database
     const emailFromText = (extractedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) || [])[0]
     const phoneFromText = (extractedText.match(/(\+?\d[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}/) || [])[0]
@@ -128,6 +140,7 @@ export async function POST(request: NextRequest) {
       userName: session.user.name || undefined,
       contactEmail: emailFromText || session.user.email || undefined,
       contactPhone: phoneFromText || undefined,
+      yearsExperience,
     });
 
     await resume.save();
@@ -139,6 +152,7 @@ export async function POST(request: NextRequest) {
         originalFileName: resume.originalFileName,
         fileUrl: resume.fileUrl,
         extractedText: (extractedText || '').substring(0, 500) + ((extractedText || '').length > 500 ? '...' : ''),
+        yearsExperience: resume.yearsExperience,
         customizedVersions: resume.customizedVersions,
         createdAt: resume.createdAt,
       },

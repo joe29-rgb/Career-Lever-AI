@@ -19,6 +19,7 @@ export interface IResume extends Document {
   userName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  yearsExperience?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -75,6 +76,7 @@ const ResumeSchema: Schema = new Schema({
   userName: { type: String, trim: true },
   contactEmail: { type: String, trim: true },
   contactPhone: { type: String, trim: true },
+  yearsExperience: { type: Number, min: 0 },
   customizedVersions: [CustomizedResumeSchema],
 }, {
   timestamps: true,
