@@ -1300,8 +1300,8 @@ Respond with a JSON array of key points (strings).`;
       // Parse the response (assuming it's structured)
       const talkingPoints = insightsText
         .split(/\d+\.|\n-|\n•/)
-        .filter(point => point.trim().length > 10)
-        .map(point => point.trim())
+        .filter((point: string) => point.trim().length > 10)
+        .map((point: string) => point.trim())
         .slice(0, 5);
 
       return {
