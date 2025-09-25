@@ -519,7 +519,7 @@ export class AIService {
       }
       if (run.status === 'completed') {
         const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m) => m.role === 'assistant');
+        const last = messages.data.find((m: any) => m.role === 'assistant');
         const content = last?.content?.[0];
         const text = (content && 'text' in content) ? content.text.value : undefined;
         try {
@@ -688,7 +688,7 @@ export class AIService {
 
       if (run.status === 'completed') {
         const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m) => m.role === 'assistant');
+        const last = messages.data.find((m: any) => m.role === 'assistant');
         const content = last?.content?.[0];
         const text = (content && 'text' in content) ? content.text.value : undefined;
         if (!text) {
@@ -900,7 +900,7 @@ RESUME:\n${resumeText}`;
 
       if (run.status === 'completed') {
         const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m) => m.role === 'assistant');
+        const last = messages.data.find((m: any) => m.role === 'assistant');
         const content = last?.content?.[0];
         const text = (content && 'text' in content) ? content.text.value : undefined;
         let customizedResume = text && text.trim().length > 0 ? text.trim() : (await this.customizeResumeWithModel(resumeText, jobDescription)).customizedResume;
@@ -1058,7 +1058,7 @@ RESUME:\n${resumeText}`;
 
       if (run.status === 'completed') {
         const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m) => m.role === 'assistant');
+        const last = messages.data.find((m: any) => m.role === 'assistant');
         const content = last?.content?.[0];
         const text = (content && 'text' in content) ? content.text.value : undefined;
         const coverLetterText = text && text.trim().length > 0 ? text.trim() : '';
@@ -1248,7 +1248,7 @@ Respond with a JSON array of key points (strings).`;
         }
         if (run.status === 'completed') {
           const messages = await openai.beta.threads.messages.list(thread.id);
-          const last = messages.data.find((m) => m.role === 'assistant');
+          const last = messages.data.find((m: any) => m.role === 'assistant');
           const content = last?.content?.[0];
           const text = (content && 'text' in content) ? (content as any).text.value : undefined;
           if (text) {
@@ -1490,7 +1490,7 @@ Respond with a JSON array of key points (strings).`;
       }
       if (run.status === 'completed') {
         const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m) => m.role === 'assistant');
+        const last = messages.data.find((m: any) => m.role === 'assistant');
         const content = last?.content?.[0];
         const text = (content && 'text' in content) ? (content as any).text.value : undefined;
         if (text) {
