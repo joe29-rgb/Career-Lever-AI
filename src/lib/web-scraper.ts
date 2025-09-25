@@ -64,6 +64,7 @@ export interface ScrapedCompanyData {
 
 export class WebScraperService {
   private browser: Browser | null = null;
+  private currentMode: 'disabled' | 'direct' | 'proxy' = 'direct';
   private userAgents: string[] = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
@@ -78,6 +79,12 @@ export class WebScraperService {
 
   async initialize(): Promise<void> {
     if (this.browser) return
+    // Allow disabling browser-based scraping entirely in restricted environments
+    if (process.env.SCRAPE_DISABLE_BROWSER === '1') {
+      this.browser = null
+      this.currentMode = 'disabled'
+      return
+    }
     const executablePath = await chromium.executablePath()
     // Optional proxy rotation: read one proxy from PROXY_URLS
     let proxyArg: string | undefined
@@ -107,8 +114,8 @@ export class WebScraperService {
       // Some hosts set proxy env vars by default; ensure direct connection
       launchArgs.push('--no-proxy-server')
       launchArgs.push('--proxy-bypass-list=*')
-      // Explicitly force direct connection
-      launchArgs.push('--proxy-server="direct://"')
+      // Explicitly force direct connection (no quotes around direct://)
+      launchArgs.push('--proxy-server=direct://')
     }
     // Ensure no proxy is used if none configured; fix ERR_NO_SUPPORTED_PROXIES
     process.env.HTTP_PROXY = ''
@@ -120,11 +127,33 @@ export class WebScraperService {
     // Bypass any residual system proxy
     process.env.NO_PROXY = '*'
     process.env.no_proxy = '*'
+    // Extra container-friendly flags
+    launchArgs.push('--no-sandbox')
+    launchArgs.push('--disable-setuid-sandbox')
+    launchArgs.push('--disable-dev-shm-usage')
     this.browser = await puppeteer.launch({
       args: launchArgs,
       executablePath,
       headless: true,
+      ignoreHTTPSErrors: true,
     })
+    this.currentMode = proxyArg ? 'proxy' : 'direct'
+    // Quick connectivity self-test; if a proxy was configured and failed, relaunch direct
+    if (proxyArg) {
+      try {
+        const page = await this.browser.newPage()
+        await page.goto('https://example.com', { waitUntil: 'domcontentloaded', timeout: 8000 })
+        await page.close()
+      } catch (e) {
+        const msg = (e as any)?.message || ''
+        if (/ERR_NO_SUPPORTED_PROXIES|ERR_TUNNEL_CONNECTION_FAILED|net::ERR/i.test(String(msg))) {
+          try { await this.browser.close() } catch {}
+          const directArgs = [...chromium.args, '--no-proxy-server', '--proxy-bypass-list=*', '--proxy-server=direct://', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+          this.browser = await puppeteer.launch({ args: directArgs, executablePath, headless: true, ignoreHTTPSErrors: true })
+          this.currentMode = 'direct'
+        }
+      }
+    }
   }
 
   private async configurePage(page: any) {
@@ -134,6 +163,17 @@ export class WebScraperService {
     await page.setUserAgent(ua)
     await page.setViewport({ width: 1366, height: 768 })
     await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' })
+    // If Railway proxies require auth from PROXY_URLS, apply basic auth
+    try {
+      const proxies = (process.env.PROXY_URLS || '').split(',').map(s => s.trim()).filter(Boolean)
+      const pick = proxies[0]
+      if (pick) {
+        const u = new URL(pick)
+        if (u.username && u.password) {
+          await page.authenticate({ username: decodeURIComponent(u.username), password: decodeURIComponent(u.password) })
+        }
+      }
+    } catch {}
     await page.setRequestInterception(true)
     page.on('request', (req: any) => {
       const type = req.resourceType()
@@ -151,6 +191,40 @@ export class WebScraperService {
       try { return await fn() } catch (e) { lastErr = e; await this.sleep(baseDelay * Math.pow(2, i) + Math.random()*200) }
     }
     throw lastErr
+  }
+
+  private isProxyError(error: any): boolean {
+    const msg = (error?.message || '').toString()
+    return /ERR_NO_SUPPORTED_PROXIES/i.test(msg)
+  }
+
+  getMode(): 'disabled' | 'direct' | 'proxy' {
+    return this.currentMode
+  }
+
+  async healthCheck(): Promise<{ ok: boolean; mode: 'disabled' | 'direct' | 'proxy'; error?: string }> {
+    try {
+      await this.initialize()
+      if (!this.browser) {
+        return { ok: false, mode: this.currentMode, error: 'browser_unavailable' }
+      }
+      const page = await this.browser.newPage()
+      try {
+        await this.configurePage(page)
+        await page.goto('https://example.com', { waitUntil: 'domcontentloaded', timeout: 8000 })
+        return { ok: true, mode: this.currentMode }
+      } finally {
+        try { await page.close() } catch {}
+      }
+    } catch (e: any) {
+      return { ok: false, mode: this.currentMode, error: String(e?.message || e) }
+    }
+  }
+
+  private async gotoWithRetry(page: any, url: string, waitUntil: 'domcontentloaded'|'networkidle2' = 'domcontentloaded', timeout = 45000) {
+    return this.withRetry(async () => {
+      return page.goto(url, { waitUntil, timeout })
+    }, 3, 700)
   }
 
   // Generic Google search helper returning title, url, and snippet
@@ -177,7 +251,7 @@ export class WebScraperService {
       try {
         await this.configurePage(page)
         const qs = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
-        await page.goto(qs, { waitUntil: 'domcontentloaded', timeout: 45000 });
+        await this.gotoWithRetry(page, qs, 'domcontentloaded', 45000)
         // Accept consent if shown, best-effort
         try { await page.evaluate(() => {
           const btn = Array.from(document.querySelectorAll('button, input[type="submit"]')).find(el => /agree|accept|consent/i.test(el.textContent || '')) as HTMLButtonElement | undefined
@@ -527,10 +601,11 @@ export class WebScraperService {
     jobUrl: string;
   }> {
     if (!this.browser) await this.initialize();
+    if (!this.browser) return { source: new URL(jobUrl).hostname, jobUrl }
     const page = await this.browser!.newPage();
     try {
       await this.configurePage(page)
-      await page.goto(jobUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await this.gotoWithRetry(page, jobUrl, 'domcontentloaded', 45000)
       await this.sleep(800 + Math.random()*600)
 
       const host = new URL(jobUrl).hostname.replace('www.', '');
@@ -568,6 +643,7 @@ export class WebScraperService {
         jobUrl,
       };
     } catch (e) {
+      // swallow proxy errors and return minimal data
       return { source: new URL(jobUrl).hostname, jobUrl };
     } finally {
       await page.close();
@@ -584,6 +660,7 @@ export class WebScraperService {
     source: string;
   }>> {
     if (!this.browser) await this.initialize();
+    if (!this.browser) return []
     const page = await this.browser!.newPage();
     const results: any[] = [];
     try {
@@ -871,6 +948,7 @@ export class WebScraperService {
 
   async searchHiringContacts(companyName: string, roleHints: string[] = [], locationHint?: string): Promise<Array<{ name: string; title: string; profileUrl?: string; source: string }>> {
     if (!this.browser) await this.initialize();
+    if (!this.browser) return null
     const page = await this.browser!.newPage();
     const people: Array<{ name: string; title: string; profileUrl?: string; source: string }> = [];
     try {
@@ -915,7 +993,7 @@ export class WebScraperService {
       page.setDefaultNavigationTimeout(45000)
       page.setDefaultTimeout(45000)
       const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
-      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await this.gotoWithRetry(page, searchUrl, 'domcontentloaded', 30000)
       await new Promise(r => setTimeout(r, 2000));
       const data = await page.evaluate(() => {
         const textContent = document.body.innerText || '';
@@ -962,10 +1040,7 @@ export class WebScraperService {
 
       const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
 
-      await page.goto(searchUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000
-      });
+      await this.gotoWithRetry(page, searchUrl, 'domcontentloaded', 30000)
 
       // Wait for content to load
       await new Promise(r => setTimeout(r, 2000));
@@ -1139,7 +1214,7 @@ export class WebScraperService {
       if (!data || (!data.followers && !data.employeeCount)) {
         try {
           const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:linkedin.com/company')}`
-          await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+          await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
           await new Promise(r=>setTimeout(r,1500))
           const link = await page.$$eval('a[href^="http"]', els => {
             const cand = els.map(a => (a as HTMLAnchorElement).href)
@@ -1147,7 +1222,7 @@ export class WebScraperService {
             return good || ''
           })
           if (link) {
-            await page.goto(link, { waitUntil: 'domcontentloaded', timeout: 30000 })
+            await this.gotoWithRetry(page, link, 'domcontentloaded', 30000)
             await new Promise(r=>setTimeout(r,1200))
             const data2 = await page.evaluate(() => {
               const out: any = { companyPage: window.location.href }
@@ -1183,7 +1258,7 @@ export class WebScraperService {
       page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:instagram.com')}`
-      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
       await new Promise(r=>setTimeout(r,1000))
       const igUrl = await page.$$eval('a[href^="http"]', els => {
         const urls = els.map(a => (a as HTMLAnchorElement).href)
@@ -1191,7 +1266,7 @@ export class WebScraperService {
         return candidate
       })
       if (!igUrl) return null
-      await page.goto(igUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.gotoWithRetry(page, igUrl, 'domcontentloaded', 30000)
       await new Promise(r=>setTimeout(r,1200))
       const result = await page.evaluate(() => {
         function parseCount(s: string): number {
@@ -1236,7 +1311,7 @@ export class WebScraperService {
       page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:facebook.com')}`
-      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
       await new Promise(r=>setTimeout(r,1000))
       const fbUrl = await page.$$eval('a[href^="http"]', els => {
         const urls = els.map(a => (a as HTMLAnchorElement).href)
@@ -1244,7 +1319,7 @@ export class WebScraperService {
         return candidate
       })
       if (!fbUrl) return null
-      await page.goto(fbUrl, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.gotoWithRetry(page, fbUrl, 'domcontentloaded', 30000)
       await new Promise(r=>setTimeout(r,1500))
       const result = await page.evaluate(() => {
         const pageUrl = window.location.href
@@ -1276,7 +1351,7 @@ export class WebScraperService {
       page.setDefaultTimeout(45000)
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
       const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' reviews')}`
-      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
       await new Promise(r=>setTimeout(r,1500))
       const data = await page.evaluate(() => {
         const txt = document.body.innerText || ''
@@ -1315,10 +1390,7 @@ export class WebScraperService {
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
       await page.setViewport({ width: 1366, height: 768 });
 
-      await page.goto(website, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000
-      });
+      await this.gotoWithRetry(page, website, 'domcontentloaded', 30000)
 
       // Wait for content to load
       await new Promise(r => setTimeout(r, 2000));
@@ -1438,10 +1510,7 @@ export class WebScraperService {
       const searchQuery = encodeURIComponent(`${companyName} company news`);
       const newsUrl = `https://www.google.com/search?q=${searchQuery}&tbm=nws&tbs=qdr:m`;
 
-      await page.goto(newsUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000
-      });
+      await this.gotoWithRetry(page, newsUrl, 'domcontentloaded', 30000)
 
       await new Promise(r => setTimeout(r, 2000));
 
