@@ -16,11 +16,6 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-export async function GET() {
-  return new Response(
-    JSON.stringify({ status: 'ok', time: new Date().toISOString() }),
-    { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
-  )
-}
+// Note: single GET handler only; keep response minimal and cache-free.
 
 
