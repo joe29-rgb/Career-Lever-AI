@@ -135,7 +135,6 @@ export class WebScraperService {
       args: launchArgs,
       executablePath,
       headless: true,
-      ignoreHTTPSErrors: true,
     })
     this.currentMode = proxyArg ? 'proxy' : 'direct'
     // Quick connectivity self-test; if a proxy was configured and failed, relaunch direct
@@ -149,7 +148,7 @@ export class WebScraperService {
         if (/ERR_NO_SUPPORTED_PROXIES|ERR_TUNNEL_CONNECTION_FAILED|net::ERR/i.test(String(msg))) {
           try { await this.browser.close() } catch {}
           const directArgs = [...chromium.args, '--no-proxy-server', '--proxy-bypass-list=*', '--proxy-server=direct://', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-          this.browser = await puppeteer.launch({ args: directArgs, executablePath, headless: true, ignoreHTTPSErrors: true })
+          this.browser = await puppeteer.launch({ args: directArgs, executablePath, headless: true })
           this.currentMode = 'direct'
         }
       }
