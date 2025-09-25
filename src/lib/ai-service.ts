@@ -1119,9 +1119,9 @@ RESUME:\n${resumeText}`;
 
       // Parse subject and body
       const lines = emailContent.split('\n');
-      const subjectLine = lines.find(line => line.toLowerCase().startsWith('subject:'));
+      const subjectLine = lines.find((line: string) => line.toLowerCase().startsWith('subject:'));
       const subject = subjectLine ? subjectLine.replace(/^subject:\s*/i, '') : `Follow-up on ${jobTitle} Position`;
-      const body = lines.filter(line => !line.toLowerCase().startsWith('subject:')).join('\n').trim();
+      const body = lines.filter((line: string) => !line.toLowerCase().startsWith('subject:')).join('\n').trim();
 
       return {
         subject,
