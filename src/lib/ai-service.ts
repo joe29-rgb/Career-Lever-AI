@@ -568,7 +568,7 @@ export class AIService {
     try {
       const prompt = AI_PROMPTS.JOB_ANALYSIS.replace('{jobDescription}', jobDescription);
 
-      const completion = await withTimeout(openai.chat.completions.create({
+      const completion: any = await withTimeout(openai.chat.completions.create({
         model: DEFAULT_MODEL,
         messages: [
           {
@@ -803,7 +803,7 @@ Industry focus: ${((companyData as any).industryFocus || '').toString().slice(0,
         const wantsHumanize = !!(companyData && (companyData as any).antiAIDetection)
         if (wantsHumanize && humanized) {
           const hPrompt = `Rewrite the following resume to sound more human and less AI-generated while preserving all facts, employers, dates, and achievements. Vary sentence lengths, reduce template phrasing, and increase specificity without inventing anything. Keep plain text only.\n\n${humanized}`
-          const h = await withTimeout(openai.chat.completions.create({
+          const h: any = await withTimeout(openai.chat.completions.create({
             model: DEFAULT_MODEL,
             messages: [
               { role: 'system', content: 'You rewrite text to be more human and less AI-detectable without changing facts.' },
@@ -982,7 +982,7 @@ RESUME:\n${resumeText}`;
         .replace('{tone}', tone)
         .replace('{length}', length);
 
-      const completion = await withTimeout(openai.chat.completions.create({
+      const completion: any = await withTimeout(openai.chat.completions.create({
         model: DEFAULT_MODEL,
         messages: [
           {
@@ -1095,7 +1095,7 @@ RESUME:\n${resumeText}`;
         .replace('{applicationHighlights}', applicationHighlights.join(', '))
         .replace('{companyInsights}', companyInsights.join(', '));
 
-      const completion = await openai.chat.completions.create({
+      const completion: any = await openai.chat.completions.create({
         model: 'gpt-4',
         messages: [
           {
@@ -1142,7 +1142,7 @@ RESUME:\n${resumeText}`;
         .replace('{jobDescription}', jobDescription)
         .replace('{resumeText}', resumeText);
 
-      const completion = await openai.chat.completions.create({
+      const completion: any = await openai.chat.completions.create({
         model: 'gpt-4',
         messages: [
           {
@@ -1335,7 +1335,7 @@ Respond with a JSON array of key points (strings).`;
       .replace('{resumeText}', resumeText)
       .replace('{companyData}', companyData ? JSON.stringify(companyData, null, 2) : 'N/A')
 
-    const completion = await withTimeout(openai.chat.completions.create({
+    const completion: any = await withTimeout(openai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: 'You evaluate job application success probability and output strict JSON.' },
@@ -1416,7 +1416,7 @@ Respond with a JSON array of key points (strings).`;
   }): Promise<SalaryNegotiationPlan> {
     const system = 'You are a salary negotiation coach. Output strictly JSON with the requested keys.';
     const user = `Given the role and offer, produce a JSON plan with keys: targetRange, justifications, tradeoffs, negotiationEmail {subject, body}, talkingPoints.\n\nInput:\njobTitle: ${input.jobTitle}\ncompanyName: ${input.companyName}\nlocation: ${input.location}\nseniority: ${input.seniority}\noffer: ${JSON.stringify(input.offer)}\nmarketData: ${input.marketData || ''}\ncandidateHighlights: ${input.candidateHighlights}\nconstraints: ${input.constraints || ''}\ntone: ${input.tone || 'professional'}`;
-    const completion = await withTimeout(openai.chat.completions.create({
+    const completion: any = await withTimeout(openai.chat.completions.create({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: system },
