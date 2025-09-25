@@ -12,6 +12,7 @@ export interface User {
 export interface Resume {
   _id?: string;
   userId: string;
+  userName?: string;
   originalFileName: string;
   fileUrl?: string;
   extractedText: string;
