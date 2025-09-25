@@ -1166,8 +1166,8 @@ RESUME:\n${resumeText}`;
       // Parse suggestions (assuming they're numbered or bulleted)
       const suggestions = suggestionsText
         .split(/\d+\.|\n-|\n•/)
-        .filter(suggestion => suggestion.trim().length > 10)
-        .map(suggestion => suggestion.trim())
+        .filter((suggestion: string) => suggestion.trim().length > 10)
+        .map((suggestion: string) => suggestion.trim())
         .slice(0, 7);
 
       return suggestions;
