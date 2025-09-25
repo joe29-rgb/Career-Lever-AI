@@ -22,7 +22,9 @@ import {
   CheckCircle,
   ExternalLink,
   RefreshCw,
-  Twitter
+  Twitter,
+  Brain,
+  Target
 } from 'lucide-react'
 
 type CompanyResearchProps = {
@@ -43,6 +45,10 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
   const [profileIndex, setProfileIndex] = useState<number | null>(null)
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileData, setProfileData] = useState<any | null>(null)
+  const [psychology, setPsychology] = useState<any | null>(null)
+  const [loadingPsych, setLoadingPsych] = useState(false)
+  const [marketIntel, setMarketIntel] = useState<string>('')
+  const [loadingIntel, setLoadingIntel] = useState(false)
 
   const handleResearch = async () => {
     if (!companyName.trim()) {
@@ -144,6 +150,34 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
     }
   }
 
+  const runPsychology = async () => {
+    setLoadingPsych(true)
+    try {
+      let jd = ''
+      try { jd = localStorage.getItem('job:description') || '' } catch {}
+      if (!jd || jd.length < 20) throw new Error('Add a job description first (Analyze step)')
+      const res = await fetch('/api/insights/psychology', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription: jd, companySignals: researchResult || {} }) })
+      const json = await res.json().catch(()=>({}))
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to compute psychology')
+      setPsychology(json.psychology)
+      try { localStorage.setItem('analyze:psychology', JSON.stringify(json.psychology)) } catch {}
+    } catch (e: any) {
+      setError(e?.message || 'Psychology failed')
+    } finally { setLoadingPsych(false) }
+  }
+
+  const runMarketIntel = async () => {
+    setLoadingIntel(true)
+    try {
+      const res = await fetch('/api/v2/company/intel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName: companyName.trim(), role: jobTitle.trim() || undefined, geo: location.trim() || undefined }) })
+      const json = await res.json().catch(()=>({}))
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to fetch market intelligence')
+      setMarketIntel(json.intel?.summary || '')
+    } catch (e: any) {
+      setError(e?.message || 'Market intelligence failed')
+    } finally { setLoadingIntel(false) }
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -151,9 +185,9 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
           <Building className="h-5 w-5" />
           Company Research
         </CardTitle>
-        <CardDescription>
-          Get comprehensive insights about companies from multiple sources
-        </CardDescription>
+          <CardDescription>
+          Get comprehensive insights about companies from multiple sources. Use responsibly and verify before contacting.
+          </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Error */}
@@ -370,6 +404,68 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                 </CardContent>
               </Card>
             )}
+
+            {/* Employer Psychology */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Brain className="h-4 w-4" /> Employer Psychology
+                </CardTitle>
+                <CardDescription>Tone, formality, values, and best send windows</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Button onClick={runPsychology} disabled={loadingPsych}>
+                    {loadingPsych ? 'Analyzing…' : 'Compute Psychology'}
+                  </Button>
+                  {psychology && <Badge variant="secondary">Saved for tailoring</Badge>}
+                </div>
+                {psychology && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <div>
+                      <div className="font-medium mb-1">Tone</div>
+                      <div className="text-gray-700">{psychology.tone} ({psychology.formality}/100)</div>
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1">Values</div>
+                      <div className="text-gray-700">{(psychology.values || []).join(', ')}</div>
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1">Best Send Windows</div>
+                      <div className="text-gray-700">{(psychology.bestSendWindows || []).join(' • ')}</div>
+                    </div>
+                    {Array.isArray(psychology.languageGuidance) && psychology.languageGuidance.length > 0 && (
+                      <div className="md:col-span-3">
+                        <div className="font-medium mb-1">Language Guidance</div>
+                        <ul className="list-disc ml-5 space-y-1">
+                          {psychology.languageGuidance.map((g: string, i: number)=>(<li key={i}>{g}</li>))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Market Intelligence */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="h-4 w-4" /> Market Intelligence
+                </CardTitle>
+                <CardDescription>Hiring momentum, positioning, culture signals, and angles</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button onClick={runMarketIntel} variant="outline" disabled={loadingIntel}>
+                  {loadingIntel ? 'Loading…' : 'Fetch Market Intel'}
+                </Button>
+                {marketIntel && (
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap">
+                    {marketIntel}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Contact Info from Website */}
             {researchResult.contactInfo && (Array.isArray(researchResult.contactInfo.emails) || Array.isArray(researchResult.contactInfo.phones) || Array.isArray(researchResult.contactInfo.addresses)) && (

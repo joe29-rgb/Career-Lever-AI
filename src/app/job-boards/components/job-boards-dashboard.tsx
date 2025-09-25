@@ -74,6 +74,9 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
   })
   const [isLoading, setIsLoading] = useState(true)
   const [autoPilotEnabled, setAutoPilotEnabled] = useState(true)
+  const [jobsByBoard, setJobsByBoard] = useState<Record<string, Array<{ title?: string; url?: string; company?: string; location?: string }>>>({})
+  const [jobsLoading, setJobsLoading] = useState<Record<string, boolean>>({})
+  const [jobsOpen, setJobsOpen] = useState<Record<string, boolean>>({})
   const [autoPilotSettings, setAutoPilotSettings] = useState({
     dailyLimit: 10,
     jobBoards: [],
@@ -307,6 +310,27 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
       toast.success(`Imported ${json.created} new, updated ${json.updated}`)
     } catch (e) {
       toast.error('Failed to sync jobs')
+    }
+  }
+
+  const loadBoardJobs = async (boardId: string) => {
+    setJobsLoading(prev => ({ ...prev, [boardId]: true }))
+    try {
+      const resp = await fetch('/api/job-boards/jobs/list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ boardName: boardId }) })
+      const reqId = resp.headers.get('x-request-id') || ''
+      const json = await resp.json().catch(()=>({}))
+      if (!resp.ok || !json.success) {
+        if (resp.status === 401) toast.error('Please re-connect this integration' + (reqId ? ` (Ref: ${reqId})` : ''))
+        else toast.error((json.error || 'Failed to load jobs') + (reqId ? ` (Ref: ${reqId})` : ''))
+        return
+      }
+      const jobs = (json.jobs || []).map((j: any) => ({ title: j.title || j.position || j.name, url: j.url || j.link, company: j.company || j.companyName, location: j.location }))
+      setJobsByBoard(prev => ({ ...prev, [boardId]: jobs }))
+      setJobsOpen(prev => ({ ...prev, [boardId]: true }))
+    } catch {
+      toast.error('Failed to load jobs')
+    } finally {
+      setJobsLoading(prev => ({ ...prev, [boardId]: false }))
     }
   }
 
@@ -606,6 +630,14 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                         </Button>
                         <Button
                           variant="outline"
+                          onClick={() => loadBoardJobs(board.id)}
+                          className="flex-1"
+                          size="sm"
+                        >
+                          {jobsLoading[board.id] ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Loading</>) : 'View Jobs'}
+                        </Button>
+                        <Button
+                          variant="outline"
                           onClick={() => {/* Open settings */}}
                           className="flex-1"
                           size="sm"
@@ -616,6 +648,23 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                       </div>
                     )}
                   </div>
+
+                  {jobsOpen[board.id] && (jobsByBoard[board.id] || []).length > 0 && (
+                    <div className="mt-4 border-t pt-3 space-y-2">
+                      <div className="text-sm font-medium">Synced Jobs</div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {(jobsByBoard[board.id] || []).slice(0, 25).map((j, idx) => (
+                          <div key={idx} className="text-xs flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{j.title || 'Untitled role'}</div>
+                              <div className="text-gray-600 truncate">{[j.company, j.location].filter(Boolean).join(' • ')}</div>
+                            </div>
+                            {j.url && <a href={j.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 border rounded">Open</a>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex flex-wrap gap-1">

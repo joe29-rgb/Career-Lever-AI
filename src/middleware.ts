@@ -35,6 +35,9 @@ export function middleware(request: NextRequest) {
   if (q && q.length > 1) {
     res.headers.set('x-redacted-query', redactPII(decodeURIComponent(q)))
   }
+  // Generate/forward a request id for client breadcrumbs
+  const rid = request.headers.get('x-request-id') || `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  res.headers.set('x-request-id', rid)
   // Origin check for state-changing verbs
   if (['POST','PUT','PATCH','DELETE'].includes(request.method)) {
     const origin = request.headers.get('origin') || ''

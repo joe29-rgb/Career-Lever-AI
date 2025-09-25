@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -59,8 +59,22 @@ export default function CoverLetterPage() {
         })
       })
       if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}))
-        throw new Error((data as any).error || 'Failed to generate cover letter')
+        const reqId = resp.headers.get('x-request-id') || ''
+        const data = await resp.json().catch(() => ({})) as any
+        if (resp.status === 401) {
+          toast.error('Session expired. Please sign in again.' + (reqId ? ` (Ref: ${reqId})` : ''))
+          try { window.location.href = '/auth/signin' } catch {}
+          return
+        }
+        if (resp.status === 429) {
+          toast.error((data?.error || 'Rate limit exceeded') + (reqId ? ` (Ref: ${reqId})` : ''))
+          return
+        }
+        if (resp.status >= 500) {
+          toast.error('Server error while generating cover letter.' + (reqId ? ` (Ref: ${reqId})` : ''))
+          return
+        }
+        throw new Error(data?.error || 'Failed to generate cover letter')
       }
       const data = await resp.json()
       const txt: string = data.coverLetter || ''
@@ -90,6 +104,36 @@ export default function CoverLetterPage() {
     fill()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedResume, resumes])
+
+  // Auto-fill job fields from last Analyze/selection
+  useEffect(() => {
+    try {
+      if (!jobTitle) {
+        const jt = localStorage.getItem('job:title')
+        if (jt) setJobTitle(jt)
+      }
+      if (!companyName) {
+        const cn = localStorage.getItem('job:company')
+        if (cn) setCompanyName(cn)
+      }
+      if (!jobDescription) {
+        const jd = localStorage.getItem('job:description')
+        if (jd) setJobDescription(jd)
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist job fields to localStorage for cross-app autofill
+  useEffect(() => {
+    try { if (jobTitle) localStorage.setItem('job:title', jobTitle) } catch {}
+  }, [jobTitle])
+  useEffect(() => {
+    try { if (companyName) localStorage.setItem('job:company', companyName) } catch {}
+  }, [companyName])
+  useEffect(() => {
+    try { if (jobDescription) localStorage.setItem('job:description', jobDescription) } catch {}
+  }, [jobDescription])
 
   const downloadPdf = async () => {
     if (!previewHtml) return
@@ -139,8 +183,22 @@ export default function CoverLetterPage() {
         })
       })
       if (!resp.ok) {
-        const data = await resp.json().catch(() => ({}))
-        throw new Error((data as any).error || 'Failed to save')
+        const reqId = resp.headers.get('x-request-id') || ''
+        const data = await resp.json().catch(() => ({})) as any
+        if (resp.status === 401) {
+          toast.error('Session expired. Please sign in again.' + (reqId ? ` (Ref: ${reqId})` : ''))
+          try { window.location.href = '/auth/signin' } catch {}
+          return
+        }
+        if (resp.status === 429) {
+          toast.error((data?.error || 'Rate limit exceeded') + (reqId ? ` (Ref: ${reqId})` : ''))
+          return
+        }
+        if (resp.status >= 500) {
+          toast.error('Server error while saving cover letter.' + (reqId ? ` (Ref: ${reqId})` : ''))
+          return
+        }
+        throw new Error(data?.error || 'Failed to save')
       }
       toast.success('Cover letter saved!')
     } catch (e) {

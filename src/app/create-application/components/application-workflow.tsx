@@ -458,24 +458,46 @@ function JobFinderQuick({ onSelect }: { onSelect: (job: { title?: string; compan
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<Array<{ title?: string; companyName?: string; jobUrl: string; source: string; description?: string }>>([])
+  const [ranked, setRanked] = useState<Array<{ url: string; title?: string; companyName?: string; score: number; reasons: string[] }>>([])
   const runSuggest = async () => {
-    setLoading(true); setError(null); setResults([])
+    setLoading(true); setError(null); setResults([]); setRanked([])
     try {
       const resp = await fetch('/api/v2/jobs/suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-      const json = await resp.json()
-      if (!resp.ok || !json.success) throw new Error(json.error || 'Failed to find jobs')
+      const reqId = resp.headers.get('x-request-id') || ''
+      const json = await resp.json().catch(()=>({}))
+      if (!resp.ok || !json.success) {
+        if (resp.status === 401) { toast.error('Please sign in to find jobs' + (reqId ? ` (Ref: ${reqId})` : '')); return }
+        if (resp.status === 429) { toast.error((json.error || 'Rate limit exceeded') + (reqId ? ` (Ref: ${reqId})` : '')); return }
+        if (resp.status >= 500) { toast.error('Server error while finding jobs' + (reqId ? ` (Ref: ${reqId})` : '')); return }
+        throw new Error(json.error || 'Failed to find jobs')
+      }
       // Enhance by scraping first few details
       const enriched: typeof results = []
       for (const r of (json.results || []).slice(0,6)) {
         try {
           const det = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: r.url }) })
-          const dj = await det.json()
-          enriched.push({ title: dj.title || r.title, companyName: dj.companyName, description: dj.description, jobUrl: r.url, source: r.source })
+          const dj = await det.json().catch(()=>({}))
+          if (det.ok && dj) {
+            enriched.push({ title: dj.title || r.title, companyName: dj.companyName, description: dj.description, jobUrl: r.url, source: r.source })
+          } else {
+            enriched.push({ title: r.title, companyName: undefined, description: undefined, jobUrl: r.url, source: r.source })
+          }
         } catch {
           enriched.push({ title: r.title, companyName: undefined, description: undefined, jobUrl: r.url, source: r.source })
         }
       }
       setResults(enriched)
+      // Rank suggestions against latest resume
+      try {
+        const rankPayload = enriched.map(e => ({ url: e.jobUrl, title: e.title, companyName: e.companyName, description: e.description }))
+        const rankResp = await fetch('/api/v2/jobs/rank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobs: rankPayload }) })
+        const rReqId = rankResp.headers.get('x-request-id') || ''
+        const rj = await rankResp.json().catch(()=>({}))
+        if (rankResp.ok && rj.success) setRanked(rj.rankings || [])
+        else if (!rankResp.ok) {
+          if (rankResp.status === 429) toast.error((rj.error || 'Rate limit exceeded') + (rReqId ? ` (Ref: ${rReqId})` : ''))
+        }
+      } catch {}
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to find jobs')
     } finally {
@@ -499,6 +521,20 @@ function JobFinderQuick({ onSelect }: { onSelect: (job: { title?: string; compan
                 <div className="font-medium line-clamp-1">{r.title || r.jobUrl}</div>
                 {r.companyName && <div className="text-xs text-gray-600">{r.companyName}</div>}
                 {r.description && <div className="text-xs text-gray-600 line-clamp-2 mt-1">{r.description}</div>}
+                {ranked.length > 0 && (
+                  <div className="mt-2 text-[11px] text-gray-700">
+                    {(() => { const s = ranked.find(x=>x.url === r.jobUrl); return s ? (
+                      <div>
+                        <div className="font-medium">Fit Score: {s.score}%</div>
+                        {s.reasons && s.reasons.length > 0 && (
+                          <ul className="list-disc ml-4 mt-1">
+                            {s.reasons.slice(0,2).map((rs,idx)=>(<li key={idx}>{rs}</li>))}
+                          </ul>
+                        )}
+                      </div>
+                    ) : null })()}
+                  </div>
+                )}
               </button>
             ))}
           </div>

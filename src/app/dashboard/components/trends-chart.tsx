@@ -43,7 +43,7 @@ export default function TrendsChart() {
           data={data}
           options={{
             responsive: true,
-            plugins: { legend: { display: false }, tooltip: { enabled: true } },
+            plugins: { legend: { display: false }, tooltip: { enabled: true, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#fff', bodyColor: '#fff', padding: 12, cornerRadius: 8 } },
             scales: { x: { display: true }, y: { display: true, ticks: { stepSize: 1 } } },
           }}
         />

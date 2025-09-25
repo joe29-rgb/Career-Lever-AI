@@ -31,7 +31,7 @@ export default function IntegrationsPage() {
   const candidates = ['indeed', 'linkedin', 'ziprecruiter', 'workopolis', 'jobbank']
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="text-sm text-gray-600">Connect job boards to sync jobs and enable Auto‑Pilot submissions.</div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {candidates.map((b) => {
@@ -52,6 +52,26 @@ export default function IntegrationsPage() {
             </div>
           )
         })}
+      </div>
+
+      <div>
+        <div className="text-sm font-medium mb-2">Inbox Integrations</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <a href="/api/oauth/gmail/authorize" className="border rounded p-3 flex items-center justify-between hover:bg-gray-50">
+            <div>
+              <div className="font-medium">Gmail (read-only)</div>
+              <div className="text-xs text-gray-600">Connect to auto-update application statuses</div>
+            </div>
+            <span className="px-3 py-1 border rounded text-sm">Connect</span>
+          </a>
+          <a href="/api/oauth/outlook/authorize" className="border rounded p-3 flex items-center justify-between hover:bg-gray-50">
+            <div>
+              <div className="font-medium">Outlook (read-only)</div>
+              <div className="text-xs text-gray-600">Connect to auto-update application statuses</div>
+            </div>
+            <span className="px-3 py-1 border rounded text-sm">Connect</span>
+          </a>
+        </div>
       </div>
     </div>
   )

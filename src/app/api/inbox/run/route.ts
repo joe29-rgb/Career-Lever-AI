@@ -66,13 +66,25 @@ export async function POST(req: NextRequest) {
       OAuthToken.findOne({ userId: (session.user as any).id, provider: 'outlook' }).lean()
     ])
     let subjects: string[] = []
+    // Retry/backoff wrappers to improve resilience
+    const withRetry = async <T,>(fn: () => Promise<T>, attempts = 3, base = 500): Promise<T> => {
+      let last: any
+      for (let i=0;i<attempts;i++) {
+        try { return await fn() } catch (e) { last = e; await new Promise(r=>setTimeout(r, base * Math.pow(2, i))) }
+      }
+      throw last
+    }
     if (gmail?.accessToken) {
-      const s = await fetchGmailSubjects(gmail.accessToken)
-      subjects.push(...s)
+      try {
+        const s = await withRetry(() => fetchGmailSubjects(gmail.accessToken), 3, 500)
+        subjects.push(...s)
+      } catch {}
     }
     if (outlook?.accessToken) {
-      const s = await fetchOutlookSubjects(outlook.accessToken)
-      subjects.push(...s)
+      try {
+        const s = await withRetry(() => fetchOutlookSubjects(outlook.accessToken), 3, 500)
+        subjects.push(...s)
+      } catch {}
     }
     subjects = Array.from(new Set(subjects)).slice(0, 20)
 

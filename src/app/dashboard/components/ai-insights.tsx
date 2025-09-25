@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { isFeatureEnabled } from '@/lib/flags'
 
 interface Insight {
   title: string
@@ -15,6 +18,18 @@ export default function AIInsights() {
   useEffect(() => {
     const run = async () => {
       try {
+        // Compute success probability if cache available
+        let success: { score: number } | null = null
+        try {
+          const jd = localStorage.getItem('job:description') || ''
+          const rt = localStorage.getItem('resume:latest') || ''
+          if (jd && rt) {
+            const r = await fetch('/api/insights/success', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription: jd, resumeText: rt }) })
+            const j = await r.json().catch(()=>({}))
+            if (r.ok && j.success && j.successScore) success = { score: j.successScore.score }
+          }
+        } catch {}
+
         const res = await fetch('/api/analytics/dashboard')
         if (res.ok) {
           const data = await res.json()
@@ -24,6 +39,23 @@ export default function AIInsights() {
             { title: 'Consistency wins', detail: `Apply to at least ${(s.appliedThisWeek || 0) + 3} roles this week to maintain momentum.` },
           ]
           setInsights(items)
+          if (typeof success?.score === 'number') {
+            setInsights(prev => [{ title: 'Success Probability', detail: `${success!.score}% estimated chance — strengthen missing keywords and quantify recent wins.` }, ...prev])
+          }
+          // Optional market intel summary (behind flag)
+          if (isFeatureEnabled('intel-dashboard')) {
+            try {
+              const cname = localStorage.getItem('job:company') || ''
+              const role = localStorage.getItem('job:title') || ''
+              if (cname) {
+                const mi = await fetch('/api/v2/company/intel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companyName: cname, role }) })
+                const mj = await mi.json().catch(()=>({}))
+                if (mi.ok && mj.success && mj.intel?.summary) {
+                  setInsights(prev => [{ title: 'Market Intel', detail: mj.intel.summary.split('\n')[0] || 'New signals available.' }, ...prev])
+                }
+              }
+            } catch {}
+          }
         } else {
           setInsights([
             { title: 'Get started', detail: 'Upload a resume and analyze a role to unlock insights.' },

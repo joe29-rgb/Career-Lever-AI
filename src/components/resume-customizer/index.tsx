@@ -59,6 +59,8 @@ export function ResumeCustomizer({
   const [styleHumanize, setStyleHumanize] = useState<boolean>(true)
   const [styleTone, setStyleTone] = useState<'professional'|'enthusiastic'|'concise'>(tone)
   const [availableTemplates, setAvailableTemplates] = useState<Array<{ id: string; name: string }>>([])
+  const [liveHighlights, setLiveHighlights] = useState<boolean>(false)
+  const [highlighted, setHighlighted] = useState<string>('')
 
   useEffect(() => {
     ;(async () => {
@@ -71,6 +73,23 @@ export function ResumeCustomizer({
       } catch {}
     })()
   }, [])
+
+  // Live keyword coverage highlights in override editor
+  useEffect(() => {
+    if (!liveHighlights) return
+    try {
+      const kws = (jobAnalysis?.keywords || []).slice(0, 30).map(k => k.toLowerCase())
+      const text = (overrideText && overrideText.length > 30 ? overrideText : resume.extractedText || '')
+      if (!text) { setHighlighted(''); return }
+      const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      let html = safe
+      for (const kw of kws) {
+        const re = new RegExp(`(\\b${kw.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b)`, 'gi')
+        html = html.replace(re, '<mark class="bg-green-200">$1</mark>')
+      }
+      setHighlighted(html)
+    } catch { setHighlighted('') }
+  }, [liveHighlights, overrideText, resume.extractedText, jobAnalysis])
 
   const handleCustomize = async () => {
     setIsCustomizing(true)
@@ -143,6 +162,10 @@ export function ResumeCustomizer({
       try {
         const resp = await fetch('/api/insights/ats/score', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resumeText: dataA.customizedResume.customizedText, jobAnalysis }) })
         if (resp.ok) { const j = await resp.json(); setAts(j.ats) }
+        else {
+          const reqId = resp.headers.get('x-request-id') || ''
+          if (resp.status === 429) toast.error('ATS scoring rate limited' + (reqId ? ` (Ref: ${reqId})` : ''))
+        }
       } catch {}
 
       // Authenticity A
@@ -335,6 +358,11 @@ export function ResumeCustomizer({
               <button type="button" onClick={()=>setStyleHumanize(v=>!v)} className={`px-3 py-2 border rounded text-sm ${styleHumanize ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{styleHumanize ? 'Enabled' : 'Disabled'}</button>
               <p className="text-xs text-gray-500">Reduce AI detectability patterns</p>
             </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Live Highlights</p>
+            <button type="button" onClick={()=>setLiveHighlights(v=>!v)} className={`px-3 py-2 border rounded text-sm ${liveHighlights ? 'bg-yellow-50 border-yellow-200' : 'bg-white'}`}>{liveHighlights ? 'On' : 'Off'}</button>
+            <p className="text-xs text-gray-500">Highlight covered keywords in the editor</p>
+          </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Generate A/B Variants</p>
               <button type="button" onClick={()=>setGenerateVariantB(v=>!v)} className={`px-3 py-2 border rounded text-sm ${generateVariantB ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>{generateVariantB ? 'A & B' : 'A only'}</button>
@@ -344,7 +372,11 @@ export function ResumeCustomizer({
 
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Optional: Override Resume Text</p>
-            <Textarea rows={6} placeholder="Paste clean resume text to override extraction (optional)" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
+            {!liveHighlights ? (
+              <Textarea rows={6} placeholder="Paste clean resume text to override extraction (optional)" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
+            ) : (
+              <div className="border rounded p-3 bg-white text-sm max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: highlighted || (overrideText || resume.extractedText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
+            )}
             <p className="text-xs text-gray-500">Use this if the PDF text extraction contained gibberish. Minimum 50 characters.</p>
           </div>
           {/* Job Match Summary */}

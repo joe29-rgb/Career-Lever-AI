@@ -64,7 +64,7 @@ export function ActionCenter() {
   ]
 
   return (
-    <Card className="glass-card">
+    <Card className="glass-card action-center">
       <CardHeader>
         <CardTitle>Smart Action Center</CardTitle>
       </CardHeader>
@@ -90,7 +90,7 @@ export function ActionCenter() {
                 <Button
                   key={action.title}
                   variant="outline"
-                  className="h-auto p-4 flex items-center justify-between hover:shadow-md transition whitespace-pre-wrap break-words text-left"
+                  className="h-auto p-4 flex items-center justify-between hover:shadow-md transition whitespace-pre-wrap break-words text-left action-primary"
                   onClick={() => router.push(action.href)}
                 >
                   <div className="flex items-center gap-3">

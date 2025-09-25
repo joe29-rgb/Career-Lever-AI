@@ -35,6 +35,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
+            <a href="/reverse-market" className="text-sm underline underline-offset-4 hover:opacity-90">Reverse Market</a>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="secondary" className="relative h-8 w-8 rounded-full">

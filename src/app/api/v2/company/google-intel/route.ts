@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { webScraper } from '@/lib/web-scraper'
+import { isRateLimited } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,6 +13,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { companyName, after } = body || {}
     if (!companyName || String(companyName).trim().length < 2) return NextResponse.json({ error: 'companyName required' }, { status: 400 })
+    const rl = isRateLimited((session.user as any).id, 'company:google-intel')
+    if (rl.limited) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     const intel = await webScraper.searchCompanyIntelByGoogle(String(companyName), { after: after ? String(after) : undefined })
     return NextResponse.json({ success: true, intel })
   } catch (e) {

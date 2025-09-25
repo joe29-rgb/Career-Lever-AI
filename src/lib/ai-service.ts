@@ -248,6 +248,46 @@ export interface CompanyInsightsResult {
 }
 
 export class AIService {
+  static async atsScore(resumeText: string, jobAnalysisOrDescription: any, system: 'generic'|'workday'|'greenhouse'|'lever'|'taleo'|'icims' = 'generic'): Promise<{ score: number; matchedKeywords: string[]; missingKeywords: string[]; keywordDensity: Record<string, number>; suggestions: string[] }> {
+    try {
+      // Reuse existing ATS endpoint logic by making an internal call path if available
+      const analysis = typeof jobAnalysisOrDescription === 'string' ? await this.analyzeJobDescription(jobAnalysisOrDescription) : jobAnalysisOrDescription
+      // Quick local scoring mirroring /api/insights/ats/score
+      const tokenize = (t: string) => (t || '').toLowerCase().replace(/[^a-z0-9\s]+/g, ' ').split(/\s+/).filter(Boolean)
+      const tokens = tokenize(resumeText)
+      const tokenSet = new Set(tokens)
+      const targets: string[] = [
+        ...((analysis?.analysis?.keyRequirements) || analysis?.keyRequirements || []),
+        ...((analysis?.analysis?.preferredSkills) || analysis?.preferredSkills || []),
+        ...(analysis?.keywords || [])
+      ].map((s: string) => (s || '').toLowerCase()).filter(Boolean)
+      const expanded = Array.from(new Set(targets.flatMap((t) => t.split(/[,;•\-]/).map(p => p.trim()).filter(p => p.length > 1))))
+      const matched: string[] = []
+      const missing: string[] = []
+      const density: Record<string, number> = {}
+      for (const kw of expanded) {
+        const parts = kw.split(/\s+/)
+        const present = parts.every(p => tokenSet.has(p))
+        if (present) matched.push(kw); else missing.push(kw)
+        const first = parts[0]
+        density[kw] = tokens.filter(t => t === first).length / Math.max(tokens.length, 1)
+      }
+      const coverage = matched.length / Math.max(expanded.length || 1, 1)
+      const lengthPenalty = Math.min(0.15, Math.max(0, (tokens.length - 1200) / 6000))
+      const repetitionPenalty = Math.min(0.15, matched.length ? 0 : 0.1)
+      let score = Math.round(Math.max(0, Math.min(100, (coverage * 100) * 0.7 + 30 * (1 - lengthPenalty - repetitionPenalty))))
+      // Small ATS system weight adjustments (placeholder heuristics)
+      if (system === 'workday') score = Math.max(0, Math.min(100, score + 2))
+      if (system === 'lever') score = Math.max(0, Math.min(100, score + 1))
+      const suggestions: string[] = []
+      if (coverage < 0.8) suggestions.push('Add missing high-value keywords naturally in bullets')
+      if (lengthPenalty > 0.1) suggestions.push('Trim low-impact content to improve ATS parsing')
+      if (matched.length < 5) suggestions.push('Front-load quantified achievements that match role must-haves')
+      return { score, matchedKeywords: matched.slice(0, 50), missingKeywords: missing.slice(0, 50), keywordDensity: density, suggestions }
+    } catch {
+      return { score: 0, matchedKeywords: [], missingKeywords: [], keywordDensity: {}, suggestions: [] }
+    }
+  }
   // Helpers to post-process AI outputs
   private static stripMarkdown(input: string): string {
     let out = input
@@ -722,11 +762,18 @@ Psychology guidance (tone, formality, values): ${JSON.stringify(psychology).slic
       const companyLine = companyData ? `
 Company insights (use for relevance, not fabrication): ${JSON.stringify(companyData).slice(0, 1200)}
 ` : ''
+      const atsLine = companyData && (companyData as any).atsTarget ? `
+ATS system target: ${(companyData as any).atsTarget}. Optimization level: ${(companyData as any).optimizationLevel || 'moderate'}.
+Use standard section headers; no tables/columns; ensure keyword coverage without stuffing.
+` : ''
+      const industryLine = (companyData && ((companyData as any).industryFocus || (companyData as any).experienceLevel)) ? `
+Industry focus: ${((companyData as any).industryFocus || '').toString().slice(0,60)}. Candidate seniority: ${((companyData as any).experienceLevel || '').toString()}.
+` : ''
       const style = (companyData && (companyData as any).styleProfile) ? `\nUser writing fingerprint (tone, vocabulary, cadence): ${JSON.stringify((companyData as any).styleProfile).slice(0, 800)}\n` : ''
       const years = (companyData && typeof (companyData as any).yearsExperience === 'number') ? (companyData as any).yearsExperience : undefined
       const yearsLine = years && years > 0 ? `\nCandidate tenure: ${years}+ years total related experience. Reflect this accurately in the Professional Summary and Experience sections.\n` : ''
       const prompt = AI_PROMPTS.RESUME_TAILORING
-        .replace('{jobDescription}', jobDescription + '\n' + toneLine + psychLine + companyLine + style + yearsLine)
+        .replace('{jobDescription}', jobDescription + '\n' + toneLine + psychLine + companyLine + atsLine + industryLine + style + yearsLine)
         .replace('{resumeText}', resumeText);
 
       const completion = await withTimeout(openai.chat.completions.create({
@@ -1461,6 +1508,123 @@ Respond with a JSON array of key points (strings).`;
       }
       await new Promise(r => setTimeout(r, 600));
       run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    }
+  }
+
+  static async employerPsychologyProfile(input: { jobDescription: string; companySignals?: any }): Promise<{ tone: 'formal'|'neutral'|'casual'; formality: number; values: string[]; languageGuidance: string[]; bestSendWindows: string[] }> {
+    const content = `Analyze job and company signals to infer a communication psychology profile.
+Return JSON strictly with keys: tone: "formal|neutral|casual", formality: 0-100, values: string[3-6], languageGuidance: string[2-4], bestSendWindows: string[2-4].
+Job Description:\n${input.jobDescription}\n\nCompany Signals (optional):\n${input.companySignals ? JSON.stringify(input.companySignals) : 'N/A'}`
+    try {
+      const text = await this.generateText(content)
+      return JSON.parse(text)
+    } catch {
+      return { tone: 'neutral', formality: 50, values: [], languageGuidance: [], bestSendWindows: [] }
+    }
+  }
+
+  static async marketIntelligence(companyName: string, role?: string, geo?: string): Promise<{
+    financial: Array<{ title: string; url: string; snippet: string }>
+    culture: Array<{ title: string; url: string; snippet: string }>
+    news: Array<{ title: string; url: string; snippet: string }>
+    leadership: Array<{ title: string; url: string; snippet: string }>
+    growth: Array<{ title: string; url: string; snippet: string }>
+    benefits: Array<{ title: string; url: string; snippet: string }>
+    summary: string
+  }> {
+    try {
+      const payload = {
+        companyName,
+        role: role || '',
+        geo: geo || ''
+      }
+      const summary = await this.generateText(`You are a market analyst. Given a company name and optional role and geo, summarize actionable market intelligence in 4-7 concise bullets (no headers). Focus on: hiring momentum, competitive positioning, culture signals, product direction, and candidate positioning angles.
+Return plain text bullets.
+
+Company: ${companyName}
+Role: ${role || 'n/a'}
+Geo: ${geo || 'n/a'}`)
+      return {
+        financial: [],
+        culture: [],
+        news: [],
+        leadership: [],
+        growth: [],
+        benefits: [],
+        summary
+      }
+    } catch {
+      return { financial: [], culture: [], news: [], leadership: [], growth: [], benefits: [], summary: '' }
+    }
+  }
+
+  static async successPredictorV2(input: { jobDescription: string; resumeText: string; jobUrl?: string; applicantsEstimate?: number; urgencyHint?: number; companyData?: any }): Promise<{
+    score: number; reasons: string[]; riskFactors: string[]; improvements: string[]; timing?: any; competition?: any
+  }> {
+    try {
+      const base = await this.scoreApplication(input.jobDescription, input.resumeText, input.companyData)
+      // Lightweight signals: competition and timing via internal endpoints
+      let competition: any = null
+      let timing: any = null
+      try {
+        const compRes = await fetch('http://localhost:3000/api/insights/competition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription: input.jobDescription, jobUrl: input.jobUrl, resumeText: input.resumeText }) } as any)
+        if (compRes.ok) { const cj = await compRes.json(); competition = cj.competition }
+      } catch {}
+      try {
+        const timRes = await fetch('http://localhost:3000/api/insights/timing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ urgency: input.urgencyHint, jobTitle: '', companyName: '', location: '' }) } as any)
+        if (timRes.ok) { const tj = await timRes.json(); timing = tj.timing }
+      } catch {}
+      let score = base.score
+      if (competition?.competitionBand === 'high') score = Math.max(0, score - 8)
+      if (competition?.competitionBand === 'low') score = Math.min(100, score + 4)
+      if (timing?.score) score = Math.round((score * 0.85) + (timing.score * 0.15))
+      return { score, reasons: base.reasons, riskFactors: base.riskFactors, improvements: base.improvements, timing, competition }
+    } catch {
+      return { score: 0, reasons: [], riskFactors: [], improvements: [] }
+    }
+  }
+
+  static async careerTrajectoryPredictor(input: { resumeText: string; targetRole: string; targetIndustry?: string; geo?: string }): Promise<{
+    steps: string[]; skillsToAcquire: string[]; timelineMonths: number; sampleProjects: string[]; networkingPlan: string[]
+  }> {
+    try {
+      const prompt = `You are a career coach. Given a resume (plain text) and a target role (${input.targetRole}), produce a concise JSON plan with keys:
+steps: string[5-9], skillsToAcquire: string[6-12], timelineMonths: number (6-36), sampleProjects: string[3-6], networkingPlan: string[4-8].
+Context:
+Industry: ${input.targetIndustry || 'n/a'}
+Geo: ${input.geo || 'n/a'}
+Resume:\n${input.resumeText}`
+      const text = await this.generateText(prompt)
+      const parsed = JSON.parse(text)
+      return {
+        steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+        skillsToAcquire: Array.isArray(parsed.skillsToAcquire) ? parsed.skillsToAcquire : [],
+        timelineMonths: typeof parsed.timelineMonths === 'number' ? parsed.timelineMonths : 12,
+        sampleProjects: Array.isArray(parsed.sampleProjects) ? parsed.sampleProjects : [],
+        networkingPlan: Array.isArray(parsed.networkingPlan) ? parsed.networkingPlan : []
+      }
+    } catch {
+      return { steps: [], skillsToAcquire: [], timelineMonths: 12, sampleProjects: [], networkingPlan: [] }
+    }
+  }
+
+  static async emotionalCareerCoach(messages: Array<{ role: 'user'|'system'|'assistant'; content: string }>, context?: { stressors?: string[]; wins?: string[]; targetRole?: string }): Promise<{ reflection: string; encouragement: string[]; reframes: string[]; nextSmallSteps: string[] }> {
+    try {
+      const convo = (messages || []).map(m => `${m.role.toUpperCase()}: ${m.content}`).join('\n')
+      const prompt = `You are a compassionate career coach. Provide supportive, practical guidance with short, concrete suggestions.
+Return strict JSON with keys: reflection (string), encouragement (string[3-6]), reframes (string[3-6]), nextSmallSteps (string[3-6]).
+Context: ${JSON.stringify(context || {})}
+Conversation:\n${convo}`
+      const text = await this.generateText(prompt)
+      const parsed = JSON.parse(text)
+      return {
+        reflection: String(parsed.reflection || ''),
+        encouragement: Array.isArray(parsed.encouragement) ? parsed.encouragement : [],
+        reframes: Array.isArray(parsed.reframes) ? parsed.reframes : [],
+        nextSmallSteps: Array.isArray(parsed.nextSmallSteps) ? parsed.nextSmallSteps : []
+      }
+    } catch {
+      return { reflection: '', encouragement: [], reframes: [], nextSmallSteps: [] }
     }
   }
 }

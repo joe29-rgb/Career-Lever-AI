@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 type Result = { title?: string; url: string; snippet?: string; source: string }
 
@@ -45,14 +45,20 @@ export function LocalDiscover() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobTitle, location: effectiveLocation, radiusKm, sources, commuteFrom: commuteFrom || undefined, commuteMode })
       })
-      const json = await resp.json()
-      if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')
+      const reqId = resp.headers.get('x-request-id') || ''
+      const json = await resp.json().catch(()=>({}))
+      if (!resp.ok || !json.success) {
+        if (resp.status === 401) { setError('Please sign in' + (reqId ? ` (Ref: ${reqId})` : '')); return }
+        if (resp.status === 429) { setError((json.error || 'Rate limit exceeded') + (reqId ? ` (Ref: ${reqId})` : '')); return }
+        if (resp.status >= 500) { setError('Server error during search' + (reqId ? ` (Ref: ${reqId})` : '')); return }
+        throw new Error(json.error || 'Search failed')
+      }
       const items = (json.results || []) as Result[]
       setResults(items)
       // Rank against latest resume
       try {
         const rankResp = await fetch('/api/v2/jobs/rank', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobs: items }) })
-        const rj = await rankResp.json()
+        const rj = await rankResp.json().catch(()=>({}))
         if (rankResp.ok && rj.success) setRanked(rj.rankings || [])
       } catch {}
       // Commute estimates

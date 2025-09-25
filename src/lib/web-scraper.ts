@@ -1391,11 +1391,12 @@ export class WebScraperService {
 
       // If description is still missing, crawl common subpages best-effort
       if (!data.description) {
-        const links = await page.$$eval('a[href^="/"]', els => Array.from(new Set(els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''))).slice(0, 30))
-        const candidates = links.filter(h => /about|company|who|mission|values|culture|careers/i.test(h)).slice(0, 5)
+        const links = await page.$$eval('a[href^="/"], a[href^="http"]', els => Array.from(new Set(els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''))).slice(0, 40))
+        const candidates = links.filter(h => /about|company|who|mission|values|culture|careers|leadership|team|news|press/i.test(h || '')).slice(0, 8)
         for (const rel of candidates) {
           try {
-            const url = new URL(rel, window.location.origin).toString()
+            const base = new URL(window.location.href)
+            const url = rel.startsWith('http') ? rel : new URL(rel, `${base.protocol}//${base.host}`).toString()
             // fetch content via XHR inside the page context to avoid new navigation
             const html = await fetch(url, { credentials: 'omit' }).then(r => r.text()).catch(()=> '')
             const text = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ')
