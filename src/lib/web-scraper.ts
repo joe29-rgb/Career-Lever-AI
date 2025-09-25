@@ -947,7 +947,7 @@ export class WebScraperService {
 
   async searchHiringContacts(companyName: string, roleHints: string[] = [], locationHint?: string): Promise<Array<{ name: string; title: string; profileUrl?: string; source: string }>> {
     if (!this.browser) await this.initialize();
-    if (!this.browser) return null
+    if (!this.browser) return []
     const page = await this.browser!.newPage();
     const people: Array<{ name: string; title: string; profileUrl?: string; source: string }> = [];
     try {
