@@ -7,8 +7,7 @@ import { AIService } from '@/lib/ai-service'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
 
-if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required')
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
 
 interface ResumeData {
   personalInfo: {
@@ -219,6 +218,7 @@ ${JSON.stringify(resumeData, null, 2)}
 Return optimized JSON with the same structure but enhanced content.`
 
   try {
+    if (!openai) return resumeData
     const completion = await openai.chat.completions.create({
       model: 'gpt-4',
       messages: [{

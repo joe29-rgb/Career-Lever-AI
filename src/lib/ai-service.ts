@@ -5,10 +5,9 @@ import { logAIUsage } from './observability'
 
 // Instantiate with a safe fallback so build doesn't fail when OPENAI_API_KEY is not set.
 // At runtime, provide a real key via env; calls will fail if the placeholder is used.
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is required')
-}
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Lazily handle missing API key to avoid build-time failures. At runtime, callers
+// should gracefully handle null client or catch errors and provide fallbacks.
+const openai: any = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
 const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;

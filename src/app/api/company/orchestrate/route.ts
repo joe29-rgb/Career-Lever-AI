@@ -9,8 +9,7 @@ import { redisGetJSON, redisSetJSON } from '@/lib/redis'
 import { webScraper } from '@/lib/web-scraper'
 import { AIService } from '@/lib/ai-service'
 
-if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required')
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
 
 export const dynamic = 'force-dynamic'
 
@@ -59,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     const contextMsg = `Company research request.\nCompany: ${companyName}\nJob Title: ${jobTitle || ''}\nPosting: ${jobPostingUrl || ''}\nWebsite: ${companyWebsite || ''}\nLinkedIn: ${linkedinCompanyUrl || ''}\nRole Hints: ${roleHints.join(', ')}\nLocation: ${locationHint || ''}`
 
+    if (!openai) return NextResponse.json({ error: 'AI temporarily unavailable' }, { status: 503 })
     const thread = await openai.beta.threads.create({})
     await openai.beta.threads.messages.create(thread.id, { role: 'user', content: contextMsg })
 

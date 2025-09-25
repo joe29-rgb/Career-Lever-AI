@@ -5,8 +5,7 @@ import connectToDatabase from '@/lib/mongodb'
 import OpenAI from 'openai'
 import { z } from 'zod'
 
-if (!process.env.OPENAI_API_KEY) throw new Error('OPENAI_API_KEY is required')
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +21,7 @@ export async function POST(request: NextRequest) {
     const { jobTitle, seniority, resumeHighlights, companyData } = parsed.data as any
 
     const prompt = `Prepare interview material for ${jobTitle} (${seniority}). Resume highlights:\n${resumeHighlights}\n${companyData ? `Company data: ${JSON.stringify(companyData).slice(0,1000)}` : ''}`
+    if (!openai) return NextResponse.json({ error: 'AI temporarily unavailable' }, { status: 503 })
     const completion = await openai.chat.completions.create({ model: 'gpt-4o-mini', messages: [{ role: 'system', content: 'You are an interview coach.' }, { role: 'user', content: prompt }] })
     return NextResponse.json({ success: true, prep: completion.choices[0]?.message?.content || '' })
   } catch (e) {
