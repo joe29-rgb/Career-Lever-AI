@@ -1376,7 +1376,7 @@ export class WebScraperService {
     }
   }
 
-  private async scrapeCompanyWebsite(website: string): Promise<{
+  async scrapeCompanyWebsite(website: string): Promise<{
     description?: string;
     industry?: string;
   } | null> {
