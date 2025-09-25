@@ -791,7 +791,7 @@ Industry focus: ${((companyData as any).industryFocus || '').toString().slice(0,
         max_tokens: 3000,
       }), AI_TIMEOUT_MS);
 
-      const customizedText = completion.choices[0]?.message?.content?.trim();
+      const customizedText = (completion as any).choices?.[0]?.message?.content?.trim();
       logAIUsage('resume-tailor', undefined, completion)
       if (!customizedText) {
         throw new Error('Failed to get customized resume from OpenAI');
