@@ -122,7 +122,7 @@ export function LocalDiscover() {
                 <div className="mt-2 text-xs">
                   {scored && <div className="font-medium">Fit Score: {scored.score}%</div>}
                   {commutes[r.url] != null && <div className="text-gray-600">Commute: {commutes[r.url]} mins ({commuteMode})</div>}
-                  {scored.reasons && scored.reasons.length > 0 && (
+                  {scored && scored.reasons && scored.reasons.length > 0 && (
                     <ul className="list-disc ml-5 mt-1">
                       {scored.reasons.slice(0,2).map((rs,idx)=>(<li key={idx}>{rs}</li>))}
                     </ul>
