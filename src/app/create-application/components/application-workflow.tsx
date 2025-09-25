@@ -149,7 +149,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
       case 2:
         return (
           <CompanyResearchPanel
-            companyName={workflowData.jobAnalysis?.analysis.companyName}
+            companyName={workflowData.jobAnalysis?.analysis.companyName || ''}
             onResearchComplete={(companyData) => {
               handleStepComplete(2, { companyData })
             }}
