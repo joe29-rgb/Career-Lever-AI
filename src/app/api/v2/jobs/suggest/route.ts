@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import connectToDatabase from '@/lib/mongodb'
 import Resume from '@/models/Resume'
-import Profile from '@/models/Profile'
+import Profile, { IProfile } from '@/models/Profile'
 import { webScraper } from '@/lib/web-scraper'
 
 export const dynamic = 'force-dynamic'
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     // Location
     let location = typeof overrideLocation === 'string' && overrideLocation.trim().length > 2 ? overrideLocation.trim() : null
     if (!location) {
-      const prof = await Profile.findOne({ userId: (session.user as any).id }).lean()
+      const prof = await Profile.findOne({ userId: (session.user as any).id }).lean<IProfile>().exec()
       location = (prof?.location as any) || guessLocation(resume.extractedText || '') || null
     }
 
