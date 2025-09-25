@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const { jobDescription, resumeText, jobUrl, applicantsEstimate, urgencyHint, companyData } = await req.json()
     if (!jobDescription || !resumeText) return NextResponse.json({ error: 'jobDescription and resumeText required' }, { status: 400 })
     const result = await AIService.successPredictorV2({ jobDescription, resumeText, jobUrl, applicantsEstimate, urgencyHint, companyData })
-    return NextResponse.json({ success: true, success: result })
+    return NextResponse.json({ success: true, result })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to compute success v2' }, { status: 500 })
   }
