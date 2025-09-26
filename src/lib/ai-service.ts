@@ -7,7 +7,18 @@ import { logAIUsage } from './observability'
 // At runtime, provide a real key via env; calls will fail if the placeholder is used.
 // Lazily handle missing API key to avoid build-time failures. At runtime, callers
 // should gracefully handle null client or catch errors and provide fallbacks.
-const openai: any = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+const OPENAI_KEYS: string[] = (process.env.OPENAI_API_KEYS || process.env.OPENAI_API_KEY || '')
+  .split(',')
+  .map(k => k.trim())
+  .filter(Boolean)
+const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || undefined
+
+function createOpenAIClient(apiKey: string): any {
+  return new OpenAI({ apiKey, baseURL: OPENAI_BASE_URL } as any)
+}
+
+// Retained default client for backward-compat reads, but do not use directly for calls
+const openai: any = OPENAI_KEYS.length ? createOpenAIClient(OPENAI_KEYS[0]) : null;
 
 const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
 const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
@@ -85,6 +96,35 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
     timer = setTimeout(() => reject(new Error('AI request timed out')), timeoutMs);
   });
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer!));
+}
+
+async function runWithOpenAI<T>(call: (client: any) => Promise<T>): Promise<T> {
+  if (!OPENAI_KEYS.length) throw new Error('OPENAI_API_KEY missing')
+  let lastErr: any
+  for (let i = 0; i < OPENAI_KEYS.length; i++) {
+    const key = OPENAI_KEYS[i]
+    const client = createOpenAIClient(key)
+    // simple retry for transient 429 rate_limit (not insufficient_quota)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await call(client)
+      } catch (e: any) {
+        lastErr = e
+        const msg = (e?.message || '').toString().toLowerCase()
+        const code = e?.code || e?.status
+        const quota = code === 'insufficient_quota' || code === 429 && msg.includes('quota') || msg.includes('insufficient_quota')
+        const rate = code === 429 && !quota
+        if (quota) break // try next key
+        if (rate && attempt === 0) { await new Promise(r=>setTimeout(r, 600)); continue }
+        break
+      }
+    }
+  }
+  throw lastErr || new Error('OpenAI call failed')
+}
+
+async function chatCreate(args: any): Promise<any> {
+  return withTimeout(runWithOpenAI(client => client.chat.completions.create(args)), AI_TIMEOUT_MS)
 }
 
 // AI Prompts for different operations
@@ -423,14 +463,14 @@ export class AIService {
   }
   static async generateText(prompt: string): Promise<string> {
     // Minimal helper for quick text generations where assistants are not required
-    const completion = await openai.chat.completions.create({
+    const completion = await chatCreate({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: 'You write concise outputs. If JSON requested, return valid JSON only.' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.3,
-      max_tokens: 800
+      temperature: 0.2,
+      max_tokens: 800,
     })
     return completion.choices[0]?.message?.content?.trim() || ''
   }
@@ -574,7 +614,7 @@ export class AIService {
     try {
       const prompt = AI_PROMPTS.JOB_ANALYSIS.replace('{jobDescription}', jobDescription);
 
-      const completion: any = await withTimeout(openai.chat.completions.create({
+      const completion: any = await chatCreate({
         model: DEFAULT_MODEL,
         messages: [
           {
@@ -588,7 +628,7 @@ export class AIService {
         ],
         temperature: 0.3,
         max_tokens: 1500,
-      }), AI_TIMEOUT_MS);
+      });
 
       let analysisText = completion.choices[0]?.message?.content?.trim();
       logAIUsage('job-analysis', undefined, completion)
@@ -781,7 +821,7 @@ Industry focus: ${((companyData as any).industryFocus || '').toString().slice(0,
         .replace('{jobDescription}', jobDescription + '\n' + toneLine + psychLine + companyLine + atsLine + industryLine + style + yearsLine)
         .replace('{resumeText}', resumeText);
 
-      const completion = await withTimeout(openai.chat.completions.create({
+      const completion = await chatCreate({
         model: DEFAULT_MODEL,
         messages: [
           {
@@ -793,11 +833,11 @@ Industry focus: ${((companyData as any).industryFocus || '').toString().slice(0,
             content: prompt
           }
         ],
-        temperature: 0.5,
-        max_tokens: 3000,
-      }), AI_TIMEOUT_MS);
+        temperature: 0.3,
+        max_tokens: 1400,
+      });
 
-      const customizedText = (completion as any).choices?.[0]?.message?.content?.trim();
+      const customizedText = completion.choices[0]?.message?.content?.trim();
       logAIUsage('resume-tailor', undefined, completion)
       if (!customizedText) {
         throw new Error('Failed to get customized resume from OpenAI');
@@ -809,15 +849,15 @@ Industry focus: ${((companyData as any).industryFocus || '').toString().slice(0,
         const wantsHumanize = !!(companyData && (companyData as any).antiAIDetection)
         if (wantsHumanize && humanized) {
           const hPrompt = `Rewrite the following resume to sound more human and less AI-generated while preserving all facts, employers, dates, and achievements. Vary sentence lengths, reduce template phrasing, and increase specificity without inventing anything. Keep plain text only.\n\n${humanized}`
-          const h: any = await withTimeout(openai.chat.completions.create({
+          const h: any = await chatCreate({
             model: DEFAULT_MODEL,
             messages: [
               { role: 'system', content: 'You rewrite text to be more human and less AI-detectable without changing facts.' },
               { role: 'user', content: hPrompt }
             ],
-            temperature: 0.7,
-            max_tokens: 2000,
-          }), Math.min(AI_TIMEOUT_MS, 12000))
+            temperature: 0.4,
+            max_tokens: 500,
+          })
           const hv = h.choices[0]?.message?.content?.trim()
           if (hv && hv.length > 100) humanized = hv
         }
@@ -988,7 +1028,7 @@ RESUME:\n${resumeText}`;
         .replace('{tone}', tone)
         .replace('{length}', length);
 
-      const completion: any = await withTimeout(openai.chat.completions.create({
+      const completion: any = await chatCreate({
         model: DEFAULT_MODEL,
         messages: [
           {
@@ -1000,9 +1040,9 @@ RESUME:\n${resumeText}`;
             content: prompt
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
-      }), AI_TIMEOUT_MS);
+        temperature: 0.4,
+        max_tokens: 1200,
+      });
 
       let coverLetter = completion.choices[0]?.message?.content?.trim();
       logAIUsage('cover-letter', undefined, completion)
@@ -1101,7 +1141,7 @@ RESUME:\n${resumeText}`;
         .replace('{applicationHighlights}', applicationHighlights.join(', '))
         .replace('{companyInsights}', companyInsights.join(', '));
 
-      const completion: any = await openai.chat.completions.create({
+      const completion: any = await chatCreate({
         model: 'gpt-4',
         messages: [
           {
@@ -1148,7 +1188,7 @@ RESUME:\n${resumeText}`;
         .replace('{jobDescription}', jobDescription)
         .replace('{resumeText}', resumeText);
 
-      const completion: any = await openai.chat.completions.create({
+      const completion: any = await chatCreate({
         model: 'gpt-4',
         messages: [
           {
@@ -1191,7 +1231,7 @@ ${coverLetter}
 
 Respond with a JSON array of key points (strings).`;
 
-      const completion = await openai.chat.completions.create({
+      const completion = await chatCreate({
         model: 'gpt-4',
         messages: [
           {
@@ -1281,20 +1321,20 @@ Respond with a JSON array of key points (strings).`;
         .replace('{jobTitle}', jobTitle)
         .replace('{industry}', companyData.industry || 'technology');
 
-      const completion = await openai.chat.completions.create({
+      const completion = await chatCreate({
         model: 'gpt-4',
         messages: [
           {
             role: 'system',
-            content: 'You are a career strategist specializing in company research and culture analysis. Generate insights that help candidates demonstrate genuine interest and cultural fit.'
+            content: 'You are an expert company insights summarizer.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.6,
-        max_tokens: 600,
+        temperature: 0.2,
+        max_tokens: 1500,
       });
 
       const insightsText = completion.choices[0]?.message?.content?.trim();
@@ -1341,15 +1381,15 @@ Respond with a JSON array of key points (strings).`;
       .replace('{resumeText}', resumeText)
       .replace('{companyData}', companyData ? JSON.stringify(companyData, null, 2) : 'N/A')
 
-    const completion: any = await withTimeout(openai.chat.completions.create({
+    const completion: any = await chatCreate({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: 'You evaluate job application success probability and output strict JSON.' },
         { role: 'user', content: prompt }
       ],
-      temperature: 0.3,
-      max_tokens: 600
-    }), AI_TIMEOUT_MS)
+      temperature: 0.25,
+      max_tokens: 1200,
+    });
 
     const text = completion.choices[0]?.message?.content?.trim() || '{}'
     logAIUsage('success-score', undefined, completion)
@@ -1392,7 +1432,7 @@ Respond with a JSON array of key points (strings).`;
         ],
         negotiationEmail: {
           subject: 'Compensation Discussion – Senior Backend Engineer',
-          body: 'Hi <Name>,\n\nThank you for the offer. Based on Austin market norms for senior roles and my impact (e.g., 18% infra savings; 10M msg/day pipeline), I’m targeting a base of $180k-$190k with total comp in the $280k-$300k range. I value the opportunity and am flexible on equity/bonus to reach this base.\n\nIf helpful, happy to discuss details.\n\nBest,\n<Your Name>'
+          body: 'Hi <Name>,\n\nThank you for the offer. Based on Austin market norms for senior roles and my impact (e.g., 18% infra savings; 10M msg/day pipeline), I'm targeting a base of $180k-$190k with total comp in the $280k-$300k range. I value the opportunity and am flexible on equity/bonus to reach this base.\n\nIf helpful, happy to discuss details.\n\nBest,\n<Your Name>'
         },
         talkingPoints: [
           'Anchor to Austin senior market bands',
@@ -1422,15 +1462,15 @@ Respond with a JSON array of key points (strings).`;
   }): Promise<SalaryNegotiationPlan> {
     const system = 'You are a salary negotiation coach. Output strictly JSON with the requested keys.';
     const user = `Given the role and offer, produce a JSON plan with keys: targetRange, justifications, tradeoffs, negotiationEmail {subject, body}, talkingPoints.\n\nInput:\njobTitle: ${input.jobTitle}\ncompanyName: ${input.companyName}\nlocation: ${input.location}\nseniority: ${input.seniority}\noffer: ${JSON.stringify(input.offer)}\nmarketData: ${input.marketData || ''}\ncandidateHighlights: ${input.candidateHighlights}\nconstraints: ${input.constraints || ''}\ntone: ${input.tone || 'professional'}`;
-    const completion: any = await withTimeout(openai.chat.completions.create({
+    const completion: any = await chatCreate({
       model: DEFAULT_MODEL,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user }
       ],
-      temperature: 0.6,
-      max_tokens: 1200,
-    }), AI_TIMEOUT_MS);
+      temperature: 0.3,
+      max_tokens: 1100,
+    });
     const text = completion.choices[0]?.message?.content?.trim();
     if (!text) throw new Error('No negotiation plan generated');
     try {
