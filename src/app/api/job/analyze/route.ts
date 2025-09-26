@@ -94,11 +94,34 @@ export async function POST(request: NextRequest) {
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
     return resp
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Job analysis error:', error);
-    return NextResponse.json(
-      { error: 'Failed to analyze job description' },
-      { status: 500 }
-    );
+    // Final safety net: if this is quota/key related, return minimal analysis instead of 500
+    const msg = (error && (error.message || error.code || '')) as string
+    const quota = (error && (error.code === 'insufficient_quota' || error.status === 429 || /quota/i.test(msg) || /OPENAI_API_KEY/i.test(msg)))
+    if (quota) {
+      const body = await request.json().catch(()=>({})) as any
+      const jd = (body && body.jobDescription) || ''
+      const jobTitle = (body && body.jobTitle) || 'Unknown Title'
+      const companyName = (body && body.companyName) || 'Unknown Company'
+      const keywords = typeof jd === 'string' ? extractKeywords(jd) : []
+      return NextResponse.json({
+        success: true,
+        analysis: {
+          jobTitle,
+          companyName,
+          keyRequirements: [],
+          preferredSkills: [],
+          responsibilities: [],
+          companyCulture: [],
+          experienceLevel: 'unknown',
+          educationRequirements: [],
+          remoteWorkPolicy: 'unknown',
+          salaryRange: 'unknown',
+        },
+        keywords,
+      })
+    }
+    return NextResponse.json({ error: 'Failed to analyze job description' }, { status: 500 })
   }
 }
