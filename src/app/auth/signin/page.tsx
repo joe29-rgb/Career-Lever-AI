@@ -35,7 +35,18 @@ function SignInInner() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
+  // Sanitize callbackUrl: disallow nested /auth redirects and enforce same-origin path
+  const rawCallback = searchParams.get('callbackUrl') || '/dashboard'
+  let callbackUrl = '/dashboard'
+  try {
+    // Accept only pathnames starting with '/' and not /auth
+    const decoded = decodeURIComponent(rawCallback)
+    if (decoded.startsWith('/') && !decoded.startsWith('/auth')) {
+      callbackUrl = decoded
+    }
+  } catch {
+    callbackUrl = '/dashboard'
+  }
 
   // Prefill email from query
   useEffect(() => {

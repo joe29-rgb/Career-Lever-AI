@@ -37,10 +37,14 @@ export function ResumeProvider({ children }: { children: React.ReactNode }) {
           setSelectedResumeIdState(found)
         }
       } else if (resp.status === 401) {
-        // Redirect to sign-in if not authenticated
+        // Redirect to sign-in if not authenticated, but never from auth pages
         if (typeof window !== 'undefined') {
-          const back = encodeURIComponent(window.location.pathname + window.location.search)
-          window.location.href = `/auth/signin?callbackUrl=${back}`
+          const path = window.location.pathname || '/'
+          if (!path.startsWith('/auth')) {
+            const back = encodeURIComponent(path + window.location.search)
+            const safe = back.includes('%2Fauth') ? encodeURIComponent('/dashboard') : back
+            window.location.href = `/auth/signin?callbackUrl=${safe}`
+          }
         }
       }
     } catch {}

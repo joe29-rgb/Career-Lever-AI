@@ -21,9 +21,14 @@ export function TopNav() {
   const [open, setOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement | null>(null)
   const firstMobileLinkRef = useRef<HTMLAnchorElement | null>(null)
+  const togglingRef = useRef(false)
 
-  // Close mobile menu on route change
-  useEffect(() => { setOpen(false) }, [pathname])
+  // Close mobile menu on route change (debounced to avoid flicker)
+  useEffect(() => {
+    if (!open) return
+    const id = setTimeout(() => setOpen(false), 50)
+    return () => clearTimeout(id)
+  }, [pathname])
 
   // Handle Escape to close, manage focus and scroll lock
   useEffect(() => {
@@ -31,6 +36,8 @@ export function TopNav() {
       if (e.key === 'Escape') setOpen(false)
     }
     if (open) {
+      if (togglingRef.current) return
+      togglingRef.current = true
       document.addEventListener('keydown', onKeydown)
       // move focus to first link
       setTimeout(() => firstMobileLinkRef.current?.focus(), 0)
@@ -40,6 +47,7 @@ export function TopNav() {
       return () => {
         document.removeEventListener('keydown', onKeydown)
         document.body.style.overflow = prev
+        togglingRef.current = false
       }
     } else {
       // return focus to the menu button for keyboard users
