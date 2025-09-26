@@ -12,7 +12,17 @@ import toast from 'react-hot-toast'
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient())
   const pathname = usePathname() || ''
-  const isAuthRoute = pathname.startsWith('/auth')
+  const DASHBOARD_PREFIXES = [
+    '/dashboard',
+    '/create-application',
+    '/analytics',
+    '/job-boards',
+    '/network',
+    '/resume-builder',
+    '/salary-negotiation',
+    '/skill-analysis',
+  ]
+  const shouldMountResume = DASHBOARD_PREFIXES.some((p) => pathname.startsWith(p))
   useEffect(() => {
     // Initialize Sentry once on client
     try { initSentry() } catch {}
@@ -61,7 +71,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
-        {isAuthRoute ? content : <ResumeProvider>{content}</ResumeProvider>}
+        {shouldMountResume ? <ResumeProvider>{content}</ResumeProvider> : content}
       </QueryClientProvider>
     </SessionProvider>
   )
