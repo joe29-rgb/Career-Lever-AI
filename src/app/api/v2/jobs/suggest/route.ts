@@ -92,7 +92,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, titles: titles.slice(0,2), location: location || null, results })
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to suggest jobs' }, { status: 500 })
+    // Do not hard-fail; return empty suggestions to avoid client protocol errors
+    return NextResponse.json({ success: true, titles: [], location: null, results: [] })
   }
 }
 

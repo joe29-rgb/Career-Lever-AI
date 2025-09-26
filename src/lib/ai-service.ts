@@ -73,6 +73,12 @@ function isInvalidKeyError(error: any): boolean {
   return msg.includes('incorrect api key') || msg.includes('invalid_api_key') || msg.includes('api key')
 }
 
+function isQuotaOrKeyError(error: any): boolean {
+  const code = (error && (error.code || error.status))
+  const msg = (error?.message || '').toString().toLowerCase()
+  return code === 'insufficient_quota' || code === 429 || msg.includes('quota') || isInvalidKeyError(error)
+}
+
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   let timer: NodeJS.Timeout;
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -435,8 +441,8 @@ export class AIService {
       }
       return await this.analyzeJobDescriptionWithModel(jobDescription);
     } catch (err: any) {
-      // Fallback to heuristic result on invalid/missing API key or when demo mode is enabled
-      if (DEMO_MODE || isInvalidKeyError(err)) {
+      // Fallback to heuristic/minimal result on quota or invalid/missing API key
+      if (DEMO_MODE || isQuotaOrKeyError(err)) {
         return {
           jobTitle: 'Unknown Position',
           companyName: 'Unknown Company',

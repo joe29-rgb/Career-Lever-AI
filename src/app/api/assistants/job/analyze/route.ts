@@ -13,8 +13,25 @@ export async function POST(request: NextRequest) {
     if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.length < 20) {
       return NextResponse.json({ error: 'jobDescription required' }, { status: 400 })
     }
-    const analysis = await AIService.analyzeJobDescription(jobDescription)
-    return NextResponse.json({ success: true, analysis })
+    try {
+      const analysis = await AIService.analyzeJobDescription(jobDescription)
+      return NextResponse.json({ success: true, analysis })
+    } catch (e: any) {
+      // Graceful fallback like primary endpoint
+      const minimal = {
+        jobTitle: 'Unknown Position',
+        companyName: 'Unknown Company',
+        keyRequirements: [],
+        preferredSkills: [],
+        responsibilities: [],
+        companyCulture: [],
+        experienceLevel: 'unknown',
+        educationRequirements: [],
+        remoteWorkPolicy: 'unknown',
+        salaryRange: 'unknown',
+      }
+      return NextResponse.json({ success: true, analysis: minimal })
+    }
   } catch (e) {
     return NextResponse.json({ error: 'Failed to analyze job' }, { status: 500 })
   }
