@@ -49,7 +49,30 @@ export async function POST(request: NextRequest) {
     await connectToDatabase();
 
     // Use AI service to analyze the job description
-    const analysis = await AIService.analyzeJobDescription(jobDescription);
+    let analysis
+    try {
+      analysis = await AIService.analyzeJobDescription(jobDescription);
+    } catch (e: any) {
+      // Gracefully degrade on OpenAI quota 429 or missing key by returning minimal analysis
+      const msg = (e && (e.message || e.code || '')) as string
+      const quota = (e && (e.code === 'insufficient_quota' || e.status === 429 || /quota/i.test(msg)))
+      if (quota || /OPENAI_API_KEY/i.test(msg)) {
+        analysis = {
+          jobTitle: jobTitle || 'Unknown Title',
+          companyName: companyName || 'Unknown Company',
+          keyRequirements: [],
+          preferredSkills: [],
+          responsibilities: [],
+          companyCulture: [],
+          experienceLevel: 'unknown',
+          educationRequirements: [],
+          remoteWorkPolicy: 'unknown',
+          salaryRange: 'unknown',
+        } as any
+      } else {
+        throw e
+      }
+    }
 
     // Persist analysis snapshot to the user's latest application for this company/title (or create a minimal record)
     await connectToDatabase();

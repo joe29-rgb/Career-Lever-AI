@@ -24,8 +24,14 @@ export async function GET(req: NextRequest) {
     await connectToDatabase()
     const url = new URL(req.url)
     const anonymous = url.searchParams.get('anonymous')
+    const mine = url.searchParams.get('mine')
     const filter: any = {}
     if (anonymous != null) filter.anonymous = anonymous === 'true'
+    if (mine === 'true') {
+      const session = await getServerSession(authOptions)
+      if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      filter.userId = (session.user as any).id
+    }
     const items = await CandidateShowcase.find(filter).sort({ createdAt: -1 }).limit(100)
     return NextResponse.json({ success: true, showcases: items })
   } catch (e) {
