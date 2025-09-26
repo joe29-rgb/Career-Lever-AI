@@ -19,6 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     '/job-boards',
     '/network',
     '/resume-builder',
+    '/cover-letter',
     '/salary-negotiation',
     '/skill-analysis',
   ]
