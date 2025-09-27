@@ -4,6 +4,8 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import connectToDatabase from '@/lib/mongodb';
 import Resume from '@/models/Resume';
+import Profile from '@/models/Profile';
+import Counter from '@/models/Counter';
 import { authOptions } from '@/lib/auth';
 import { isRateLimited } from '@/lib/rate-limit';
 import { isSameOrigin } from '@/lib/security';
@@ -144,6 +146,59 @@ export async function POST(request: NextRequest) {
     });
 
     await resume.save();
+
+    // Derive profile fields from resume and persist to Profile (upsert)
+    try {
+      const userId = (session.user as any).id
+      // Ensure profile exists with userNo
+      let prof: any = await Profile.findOne({ userId })
+      if (!prof) {
+        const ctr = await Counter.findOneAndUpdate({ key: 'userNo' }, { $inc: { value: 1 } }, { upsert: true, new: true })
+        prof = await Profile.create({ userId, userNo: ctr.value, plan: 'free' })
+      }
+
+      // Extract fields
+      const text = extractedText || ''
+      const titleMatch = (text.match(/(Senior|Lead|Principal|Staff|Junior)?\s*(Software|Sales|Account|Marketing|Data|Operations|Project|Product)\s(Engineer|Developer|Manager|Analyst|Specialist)/i) || [])[0]
+      const skills = Array.from(new Set((text.match(/[A-Za-z][A-Za-z0-9+.#-]{2,}/g) || [])
+        .filter(w => w.length <= 30)
+        .slice(0, 200)))
+      const locationMatch = (text.match(/([A-Z][a-zA-Z]+),\s*([A-Z]{2,3})/) || [])[0]
+      const industries: string[] = []
+      if (/healthcare|hospital|clinic/i.test(text)) industries.push('healthcare')
+      if (/fintech|bank|finance|insurance/i.test(text)) industries.push('finance')
+      if (/e-?commerce|retail/i.test(text)) industries.push('commerce')
+      if (/automotive|manufactur/i.test(text)) industries.push('automotive')
+
+      const targetTitles: string[] = []
+      if (titleMatch) targetTitles.push(titleMatch)
+      // Guess seniority from keywords
+      const seniority = /principal|staff|lead|senior/i.test(text) ? 'senior' : /junior|entry/i.test(text) ? 'entry' : 'mid'
+
+      await Profile.findOneAndUpdate(
+        { userId },
+        {
+          $set: {
+            title: titleMatch || undefined,
+            location: locationMatch || undefined,
+            yearsExperience: yearsExperience,
+            seniority,
+            skills: skills.slice(0, 100),
+            targetTitles: Array.from(new Set(targetTitles.map(t => t.replace(/\s+/g,' ').trim()))).slice(0, 5),
+            industries,
+          }
+        },
+        { new: true }
+      )
+    } catch {}
+
+    // Kick off Autopilot public search in background (best-effort)
+    try {
+      const origin = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const keywords = (extractedText || '').split(/\n|\r/).slice(0, 10).join(' ').split(/[^A-Za-z0-9+.#-]+/).slice(0, 12).join(', ')
+      const locations = ((extractedText.match(/([A-Z][a-zA-Z]+),\s*([A-Z]{2,3})/) || [])[0]) || ''
+      fetch(`${origin}/api/job-boards/autopilot/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords, locations, radiusKm: 25, days: 14, limit: 20 }) }).catch(()=>{})
+    } catch {}
 
     return NextResponse.json({
       success: true,

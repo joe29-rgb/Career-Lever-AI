@@ -7,6 +7,11 @@ export interface IProfile extends Document {
   customerRef?: string;
   title?: string;
   location?: string;
+  yearsExperience?: number;
+  seniority?: string;
+  skills?: string[];
+  targetTitles?: string[];
+  industries?: string[];
   preferences?: Record<string, any>;
   styleProfile?: {
     tone?: string;
@@ -25,6 +30,11 @@ const ProfileSchema: Schema = new Schema({
   customerRef: { type: String },
   title: { type: String },
   location: { type: String },
+  yearsExperience: { type: Number },
+  seniority: { type: String },
+  skills: { type: [String], default: [] },
+  targetTitles: { type: [String], default: [] },
+  industries: { type: [String], default: [] },
   preferences: { type: Schema.Types.Mixed },
   styleProfile: { type: Schema.Types.Mixed },
 }, { timestamps: true })
