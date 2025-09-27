@@ -5,6 +5,7 @@ import { Providers } from '@/components/providers'
 import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 import { TopNav } from '@/components/top-nav'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
