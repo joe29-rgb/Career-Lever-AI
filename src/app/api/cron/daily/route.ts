@@ -9,11 +9,13 @@ export async function GET(_req: NextRequest) {
   try {
     // No auth required for platform cron; optionally add a shared secret header check if desired
     // Kick off alerts run and inbox run
-    const [a, b] = await Promise.allSettled([
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/alerts/run`, { method: 'POST' } as any),
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/inbox/run`, { method: 'POST' } as any),
+    const base = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const [a, b, c] = await Promise.allSettled([
+      fetch(`${base}/api/alerts/run`, { method: 'POST' } as any),
+      fetch(`${base}/api/inbox/run`, { method: 'POST' } as any),
+      fetch(`${base}/api/job-boards/autopilot/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords: '', locations: '', days: 1, limit: 10 }) } as any),
     ])
-    return NextResponse.json({ success: true, alerts: a.status, inbox: b.status })
+    return NextResponse.json({ success: true, alerts: a.status, inbox: b.status, autopilot: c.status })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to run daily jobs' }, { status: 500 })
   }

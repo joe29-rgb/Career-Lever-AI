@@ -12,6 +12,11 @@ export interface IProfile extends Document {
   skills?: string[];
   targetTitles?: string[];
   industries?: string[];
+  autopilotMeta?: {
+    lastRunAt?: Date;
+    lastFound?: number;
+    nextRunAt?: Date;
+  };
   preferences?: Record<string, any>;
   styleProfile?: {
     tone?: string;
@@ -35,6 +40,7 @@ const ProfileSchema: Schema = new Schema({
   skills: { type: [String], default: [] },
   targetTitles: { type: [String], default: [] },
   industries: { type: [String], default: [] },
+  autopilotMeta: { type: Schema.Types.Mixed },
   preferences: { type: Schema.Types.Mixed },
   styleProfile: { type: Schema.Types.Mixed },
 }, { timestamps: true })

@@ -134,6 +134,20 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
       const appsResponse = await fetch('/api/applications')
       const appsData = await appsResponse.json()
 
+      // Load profile to prefill autopilot
+      try {
+        const profRes = await fetch('/api/profile')
+        if (profRes.ok) {
+          const pj = await profRes.json()
+          const p = pj?.profile || {}
+          setAutoPilotSettings(prev => ({
+            ...prev,
+            keywords: (p.skills && Array.isArray(p.skills) ? p.skills.slice(0, 8).join(', ') : prev.keywords),
+            locations: (typeof p.location === 'string' && p.location) ? p.location : prev.locations,
+          }))
+        }
+      } catch {}
+
       if (boardsData.success) {
         // Load user's job board integrations from database
         const integrationsResponse = await fetch('/api/job-boards/integrations')
