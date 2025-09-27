@@ -35,14 +35,15 @@ export async function POST(req: NextRequest) {
     for (const kw of kwList) {
       for (const loc of locList) {
         try {
-          const res = await webScraper.searchJobsByGoogle({
-            jobTitle: kw || undefined,
-            location: loc || undefined,
+          const opts: any = {
+            jobTitle: (kw && kw.length > 0) ? kw : 'jobs',
             after: afterDate,
             excludeSenior: true,
             limit: limitPerQuery,
             radiusKm,
-          })
+          }
+          if (loc && loc.length > 0) opts.location = loc
+          const res = await webScraper.searchJobsByGoogle(opts)
           resultsAll.push(...res)
         } catch {}
         if (resultsAll.length >= 200) break
