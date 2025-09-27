@@ -84,6 +84,8 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
     locations: '',
     salaryRange: { min: 0, max: 0 }
   })
+  const [autoPilotResults, setAutoPilotResults] = useState<Array<{ title?: string; url: string; company?: string; location?: string; source?: string }>>([])
+  const [autoPilotRunning, setAutoPilotRunning] = useState(false)
 
   // Load job boards and applications
   useEffect(() => {
@@ -544,10 +546,53 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
               </div>
             </div>
           )}
+
+          {autoPilotEnabled && (
+            <div className="mt-4 flex items-center gap-3">
+              <Button disabled={autoPilotRunning} onClick={async () => {
+                setAutoPilotRunning(true)
+                try {
+                  const resp = await fetch('/api/job-boards/autopilot/search', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 25, days: 14, limit: 20 })
+                  })
+                  const json = await resp.json()
+                  if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')
+                  setAutoPilotResults(json.results || [])
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : 'Autopilot search failed')
+                } finally {
+                  setAutoPilotRunning(false)
+                }
+              }}>
+                {autoPilotRunning ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Searching...</>) : (<><Zap className="w-4 h-4 mr-2"/>Run Autopilot Search</>)}
+              </Button>
+              {autoPilotResults.length > 0 && (
+                <div className="text-sm text-gray-600">Found {autoPilotResults.length} public listings</div>
+              )}
+            </div>
+          )}
+
+          {autoPilotResults.length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <div className="text-sm font-medium mb-2">Public Listings</div>
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {autoPilotResults.slice(0, 100).map((j, idx) => (
+                  <div key={idx} className="text-xs flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{j.title || 'Untitled role'}</div>
+                      <div className="text-gray-600 truncate">{[j.company, j.location, j.source].filter(Boolean).join(' • ')}</div>
+                    </div>
+                    {j.url && <a href={j.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 border rounded">Open</a>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Job Boards Grid */}
+      {/* Job Boards Grid (moved to settings later; temporarily disabled UI if disconnected) */}
       <Card>
         <CardHeader>
           <CardTitle>Job Board Integrations</CardTitle>
@@ -636,15 +681,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                         >
                           {jobsLoading[board.id] ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Loading</>) : 'View Jobs'}
                         </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {/* Open settings */}}
-                          className="flex-1"
-                          size="sm"
-                        >
-                          <Settings className="w-4 h-4 mr-2" />
-                          Settings
-                        </Button>
+                        {/* Integration settings will move under Settings → Job Boards */}
                       </div>
                     )}
                   </div>
