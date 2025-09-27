@@ -612,16 +612,17 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
         </CardContent>
       </Card>
 
-      {/* Job Boards Grid (moved to settings later; temporarily disabled UI if disconnected) */}
+      {/* Job Boards Grid (moved to Settings: show notice and link) */}
       <Card>
         <CardHeader>
           <CardTitle>Job Board Integrations</CardTitle>
           <CardDescription>
-            Connect and manage your job board accounts for automated applications
+            This section moved to Settings → Integrations. Manage connections there.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="text-sm mb-3">Manage job board connections in <a className="underline" href="/settings/integrations">Settings → Integrations</a>.</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60 pointer-events-none select-none">
             {jobBoards.map((board) => (
               <Card key={board.id} className="relative">
                 <CardContent className="p-6">
