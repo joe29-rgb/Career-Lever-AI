@@ -32,6 +32,7 @@ import {
   Loader2
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useSession } from 'next-auth/react'
 
 interface JobBoard {
   id: string
@@ -62,6 +63,7 @@ interface JobBoardsDashboardProps {
 }
 
 export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
+  const { data: session } = useSession()
   const [jobBoards, setJobBoards] = useState<JobBoard[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [selectedBoards, setSelectedBoards] = useState<string[]>([])
@@ -475,6 +477,10 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Autopilot status */}
+          <div className="mb-3 text-sm text-gray-700">
+            <AutopilotStatus />
+          </div>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className="font-medium">Enable Auto-Pilot</h4>
@@ -887,6 +893,33 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           </div>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function AutopilotStatus() {
+  const [status, setStatus] = useState<{ lastRunAt?: string; lastFound?: number; nextRunAt?: string } | null>(null)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/profile')
+        if (!res.ok) return
+        const j = await res.json()
+        const meta = j?.profile?.autopilotMeta || {}
+        setStatus({
+          lastRunAt: meta.lastRunAt,
+          lastFound: meta.lastFound,
+          nextRunAt: meta.nextRunAt,
+        })
+      } catch {}
+    })()
+  }, [])
+  if (!status) return null
+  return (
+    <div className="flex items-center gap-4">
+      <div>Last run: {status.lastRunAt ? new Date(status.lastRunAt).toLocaleString() : '—'}</div>
+      <div>Found: {typeof status.lastFound === 'number' ? status.lastFound : 0}</div>
+      <div>Next run: {status.nextRunAt ? new Date(status.nextRunAt).toLocaleString() : '—'}</div>
     </div>
   )
 }

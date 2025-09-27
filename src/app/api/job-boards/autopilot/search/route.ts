@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { webScraper } from '@/lib/web-scraper'
+import connectToDatabase from '@/lib/mongodb'
+import Profile from '@/models/Profile'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,6 +60,15 @@ export async function POST(req: NextRequest) {
       return true
     }).slice(0, 200)
 
+    // Update profile autopilot meta (best-effort)
+    try {
+      await connectToDatabase()
+      await Profile.findOneAndUpdate(
+        { userId: (session.user as any).id },
+        { $set: { autopilotMeta: { lastRunAt: new Date(), lastFound: results.length, nextRunAt: new Date(Date.now() + 24*60*60*1000) } } },
+        { new: true }
+      )
+    } catch {}
     return NextResponse.json({ success: true, results })
   } catch (e) {
     return NextResponse.json({ error: 'Autopilot search failed' }, { status: 500 })
