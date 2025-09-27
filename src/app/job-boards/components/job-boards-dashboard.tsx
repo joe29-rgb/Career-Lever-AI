@@ -574,7 +574,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                 try {
                   const resp = await fetch('/api/job-boards/autopilot/search', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 25, days: 14, limit: 20 })
+                    body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 150, days: 30, limit: 20 })
                   })
                   const json = await resp.json()
                   if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')
