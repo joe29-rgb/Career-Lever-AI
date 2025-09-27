@@ -1432,7 +1432,14 @@ Respond with a JSON array of key points (strings).`;
         ],
         negotiationEmail: {
           subject: 'Compensation Discussion – Senior Backend Engineer',
-          body: 'Hi <Name>,\n\nThank you for the offer. Based on Austin market norms for senior roles and my impact (e.g., 18% infra savings; 10M msg/day pipeline), I'm targeting a base of $180k-$190k with total comp in the $280k-$300k range. I value the opportunity and am flexible on equity/bonus to reach this base.\n\nIf helpful, happy to discuss details.\n\nBest,\n<Your Name>'
+          body: `Hi <Name>,
+
+Thank you for the offer. Based on Austin market norms for senior roles and my impact (e.g., 18% infra savings; 10M msg/day pipeline), I'm targeting a base of $180k-$190k with total comp in the $280k-$300k range. I value the opportunity and am flexible on equity/bonus to reach this base.
+
+If helpful, happy to discuss details.
+
+Best,
+<Your Name>`
         },
         talkingPoints: [
           'Anchor to Austin senior market bands',
