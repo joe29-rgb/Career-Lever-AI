@@ -11,6 +11,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!process.env.PERPLEXITY_API_KEY) {
+      return NextResponse.json({ error: 'AI temporarily unavailable (missing PERPLEXITY_API_KEY)' }, { status: 503 })
+    }
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     await connectToDatabase()

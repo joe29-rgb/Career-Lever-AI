@@ -19,6 +19,11 @@ export async function POST(request: NextRequest) {
     const routeKey = 'job:analyze'
     logRequestStart(routeKey, requestId)
     // Check authentication
+    if (!process.env.PERPLEXITY_API_KEY) {
+      const resp = NextResponse.json({ error: 'AI temporarily unavailable (missing PERPLEXITY_API_KEY)' }, { status: 503 })
+      resp.headers.set('x-request-id', requestId)
+      return resp
+    }
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json(

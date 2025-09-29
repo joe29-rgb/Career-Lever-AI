@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.PERPLEXITY_API_KEY) return NextResponse.json({ error: 'AI temporarily unavailable (missing PERPLEXITY_API_KEY)' }, { status: 503 })
     const { resumeText } = await request.json()
     if (!resumeText) return NextResponse.json({ error: 'resumeText required' }, { status: 400 })
     const ppx = new PerplexityService()
