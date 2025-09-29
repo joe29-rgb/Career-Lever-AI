@@ -6,7 +6,7 @@ import Resume from '@/models/Resume'
 import { webScraper } from '@/lib/web-scraper'
 import { extractKeywords, calculateMatchScore } from '@/lib/utils'
 import crypto from 'crypto'
-import OpenAI from 'openai'
+import { PerplexityService } from '@/lib/perplexity-service'
 import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
 export const dynamic = 'force-dynamic'
@@ -20,18 +20,7 @@ if (process.env.REDIS_URL) {
   } catch {}
 }
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
-
-async function embed(text: string): Promise<number[] | null> {
-  try {
-    if (!openai) return null
-    const cleaned = text.replace(/\s+/g, ' ').trim().slice(0, 8000)
-    const res = await openai.embeddings.create({ model: 'text-embedding-3-small', input: cleaned })
-    return (res.data?.[0]?.embedding as unknown as number[]) || null
-  } catch {
-    return null
-  }
-}
+async function embed(_text: string): Promise<number[] | null> { return null }
 
 function cosine(a: number[], b: number[]): number {
   let dot = 0, na = 0, nb = 0
@@ -117,7 +106,7 @@ export async function POST(req: NextRequest) {
         const jdEmb = await embed(jd)
         if (jdEmb) embScore = Math.round(Math.max(0, Math.min(1, cosine(resumeEmb, jdEmb))) * 100)
       }
-      const score = Math.round(kwScore * 0.6 + embScore * 0.4)
+      const score = Math.round(kwScore * 0.8 + embScore * 0.2)
       const jdKeywords = extractKeywords(jd)
       const resumeLower = resumeText.toLowerCase()
       const matched = jdKeywords.filter(k => resumeLower.includes(k.toLowerCase())).slice(0, 10)
@@ -128,8 +117,8 @@ export async function POST(req: NextRequest) {
       await cacheSet(ck, { score, reasons }, 600)
       out.push({ url, title, companyName, score, reasons })
     }
-    // Rerank top-N with LLM scoring if available
-    if (openai && out.length > 1) {
+    // Rerank top-N with LLM scoring via Perplexity
+    if (out.length > 1) {
       try {
         const topN = out.slice(0, Math.min(10, out.length))
         const payloadJobs = topN.map(j => ({ url: j.url, title: j.title || '', companyName: j.companyName || '' }))
@@ -141,17 +130,15 @@ export async function POST(req: NextRequest) {
           const desc: string = (j as any).description || ''
           if (url && desc) jobDetails[url] = desc.replace(/\s+/g,' ').slice(0, 1200)
         }
-        const userContent = `You are a senior recruiter. Score each job (0-100) for fit to the resume. Return STRICT JSON array of objects: {url, refineScore, fitReasons: string[1-3], fixSuggestions: string[1-3]}.\n\nResume:\n${resumePreview}\n\nJobs:\n${payloadJobs.map(j=>`- ${j.url} | ${j.title} @ ${j.companyName} | ${jobDetails[j.url] || ''}`).join('\n')}`
-        const comp = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: [
-            { role: 'system', content: 'You return only valid JSON. No prose.' },
-            { role: 'user', content: userContent }
-          ],
-          temperature: 0.2,
-          max_tokens: 800
-        })
-        const text = comp.choices?.[0]?.message?.content?.trim() || '[]'
+        const system = 'You return only valid JSON. No prose.'
+        const userContent = `You are a senior recruiter. Score each job (0-100) for fit to the resume. Return STRICT JSON array of objects: {url, refineScore, fitReasons: string[1-3], fixSuggestions: string[1-3]}.
+
+Resume:\n${resumePreview}
+
+Jobs:\n${payloadJobs.map(j=>`- ${j.url} | ${j.title} @ ${j.companyName} | ${jobDetails[j.url] || ''}`).join('\n')}`
+        const ppx = new PerplexityService()
+        const resp = await ppx.makeRequest(system, userContent, { temperature: 0.2, maxTokens: 800 })
+        const text = (resp.content || '').trim() || '[]'
         let parsed: Array<{ url: string; refineScore: number; fitReasons?: string[]; fixSuggestions?: string[] }>
         try { parsed = JSON.parse(text) } catch { parsed = [] as any }
         const map: Record<string, { refineScore: number; fitReasons?: string[]; fixSuggestions?: string[] }> = {}

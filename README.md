@@ -5,7 +5,7 @@
 ## 🔥 What Makes Career Lever AI Stand Out
 
 ### 🤖 **Advanced AI-Powered Features**
-- **GPT-4 Integration**: Industry-leading AI for resume customization and content generation
+- **Perplexity Integration**: Real-time web-native AI for analysis and content generation
 - **Intelligent Job Analysis**: Deep analysis of job requirements, keywords, and cultural fit
 - **Company Research Automation**: Multi-source scraping from LinkedIn, Glassdoor, and news
 - **Interview Preparation AI**: Personalized behavioral and technical question preparation
@@ -38,7 +38,7 @@
 ### **vs. Basic Resume Builders**
 | Feature | Career Lever AI | Resume.com | Canva | LinkedIn |
 |---------|-------------|------------|-------|----------|
-| AI Resume Customization | ✅ GPT-4 Powered | ❌ | ❌ | ❌ |
+| AI Resume Customization | ✅ Perplexity Powered | ❌ | ❌ | ❌ |
 | Company Research | ✅ Multi-Source | ❌ | ❌ | ❌ |
 | Interview Preparation | ✅ AI-Generated | ❌ | ❌ | ❌ |
 | Analytics Dashboard | ✅ Advanced | ❌ | ❌ | ❌ |
@@ -101,7 +101,7 @@
 - **Frontend**: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: Next.js API Routes
 - **Database**: MongoDB with Mongoose
-- **AI**: OpenAI GPT-4 API
+- **AI**: Perplexity API (OpenAI-compatible client)
 - **Authentication**: NextAuth.js
 - **File Handling**: Multer, PDF parsing
 - **Web Scraping**: Puppeteer
@@ -112,7 +112,7 @@
 
 - Node.js 18+
 - MongoDB
-- OpenAI API Key
+- Perplexity API Key
 
 ### Installation
 
@@ -139,8 +139,10 @@ MONGODB_URI=mongodb://localhost:27017/career-lever-ai
 NEXTAUTH_SECRET=your-nextauth-secret-key-here
 NEXTAUTH_URL=http://localhost:3000
 
-# AI Integration
-OPENAI_API_KEY=your-openai-api-key-here
+# AI Integration (Perplexity)
+PERPLEXITY_API_KEY=your-perplexity-api-key-here
+PERPLEXITY_BASE_URL=https://api.perplexity.ai
+PERPLEXITY_MODEL=sonar-pro
 
 # Job Board API Integrations (Optional - enables real OAuth integrations)
 # LinkedIn Talent Solutions API

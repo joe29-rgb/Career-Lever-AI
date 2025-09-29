@@ -8,7 +8,7 @@ This guide will help you deploy Career Lever AI to Railway.
 
 1. **Railway Account**: Sign up at [railway.app](https://railway.app)
 2. **MongoDB Database**: Railway provides managed MongoDB, or you can use MongoDB Atlas
-3. **OpenAI API Key**: Get your API key from [OpenAI](https://platform.openai.com/api-keys)
+3. **Perplexity API Key**: Get your API key from `https://www.perplexity.ai`
 
 ## Step 1: Prepare Your Repository
 
@@ -36,8 +36,10 @@ MONGODB_URI=your-mongodb-connection-string
 NEXTAUTH_SECRET=your-secure-random-string-here
 NEXTAUTH_URL=https://your-app-name.railway.app
 
-# AI Integration
-OPENAI_API_KEY=sk-your-openai-api-key
+# AI Integration (Perplexity)
+PERPLEXITY_API_KEY=sk-your-perplexity-api-key
+PERPLEXITY_BASE_URL=https://api.perplexity.ai
+PERPLEXITY_MODEL=sonar-pro
 
 # Redis (optional but recommended)
 REDIS_URL=redis://default:password@host:port
@@ -124,7 +126,9 @@ If the build fails, check the Railway logs for errors. Common issues:
 | `MONGODB_URI` | MongoDB connection string | Yes | - |
 | `NEXTAUTH_SECRET` | NextAuth.js secret key | Yes | - |
 | `NEXTAUTH_URL` | Your app's URL | Yes | - |
-| `OPENAI_API_KEY` | OpenAI API key | Yes | - |
+| `PERPLEXITY_API_KEY` | Perplexity API key | Yes | - |
+| `PERPLEXITY_BASE_URL` | Perplexity base URL | No | https://api.perplexity.ai |
+| `PERPLEXITY_MODEL` | Default model | No | sonar-pro |
 | `LINKEDIN_CLIENT_ID` | LinkedIn API client ID | No | - |
 | `LINKEDIN_CLIENT_SECRET` | LinkedIn API client secret | No | - |
 
@@ -170,5 +174,5 @@ Ensure variables are set:
 
 - `MAPBOX_ACCESS_TOKEN` (commute time estimates)
 - `REDIS_URL` (optional, caching)
-- `OPENAI_API_KEY`, `MONGODB_URI`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
+- `PERPLEXITY_API_KEY`, `MONGODB_URI`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
 

@@ -1,10 +1,7 @@
-import OpenAI from 'openai'
 import crypto from 'crypto'
+import { PerplexityService } from './perplexity-service'
 
 // Environment
-const PPX_API_KEY = process.env.PERPLEXITY_API_KEY || ''
-const PPX_BASE_URL = process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai'
-const PPX_MODEL = process.env.PERPLEXITY_MODEL || 'sonar-pro'
 const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
 
 type CacheEntry = { expiresAt: number; value: any }
@@ -26,10 +23,7 @@ function setCache(key: string, value: any) {
   cache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value })
 }
 
-function createClient(): OpenAI {
-  if (!PPX_API_KEY) throw new Error('PERPLEXITY_API_KEY missing')
-  return new OpenAI({ apiKey: PPX_API_KEY, baseURL: PPX_BASE_URL } as any)
-}
+function createClient(): PerplexityService { return new PerplexityService() }
 
 export interface IntelligenceRequest {
   company: string
@@ -69,16 +63,8 @@ export class PerplexityIntelligenceService {
     const user = `Research current intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
 Return a JSON object with: company, freshness (ISO datetime), sources[{title,url}], confidence (0..1), financials[{metric,value,confidence,source}], culture[{point,confidence,source}], salaries[{title,range,currency,geo,source,confidence}], contacts[{name,title,url,source,confidence}], growth[{signal,source,confidence}], summary.`
     try {
-      const completion: any = await client.chat.completions.create({
-        model: PPX_MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          { role: 'user', content: user }
-        ],
-        temperature: 0.2,
-        max_tokens: 1400,
-      } as any)
-      const text = completion.choices?.[0]?.message?.content?.trim() || ''
+      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400 })
+      const text = (out.content || '').trim()
       let parsed: IntelligenceResponse
       try { parsed = JSON.parse(text) } catch { throw new Error('Failed to parse intelligence JSON') }
       // Minimal validation
@@ -112,13 +98,8 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
     const client = createClient()
     const user = `Find current salary ranges for ${role}${company ? ` at ${company}` : ''}${geo ? ` in ${geo}` : ''}. Return JSON: items[{title,range,currency,geo,source,confidence}], summary, freshness`.
     try {
-      const completion: any = await client.chat.completions.create({
-        model: PPX_MODEL,
-        messages: [ { role: 'system', content: SYSTEM }, { role: 'user', content: user } ],
-        temperature: 0.2,
-        max_tokens: 900,
-      } as any)
-      const text = completion.choices?.[0]?.message?.content?.trim() || ''
+      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 900 })
+      const text = (out.content || '').trim()
       const parsed = JSON.parse(text)
       setCache(key, parsed)
       return parsed

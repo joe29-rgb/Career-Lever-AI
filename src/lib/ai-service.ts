@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { PerplexityService } from './perplexity-service'
 import crypto from 'crypto';
 import { extractKeywords, calculateMatchScore } from './utils';
 import { logAIUsage } from './observability'
@@ -20,12 +21,13 @@ function createOpenAIClient(apiKey: string): any {
 // Retained default client for backward-compat reads, but do not use directly for calls
 const openai: any = OPENAI_KEYS.length ? createOpenAIClient(OPENAI_KEYS[0]) : null;
 
-const ASSISTANT_JOB_ANALYSIS_ID = process.env.OPENAI_ASSISTANT_JOB_ANALYSIS;
-const ASSISTANT_RESUME_TAILOR_ID = process.env.OPENAI_ASSISTANT_RESUME_TAILOR;
-const ASSISTANT_COVER_LETTER_ID = process.env.OPENAI_ASSISTANT_COVER_LETTER;
-const ASSISTANT_INTERVIEW_PREP_ID = process.env.OPENAI_ASSISTANT_INTERVIEW_PREP;
-const ASSISTANT_SALARY_COACH_ID = process.env.OPENAI_ASSISTANT_SALARY_COACH;
-const ASSISTANT_COMPANY_INSIGHTS_ID = process.env.OPENAI_ASSISTANT_COMPANY_INSIGHTS;
+// OpenAI assistant IDs deprecated after Perplexity migration
+const ASSISTANT_JOB_ANALYSIS_ID = undefined as unknown as string | undefined;
+const ASSISTANT_RESUME_TAILOR_ID = undefined as unknown as string | undefined;
+const ASSISTANT_COVER_LETTER_ID = undefined as unknown as string | undefined;
+const ASSISTANT_INTERVIEW_PREP_ID = undefined as unknown as string | undefined;
+const ASSISTANT_SALARY_COACH_ID = undefined as unknown as string | undefined;
+const ASSISTANT_COMPANY_INSIGHTS_ID = undefined as unknown as string | undefined;
 
 // Runtime controls
 const DEFAULT_MODEL = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4o-mini';
@@ -124,7 +126,22 @@ async function runWithOpenAI<T>(call: (client: any) => Promise<T>): Promise<T> {
 }
 
 async function chatCreate(args: any): Promise<any> {
-  return withTimeout(runWithOpenAI(client => client.chat.completions.create(args)), AI_TIMEOUT_MS)
+  // Route all generic chat calls through Perplexity for consistency
+  const ppx = new PerplexityService()
+  const messages = Array.isArray(args?.messages) ? args.messages : []
+  const systemMsg = (messages.find((m: any) => m && m.role === 'system')?.content || '').toString()
+  const userMsg = messages
+    .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant'))
+    .map((m: any) => (m.content || '').toString())
+    .join('\n\n')
+    .trim()
+  const maxTokens = typeof args?.max_tokens === 'number' ? args.max_tokens : 1200
+  const temperature = typeof args?.temperature === 'number' ? args.temperature : 0.3
+
+  const result = await withTimeout(ppx.makeRequest(systemMsg, userMsg, { maxTokens, temperature }), AI_TIMEOUT_MS)
+  const content = (result as any)?.content || ''
+  // Return an OpenAI-like shape so existing callers remain unchanged
+  return { choices: [{ message: { content } }] }
 }
 
 // AI Prompts for different operations
@@ -476,9 +493,7 @@ export class AIService {
   }
   static async analyzeJobDescription(jobDescription: string): Promise<JobAnalysisResult> {
     try {
-      if (ASSISTANT_JOB_ANALYSIS_ID) {
-        return await this.analyzeJobDescriptionWithAssistant(jobDescription);
-      }
+      // Perplexity-only: always use model path
       return await this.analyzeJobDescriptionWithModel(jobDescription);
     } catch (err: any) {
       // Fallback to heuristic/minimal result on quota or invalid/missing API key
@@ -523,70 +538,19 @@ export class AIService {
         companySpecificAngles: ['Connect achievements to product goals', 'Show ownership and bias for action']
       }
     }
-    if (!ASSISTANT_INTERVIEW_PREP_ID) {
-      // Simple fallback without assistant
+    const system = 'You are an interview coach. Return strict JSON: {behavioralQuestions[], technicalQuestions[], starGuidance[], companySpecificAngles[]}'
+    const user = `Generate interview prep for ${jobTitle} (${seniority}).\nFocus areas: ${(focusAreas||[]).join(', ')}\nResume:\n${resumeHighlights}\nCompany:\n${companyData ? JSON.stringify(companyData, null, 2) : 'N/A'}\nCounts: behavioral=${numBehavioral||6}, technical=${numTechnical||6}`
+    const text = await this.generateText(`${system}\n\n${user}`)
+    try {
+      const parsed = JSON.parse(text)
       return {
-        behavioralQuestions: [
-          'Tell me about yourself',
-          'Tell me about a challenging project and what you learned'
-        ],
-        technicalQuestions: ['Discuss a system you designed end-to-end'],
-        starGuidance: ['Situation, Task, Action, Result'],
-        companySpecificAngles: ['Align answers to company values']
+        behavioralQuestions: Array.isArray(parsed.behavioralQuestions) ? parsed.behavioralQuestions : [],
+        technicalQuestions: Array.isArray(parsed.technicalQuestions) ? parsed.technicalQuestions : [],
+        starGuidance: Array.isArray(parsed.starGuidance) ? parsed.starGuidance : [],
+        companySpecificAngles: Array.isArray(parsed.companySpecificAngles) ? parsed.companySpecificAngles : [],
       }
-    }
-
-    const companyInfo = companyData ? JSON.stringify(companyData, null, 2) : '';
-    const payload = {
-      jobTitle,
-      seniority,
-      resumeHighlights,
-      companyData: companyInfo,
-      focusAreas: focusAreas || [],
-      numBehavioral: numBehavioral || 6,
-      numTechnical: numTechnical || 6,
-    };
-    const thread = await openai.beta.threads.create({});
-    await openai.beta.threads.messages.create(thread.id, {
-      role: 'user',
-      content: `Generate interview prep as JSON for: ${jobTitle} (${seniority}).\nResume:\n${resumeHighlights}\nCompany:\n${companyInfo}`,
-    });
-    let run: any = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: ASSISTANT_INTERVIEW_PREP_ID as string,
-      tools: [
-        { type: 'function', function: { name: 'generate_interview_prep', description: 'Generate tailored interview prep', parameters: (payload as any) } }
-      ] as any
-    });
-    while (true) {
-      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
-        const tool_outputs = run.required_action.submit_tool_outputs.tool_calls.map((tc: any) => ({ tool_call_id: tc.id, output: JSON.stringify(payload) }));
-        run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs });
-        continue;
-      }
-      if (run.status === 'completed') {
-        const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m: any) => m.role === 'assistant');
-        const content = last?.content?.[0];
-        const text = (content && 'text' in content) ? content.text.value : undefined;
-        try {
-          const parsed = text ? JSON.parse(text) : {};
-          return {
-            behavioralQuestions: Array.isArray(parsed.behavioralQuestions) ? parsed.behavioralQuestions : [],
-            technicalQuestions: Array.isArray(parsed.technicalQuestions) ? parsed.technicalQuestions : [],
-            starGuidance: Array.isArray(parsed.starGuidance) ? parsed.starGuidance : [],
-            companySpecificAngles: Array.isArray(parsed.companySpecificAngles) ? parsed.companySpecificAngles : [],
-          };
-        } catch {
-          return {
-            behavioralQuestions: [], technicalQuestions: [], starGuidance: [], companySpecificAngles: []
-          }
-        }
-      }
-      if (['failed','cancelled','expired'].includes(run.status)) {
-        return { behavioralQuestions: [], technicalQuestions: [], starGuidance: [], companySpecificAngles: [] };
-      }
-      await new Promise(r=>setTimeout(r, 600));
-      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    } catch {
+      return { behavioralQuestions: [], technicalQuestions: [], starGuidance: [], companySpecificAngles: [] }
     }
   }
 
@@ -989,17 +953,7 @@ RESUME:\n${resumeText}`;
       const coverLetter = `Dear Hiring Manager,\n\nI am excited to apply for the ${jobTitle} role at ${companyName}. I bring relevant achievements and alignment to your needs...\n\nSincerely,\nCandidate`;
       return { coverLetter, keyPoints: ['Strong intro', 'Aligned achievements', 'Clear CTA'], wordCount: coverLetter.split(/\s+/).length };
     }
-    if (ASSISTANT_COVER_LETTER_ID) {
-      return this.generateCoverLetterWithAssistant(
-        jobTitle,
-        companyName,
-        jobDescription,
-        resumeText,
-        companyData,
-        tone,
-        length
-      );
-    }
+    // Perplexity-only: skip assistant path
     try {
       const cacheKey = makeKey('cover-letter', JSON.stringify({ jobTitle, companyName, jobDescription, resumeText, tone, length }))
       const cached = getCache(cacheKey)
@@ -1274,46 +1228,7 @@ Respond with a JSON array of key points (strings).`;
     companyData: any,
     jobTitle: string
   ): Promise<CompanyInsightsResult> {
-    // Assistant-backed path
-    if (ASSISTANT_COMPANY_INSIGHTS_ID) {
-      const thread = await openai.beta.threads.create({});
-      await openai.beta.threads.messages.create(thread.id, {
-        role: 'user',
-        content: `Generate tailored company insights as JSON for job title: ${jobTitle}. Company data: ${JSON.stringify(companyData, null, 2)}`,
-      });
-      let run: any = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: ASSISTANT_COMPANY_INSIGHTS_ID as string,
-      });
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
-          const toolCalls = run.required_action.submit_tool_outputs.tool_calls;
-          const toolOutputs = toolCalls.map((tc: any) => ({ tool_call_id: tc.id, output: JSON.stringify({ jobTitle, companyData }) }));
-          run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs: toolOutputs });
-          continue;
-        }
-        if (run.status === 'completed') {
-          const messages = await openai.beta.threads.messages.list(thread.id);
-          const last = messages.data.find((m: any) => m.role === 'assistant');
-          const content = last?.content?.[0];
-          const text = (content && 'text' in content) ? (content as any).text.value : undefined;
-          if (text) {
-            try {
-              const parsed = JSON.parse(text);
-              return {
-                talkingPoints: Array.isArray(parsed.talkingPoints) ? parsed.talkingPoints : [],
-                keyValues: Array.isArray(parsed.keyValues) ? parsed.keyValues : (companyData?.culture || []),
-                cultureFit: Array.isArray(parsed.cultureFit) ? parsed.cultureFit : [],
-              };
-            } catch {/* fallthrough */}
-          }
-          break;
-        }
-        if ([ 'failed','cancelled','expired' ].includes(run.status)) break;
-        await new Promise(r=>setTimeout(r,600));
-        run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-      }
-    }
+    // Perplexity-only: skip assistant path
     try {
       const companyDataString = JSON.stringify(companyData, null, 2);
       const prompt = AI_PROMPTS.COMPANY_INSIGHTS
@@ -1450,9 +1365,7 @@ Best,
       };
     }
 
-    if (ASSISTANT_SALARY_COACH_ID) {
-      return this.generateSalaryNegotiationPlanWithAssistant(input);
-    }
+    // Perplexity-only: skip assistant path
     return this.generateSalaryNegotiationPlanWithModel(input);
   }
 

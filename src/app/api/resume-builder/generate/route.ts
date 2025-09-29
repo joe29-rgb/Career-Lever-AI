@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import connectToDatabase from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
-import OpenAI from 'openai'
-import { AIService } from '@/lib/ai-service'
+import { PerplexityService } from '@/lib/perplexity-service'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
+const ppx = new PerplexityService()
 
 interface ResumeData {
   personalInfo: {
@@ -105,19 +104,13 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase()
 
-    const useAssistant = Boolean(process.env.OPENAI_ASSISTANT_RESUME_TAILOR && jobDescription && typeof jobDescription === 'string' && jobDescription.length > 20)
-
-    if (useAssistant) {
+    if (jobDescription && typeof jobDescription === 'string' && jobDescription.length > 20) {
       // Serialize current builder data to plain text resume
       const resumeText = serializeResumeToPlainText(resumeData)
-      const tailored = await AIService.customizeResume(
-        resumeText,
-        jobDescription as string,
-        targetJob || '',
-        '',
-        'professional',
-        'same'
-      )
+      const system = 'You are an expert ATS resume optimizer. Return full optimized resume text only.'
+      const user = `Optimize resume for ${targetJob || 'the target role'} at ${''}.\nJob Description:\n${jobDescription}\n\nCurrent Resume:\n${resumeText}`
+      const out = await ppx.makeRequest(system, user, { maxTokens: 2500, temperature: 0.3 })
+      const tailored = { customizedResume: (out.content || '').trim(), matchScore: 0, suggestions: [] as string[] }
 
       const tailoredHtml = wrapTailoredTextAsHtml(tailored.customizedResume, resumeData.personalInfo.fullName)
       return NextResponse.json({
@@ -218,23 +211,11 @@ ${JSON.stringify(resumeData, null, 2)}
 Return optimized JSON with the same structure but enhanced content.`
 
   try {
-    if (!openai) return resumeData
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [{
-        role: 'system',
-        content: 'You are an expert resume writer and career counselor. Optimize resumes for maximum impact and ATS compatibility.'
-      }, {
-        role: 'user',
-        content: prompt
-      }],
-      temperature: 0.7,
-      max_tokens: 2000
-    })
-
-    const response = completion.choices[0]?.message?.content?.trim()
-    if (response) {
-      const optimized = JSON.parse(response)
+    const system = 'You are an expert resume writer and career counselor. Optimize resumes for maximum impact and ATS compatibility. Return strict JSON with the same structure as input.'
+    const out = await ppx.makeRequest(system, prompt, { temperature: 0.4, maxTokens: 2000 })
+    const text = (out.content || '').trim()
+    if (text) {
+      const optimized = JSON.parse(text)
       return optimized
     }
   } catch (e) {

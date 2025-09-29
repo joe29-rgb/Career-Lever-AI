@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.openai.com https://nominatim.openstreetmap.org https://overpass-api.de https://api.mapbox.com",
+    "connect-src 'self' https://api.perplexity.ai https://nominatim.openstreetmap.org https://overpass-api.de https://api.mapbox.com",
     "frame-ancestors 'self'",
   ].join('; ')
   res.headers.set('Content-Security-Policy', csp)

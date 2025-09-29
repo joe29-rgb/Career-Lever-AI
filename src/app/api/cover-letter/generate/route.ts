@@ -66,17 +66,26 @@ export async function POST(request: NextRequest) {
         if (typeof (latest as any)?.yearsExperience === 'number') yearsExperience = (latest as any).yearsExperience
       } catch {}
 
-      const result = await AIService.generateCoverLetter(
-        jobTitle,
-        companyName,
-        jobDescription,
-        resumeText,
-        { ...(psychology ? { psychology } : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(yearsExperience ? { yearsExperience } : {}) },
-        tone,
-        length
-      );
+      const ppx = new PerplexityService()
+      const systemPrompt = `You are an expert cover letter writer with access to current company information and hiring trends.
 
-      const { coverLetter, keyPoints, wordCount } = result;
+Rules:
+- Personalized, professional tone; integrate company signals when available.
+- Return full cover letter text only.`
+      const companyPayload = { ...(psychology ? { psychology } : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(yearsExperience ? { yearsExperience } : {}) }
+      const userPrompt = `Create a cover letter for ${jobTitle} at ${companyName}.
+
+Job Description:\n${jobDescription}
+
+Candidate Resume:\n${resumeText}
+
+Company Data:\n${JSON.stringify(companyPayload, null, 2)}
+
+Tone: ${tone}, Length: ${length}`
+      const out = await ppx.makeRequest(systemPrompt, userPrompt, { maxTokens: 1500, temperature: 0.4 })
+      const coverLetter = (out.content || '').trim()
+      const keyPoints: string[] = []
+      const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
 
       if (save === true) {
         await connectToDatabase();

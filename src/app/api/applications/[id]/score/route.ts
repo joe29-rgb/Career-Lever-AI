@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
 import Resume from '@/models/Resume'
-import { AIService } from '@/lib/ai-service'
+import { PerplexityService } from '@/lib/perplexity-service'
 
 export async function GET(
   _req: NextRequest,
@@ -19,8 +19,15 @@ export async function GET(
     const resume: any = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
     const resumeText = (resume && typeof (resume as any).extractedText === 'string') ? (resume as any).extractedText : ''
     const companyData = app.companyResearch || {}
-    const result = await AIService.scoreApplication(app.jobDescription || '', resumeText, companyData)
-    return NextResponse.json({ success: true, score: result })
+    const ppx = new PerplexityService()
+    const system = 'You are an application success evaluator. Return a JSON object with keys: score (0-100), reasons[], riskFactors[], improvements[].'
+    const user = `Evaluate success probability for this application.\nJob Description:\n${app.jobDescription || ''}\nResume:\n${resumeText}\nCompany Data:\n${JSON.stringify(companyData).slice(0,2000)}`
+    const out = await ppx.makeRequest(system, user, { maxTokens: 800, temperature: 0.2 })
+    let text = out.content || ''
+    if (/```/.test(text)) { const m = text.match(/```json[\s\S]*?```/i) || text.match(/```[\s\S]*?```/); if (m && m[0]) text = m[0].replace(/```json|```/g,'').trim() }
+    let parsed: any = {}
+    try { parsed = JSON.parse(text) } catch { parsed = { score: 50, reasons: [], riskFactors: [], improvements: [] } }
+    return NextResponse.json({ success: true, score: parsed })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to score application' }, { status: 500 })
   }
