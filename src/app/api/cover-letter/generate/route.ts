@@ -4,7 +4,7 @@ import connectToDatabase from '@/lib/mongodb';
 import Resume from '@/models/Resume';
 import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
-import { AIService } from '@/lib/ai-service';
+import { PerplexityService } from '@/lib/perplexity-service';
 import CoverLetter from '@/models/CoverLetter';
 import { isRateLimited } from '@/lib/rate-limit';
 import { coverLetterRawSchema } from '@/lib/validators';
@@ -150,22 +150,31 @@ export async function POST(request: NextRequest) {
       companyData = { ...(jobApplication.context.companyData || {}) } as any
     }
 
-    // Generate cover letter using AI service
+    // Generate cover letter using Perplexity
     let candidateName = session.user.name || ''
     const candidateEmail = session.user.email || ''
     const candidatePhone = ''
     const hiringContact = ''
-    const coverLetterResult = await AIService.generateCoverLetter(
-      jobApplication.jobTitle,
-      jobApplication.companyName,
-      jobApplication.jobDescription,
-      resume.extractedText,
-      { ...(companyData ? companyData.toObject() : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(typeof (resume as any).yearsExperience === 'number' ? { yearsExperience: (resume as any).yearsExperience } : {}) },
-      tone,
-      length
-    );
+    const ppx = new PerplexityService()
+    const systemPrompt = `You are an expert cover letter writer with access to current company information and hiring trends.
 
-    const { coverLetter, keyPoints, wordCount } = coverLetterResult;
+Rules:
+- Personalized, professional tone; integrate company signals when available.
+- Return full cover letter text only.`
+    const companyPayload = { ...(companyData ? companyData.toObject() : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(typeof (resume as any).yearsExperience === 'number' ? { yearsExperience: (resume as any).yearsExperience } : {}) }
+    const userPrompt = `Create a cover letter for ${jobApplication.jobTitle} at ${jobApplication.companyName}.
+
+Job Description:\n${jobApplication.jobDescription}
+
+Candidate Resume:\n${resume.extractedText}
+
+Company Data:\n${JSON.stringify(companyPayload, null, 2)}
+
+Tone: ${tone}, Length: ${length}`
+    const result = await ppx.makeRequest(systemPrompt, userPrompt, { maxTokens: 1500, temperature: 0.4 })
+    const coverLetter = (result.content || '').trim()
+    const keyPoints: string[] = []
+    const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
 
     if (save === true) {
       await CoverLetter.create({

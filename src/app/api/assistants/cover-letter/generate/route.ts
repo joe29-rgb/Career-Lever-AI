@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { AIService } from '@/lib/ai-service'
+import { PerplexityService } from '@/lib/perplexity-service'
 import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
 
@@ -21,8 +21,19 @@ export async function POST(request: NextRequest) {
         if (app?.context?.companyData) mergedCompany = { ...(mergedCompany || {}), ...app.context.companyData }
       }
     } catch {}
-    const res = await AIService.generateCoverLetter(jobTitle, companyName, jobDescription, resumeText, mergedCompany, tone, length)
-    return NextResponse.json({ success: true, coverLetter: res.coverLetter, keyPoints: res.keyPoints, wordCount: res.wordCount })
+    const ppx = new PerplexityService()
+    const systemPrompt = `You are an expert cover letter writer with access to current company information and hiring trends. Return full letter text only.`
+    const userPrompt = `Create a cover letter for ${jobTitle} at ${companyName}.
+
+Job Description:\n${jobDescription}
+
+Resume:\n${resumeText}
+
+Company Data:\n${JSON.stringify(mergedCompany || {}, null, 2)}
+
+Tone: ${tone}, Length: ${length}`
+    const result = await ppx.makeRequest(systemPrompt, userPrompt, { maxTokens: 1500, temperature: 0.4 })
+    return NextResponse.json({ success: true, coverLetter: (result.content || '').trim() })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to generate cover letter' }, { status: 500 })
   }
