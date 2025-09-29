@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import connectToDatabase from '@/lib/mongodb'
-import OpenAI from 'openai'
+import { PerplexityService } from '@/lib/perplexity-service'
 import { z } from 'zod'
 
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
+const ppx = new PerplexityService()
 
 export const dynamic = 'force-dynamic'
 
@@ -20,10 +20,10 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const { jobTitle, seniority, resumeHighlights, companyData } = parsed.data as any
 
-    const prompt = `Prepare interview material for ${jobTitle} (${seniority}). Resume highlights:\n${resumeHighlights}\n${companyData ? `Company data: ${JSON.stringify(companyData).slice(0,1000)}` : ''}`
-    if (!openai) return NextResponse.json({ error: 'AI temporarily unavailable' }, { status: 503 })
-    const completion = await openai.chat.completions.create({ model: 'gpt-4o-mini', messages: [{ role: 'system', content: 'You are an interview coach.' }, { role: 'user', content: prompt }] })
-    return NextResponse.json({ success: true, prep: completion.choices[0]?.message?.content || '' })
+    const system = 'You are an interview preparation specialist. Provide structured, actionable prep content.'
+    const prompt = `Prepare interview material for ${jobTitle} (${seniority}).\nResume highlights:\n${resumeHighlights}\n${companyData ? `Company data: ${JSON.stringify(companyData).slice(0,1000)}` : ''}`
+    const result = await ppx.makeRequest(system, prompt, { maxTokens: 1400, temperature: 0.3 })
+    return NextResponse.json({ success: true, prep: (result.content || '').trim() })
   } catch (e) {
     return NextResponse.json({ error: 'Failed to prepare interview' }, { status: 500 })
   }
