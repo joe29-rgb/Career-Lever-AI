@@ -4,7 +4,7 @@ import connectToDatabase from '@/lib/mongodb';
 import Resume from '@/models/Resume';
 import JobApplication from '@/models/JobApplication';
 import { authOptions } from '@/lib/auth';
-import { AIService } from '@/lib/ai-service';
+import { PerplexityService } from '@/lib/perplexity-service';
 import { isRateLimited } from '@/lib/rate-limit';
 import { resumeCustomizeSchema } from '@/lib/validators';
 import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
@@ -94,28 +94,40 @@ export async function POST(request: NextRequest) {
     // Use AI service to customize the resume with graceful fallback
     let customizationResult: { customizedResume: string; matchScore: number; improvements: string[]; suggestions: string[] };
     try {
-      customizationResult = await AIService.customizeResume(
-        resumeTextForTailoring,
-        jobDescription,
-        jobTitle,
-        companyName,
-        tone || 'professional',
-        lengthTarget || 'same',
-        psychology,
-        {
-          ...(companyData || {}),
-          atsTarget: atsTarget || 'generic',
-          optimizationLevel: optimizationLevel || 'moderate',
-          industryFocus,
-          experienceLevel,
-          keyMetrics,
-          skillsPriority,
-          antiAIDetection: antiAIDetection !== false,
-          formatStyle: formatStyle || 'traditional',
-          ...(styleProfile ? { styleProfile } : {}),
-          yearsExperience: typeof (resume as any).yearsExperience === 'number' ? (resume as any).yearsExperience : undefined,
-        }
-      );
+      const ppx = new PerplexityService()
+      const system = `You are an expert ATS-optimized resume writer with current hiring trend awareness. Output the full optimized resume text only (plain text).`
+      const context = {
+        tone: tone || 'professional',
+        length: lengthTarget || 'same',
+        atsTarget: atsTarget || 'generic',
+        optimizationLevel: optimizationLevel || 'moderate',
+        industryFocus: industryFocus || null,
+        experienceLevel: experienceLevel || null,
+        keyMetrics: keyMetrics || null,
+        skillsPriority: skillsPriority || null,
+        antiAIDetection: antiAIDetection !== false,
+        formatStyle: formatStyle || 'traditional',
+        styleProfile: styleProfile || null,
+        yearsExperience: typeof (resume as any).yearsExperience === 'number' ? (resume as any).yearsExperience : undefined,
+        psychology: psychology || null,
+        companyData: companyData || null,
+      }
+      const user = `Optimize the following resume for the role ${jobTitle} at ${companyName}.\n\nJob Description:\n${jobDescription}\n\nCurrent Resume:\n${resumeTextForTailoring}\n\nConstraints/Preferences:\n${JSON.stringify(context, null, 2)}`
+      const result = await ppx.makeRequest(system, user, { maxTokens: 2500, temperature: 0.3 })
+      const optimized = (result.content || '').trim()
+      // Simple match score heuristic: keyword overlap
+      const jdTokens = (jobDescription || '').toLowerCase().match(/[a-z0-9+.#-]{3,}/g) || []
+      const optTokens = optimized.toLowerCase().match(/[a-z0-9+.#-]{3,}/g) || []
+      const setJD = new Set(jdTokens)
+      let hits = 0
+      for (const t of optTokens) { if (setJD.has(t)) hits++ }
+      const matchScore = Math.min(100, Math.round((hits / Math.max(100, jdTokens.length)) * 100))
+      customizationResult = {
+        customizedResume: optimized,
+        matchScore: isFinite(matchScore) ? matchScore : 60,
+        improvements: ['Ensure quantified achievements in each role', 'Align summary to target role and company values'],
+        suggestions: ['Weave in top keywords naturally', 'Keep formatting ATS-friendly']
+      }
     } catch (e) {
       const fallbackText = `Professional Summary\n\nTarget Role: ${jobTitle} at ${companyName}\n\nHighlights:\n- Relevant experience aligned to the job description\n- Skills matched to key requirements\n- Results-focused achievements\n\nResume\n\n${(resume.extractedText || '').slice(0, 8000)}`
       customizationResult = {
