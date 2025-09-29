@@ -10,6 +10,7 @@ interface DashboardStats {
   appliedThisWeek: number
   interviewRate: number
   averageResponseTime: number
+  appliedWeekChangePct?: number
 }
 
 export async function GET(request: NextRequest) {
@@ -30,9 +31,11 @@ export async function GET(request: NextRequest) {
     // Calculate applications this week
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-    const appliedThisWeek = applications.filter(app =>
-      new Date(app.createdAt) > oneWeekAgo
-    ).length
+    const twoWeeksAgo = new Date()
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    const appliedThisWeek = applications.filter(app => new Date(app.createdAt) > oneWeekAgo).length
+    const appliedPrevWeek = applications.filter(app => new Date(app.createdAt) <= oneWeekAgo && new Date(app.createdAt) > twoWeeksAgo).length
+    const appliedWeekChangePct = appliedPrevWeek > 0 ? Math.round(((appliedThisWeek - appliedPrevWeek) / appliedPrevWeek) * 100) : (appliedThisWeek > 0 ? 100 : 0)
 
     // Calculate interview rate (applications that reached interview stage)
     const interviewApplications = applications.filter(app =>
@@ -60,7 +63,8 @@ export async function GET(request: NextRequest) {
       totalApplications,
       appliedThisWeek,
       interviewRate,
-      averageResponseTime
+      averageResponseTime,
+      appliedWeekChangePct
     }
 
     return NextResponse.json({

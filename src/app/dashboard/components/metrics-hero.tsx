@@ -15,7 +15,7 @@ export function MetricsHero() {
     }
   })
 
-  const stats = data?.stats || { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0, averageResponseTime: 0 }
+  const stats = data?.stats || { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0, averageResponseTime: 0, appliedWeekChangePct: 0 }
 
   return (
     <Card className="glass-card">
@@ -31,22 +31,24 @@ export function MetricsHero() {
           </div>
         ) : (
           <div className="metrics-grid">
-            <div className="metric-card">
+            <div className="metric-card min-h-[140px]">
               <div className="text-caption text-gray-500">Total Applications</div>
               <div className="metric-value">{stats.totalApplications}</div>
-              <div className="metric-change positive">+4% vs last week</div>
+              <div className={`metric-change ${Number(stats.appliedWeekChangePct) >= 0 ? 'positive' : 'negative'}`}>
+                {Number(stats.appliedWeekChangePct) >= 0 ? '+' : ''}{stats.appliedWeekChangePct}% vs last week
+              </div>
             </div>
-            <div className="metric-card">
+            <div className="metric-card min-h-[140px]">
               <div className="text-caption text-gray-500">Applied This Week</div>
               <div className="metric-value">{stats.appliedThisWeek}</div>
               <div className="metric-change">Keep a steady cadence</div>
             </div>
-            <div className="metric-card">
+            <div className="metric-card min-h-[140px]">
               <div className="text-caption text-gray-500">Interview Rate</div>
               <div className="metric-value">{stats.interviewRate}%</div>
               <div className="metric-change positive">+2 pts</div>
             </div>
-            <div className="metric-card">
+            <div className="metric-card min-h-[140px]">
               <div className="text-caption text-gray-500">Avg Response Time</div>
               <div className="metric-value">{stats.averageResponseTime}d</div>
               <div className="metric-change">Goal: <span className="text-gray-700">&lt; 7d</span></div>
