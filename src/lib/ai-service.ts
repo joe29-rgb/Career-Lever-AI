@@ -1,4 +1,3 @@
-import OpenAI from 'openai';
 import { PerplexityService } from './perplexity-service'
 import crypto from 'crypto';
 import { extractKeywords, calculateMatchScore } from './utils';
@@ -14,12 +13,13 @@ const OPENAI_KEYS: string[] = (process.env.OPENAI_API_KEYS || process.env.OPENAI
   .filter(Boolean)
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || undefined
 
-function createOpenAIClient(apiKey: string): any {
-  return new OpenAI({ apiKey, baseURL: OPENAI_BASE_URL } as any)
+function createOpenAIClient(_apiKey: string): any {
+  // disabled after Perplexity migration
+  return null
 }
 
 // Retained default client for backward-compat reads, but do not use directly for calls
-const openai: any = OPENAI_KEYS.length ? createOpenAIClient(OPENAI_KEYS[0]) : null;
+const openai: any = null;
 
 // OpenAI assistant IDs deprecated after Perplexity migration
 const ASSISTANT_JOB_ANALYSIS_ID = undefined as unknown as string | undefined;
