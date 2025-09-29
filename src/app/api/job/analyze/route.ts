@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import connectToDatabase from '@/lib/mongodb';
 import { authOptions } from '@/lib/auth';
 import { extractKeywords } from '@/lib/utils';
-import { AIService } from '@/lib/ai-service';
+import { PerplexityService } from '@/lib/perplexity-service';
+import { JOB_ANALYSIS_SYSTEM_PROMPT } from '@/lib/prompts/perplexity';
 import { isRateLimited } from '@/lib/rate-limit';
 import { jobAnalyzeSchema } from '@/lib/validators';
 import JobApplication from '@/models/JobApplication';
@@ -48,29 +49,25 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await connectToDatabase();
 
-    // Use AI service to analyze the job description
-    let analysis
+    // Analyze via Perplexity (pure implementation)
+    const ppx = new PerplexityService()
+    const userPrompt = `Analyze this job posting and produce strict JSON per schema.\n\n${jobDescription}`
+    let analysis: any
     try {
-      analysis = await AIService.analyzeJobDescription(jobDescription);
-    } catch (e: any) {
-      // Gracefully degrade on OpenAI quota 429 or missing key by returning minimal analysis
-      const msg = (e && (e.message || e.code || '')) as string
-      const quota = (e && (e.code === 'insufficient_quota' || e.status === 429 || /quota/i.test(msg)))
-      if (quota || /OPENAI_API_KEY/i.test(msg)) {
-        analysis = {
-          jobTitle: jobTitle || 'Unknown Title',
-          companyName: companyName || 'Unknown Company',
-          keyRequirements: [],
-          preferredSkills: [],
-          responsibilities: [],
-          companyCulture: [],
-          experienceLevel: 'unknown',
-          educationRequirements: [],
-          remoteWorkPolicy: 'unknown',
-          salaryRange: 'unknown',
-        } as any
-      } else {
-        throw e
+      const result = await ppx.makeRequest(JOB_ANALYSIS_SYSTEM_PROMPT, userPrompt, { maxTokens: 1400, temperature: 0.2 })
+      let content = result.content || ''
+      if (/```/.test(content)) {
+        const m = content.match(/```json[\s\S]*?```/i) || content.match(/```[\s\S]*?```/)
+        if (m && m[0]) content = m[0].replace(/```json|```/g,'').trim()
+      }
+      analysis = JSON.parse(content)
+    } catch {
+      analysis = {
+        jobTitle: jobTitle || 'Unknown Title',
+        companyName: companyName || 'Unknown Company',
+        keyRequirements: [], preferredSkills: [], responsibilities: [], companyCulture: [],
+        experienceLevel: 'unknown', educationRequirements: [], remoteWorkPolicy: 'unknown', salaryRange: 'unknown',
+        marketContext: { demandLevel: null, competitiveness: null, notes: [] },
       }
     }
 
