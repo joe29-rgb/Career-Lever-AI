@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Optional supplementary scraping (Glassdoor summary, contacts)
     let summary = null as any
     try { summary = await webScraper.scrapeGlassdoorReviewsSummary(companyName) } catch {}
-    let contacts = { site: { emails: [], phones: [], addresses: [] }, people: [] as any[] }
+    let contacts: { site: { emails: string[]; phones: string[]; addresses: string[] }; people: any[] } = { site: { emails: [], phones: [], addresses: [] }, people: [] as any[] }
     try {
       let site = { emails: [] as string[], phones: [] as string[], addresses: [] as string[] }
       if (companyWebsite) { try { site = await webScraper.scrapeContactInfoFromWebsite(companyWebsite) } catch {} }
