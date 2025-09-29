@@ -7,8 +7,9 @@ export class PerplexityService {
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.PERPLEXITY_API_KEY
-    if (!key) throw new Error('PERPLEXITY_API_KEY missing')
-    this.apiKey = key
+    // Do not throw during construction to avoid build-time failures.
+    // Validate at request-time in makeRequest instead.
+    this.apiKey = key || ''
   }
 
   async makeRequest(
@@ -16,6 +17,9 @@ export class PerplexityService {
     userPrompt: string,
     options: { maxTokens?: number; temperature?: number; model?: string } = {}
   ): Promise<{ content: string; usage?: any; cost: number }> {
+    if (!this.apiKey) {
+      throw new Error('PERPLEXITY_API_KEY missing')
+    }
     const key = this.makeCacheKey(systemPrompt, userPrompt, options)
     const cached = PerplexityService.memoryCache.get(key)
     if (cached && cached.expiresAt > Date.now()) return cached.value
