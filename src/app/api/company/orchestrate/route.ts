@@ -7,7 +7,6 @@ import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs, logAIUsage } from '@/lib/observability'
 import { redisGetJSON, redisSetJSON } from '@/lib/redis'
 import { webScraper } from '@/lib/web-scraper'
-import { webScraper } from '@/lib/web-scraper'
 
 // Perplexity-only orchestrator
 

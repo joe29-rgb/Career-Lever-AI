@@ -96,7 +96,7 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
     const cached = getCache(key)
     if (cached) return cached
     const client = createClient()
-    const user = `Find current salary ranges for ${role}${company ? ` at ${company}` : ''}${geo ? ` in ${geo}` : ''}. Return JSON: items[{title,range,currency,geo,source,confidence}], summary, freshness`.
+    const user = `Find current salary ranges for ${role}${company ? ` at ${company}` : ''}${geo ? ` in ${geo}` : ''}. Return JSON: items[{title,range,currency,geo,source,confidence}], summary, freshness`;
     try {
       const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 900 })
       const text = (out.content || '').trim()
