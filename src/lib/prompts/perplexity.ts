@@ -88,6 +88,7 @@ Best practices (2025): half-page length (≈200–350 words), compelling opening
 STRICT AUTHENTICITY:
 - Do not fabricate achievements or tools. Use only what is present in the provided resume/candidate background.
 - No citation links, no markdown, no reference brackets.
+  - Preserve the candidate's actual voice; avoid generic AI phrases (e.g., "dynamic, results-driven").
 `;
 
 export function buildEnhancedCoverLetterUserPrompt(params: {

@@ -45,7 +45,9 @@ export async function POST(req: NextRequest) {
           if (loc && loc.length > 0) opts.location = loc
           const res = await webScraper.searchJobsByGoogle(opts)
           resultsAll.push(...res)
-        } catch {}
+        } catch (err) {
+          console.error('Autopilot search error for query', { kw, loc, radiusKm, afterDate }, err)
+        }
         if (resultsAll.length >= 200) break
       }
       if (resultsAll.length >= 200) break
@@ -70,8 +72,9 @@ export async function POST(req: NextRequest) {
         { new: true }
       )
     } catch {}
-    return NextResponse.json({ success: true, results })
+    return NextResponse.json({ success: true, results, meta: { queries: kwList.length * locList.length || Math.max(kwList.length, locList.length), afterDate, radiusKm } })
   } catch (e) {
+    console.error('Autopilot search fatal error', e)
     return NextResponse.json({ error: 'Autopilot search failed' }, { status: 500 })
   }
 }
