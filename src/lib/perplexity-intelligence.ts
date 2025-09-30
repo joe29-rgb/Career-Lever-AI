@@ -4,22 +4,22 @@ import { PerplexityService } from './perplexity-service'
 // Environment
 const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
 
-type CacheEntry = { expiresAt: number; value: any }
+type CacheEntry = { expiresAt: number; value: unknown }
 const cache: Map<string, CacheEntry> = new Map()
 
-function makeKey(prefix: string, payload: any): string {
+function makeKey(prefix: string, payload: unknown): string {
   const raw = typeof payload === 'string' ? payload : JSON.stringify(payload)
   return `${prefix}:${crypto.createHash('sha256').update(raw).digest('hex')}`
 }
 
-function getCache(key: string): any | undefined {
+function getCache(key: string): unknown | undefined {
   const entry = cache.get(key)
   if (!entry) return undefined
   if (Date.now() > entry.expiresAt) { cache.delete(key); return undefined }
   return entry.value
 }
 
-function setCache(key: string, value: any) {
+function setCache(key: string, value: unknown) {
   cache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value })
 }
 
@@ -56,7 +56,7 @@ Rules:
 export class PerplexityIntelligenceService {
   static async researchCompany(input: IntelligenceRequest): Promise<IntelligenceResponse> {
     const key = makeKey('ppx:research', input)
-    const cached = getCache(key)
+    const cached = getCache(key) as IntelligenceResponse | undefined
     if (cached) return cached
 
     const client = createClient()
@@ -66,7 +66,7 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
       const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400 })
       const text = (out.content || '').trim()
       let parsed: IntelligenceResponse
-      try { parsed = JSON.parse(text) } catch { throw new Error('Failed to parse intelligence JSON') }
+      try { parsed = JSON.parse(text) as IntelligenceResponse } catch { throw new Error('Failed to parse intelligence JSON') }
       // Minimal validation
       parsed.company = parsed.company || input.company
       parsed.freshness = parsed.freshness || new Date().toISOString()
@@ -76,7 +76,7 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
       return parsed
     } catch (e) {
       // Graceful fallback
-      return {
+      const fallback: IntelligenceResponse = {
         company: input.company,
         freshness: new Date().toISOString(),
         sources: [],
@@ -88,6 +88,7 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
         growth: [],
         summary: 'No data available'
       }
+      return fallback
     }
   }
 
@@ -189,7 +190,7 @@ OUTPUT JSON FORMAT:
   // Fast SEARCH API for raw listings from specific domains (outside of template strings)
   static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month') {
     const key = makeKey('ppx:search', { query, domains, maxResults, recency })
-    const cached = getCache(key)
+    const cached = getCache(key) as Array<Record<string, unknown>> | undefined
     if (cached) return cached
     try {
       const resp = await fetch('https://api.perplexity.ai/search', {
@@ -206,13 +207,15 @@ OUTPUT JSON FORMAT:
         })
       })
       if (!resp.ok) throw new Error('ppx search failed')
-      const data: any = await resp.json()
-      const items: any[] = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
-      const mapped = items.map((it: any) => ({
-        title: it.title || it.snippet || '',
-        url: it.url || it.link || '',
-        snippet: it.snippet || it.summary || '',
-        source: (it.domain || it.source || '')
+      const data: unknown = await resp.json()
+      const results = (data as Record<string, unknown>)?.results as unknown
+      const itemsUnknown: unknown = Array.isArray(results) ? results : (Array.isArray(data as unknown[]) ? data : [])
+      const items: Array<Record<string, unknown>> = Array.isArray(itemsUnknown) ? (itemsUnknown as Array<Record<string, unknown>>) : []
+      const mapped = items.map((it) => ({
+        title: (it.title as string) || (it.snippet as string) || '',
+        url: (it.url as string) || (it.link as string) || '',
+        snippet: (it.snippet as string) || (it.summary as string) || '',
+        source: ((it.domain as string) || (it.source as string) || '')
       }))
       setCache(key, mapped)
       return mapped
