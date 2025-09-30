@@ -63,9 +63,18 @@ export async function POST(req: NextRequest) {
       if (resultsAll.length >= 200) break
     }
 
-    // If results are thin, augment with Perplexity job listings (resume-aware)
+    // If results are thin, try quick SEARCH API first, then resume-aware deep analysis
     try {
       if (resultsAll.length < 10) {
+        // Quick domain-filtered search
+        const q = `${(keywords[0] || 'jobs')} ${locations[0] || ''}`.trim()
+        if (q.length > 0) {
+          const quick = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca'], 20, 'month'), Math.min(timeoutMs, 60000))
+          for (const j of quick) {
+            resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0] })
+            if (resultsAll.length >= 40) break
+          }
+        }
         await connectToDatabase()
         const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
         const resumeText = (resume?.extractedText || '').toString().slice(0, 8000)

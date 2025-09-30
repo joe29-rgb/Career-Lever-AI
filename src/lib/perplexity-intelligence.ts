@@ -172,6 +172,42 @@ OUTPUT JSON FORMAT:
     "emailType": "public" | "inferred",
     "source": string
   }
+
+  // Fast SEARCH API for raw listings from specific domains
+  static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month') {
+    const key = makeKey('ppx:search', { query, domains, maxResults, recency })
+    const cached = getCache(key)
+    if (cached) return cached
+    try {
+      const resp = await fetch('https://api.perplexity.ai/search', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY || ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query,
+          max_results: Math.max(5, Math.min(25, maxResults)),
+          ...(domains.length ? { search_domain_filter: domains } : {}),
+          search_recency_filter: recency
+        })
+      })
+      if (!resp.ok) throw new Error('ppx search failed')
+      const data: any = await resp.json()
+      // Normalize best-effort: expect data.results or array-like
+      const items: any[] = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
+      const mapped = items.map((it: any) => ({
+        title: it.title || it.snippet || '',
+        url: it.url || it.link || '',
+        snippet: it.snippet || it.summary || '',
+        source: (it.domain || it.source || '')
+      }))
+      setCache(key, mapped)
+      return mapped
+    } catch {
+      return []
+    }
+  }
 ]`
     const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
     try {
