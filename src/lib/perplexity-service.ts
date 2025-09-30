@@ -74,6 +74,12 @@ export class PerplexityService {
     throw lastErr || new Error('Perplexity request failed')
   }
 
+  // Convenience wrapper: choose sonar vs sonar-pro
+  async chat(userPrompt: string, options: { model?: 'sonar' | 'sonar-pro'; maxTokens?: number; temperature?: number } = {}) {
+    const system = options.model === 'sonar' ? 'You are a fast search assistant.' : 'You are an analytical research assistant.'
+    return this.makeRequest(system, userPrompt, { model: options.model || this.defaultModel, maxTokens: options.maxTokens, temperature: options.temperature })
+  }
+
   private calculateCost(usage: any): number {
     if (!usage) return 0
     const inputCost = (Number(usage.prompt_tokens || 0) / 1_000_000) * 3
