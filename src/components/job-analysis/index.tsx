@@ -193,7 +193,8 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
     }
     setIsImporting(true)
     try {
-      const resp = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: importUrl }) })
+      const base = typeof window !== 'undefined' ? '' : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+      const resp = await fetch(`${base}/api/jobs/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: importUrl }) })
       const json = await resp.json()
       if (!resp.ok || !json.success) throw new Error(json.error || 'Import failed')
       // We cannot fetch full application easily here; prompt user to Analyze with scraped description

@@ -475,7 +475,8 @@ function JobFinderQuick({ onSelect }: { onSelect: (job: { title?: string; compan
       const enriched: typeof results = []
       for (const r of (json.results || []).slice(0,6)) {
         try {
-          const det = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: r.url }) })
+          const base = typeof window !== 'undefined' ? '' : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+          const det = await fetch(`${base}/api/jobs/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: r.url }) })
           const dj = await det.json().catch(()=>({}))
           if (det.ok && dj) {
             enriched.push({ title: dj.title || r.title, companyName: dj.companyName, description: dj.description, jobUrl: r.url, source: r.source })

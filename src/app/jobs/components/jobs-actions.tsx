@@ -34,7 +34,8 @@ export function JobsActions() {
   const importJob = async (url?: string) => {
     if (!url) return
     try {
-      await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: url }) })
+      const base = typeof window !== 'undefined' ? '' : (process.env.NEXTAUTH_URL || 'http://localhost:3000')
+      await fetch(`${base}/api/jobs/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: url }) })
     } catch {}
   }
 
