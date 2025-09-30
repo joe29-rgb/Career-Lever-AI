@@ -89,6 +89,8 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
   const [autoPilotResults, setAutoPilotResults] = useState<Array<{ title?: string; url: string; company?: string; location?: string; source?: string }>>([])
   const [autoPilotRunning, setAutoPilotRunning] = useState(false)
   const [progress, setProgress] = useState<{ percent: number; stage: string }>({ percent: 0, stage: 'Idle' })
+  const [qualityMode, setQualityMode] = useState<'speed'|'quality'>('speed')
+  const [filters, setFilters] = useState<{ workType: 'any'|'remote'|'hybrid'|'onsite'; experienceLevel: 'any'|'entry'|'mid'|'senior'|'executive'; salaryMin?: number; maxResults?: number }>({ workType: 'any', experienceLevel: 'any', salaryMin: undefined, maxResults: 15 })
 
   // Load job boards and applications
   useEffect(() => {
@@ -587,7 +589,13 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                   }, 500)
                   const resp = await fetch('/api/job-boards/autopilot/search', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 150, days: 30, limit: 20, timeoutMs: userTimeout }),
+                    body: JSON.stringify({ 
+                      keywords: autoPilotSettings.keywords, 
+                      locations: autoPilotSettings.locations, 
+                      radiusKm: 150, days: 30, limit: 20, timeoutMs: userTimeout,
+                      mode: qualityMode,
+                      filters
+                    }),
                     signal: controller.signal
                   })
                   clearTimeout(to)
@@ -638,6 +646,55 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
               <Progress value={progress.percent} className="w-full" />
             </div>
           ) : null}
+
+          {/* Filters and Mode */}
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <Label className="text-xs">Mode</Label>
+              <Select value={qualityMode} onValueChange={(v)=>setQualityMode(v as any)}>
+                <SelectTrigger><SelectValue placeholder="Mode" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="speed">Speed (Search/Sonar)</SelectItem>
+                  <SelectItem value="quality">Quality (Sonar Pro/V2)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Work Type</Label>
+              <Select value={filters.workType} onValueChange={(v)=>setFilters(p=>({ ...p, workType: v as any }))}>
+                <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="remote">Remote</SelectItem>
+                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                  <SelectItem value="onsite">Onsite</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Experience</Label>
+              <Select value={filters.experienceLevel} onValueChange={(v)=>setFilters(p=>({ ...p, experienceLevel: v as any }))}>
+                <SelectTrigger><SelectValue placeholder="Any" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any</SelectItem>
+                  <SelectItem value="entry">Entry</SelectItem>
+                  <SelectItem value="mid">Mid</SelectItem>
+                  <SelectItem value="senior">Senior</SelectItem>
+                  <SelectItem value="executive">Executive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Label className="text-xs">Min Salary (USD)</Label>
+                <Input type="number" placeholder="e.g., 80000" value={filters.salaryMin || ''} onChange={(e)=>setFilters(p=>({ ...p, salaryMin: e.target.value ? Number(e.target.value) : undefined }))} />
+              </div>
+              <div className="w-28">
+                <Label className="text-xs">Max Results</Label>
+                <Input type="number" value={filters.maxResults || 15} onChange={(e)=>setFilters(p=>({ ...p, maxResults: Math.max(5, Math.min(30, Number(e.target.value)||15)) }))} />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

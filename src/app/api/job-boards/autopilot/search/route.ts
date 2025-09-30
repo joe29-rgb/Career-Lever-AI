@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
     const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : 14
     const limitPerQuery: number = typeof body.limit === 'number' ? Math.max(5, Math.min(50, body.limit)) : 20
     const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : 120000
+    const mode: 'speed'|'quality' = body.mode === 'quality' ? 'quality' : 'speed'
+    const filters = body.filters || {}
 
     const keywords = keywordsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
     const locations = locationsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
@@ -78,14 +80,23 @@ export async function POST(req: NextRequest) {
         await connectToDatabase()
         const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
         const resumeText = (resume?.extractedText || '').toString().slice(0, 8000)
-        if (resumeText && locations.length) {
-          const ppx = await withTimeout(PerplexityIntelligenceService.jobMarketAnalysis(locations[0], resumeText, keywords[0] || undefined), Math.min(timeoutMs + 30000, 180000))
-          for (const j of ppx) {
+        if (resumeText && locations.length && mode === 'quality') {
+          const ppxV2 = await withTimeout(
+            PerplexityIntelligenceService.jobMarketAnalysisV2(locations[0], resumeText, {
+              roleHint: keywords[0] || undefined,
+              workType: filters.workType || 'any',
+              experienceLevel: filters.experienceLevel || 'any',
+              salaryMin: typeof filters.salaryMin === 'number' ? filters.salaryMin : undefined,
+              maxResults: typeof filters.maxResults === 'number' ? filters.maxResults : 15,
+            }),
+            Math.min(timeoutMs + 30000, 180000)
+          )
+          for (const j of ppxV2.data || []) {
             resultsAll.push({
               title: j.title,
               url: j.url,
               snippet: Array.isArray(j.skills) ? j.skills.join(', ') : '',
-              source: j.source || 'perplexity',
+              source: 'perplexity',
               company: j.company,
               location: j.location
             })
