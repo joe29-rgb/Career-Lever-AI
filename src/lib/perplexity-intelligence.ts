@@ -151,6 +151,39 @@ Rules:
 `
 
 export class PerplexityIntelligenceService {
+  // V2: Enhanced company research with retries and metadata
+  static async researchCompanyV2(input: IntelligenceRequest): Promise<EnhancedResponse<IntelligenceResponse>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const key = makeKey('ppx:research:v2', input)
+    const cached = getCache(key) as IntelligenceResponse | undefined
+    if (cached) {
+      return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+    }
+    try {
+      const out = await withRetry(async () => {
+        const client = createClient()
+        const user = `Research current intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
+Return a JSON object with: company, freshness (ISO datetime), sources[{title,url}], confidence (0..1), financials[{metric,value,confidence,source}], culture[{point,confidence,source}], salaries[{title,range,currency,geo,source,confidence}], contacts[{name,title,url,source,confidence}], growth[{signal,source,confidence}], summary.`
+        const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400 })
+        if (!res.content?.trim()) throw new Error('Empty response')
+        return res
+      })
+      const parsed = JSON.parse(out.content.trim()) as IntelligenceResponse
+      parsed.company = parsed.company || input.company
+      parsed.freshness = parsed.freshness || new Date().toISOString()
+      parsed.sources = Array.isArray(parsed.sources) ? parsed.sources.slice(0, 12) : []
+      parsed.confidence = typeof parsed.confidence === 'number' ? Math.max(0, Math.min(1, parsed.confidence)) : 0.6
+      if (Array.isArray(parsed.contacts)) {
+        parsed.contacts = parsed.contacts.map(c => ({ ...c, url: c.url }))
+      }
+      setCache(key, parsed)
+      return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
+    } catch (e) {
+      const fb: IntelligenceResponse = { company: input.company, freshness: new Date().toISOString(), sources: [], confidence: 0.3, financials: [], culture: [], salaries: [], contacts: [], growth: [], summary: 'Research failed - please retry' }
+      return { success: false, data: fb, metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
+    }
+  }
   static async researchCompany(input: IntelligenceRequest): Promise<IntelligenceResponse> {
     const key = makeKey('ppx:research', input)
     const cached = getCache(key) as IntelligenceResponse | undefined
@@ -357,6 +390,76 @@ Return EXACT JSON array (no wrapper object, no commentary), where each item has:
     "generalEmail": string | null,
     "phone": string | null,
     "linkedinProfiles": string[]
+  }
+
+  // V2: Enhanced job market analysis with options and ranking
+  static async jobMarketAnalysisV2(location: string, resumeText: string, options: { roleHint?: string; workType?: 'remote'|'hybrid'|'onsite'|'any'; salaryMin?: number; experienceLevel?: 'entry'|'mid'|'senior'|'executive'; maxResults?: number } = {}): Promise<EnhancedResponse<JobListing[]>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const key = makeKey('ppx:jobmarket:v2', { location, resume: resumeText.slice(0,1000), options })
+    const cached = getCache(key) as JobListing[] | undefined
+    if (cached) return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+    try {
+      const out = await withRetry(async () => {
+        const client = createClient()
+        const prompt = `Find ${options.maxResults || 15} relevant job opportunities in ${location} matching this profile.
+
+RESUME:\n${resumeText}
+
+FILTERS:\n- Role: ${options.roleHint || '(infer from resume)'}\n- Work Type: ${options.workType || 'any'}\n- Experience: ${options.experienceLevel || 'any'}\n- Min Salary: ${options.salaryMin ? `$${options.salaryMin}+` : 'any'}
+
+Return JSON array with fields: title, company, location, address, url, summary, postedDate, salary, skillMatchPercent, skills, workType, experienceLevel, contacts{hrEmail,hiringManagerEmail,generalEmail,phone,linkedinProfiles}, benefits, requirements.`
+        const res = await client.makeRequest(SYSTEM, prompt, { temperature: 0.15, maxTokens: 2200 })
+        if (!res.content?.trim()) throw new Error('Empty job analysis')
+        return res
+      })
+      let parsed = JSON.parse(out.content.trim()) as JobListing[]
+      parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 15) : []
+      parsed = parsed.map(j => ({
+        ...j,
+        skills: normalizeSkills(j.skills || []),
+        skillMatchPercent: Math.max(0, Math.min(100, j.skillMatchPercent || 0)),
+        workType: j.workType || 'onsite',
+        experienceLevel: j.experienceLevel || 'mid',
+        benefits: j.benefits || [],
+        requirements: j.requirements || []
+      }))
+      parsed.sort((a,b)=>{
+        if (Math.abs(a.skillMatchPercent - b.skillMatchPercent) > 5) return b.skillMatchPercent - a.skillMatchPercent
+        return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
+      })
+      setCache(key, parsed)
+      return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
+    } catch (e) {
+      return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
+    }
+  }
+
+  // V2: Enhanced hiring contacts with email enrichment
+  static async hiringContactsV2(companyName: string): Promise<EnhancedResponse<HiringContact[]>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const key = makeKey('ppx:contacts:v2', { companyName })
+    const cached = getCache(key) as HiringContact[] | undefined
+    if (cached) return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+    try {
+      const out = await withRetry(async () => {
+        const client = createClient()
+        const prompt = `Find verified hiring contacts at ${companyName}. Include name, title, department, linkedinUrl, email, emailType, source, confidence, phone, alternativeEmails.`
+        return client.makeRequest(SYSTEM, prompt, { temperature: 0.1, maxTokens: 1200 })
+      })
+      let parsed = JSON.parse(out.content.trim()) as HiringContact[]
+      parsed = Array.isArray(parsed) ? parsed.slice(0,8) : []
+      parsed = parsed.map(c => {
+        const domain = `${companyName.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'')}.com`
+        const inferred = c.name ? inferEmails(c.name, domain) : []
+        return { ...c, confidence: Math.max(0, Math.min(1, c.confidence || 0.5)), alternativeEmails: c.alternativeEmails || inferred, emailType: (c.email ? c.emailType : 'inferred') as 'public'|'inferred'|'pattern' }
+      })
+      setCache(key, parsed)
+      return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
+    } catch (e) {
+      return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
+    }
   }
 }
 `
