@@ -88,6 +88,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
   })
   const [autoPilotResults, setAutoPilotResults] = useState<Array<{ title?: string; url: string; company?: string; location?: string; source?: string }>>([])
   const [autoPilotRunning, setAutoPilotRunning] = useState(false)
+  const [progress, setProgress] = useState<{ percent: number; stage: string }>({ percent: 0, stage: 'Idle' })
 
   // Load job boards and applications
   useEffect(() => {
@@ -571,21 +572,33 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
             <div className="mt-4 flex items-center gap-3">
               <Button disabled={autoPilotRunning} onClick={async () => {
                 setAutoPilotRunning(true)
+                setProgress({ percent: 5, stage: 'Preparing search…' })
                 try {
                   const controller = new AbortController()
                   const userTimeout = Math.max(30000, Math.min(180000, Number(autoPilotSettings.timeoutMs) || 120000))
                   const to = setTimeout(()=>controller.abort(), userTimeout)
+                  // Faux staged progress while waiting (client-side only)
+                  const start = Date.now()
+                  const ticker = setInterval(() => {
+                    const elapsed = Date.now() - start
+                    const pct = Math.min(95, Math.round((elapsed / userTimeout) * 100))
+                    const stage = pct < 30 ? 'Searching job boards…' : pct < 60 ? 'Aggregating listings…' : 'Finding contacts…'
+                    setProgress({ percent: pct, stage })
+                  }, 500)
                   const resp = await fetch('/api/job-boards/autopilot/search', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 150, days: 30, limit: 20, timeoutMs: userTimeout }),
                     signal: controller.signal
                   })
                   clearTimeout(to)
+                  clearInterval(ticker)
                   const json = await resp.json()
                   if (!resp.ok || !json.success) throw new Error(json.error || 'Search failed')
                   setAutoPilotResults(json.results || [])
+                  setProgress({ percent: 100, stage: 'Complete' })
                 } catch (e) {
                   toast.error(e instanceof Error ? e.message : 'Autopilot search failed')
+                  setProgress({ percent: 0, stage: 'Idle' })
                 } finally {
                   setAutoPilotRunning(false)
                 }
@@ -614,6 +627,17 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
               </div>
             </div>
           )}
+
+          {/* Progress bar */}
+          {autoPilotRunning || progress.percent > 0 ? (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <span>{progress.stage}</span>
+                <span>{progress.percent}%</span>
+              </div>
+              <Progress value={progress.percent} className="w-full" />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
