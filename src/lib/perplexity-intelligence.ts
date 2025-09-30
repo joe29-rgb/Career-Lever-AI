@@ -172,10 +172,21 @@ OUTPUT JSON FORMAT:
     "emailType": "public" | "inferred",
     "source": string
   }
-]
-`
+]`
+    const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
+    try {
+      const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000 })
+      const text = (out.content || '').trim()
+      const parsed = JSON.parse(text)
+      const arr = Array.isArray(parsed) ? parsed.slice(0, 5) : []
+      setCache(key, arr)
+      return arr
+    } catch {
+      return []
+    }
+  }
 
-  // Fast SEARCH API for raw listings from specific domains
+  // Fast SEARCH API for raw listings from specific domains (outside of template strings)
   static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month') {
     const key = makeKey('ppx:search', { query, domains, maxResults, recency })
     const cached = getCache(key)
@@ -196,7 +207,6 @@ OUTPUT JSON FORMAT:
       })
       if (!resp.ok) throw new Error('ppx search failed')
       const data: any = await resp.json()
-      // Normalize best-effort: expect data.results or array-like
       const items: any[] = Array.isArray(data?.results) ? data.results : (Array.isArray(data) ? data : [])
       const mapped = items.map((it: any) => ({
         title: it.title || it.snippet || '',
@@ -206,18 +216,6 @@ OUTPUT JSON FORMAT:
       }))
       setCache(key, mapped)
       return mapped
-    } catch {
-      return []
-    }
-  }
-    const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
-    try {
-      const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000 })
-      const text = (out.content || '').trim()
-      const parsed = JSON.parse(text)
-      const arr = Array.isArray(parsed) ? parsed.slice(0, 5) : []
-      setCache(key, arr)
-      return arr
     } catch {
       return []
     }
