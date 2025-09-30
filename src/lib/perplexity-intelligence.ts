@@ -172,6 +172,8 @@ OUTPUT JSON FORMAT:
     "emailType": "public" | "inferred",
     "source": string
   }
+]
+`
 
   // Fast SEARCH API for raw listings from specific domains
   static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month') {
@@ -208,7 +210,6 @@ OUTPUT JSON FORMAT:
       return []
     }
   }
-]`
     const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
     try {
       const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000 })
