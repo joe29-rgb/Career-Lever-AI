@@ -144,6 +144,16 @@ PERPLEXITY_API_KEY=your-perplexity-api-key-here
 PERPLEXITY_BASE_URL=https://api.perplexity.ai
 PERPLEXITY_MODEL=sonar-pro
 
+# Optional Perplexity tuning
+# Cache TTL (ms, default 24h), retry attempts and base delay for backoff
+PPX_CACHE_TTL_MS=86400000
+PPX_MAX_RETRIES=3
+PPX_RETRY_DELAY=1000
+
+# Admin cache endpoints (guarded)
+# Send header: x-debug-secret: $DEBUG_SECRET
+DEBUG_SECRET=your-debug-secret
+
 # Job Board API Integrations (Optional - enables real OAuth integrations)
 # LinkedIn Talent Solutions API
 LINKEDIN_CLIENT_ID=your-linkedin-client-id
