@@ -13,15 +13,17 @@ export async function POST(req: NextRequest) {
     const { companyName, jobTitle, website, location } = await req.json()
     if (!companyName || companyName.trim().length < 2) return NextResponse.json({ error: 'companyName required' }, { status: 400 })
 
+    // V2 research (enhanced)
+    const researchV2 = await PerplexityIntelligenceService.researchCompanyV2({ company: companyName, role: jobTitle, geo: location })
     // Core scrape (aggregates multiple sources internally)
     const companyData = await webScraper.scrapeCompanyData(companyName, website)
 
-    // Hiring contacts best-effort (merge web + Perplexity)
+    // Hiring contacts best-effort (merge web + Perplexity V2)
     let contacts: Array<any> = []
     try {
       const webContacts = await webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hiring manager', jobTitle || ''], location || undefined)
       let ppxContacts: any[] = []
-      try { ppxContacts = await PerplexityIntelligenceService.hiringContacts(companyName) } catch {}
+      try { const v2 = await PerplexityIntelligenceService.hiringContactsV2(companyName); ppxContacts = v2.data || [] } catch {}
       const merged: any[] = []
       const seen = new Set<string>()
       for (const c of [...webContacts, ...ppxContacts]) {
@@ -56,10 +58,10 @@ export async function POST(req: NextRequest) {
 
     const out = {
       companyProfile: {
-        name: companyData.companyName || companyName,
+        name: (researchV2.data.company || companyData.companyName || companyName),
         industry: companyData.industry || null,
         size: companyData.size || null,
-        description: companyData.description || null,
+        description: researchV2.data.summary || companyData.description || null,
         website: companyData.website || null,
         locations: location ? [location] : [],
       },

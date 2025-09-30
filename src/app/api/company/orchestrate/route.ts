@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, result: cached, cache: 'hit' })
     }
 
-    // Compose research and OSINT
-    const research = await PerplexityIntelligenceService.researchCompany({ company: companyName, role: jobTitle, geo: locationHint })
+    // Compose research and OSINT (V2)
+    const researchV2 = await PerplexityIntelligenceService.researchCompanyV2({ company: companyName, role: jobTitle, geo: locationHint })
+    const research = researchV2.data
     // Try comprehensive scrape (will attempt website discovery internally)
     let scraped: any = null
     try { scraped = await webScraper.scrapeCompanyData(companyName, companyWebsite) } catch {}
@@ -69,7 +70,8 @@ export async function POST(request: NextRequest) {
         try { site = await webScraper.scrapeContactInfoFromWebsite(companyWebsite) } catch {}
       }
       const peopleWeb = await webScraper.searchHiringContacts(companyName, roleHints, locationHint)
-      const peoplePpx = await PerplexityIntelligenceService.hiringContacts(companyName)
+      const peoplePpxV2 = await PerplexityIntelligenceService.hiringContactsV2(companyName)
+      const peoplePpx = peoplePpxV2.data || []
       const mergedPeople = [...(peopleWeb || []), ...(peoplePpx || [])]
       contacts = { site, people: mergedPeople }
     } catch {}
