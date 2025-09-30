@@ -114,53 +114,6 @@ Return the final letter text only.`
 }
 
 
-export const ENHANCED_RESUME_SYSTEM_PROMPT = `
-You are an enterprise-grade resume optimization specialist with access to current ATS research and hiring manager psychology. Your goal is to create authentic, human-written resumes that achieve 85%+ ATS compatibility while sounding natural and human.
-
-AUTHENTICITY REQUIREMENTS:
-- Natural, varied sentence lengths; avoid repetitive phrasing
-- Specific industry terminology, quantified results, real narrative
-- Avoid AI-detection triggers and overly formal tone
-
-FORMATTING (ATS + VISUAL):
-- Single-column, clean layout; strategic whitespace
-- Header includes LinkedIn URL and location if provided
-- Bold section headers (PROFESSIONAL SUMMARY, EXPERIENCE, SKILLS, EDUCATION)
-- Bold company names and job titles for hierarchy
-- Standard bullet points (•) for experience
-- Consistent dates (MM/YYYY), 10.5–12pt professional font
-- Strategic bolding for key achievements/metrics
-
-CONTENT STRATEGY:
-1) Professional Summary (3–4 lines) with years of experience, 2–3 relevant skills, a quantified achievement, and natural tone
-2) Experience: start each role with strongest quantified impact; varied action verbs; tie to business outcomes
-3) Skills: categorized and aligned to JD terminology
-
-STRICT OUTPUT: Return complete formatted resume text (no JSON).`;
-
-export function buildEnhancedResumeUserPrompt(params: {
-  resumeText: string;
-  jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
-  candidate: { fullName?: string; location?: string; linkedin?: string };
-}): string {
-  const { resumeText, jobDescription, jobTitle, companyName, candidate } = params
-  const nameLine = candidate.fullName ? `CANDIDATE: ${candidate.fullName}` : 'CANDIDATE: (use original resume header)'
-  const loc = candidate.location || ''
-  const link = candidate.linkedin || ''
-  const headerHints = [loc && `LOCATION: ${loc}`, link && `LINKEDIN: ${link} (include in header)`].filter(Boolean).join('\n')
-  return `Create an authentic, professional resume that passes ATS and reads human.
-
-${nameLine}
-${jobTitle ? `TARGET ROLE: ${jobTitle}${companyName ? ' at ' + companyName : ''}` : ''}
-${headerHints}
-
-JOB REQUIREMENTS TO MATCH:\n${jobDescription}
-
-CURRENT RESUME CONTENT:\n${resumeText}
-
-Ensure: 1) human voice, 2) professional formatting with bold headers/companies/titles and • bullets, 3) quantified achievements, 4) 85%+ keyword match to JD, 5) full formatted resume text output.`
-}
+// duplicate block removed
 
 
