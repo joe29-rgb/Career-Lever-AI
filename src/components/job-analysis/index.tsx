@@ -159,6 +159,10 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
           resumeText = rj.resumes?.[0]?.extractedText
         }
       } catch {}
+      if (!resumeId && !resumeText) {
+        toast.error('No resume found. Upload a resume first (Quick Actions or Resume Builder).')
+        return
+      }
 
       const resp = await fetch('/api/job/compare', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -313,7 +317,12 @@ export function JobAnalysisForm({ onAnalysisComplete, onError }: JobAnalysisForm
             </Button>
           )}
           {analysisResult && (
-            <Button variant="outline" onClick={runComparison} disabled={isAnalyzing}>
+            <Button
+              variant="outline"
+              onClick={runComparison}
+              disabled={isAnalyzing}
+              title="Compare analyzed job against your latest resume"
+            >
               Compare with Resume
             </Button>
           )}

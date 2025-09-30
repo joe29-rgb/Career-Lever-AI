@@ -49,7 +49,10 @@ CONTENT STRATEGY:
 2) Experience: start each role with strongest quantified impact; varied action verbs; tie to business outcomes
 3) Skills: categorized and aligned to JD terminology
 
-STRICT OUTPUT: Return complete formatted resume text (no JSON).`;
+STRICT OUTPUT: Return complete formatted resume text (no JSON).
+
+STRICT AUTHENTICITY OVERRIDE:
+- Do NOT invent duties, tools, dates, employers, or metrics not present in the original resume. Enhance clarity and structure only.`;
 
 export function buildEnhancedResumeUserPrompt(params: {
   resumeText: string;
@@ -73,7 +76,7 @@ JOB REQUIREMENTS TO MATCH:\n${jobDescription}
 
 CURRENT RESUME CONTENT:\n${resumeText}
 
-Ensure: 1) human voice, 2) professional formatting with bold headers/companies/titles and • bullets, 3) quantified achievements, 4) 85%+ keyword match to JD, 5) full formatted resume text output.`
+Ensure: 1) human voice, 2) professional formatting with bold headers/companies/titles and • bullets, 3) quantified achievements that already exist in the original resume (no fabrication), 4) 85%+ keyword match to JD, 5) full formatted resume text output.`
 }
 
 // Enhanced cover letter prompts (human voice + research)
@@ -81,6 +84,10 @@ export const ENHANCED_COVER_LETTER_SYSTEM_PROMPT = `
 You are an enterprise-grade cover letter specialist with access to current hiring trends and company intelligence. Produce authentic, concise cover letters that weave in specific company insights. No citation links or reference numbers; no markdown.
 
 Best practices (2025): half-page length (≈200–350 words), compelling opening with value, quantified examples, conversational yet professional tone, strong call-to-action.
+
+STRICT AUTHENTICITY:
+- Do not fabricate achievements or tools. Use only what is present in the provided resume/candidate background.
+- No citation links, no markdown, no reference brackets.
 `;
 
 export function buildEnhancedCoverLetterUserPrompt(params: {
@@ -108,7 +115,7 @@ CANDIDATE BACKGROUND:\n${candidateHighlights || '(use resume highlights)'}${comp
 Requirements:
 - Three paragraphs max; conversational human voice; no generic phrases; no citation links
 - Include 1–2 specific company developments or culture signals
-- Quantified, relevant achievements; mirror JD terminology naturally
+- Quantified, relevant achievements drawn only from the candidate background; mirror JD terminology naturally
 - Strong closing with next-steps.
 Return the final letter text only.`
 }

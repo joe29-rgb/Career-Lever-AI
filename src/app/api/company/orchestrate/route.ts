@@ -52,19 +52,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, result: cached, cache: 'hit' })
     }
 
-    // Compose research
+    // Compose research and OSINT
     const research = await PerplexityIntelligenceService.researchCompany({ company: companyName, role: jobTitle, geo: locationHint })
-    // Optional supplementary scraping (Glassdoor summary, contacts)
+    // Try comprehensive scrape (will attempt website discovery internally)
+    let scraped: any = null
+    try { scraped = await webScraper.scrapeCompanyData(companyName, companyWebsite) } catch {}
+    // Supplemental: Glassdoor summary and contacts
     let summary = null as any
     try { summary = await webScraper.scrapeGlassdoorReviewsSummary(companyName) } catch {}
     let contacts: { site: { emails: string[]; phones: string[]; addresses: string[] }; people: any[] } = { site: { emails: [], phones: [], addresses: [] }, people: [] as any[] }
     try {
       let site = { emails: [] as string[], phones: [] as string[], addresses: [] as string[] }
-      if (companyWebsite) { try { site = await webScraper.scrapeContactInfoFromWebsite(companyWebsite) } catch {} }
+      if (scraped?.contactInfo) {
+        site = scraped.contactInfo
+      } else if (companyWebsite) {
+        try { site = await webScraper.scrapeContactInfoFromWebsite(companyWebsite) } catch {}
+      }
       const people = await webScraper.searchHiringContacts(companyName, roleHints, locationHint)
       contacts = { site, people }
     } catch {}
-    const result = { research, summary, contacts }
+    const result = { ...(scraped || {}), ...research, summary, contacts }
     await redisSetJSON(cacheKey, result, 60 * 30)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'miss' })
     return NextResponse.json({ success: true, result })
