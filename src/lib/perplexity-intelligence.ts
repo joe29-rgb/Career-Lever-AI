@@ -3,6 +3,8 @@ import { PerplexityService } from './perplexity-service'
 
 // Environment
 const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
+const MAX_RETRY_ATTEMPTS = Number(process.env.PPX_MAX_RETRIES || 3)
+const RETRY_DELAY_MS = Number(process.env.PPX_RETRY_DELAY || 1000)
 
 type CacheEntry = { expiresAt: number; value: unknown }
 const cache: Map<string, CacheEntry> = new Map()
@@ -25,6 +27,63 @@ function setCache(key: string, value: unknown) {
 
 function createClient(): PerplexityService { return new PerplexityService() }
 
+// ---------- Enhanced helpers (ids, retry, enrichment) ----------
+function generateRequestId(): string {
+  return crypto.randomBytes(8).toString('hex')
+}
+
+async function withRetry<T>(operation: () => Promise<T>, maxAttempts: number = MAX_RETRY_ATTEMPTS): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try { return await operation() } catch (err) {
+      lastError = err
+      if (attempt === maxAttempts) break
+      const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  throw (lastError instanceof Error ? lastError : new Error('Operation failed'))
+}
+
+function inferEmails(name: string, companyDomain: string): string[] {
+  if (!name || !companyDomain) return []
+  const parts = name.toLowerCase().split(' ').filter(Boolean)
+  if (parts.length < 2) return []
+  const first = parts[0]
+  const last = parts[parts.length - 1]
+  const patterns = [
+    `${first}.${last}@${companyDomain}`,
+    `${first}${last}@${companyDomain}`,
+    `${first[0]}${last}@${companyDomain}`,
+    `${first}@${companyDomain}`,
+    `${last}@${companyDomain}`,
+    `${first}.${last[0]}@${companyDomain}`
+  ]
+  return patterns
+}
+
+function normalizeSkills(skills: string[]): string[] {
+  const mapping: Record<string, string> = {
+    javascript: 'JavaScript', js: 'JavaScript',
+    typescript: 'TypeScript', ts: 'TypeScript',
+    react: 'React', reactjs: 'React',
+    node: 'Node.js', nodejs: 'Node.js',
+    python: 'Python', py: 'Python',
+    sales: 'Sales', selling: 'Sales',
+    crm: 'CRM', 'customer relationship management': 'CRM',
+    ai: 'Artificial Intelligence', 'artificial intelligence': 'Artificial Intelligence',
+    'machine learning': 'Machine Learning', ml: 'Machine Learning'
+  }
+  return (skills || []).map(s => {
+    const k = s.toLowerCase().trim()
+    return mapping[k] || s
+  })
+}
+
+// Enhanced response wrappers (non-breaking: used by new V2 methods only)
+export type RequestMetadata = { requestId: string; timestamp: number; duration?: number; error?: string }
+export type EnhancedResponse<T> = { success: boolean; data: T; metadata: RequestMetadata; cached: boolean }
+
 export interface IntelligenceRequest {
   company: string
   role?: string
@@ -42,6 +101,44 @@ export interface IntelligenceResponse {
   contacts: Array<{ name: string; title: string; url?: string; source?: string; confidence: number }>
   growth: Array<{ signal: string; source?: string; confidence: number }>
   summary: string
+}
+
+// V2 Data structures (for job listings and contacts)
+export interface JobListing {
+  title: string
+  company: string
+  location: string
+  address?: string | null
+  url: string
+  summary: string
+  postedDate: string
+  salary?: string | null
+  skillMatchPercent: number
+  skills: string[]
+  workType?: 'remote' | 'hybrid' | 'onsite'
+  experienceLevel?: 'entry' | 'mid' | 'senior' | 'executive'
+  contacts: {
+    hrEmail?: string | null
+    hiringManagerEmail?: string | null
+    generalEmail?: string | null
+    phone?: string | null
+    linkedinProfiles: string[]
+  }
+  benefits?: string[]
+  requirements?: string[]
+}
+
+export interface HiringContact {
+  name: string
+  title: string
+  department: string
+  linkedinUrl?: string | null
+  email?: string | null
+  emailType?: 'public' | 'inferred' | 'pattern'
+  source: string
+  confidence: number
+  phone?: string | null
+  alternativeEmails?: string[]
 }
 
 const SYSTEM = `You are a research analyst using real-time web tools.
