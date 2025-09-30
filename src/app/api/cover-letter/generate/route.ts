@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         candidateHighlights: resumeText.slice(0, 2000),
         companyData: companyPayload
       })
-      const out = await ppx.makeRequest(ENHANCED_COVER_LETTER_SYSTEM_PROMPT, userPrompt, { maxTokens: 1800, temperature: 0.35 })
+      const out = await ppx.chat(`${ENHANCED_COVER_LETTER_SYSTEM_PROMPT}\n\n${userPrompt}`, { model: 'sonar-pro', maxTokens: 1800, temperature: 0.35 })
       let coverLetter = (out.content || '').trim()
       // Authenticity validation & sanitization
       const report = validateAuthenticityLetter(resumeText, coverLetter)
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       candidateHighlights: (resume.extractedText || '').slice(0, 2000),
       companyData: companyPayload
     })
-    const result = await ppx.makeRequest(ENHANCED_COVER_LETTER_SYSTEM_PROMPT, userPrompt, { maxTokens: 1800, temperature: 0.35 })
+    const result = await ppx.chat(`${ENHANCED_COVER_LETTER_SYSTEM_PROMPT}\n\n${userPrompt}`, { model: 'sonar-pro', maxTokens: 1800, temperature: 0.35 })
     let coverLetter = (result.content || '').trim()
     const report = validateAuthenticityLetter(resume.extractedText || '', coverLetter)
     if (!report.isValid) coverLetter = sanitizeCoverLetter(resume.extractedText || '', coverLetter)

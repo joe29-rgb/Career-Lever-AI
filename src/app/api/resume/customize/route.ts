@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
         companyData: companyData || null,
       }
       const user = `Optimize the following resume for the role ${jobTitle} at ${companyName}.\n\nJob Description:\n${jobDescription}\n\nCurrent Resume:\n${resumeTextForTailoring}\n\nConstraints/Preferences:\n${JSON.stringify(context, null, 2)}`
-      const result = await ppx.makeRequest(system, user, { maxTokens: 2500, temperature: 0.3 })
+      const result = await ppx.chat(`${system}\n\n${user}`, { model: 'sonar-pro', maxTokens: 2500, temperature: 0.3 })
       let optimized = (result.content || '').trim()
       // Authenticity validation gate
       const report = validateAuthenticityResume(resumeTextForTailoring, optimized)
