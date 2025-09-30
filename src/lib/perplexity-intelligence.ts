@@ -406,7 +406,7 @@ Return EXACT JSON array (no wrapper object, no commentary), where each item has:
 
 RESUME:\n${resumeText}
 
-FILTERS:\n- Role: ${options.roleHint || '(infer from resume)'}\n- Work Type: ${options.workType || 'any'}\n- Experience: ${options.experienceLevel || 'any'}\n- Min Salary: ${options.salaryMin ? `$${options.salaryMin}+` : 'any'}
+FILTERS:\n- Role: ${options.roleHint || '(infer from resume)'}\n- Work Type: ${options.workType || 'any'}\n- Experience: ${options.experienceLevel || 'any'}\n- Min Salary: ${options.salaryMin ? ('$' + options.salaryMin + '+') : 'any'}
 
 Return JSON array with fields: title, company, location, address, url, summary, postedDate, salary, skillMatchPercent, skills, workType, experienceLevel, contacts{hrEmail,hiringManagerEmail,generalEmail,phone,linkedinProfiles}, benefits, requirements.`
         const res = await client.makeRequest(SYSTEM, prompt, { temperature: 0.15, maxTokens: 2200 })
@@ -462,18 +462,3 @@ Return JSON array with fields: title, company, location, address, url, summary, 
     }
   }
 }
-`
-    try {
-      const out = await client.makeRequest(SYSTEM_JOBMARKET, USER_JOBMARKET, { temperature: 0.2, maxTokens: 1600 })
-      const text = (out.content || '').trim()
-      const parsed = JSON.parse(text)
-      const arr = Array.isArray(parsed) ? parsed.slice(0, 15) : []
-      setCache(key, arr)
-      return arr
-    } catch {
-      return []
-    }
-  }
-}
-
-
