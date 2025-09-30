@@ -107,9 +107,15 @@ export async function POST(request: NextRequest) {
     if (jobDescription && typeof jobDescription === 'string' && jobDescription.length > 20) {
       // Serialize current builder data to plain text resume
       const resumeText = serializeResumeToPlainText(resumeData)
-      const system = 'You are an expert ATS resume optimizer. Return full optimized resume text only.'
-      const user = `Optimize resume for ${targetJob || 'the target role'} at ${''}.\nJob Description:\n${jobDescription}\n\nCurrent Resume:\n${resumeText}`
-      const out = await ppx.makeRequest(system, user, { maxTokens: 2500, temperature: 0.3 })
+      const { ENHANCED_RESUME_SYSTEM_PROMPT, buildEnhancedResumeUserPrompt } = await import('@/lib/prompts/perplexity')
+      const user = buildEnhancedResumeUserPrompt({
+        resumeText,
+        jobDescription,
+        jobTitle: targetJob,
+        companyName: '',
+        candidate: { fullName: resumeData?.personalInfo?.fullName, location: resumeData?.personalInfo?.location, linkedin: resumeData?.personalInfo?.linkedin }
+      })
+      const out = await ppx.makeRequest(ENHANCED_RESUME_SYSTEM_PROMPT, user, { maxTokens: 3000, temperature: 0.35 })
       const tailored = { customizedResume: (out.content || '').trim(), matchScore: 0, suggestions: [] as string[] }
 
       const tailoredHtml = wrapTailoredTextAsHtml(tailored.customizedResume, resumeData.personalInfo.fullName)

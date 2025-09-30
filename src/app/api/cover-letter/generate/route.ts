@@ -5,6 +5,7 @@ import Resume from '@/models/Resume';
 import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
 import { PerplexityService } from '@/lib/perplexity-service';
+import { ENHANCED_COVER_LETTER_SYSTEM_PROMPT, buildEnhancedCoverLetterUserPrompt } from '@/lib/prompts/perplexity'
 import CoverLetter from '@/models/CoverLetter';
 import { isRateLimited } from '@/lib/rate-limit';
 import { coverLetterRawSchema } from '@/lib/validators';
@@ -68,22 +69,17 @@ export async function POST(request: NextRequest) {
       } catch {}
 
       const ppx = new PerplexityService()
-      const systemPrompt = `You are an expert cover letter writer with access to current company information and hiring trends.
-
-Rules:
-- Personalized, professional tone; integrate company signals when available.
-- Return full cover letter text only.`
-      const companyPayload = { ...(psychology ? { psychology } : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(yearsExperience ? { yearsExperience } : {}) }
-      const userPrompt = `Create a cover letter for ${jobTitle} at ${companyName}.
-
-Job Description:\n${jobDescription}
-
-Candidate Resume:\n${resumeText}
-
-Company Data:\n${JSON.stringify(companyPayload, null, 2)}
-
-Tone: ${tone}, Length: ${length}`
-      const out = await ppx.makeRequest(systemPrompt, userPrompt, { maxTokens: 1500, temperature: 0.4 })
+      const companyPayload = { ...(psychology ? { psychology } : {}), ...(yearsExperience ? { yearsExperience } : {}) }
+      const userPrompt = buildEnhancedCoverLetterUserPrompt({
+        candidateName,
+        jobTitle,
+        companyName,
+        location: '',
+        jobDescription,
+        candidateHighlights: resumeText.slice(0, 2000),
+        companyData: companyPayload
+      })
+      const out = await ppx.makeRequest(ENHANCED_COVER_LETTER_SYSTEM_PROMPT, userPrompt, { maxTokens: 1800, temperature: 0.35 })
       const coverLetter = (out.content || '').trim()
       const keyPoints: string[] = []
       const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
@@ -166,22 +162,17 @@ Tone: ${tone}, Length: ${length}`
     const candidatePhone = ''
     const hiringContact = ''
     const ppx = new PerplexityService()
-    const systemPrompt = `You are an expert cover letter writer with access to current company information and hiring trends.
-
-Rules:
-- Personalized, professional tone; integrate company signals when available.
-- Return full cover letter text only.`
-    const companyPayload = { ...(companyData ? companyData.toObject() : {}), candidateName, candidateEmail, candidatePhone, hiringContact, ...(typeof (resume as any).yearsExperience === 'number' ? { yearsExperience: (resume as any).yearsExperience } : {}) }
-    const userPrompt = `Create a cover letter for ${jobApplication.jobTitle} at ${jobApplication.companyName}.
-
-Job Description:\n${jobApplication.jobDescription}
-
-Candidate Resume:\n${resume.extractedText}
-
-Company Data:\n${JSON.stringify(companyPayload, null, 2)}
-
-Tone: ${tone}, Length: ${length}`
-    const result = await ppx.makeRequest(systemPrompt, userPrompt, { maxTokens: 1500, temperature: 0.4 })
+    const companyPayload = { ...(companyData ? companyData.toObject() : {}), ...(typeof (resume as any).yearsExperience === 'number' ? { yearsExperience: (resume as any).yearsExperience } : {}) }
+    const userPrompt = buildEnhancedCoverLetterUserPrompt({
+      candidateName,
+      jobTitle: jobApplication.jobTitle,
+      companyName: jobApplication.companyName,
+      location: '',
+      jobDescription: jobApplication.jobDescription,
+      candidateHighlights: (resume.extractedText || '').slice(0, 2000),
+      companyData: companyPayload
+    })
+    const result = await ppx.makeRequest(ENHANCED_COVER_LETTER_SYSTEM_PROMPT, userPrompt, { maxTokens: 1800, temperature: 0.35 })
     const coverLetter = (result.content || '').trim()
     const keyPoints: string[] = []
     const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
