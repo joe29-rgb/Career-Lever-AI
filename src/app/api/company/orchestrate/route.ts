@@ -68,8 +68,10 @@ export async function POST(request: NextRequest) {
       } else if (companyWebsite) {
         try { site = await webScraper.scrapeContactInfoFromWebsite(companyWebsite) } catch {}
       }
-      const people = await webScraper.searchHiringContacts(companyName, roleHints, locationHint)
-      contacts = { site, people }
+      const peopleWeb = await webScraper.searchHiringContacts(companyName, roleHints, locationHint)
+      const peoplePpx = await PerplexityIntelligenceService.hiringContacts(companyName)
+      const mergedPeople = [...(peopleWeb || []), ...(peoplePpx || [])]
+      contacts = { site, people: mergedPeople }
     } catch {}
     const result = { ...(scraped || {}), ...research, summary, contacts }
     await redisSetJSON(cacheKey, result, 60 * 30)

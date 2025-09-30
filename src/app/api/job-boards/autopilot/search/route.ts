@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { webScraper } from '@/lib/web-scraper'
+import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import connectToDatabase from '@/lib/mongodb'
 import Profile from '@/models/Profile'
 
@@ -52,6 +53,23 @@ export async function POST(req: NextRequest) {
       }
       if (resultsAll.length >= 200) break
     }
+
+    // If results are thin, augment with Perplexity job listings
+    try {
+      if (resultsAll.length < 10 && keywords.length && locations.length) {
+        const ppxJobs = await PerplexityIntelligenceService.jobListings(keywords[0], locations[0])
+        for (const j of ppxJobs) {
+          resultsAll.push({
+            title: j.title,
+            url: j.url,
+            snippet: j.summary,
+            source: 'perplexity',
+            company: j.company,
+            location: j.location
+          })
+        }
+      }
+    } catch {}
 
     // De-dupe by normalized URL
     const seen = new Set<string>()

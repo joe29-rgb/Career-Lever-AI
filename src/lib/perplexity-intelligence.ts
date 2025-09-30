@@ -107,6 +107,84 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
       return { items: [], summary: 'Unavailable', freshness: new Date().toISOString() }
     }
   }
+
+  static async jobListings(jobTitle: string, location: string) {
+    const key = makeKey('ppx:jobs', { jobTitle, location })
+    const cached = getCache(key)
+    if (cached) return cached
+    const client = createClient()
+    const SYSTEM_JOBS = `You are a Job Listings Scraper with real-time web access. Your role is to find publicly posted job openings in a user’s specified location and industry from multiple sources, including local job boards, Google Jobs, and public sections of sites like Indeed, Monster, Craigslist, and company career pages.
+
+CRITICAL REQUIREMENTS:
+1. Search ONLY publicly accessible listings (no login required).
+2. Target user’s location and role keywords (e.g., “Edmonton Sales Manager”).
+3. Scrape job title, company name, location, posting URL, summary, and posting date.
+4. Deduplicate identical listings across sources.
+5. Rank results by recency and relevance.
+6. Return JSON array of up to 20 listings.
+
+OUTPUT JSON FORMAT:
+[
+  {
+    "title": string,
+    "company": string,
+    "location": string,
+    "url": string,
+    "summary": string,
+    "postedDate": "YYYY-MM-DD"
+  }
+]`
+    const USER_JOBS = `Find the latest public job listings for “${jobTitle}” in ${location} from sources including Google Jobs, Indeed, Monster, local job boards, and company career pages. Return up to 20 unique listings in JSON format with fields [title, company, location, url, summary, postedDate].`
+    try {
+      const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { temperature: 0.2, maxTokens: 1000 })
+      const text = (out.content || '').trim()
+      const parsed = JSON.parse(text)
+      const arr = Array.isArray(parsed) ? parsed.slice(0, 20) : []
+      setCache(key, arr)
+      return arr
+    } catch {
+      return []
+    }
+  }
+
+  static async hiringContacts(companyName: string) {
+    const key = makeKey('ppx:contacts', { companyName })
+    const cached = getCache(key)
+    if (cached) return cached
+    const client = createClient()
+    const SYSTEM_CONTACTS = `You are a Hiring Contacts Finder with real-time web access. Your role is to identify the people responsible for hiring for a given company based on public company websites, LinkedIn pages, Google search, and professional directories.
+
+CRITICAL REQUIREMENTS:
+1. Use only publicly accessible sources (no scraping behind login).
+2. Look for titles containing “HR,” “Talent Acquisition,” “Recruiter,” “Hiring Manager,” “People Operations,” or department leads in that area.
+3. Scrape full name, exact job title, department, LinkedIn URL (if public), and company website email format patterns.
+4. Infer email addresses using common patterns (e.g., first.last@company.com) but label them “inferred.”
+5. Return up to 5 contacts.
+
+OUTPUT JSON FORMAT:
+[
+  {
+    "name": string,
+    "title": string,
+    "department": string,
+    "linkedinUrl": string | null,
+    "email": string | null,
+    "emailType": "public" | "inferred",
+    "source": string
+  }
+]`
+    const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
+    try {
+      const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000 })
+      const text = (out.content || '').trim()
+      const parsed = JSON.parse(text)
+      const arr = Array.isArray(parsed) ? parsed.slice(0, 5) : []
+      setCache(key, arr)
+      return arr
+    } catch {
+      return []
+    }
+  }
 }
 
 
