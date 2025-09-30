@@ -73,6 +73,20 @@ export async function POST(request: NextRequest) {
       const mergedPeople = [...(peopleWeb || []), ...(peoplePpx || [])]
       contacts = { site, people: mergedPeople }
     } catch {}
+    // Infer company domain for email pattern if missing
+    try {
+      const domain = (scraped?.website || research?.companyProfile?.website || companyWebsite || '').replace(/^https?:\/\//,'').replace(/\/$/,'')
+      if (domain && contacts.people?.length) {
+        contacts.people = contacts.people.map((p: any) => {
+          if (!p.email && p.name && /\s/.test(p.name)) {
+            const parts = p.name.toLowerCase().split(/\s+/)
+            const inferred = `${parts[0]}.${parts[parts.length-1]}@${domain}`
+            return { ...p, email: inferred, emailType: 'inferred' }
+          }
+          return p
+        })
+      }
+    } catch {}
     const result = { ...(scraped || {}), ...research, summary, contacts }
     await redisSetJSON(cacheKey, result, 60 * 30)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt), { cache: 'miss' })

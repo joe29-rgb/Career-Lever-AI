@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { webScraper } from '@/lib/web-scraper'
+import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,10 +16,21 @@ export async function POST(req: NextRequest) {
     // Core scrape (aggregates multiple sources internally)
     const companyData = await webScraper.scrapeCompanyData(companyName, website)
 
-    // Hiring contacts best-effort
-    let contacts: Array<{ name: string; title: string; profileUrl?: string; source: string }> = []
+    // Hiring contacts best-effort (merge web + Perplexity)
+    let contacts: Array<any> = []
     try {
-      contacts = await webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hiring manager', jobTitle || ''], location || undefined)
+      const webContacts = await webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hiring manager', jobTitle || ''], location || undefined)
+      let ppxContacts: any[] = []
+      try { ppxContacts = await PerplexityIntelligenceService.hiringContacts(companyName) } catch {}
+      const merged: any[] = []
+      const seen = new Set<string>()
+      for (const c of [...webContacts, ...ppxContacts]) {
+        const key = `${(c.name||'').toLowerCase()}|${(c.title||'').toLowerCase()}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        merged.push(c)
+      }
+      contacts = merged
     } catch {}
 
     // Glassdoor pros/cons enrichment
@@ -80,11 +92,11 @@ export async function POST(req: NextRequest) {
         socialActivity: companyData.linkedinData?.followers ? `LinkedIn followers: ${companyData.linkedinData.followers}` : null,
         hiringTrends: null,
       },
-      keyContacts: contacts.slice(0, 8).map((c) => ({
+      keyContacts: contacts.slice(0, 8).map((c: any) => ({
         name: c.name,
         title: c.title,
         department: null,
-        linkedinUrl: c.profileUrl || null,
+        linkedinUrl: c.profileUrl || c.linkedinUrl || null,
         relevance: 'Potential recruiter/decision maker',
       })),
       applicationStrategy: {
@@ -115,7 +127,7 @@ export async function POST(req: NextRequest) {
       glassdoorReviews: companyData.glassdoorReviews,
       linkedinData: companyData.linkedinData || undefined,
       socialMedia: companyData.socialMedia || undefined,
-      hiringContacts: contacts,
+      hiringContacts: contacts.map((c: any) => ({ name: c.name, title: c.title, profileUrl: c.profileUrl || c.linkedinUrl, source: c.source || 'web' })),
       contactInfo: (companyData as any).contactInfo || undefined,
       googleReviewsRating: (companyData as any).googleReviewsRating,
       googleReviewsCount: (companyData as any).googleReviewsCount,

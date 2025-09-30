@@ -371,6 +371,9 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                           <div>
                             <div className="font-medium text-sm">{p.name}</div>
                             <div className="text-xs text-gray-600">{p.title}</div>
+                            {p.email && (
+                              <div className="text-xs text-gray-600">{p.emailType === 'inferred' ? '(inferred) ' : ''}{p.email}</div>
+                            )}
                           </div>
                           <div className="flex gap-2">
                             {p.profileUrl && (
@@ -378,6 +381,21 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                                 <a href={p.profileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" /> Profile</a>
                               </Button>
                             )}
+                            {/* Quick outreach mailto using latest cover letter/resume */}
+                            <Button size="sm" variant="outline" onClick={() => {
+                              const subject = encodeURIComponent(`Introduction regarding ${jobTitle || 'an open role'}`)
+                              const body = encodeURIComponent(
+                                `Hello ${p.name?.split(' ')[0] || 'there'},\n\n` +
+                                `I wanted to introduce myself regarding ${jobTitle || 'an opportunity'} at ${companyName}. ` +
+                                `I've attached my resume and a brief cover letter summarizing my fit. ` +
+                                `Happy to share more details or connect for a short call.\n\n` +
+                                `Best regards,\n${(typeof window !== 'undefined' ? (localStorage.getItem('user:name') || 'Candidate') : 'Candidate')}`
+                              )
+                              const email = (p.email && typeof p.email === 'string' && p.email.includes('@')) ? p.email : ''
+                              window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
+                            }}>
+                              Email
+                            </Button>
                             <Button size="sm" variant="secondary" onClick={() => showProfileForContact(idx, p)} disabled={profileLoading && profileIndex === idx}>
                               {profileLoading && profileIndex === idx ? 'Loading…' : 'Insights'}
                             </Button>
