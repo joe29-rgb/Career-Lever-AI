@@ -573,10 +573,11 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                 setAutoPilotRunning(true)
                 try {
                   const controller = new AbortController()
-                  const to = setTimeout(()=>controller.abort(), 25000)
+                  const userTimeout = Math.max(30000, Math.min(180000, Number(autoPilotSettings.timeoutMs) || 120000))
+                  const to = setTimeout(()=>controller.abort(), userTimeout)
                   const resp = await fetch('/api/job-boards/autopilot/search', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 150, days: 30, limit: 20 }),
+                    body: JSON.stringify({ keywords: autoPilotSettings.keywords, locations: autoPilotSettings.locations, radiusKm: 150, days: 30, limit: 20, timeoutMs: userTimeout }),
                     signal: controller.signal
                   })
                   clearTimeout(to)

@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     const radiusKm: number = typeof body.radiusKm === 'number' ? Math.max(1, Math.min(500, body.radiusKm)) : 25
     const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : 14
     const limitPerQuery: number = typeof body.limit === 'number' ? Math.max(5, Math.min(50, body.limit)) : 20
+    const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : 120000
 
     const keywords = keywordsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
     const locations = locationsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
             radiusKm,
           }
           if (loc && loc.length > 0) opts.location = loc
-          const res = await withTimeout(webScraper.searchJobsByGoogle(opts), 15000)
+          const res = await withTimeout(webScraper.searchJobsByGoogle(opts), timeoutMs)
           resultsAll.push(...res)
         } catch (err) {
           console.error('Autopilot search error for query', { kw, loc, radiusKm, afterDate }, err)
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
         const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
         const resumeText = (resume?.extractedText || '').toString().slice(0, 8000)
         if (resumeText && locations.length) {
-          const ppx = await withTimeout(PerplexityIntelligenceService.jobMarketAnalysis(locations[0], resumeText, keywords[0] || undefined), 20000)
+          const ppx = await withTimeout(PerplexityIntelligenceService.jobMarketAnalysis(locations[0], resumeText, keywords[0] || undefined), Math.min(timeoutMs + 30000, 180000))
           for (const j of ppx) {
             resultsAll.push({
               title: j.title,
