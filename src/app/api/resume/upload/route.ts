@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     let extractedText: string = ''
+    let extractionMethod: 'server_pdf_parse' | 'client_pdfjs' | 'pasted_text' | 'ascii_fallback' | '' = ''
+    let extractionError: string | undefined
     if (file) {
       // Convert file to buffer
       const bytes = await file.arrayBuffer();
@@ -74,20 +76,24 @@ export async function POST(request: NextRequest) {
         const pdfParse = (await import('pdf-parse')).default
         const pdfData = await pdfParse(buffer)
         extractedText = pdfData.text?.trim() || ''
+        if (extractedText) extractionMethod = 'server_pdf_parse'
       } catch (error) {
         // Quiet noisy environment errors; rely on clientText/paste when available
         console.warn('PDF parsing failed on server; will rely on client text if provided')
         extractedText = ''
+        extractionError = 'server_pdf_parse_failed'
       }
 
       // If pdf-parse yields no text (likely image-only PDF), rely on pasted text path instead of OCR on server
     } else if (pastedText) {
       extractedText = pastedText.trim()
+      if (extractedText) extractionMethod = 'pasted_text'
     }
 
     // Prefer client-extracted text when supplied
     if (clientText && clientText.trim().length >= 50) {
       extractedText = clientText.trim()
+      extractionMethod = 'client_pdfjs'
     }
 
     const tooShort = !extractedText || extractedText.trim().length < 50
@@ -100,6 +106,7 @@ export async function POST(request: NextRequest) {
           const ascii = buffer.toString('utf8').replace(/\s+/g, ' ').slice(0, 2000)
           if (ascii && ascii.length >= 50) {
             extractedText = ascii
+            extractionMethod = 'ascii_fallback'
           }
         }
       } catch {}
@@ -212,7 +219,9 @@ export async function POST(request: NextRequest) {
         createdAt: resume.createdAt,
       },
       message: tooShort ? 'Uploaded, but text extraction was limited.' : 'Resume uploaded successfully',
-      extractionWarning: tooShort,
+      extractionWarning: tooShort || extractionMethod !== 'server_pdf_parse',
+      extractionMethod,
+      extractionError,
     });
 
   } catch (error) {
