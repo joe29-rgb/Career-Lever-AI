@@ -21,16 +21,16 @@ export function MetricsHero() {
     <Card className="glass-card">
       <CardContent className="p-6">
         {isLoading ? (
-          <div className="metrics-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="space-y-2">
+              <div key={i} className="metric-card min-h-[120px]">
                 <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-8 w-16 mt-2" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="metrics-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="metric-card min-h-[140px]">
               <div className="text-caption text-gray-500">Total Applications</div>
               <div className="metric-value">{stats.totalApplications}</div>
@@ -53,7 +53,7 @@ export function MetricsHero() {
               <div className="metric-value">{stats.averageResponseTime}d</div>
               <div className="metric-change">Goal: <span className="text-gray-700">&lt; 7d</span></div>
             </div>
-            <div className="col-span-2 sm:col-span-4">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-4">
               <InboxStatusChips />
             </div>
           </div>
