@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     } catch {}
     // Infer company domain for email pattern if missing
     try {
-      const domain = (scraped?.website || research?.companyProfile?.website || companyWebsite || '').replace(/^https?:\/\//,'').replace(/\/$/,'')
+      const domain = (scraped?.website || companyWebsite || '').replace(/^https?:\/\//,'').replace(/\/$/,'')
       if (domain && contacts.people?.length) {
         contacts.people = contacts.people.map((p: any) => {
           if (!p.email && p.name && /\s/.test(p.name)) {
