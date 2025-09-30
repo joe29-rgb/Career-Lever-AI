@@ -6,6 +6,7 @@ import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
 import { PerplexityService } from '@/lib/perplexity-service';
 import { ENHANCED_COVER_LETTER_SYSTEM_PROMPT, buildEnhancedCoverLetterUserPrompt } from '@/lib/prompts/perplexity'
+import { validateAuthenticityLetter, sanitizeCoverLetter } from '@/lib/authenticity'
 import CoverLetter from '@/models/CoverLetter';
 import { isRateLimited } from '@/lib/rate-limit';
 import { coverLetterRawSchema } from '@/lib/validators';
@@ -80,7 +81,12 @@ export async function POST(request: NextRequest) {
         companyData: companyPayload
       })
       const out = await ppx.makeRequest(ENHANCED_COVER_LETTER_SYSTEM_PROMPT, userPrompt, { maxTokens: 1800, temperature: 0.35 })
-      const coverLetter = (out.content || '').trim()
+      let coverLetter = (out.content || '').trim()
+      // Authenticity validation & sanitization
+      const report = validateAuthenticityLetter(resumeText, coverLetter)
+      if (!report.isValid) {
+        coverLetter = sanitizeCoverLetter(resumeText, coverLetter)
+      }
       const keyPoints: string[] = []
       const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
 
@@ -101,6 +107,7 @@ export async function POST(request: NextRequest) {
         success: true,
         coverLetter,
         keyPoints,
+        authenticity: report,
         wordCount,
         preview: { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` }
       });
@@ -173,7 +180,9 @@ export async function POST(request: NextRequest) {
       companyData: companyPayload
     })
     const result = await ppx.makeRequest(ENHANCED_COVER_LETTER_SYSTEM_PROMPT, userPrompt, { maxTokens: 1800, temperature: 0.35 })
-    const coverLetter = (result.content || '').trim()
+    let coverLetter = (result.content || '').trim()
+    const report = validateAuthenticityLetter(resume.extractedText || '', coverLetter)
+    if (!report.isValid) coverLetter = sanitizeCoverLetter(resume.extractedText || '', coverLetter)
     const keyPoints: string[] = []
     const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
 
@@ -185,7 +194,7 @@ export async function POST(request: NextRequest) {
         companyName: jobApplication.companyName,
         jobDescription: jobApplication.jobDescription,
         resumeSnapshot: (resume.extractedText || '').slice(0, 4000),
-        content: coverLetter,
+      content: coverLetter,
         tone,
         length,
       })
@@ -195,6 +204,7 @@ export async function POST(request: NextRequest) {
       success: true,
       coverLetter,
       keyPoints,
+      authenticity: report,
       wordCount,
       preview: raw ? { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` } : undefined
     });

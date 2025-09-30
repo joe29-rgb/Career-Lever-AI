@@ -5,6 +5,7 @@ import Resume from '@/models/Resume';
 import JobApplication from '@/models/JobApplication';
 import { authOptions } from '@/lib/auth';
 import { PerplexityService } from '@/lib/perplexity-service';
+import { validateAuthenticityResume, basicFormatResume } from '@/lib/authenticity'
 import { isRateLimited } from '@/lib/rate-limit';
 import { resumeCustomizeSchema } from '@/lib/validators';
 import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
@@ -114,7 +115,12 @@ export async function POST(request: NextRequest) {
       }
       const user = `Optimize the following resume for the role ${jobTitle} at ${companyName}.\n\nJob Description:\n${jobDescription}\n\nCurrent Resume:\n${resumeTextForTailoring}\n\nConstraints/Preferences:\n${JSON.stringify(context, null, 2)}`
       const result = await ppx.makeRequest(system, user, { maxTokens: 2500, temperature: 0.3 })
-      const optimized = (result.content || '').trim()
+      let optimized = (result.content || '').trim()
+      // Authenticity validation gate
+      const report = validateAuthenticityResume(resumeTextForTailoring, optimized)
+      if (!report.isValid || report.authenticityScore < 70) {
+        optimized = basicFormatResume(resumeTextForTailoring)
+      }
       // Simple match score heuristic: keyword overlap
       const jdTokens = (jobDescription || '').toLowerCase().match(/[a-z0-9+.#-]{3,}/g) || []
       const optTokens = optimized.toLowerCase().match(/[a-z0-9+.#-]{3,}/g) || []
