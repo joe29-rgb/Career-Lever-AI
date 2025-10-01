@@ -26,9 +26,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(()=>({})) as any
     const keywordsStr: string = (body.keywords || '').toString()
     const locationsStr: string = (body.locations || '').toString()
-    const radiusKm: number = typeof body.radiusKm === 'number' ? Math.max(1, Math.min(500, body.radiusKm)) : 25
-    const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : 14
-    const limitPerQuery: number = typeof body.limit === 'number' ? Math.max(5, Math.min(50, body.limit)) : 20
+    // Load profile preferences for defaults
+    await connectToDatabase()
+    const prof = await Profile.findOne({ userId: (session.user as any).id }).lean().exec().catch(()=>null as any)
+    const ap = (prof as any)?.preferences?.autopilot || {}
+    const radiusKm: number = typeof body.radiusKm === 'number' ? Math.max(1, Math.min(500, body.radiusKm)) : (typeof ap.radiusKm === 'number' ? ap.radiusKm : 150)
+    const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : (typeof ap.days === 'number' ? ap.days : 30)
+    const limitPerQuery: number = typeof body.limit === 'number' ? Math.max(5, Math.min(50, body.limit)) : (typeof ap.maxResults === 'number' ? Math.max(5, Math.min(50, ap.maxResults)) : 20)
     const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : DEFAULT_AUTOPILOT_TIMEOUT_MS
     const mode: 'speed'|'quality' = body.mode === 'quality' ? 'quality' : 'speed'
     const filters = body.filters || {}

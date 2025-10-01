@@ -10,6 +10,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
           <Link href="/settings/alerts" className="text-blue-600 hover:text-blue-800">Alerts</Link>
           <Link href="/settings/integrations" className="text-blue-600 hover:text-blue-800">Integrations</Link>
           <Link href="/settings/privacy" className="text-blue-600 hover:text-blue-800">Privacy</Link>
+          <Link href="/settings/preferences" className="text-blue-600 hover:text-blue-800">Preferences</Link>
           <Link href="/settings/job-boards" className="text-blue-600 hover:text-blue-800">Job Boards</Link>
         </div>
         {children}

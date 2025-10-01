@@ -86,6 +86,10 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
 
       const data = await response.json()
       const result: CompanyData = (data.companyData || data.research)
+      // Attach contacts if provided by API
+      if (Array.isArray((data as any).contacts)) {
+        ;(result as any).hiringContacts = (data as any).contacts
+      }
       setResearchResult(result)
       onResearchComplete?.(result)
       try {
@@ -120,6 +124,9 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
       }
       const data = await response.json()
       const result: CompanyData = (data.companyData || data.research)
+      if (Array.isArray((data as any).contacts)) {
+        ;(result as any).hiringContacts = (data as any).contacts
+      }
       setResearchResult(result)
       onResearchComplete?.(result)
     } catch (e) {
