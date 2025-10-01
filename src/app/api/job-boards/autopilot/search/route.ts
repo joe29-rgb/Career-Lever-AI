@@ -7,6 +7,8 @@ import Profile from '@/models/Profile'
 import Resume from '@/models/Resume'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 
+const DEFAULT_AUTOPILOT_TIMEOUT_MS = Number(process.env.PPX_AUTOPILOT_TIMEOUT_MS || 120000)
+
 export const dynamic = 'force-dynamic'
 
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest) {
     const radiusKm: number = typeof body.radiusKm === 'number' ? Math.max(1, Math.min(500, body.radiusKm)) : 25
     const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : 14
     const limitPerQuery: number = typeof body.limit === 'number' ? Math.max(5, Math.min(50, body.limit)) : 20
-    const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : 120000
+    const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : DEFAULT_AUTOPILOT_TIMEOUT_MS
     const mode: 'speed'|'quality' = body.mode === 'quality' ? 'quality' : 'speed'
     const filters = body.filters || {}
 
@@ -55,10 +57,32 @@ export async function POST(req: NextRequest) {
             radiusKm,
           }
           if (loc && loc.length > 0) opts.location = loc
-          const res = await withTimeout(webScraper.searchJobsByGoogle(opts), timeoutMs)
-          resultsAll.push(...res)
+          // Run scraper and quick search in parallel, take both best-effort
+          const scraperTimeout = Math.min(timeoutMs, 20000)
+          const searchTimeout = Math.min(timeoutMs, 10000)
+          const q = `${(kw || 'jobs')} ${loc || ''}`.trim()
+          const tasks: Array<Promise<any>> = [
+            withTimeout(webScraper.searchJobsByGoogle(opts), scraperTimeout).catch(()=>[]),
+            (q ? withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca'], 20, 'month'), searchTimeout).catch(()=>[]) : Promise.resolve([]))
+          ]
+          const settled = await Promise.allSettled(tasks)
+          for (const s of settled) {
+            if (s.status === 'fulfilled' && Array.isArray(s.value)) {
+              const arr = s.value
+              // Normalize quick search shape if present
+              for (const j of arr) {
+                if (j && typeof j === 'object') {
+                  const title = (j.title as string) || (j.position as string) || (j.name as string) || undefined
+                  const url = (j.url as string) || (j.link as string)
+                  const company = (j.company as string) || (j.companyName as string) || undefined
+                  const location = (j.location as string) || (loc || undefined)
+                  if (url) resultsAll.push({ title, url, company, location, source: (j.source as string) || 'perplexity' })
+                }
+              }
+            }
+          }
         } catch (err) {
-          console.error('Autopilot search error for query', { kw, loc, radiusKm, afterDate }, err)
+          console.warn('Autopilot search error for query', { kw, loc, radiusKm, afterDate }, err instanceof Error ? err.message : err)
         }
         if (resultsAll.length >= 200) break
       }
