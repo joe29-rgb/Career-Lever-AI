@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import connectToDatabase from '@/lib/mongodb'
-import OAuthToken from '@/models/OAuthToken'
+import OAuthToken, { IOAuthToken } from '@/models/OAuthToken'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     await connectToDatabase()
-    const outlook = await OAuthToken.findOne({ userId: (session.user as any).id, provider: 'outlook' }).lean()
+    const outlook = await OAuthToken.findOne({ userId: (session.user as any).id, provider: 'outlook' }).lean<IOAuthToken>()
     if (!outlook?.accessToken) return NextResponse.json({ error: 'Outlook not linked' }, { status: 400 })
     const categoryName = 'Career Lever AI Applications'
     const create = await fetch('https://graph.microsoft.com/v1.0/me/outlook/masterCategories', {

@@ -1,3 +1,4 @@
+"use client"
 import CompanyResearch from '@/components/company-research'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
