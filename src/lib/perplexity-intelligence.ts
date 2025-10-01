@@ -355,43 +355,8 @@ OUTPUT JSON FORMAT:
   }
 
   static async jobMarketAnalysis(location: string, resumeText: string, roleHint?: string) {
-    const key = makeKey('ppx:jobmarket', { location, resumeText: resumeText.slice(0, 1000), roleHint })
-    const cached = getCache(key)
-    if (cached) return cached
-    const client = createClient()
-    const SYSTEM_JOBMARKET = `You are a job market analyst with real-time web access.
-
-Rules:
-- Use only public sources (no login) and prioritize last 30 days.
-- Return structured JSON only (no markdown), suitable for database import.
-- Include direct posting URLs and identify source sites.
-`
-    const USER_JOBMARKET = `Find 15 job listings in ${location} that match the skills and experience from this resume.
-
-RESUME:
-${resumeText}
-
-If helpful, focus on role: ${roleHint || '(infer from resume)'}.
-
-Return EXACT JSON array (no wrapper object, no commentary), where each item has:
-{
-  "company": string,
-  "title": string,
-  "location": string,
-  "address": string | null,
-  "salary": string | null,
-  "source": string,
-  "url": string,
-  "skillMatchPercent": number,
-  "skills": string[],
-  "contacts": {
-    "hrEmail": string | null,
-    "hiringManagerEmail": string | null,
-    "generalEmail": string | null,
-    "phone": string | null,
-    "linkedinProfiles": string[]
+    return this.jobMarketAnalysisV2(location, resumeText, { roleHint: roleHint || undefined })
   }
-
   // V2: Enhanced job market analysis with options and ranking
   static async jobMarketAnalysisV2(location: string, resumeText: string, options: { roleHint?: string; workType?: 'remote'|'hybrid'|'onsite'|'any'; salaryMin?: number; experienceLevel?: 'entry'|'mid'|'senior'|'executive'; maxResults?: number } = {}): Promise<EnhancedResponse<JobListing[]>> {
     const requestId = generateRequestId()
