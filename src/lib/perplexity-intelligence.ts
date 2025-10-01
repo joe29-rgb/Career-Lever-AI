@@ -6,7 +6,7 @@ const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
 const MAX_RETRY_ATTEMPTS = Number(process.env.PPX_MAX_RETRIES || 3)
 const RETRY_DELAY_MS = Number(process.env.PPX_RETRY_DELAY || 1000)
 
-type CacheEntry = { expiresAt: number; value: unknown }
+type CacheEntry = { expiresAt: number; value: unknown; metadata?: { createdAt: number; hitCount: number; lastAccessed: number } }
 const cache: Map<string, CacheEntry> = new Map()
 
 function makeKey(prefix: string, payload: unknown): string {
@@ -425,5 +425,24 @@ Return JSON array with fields: title, company, location, address, url, summary, 
     } catch (e) {
       return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
     }
+  }
+
+  // Cache utilities
+  static getCacheStats() {
+    const stats = { totalEntries: cache.size, totalHits: 0, entriesByPrefix: {} as Record<string, number> }
+    cache.forEach((entry: CacheEntry, key: string) => {
+      const prefix = key.split(':')[0]
+      stats.entriesByPrefix[prefix] = (stats.entriesByPrefix[prefix] || 0) + 1
+      const meta = entry.metadata as { hitCount?: number } | undefined
+      if (meta && typeof meta.hitCount === 'number') stats.totalHits += meta.hitCount
+    })
+    return stats
+  }
+
+  static clearCache(prefix?: string) {
+    if (!prefix) { const size = cache.size; cache.clear(); return size }
+    const keys = Array.from(cache.keys()).filter(k => k.startsWith(prefix))
+    keys.forEach(k => cache.delete(k))
+    return keys.length
   }
 }
