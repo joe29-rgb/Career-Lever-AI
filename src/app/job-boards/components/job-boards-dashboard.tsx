@@ -84,7 +84,8 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
     jobBoards: [],
     keywords: '',
     locations: '',
-    salaryRange: { min: 0, max: 0 }
+    salaryRange: { min: 0, max: 0 },
+    timeoutMs: 120000
   })
   const [autoPilotResults, setAutoPilotResults] = useState<Array<{ title?: string; url: string; company?: string; location?: string; source?: string }>>([])
   const [autoPilotRunning, setAutoPilotRunning] = useState(false)

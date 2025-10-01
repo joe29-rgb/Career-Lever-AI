@@ -57,6 +57,18 @@ const nextConfig = {
         // Allow disabling type-check during build via env to avoid OOM on small builders
         ignoreBuildErrors: process.env.DISABLE_TYPECHECK === 'true',
     },
+    webpack: (config, { isServer }) => {
+        // Avoid bundling optional 'canvas' dependency required by pdfjs in Node builds
+        config.resolve = config.resolve || {}
+        config.resolve.alias = config.resolve.alias || {}
+        config.resolve.alias['canvas'] = false
+        if (isServer) {
+            config.externals = config.externals || []
+                // Mark canvas as external in server to prevent resolution errors
+            config.externals.push({ canvas: 'commonjs canvas' })
+        }
+        return config
+    }
 }
 
 module.exports = nextConfig
