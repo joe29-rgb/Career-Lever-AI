@@ -699,19 +699,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
         </CardContent>
       </Card>
 
-      {/* Job Boards Grid (moved to Settings: show notice and link) */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Job Board Integrations</CardTitle>
-          <CardDescription>
-            This section moved to Settings → Integrations. Manage connections there.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm mb-3">Manage job board connections in <a className="underline" href="/settings/integrations">Settings → Integrations</a>.</div>
-          {/* Integrations grid removed as requested */}
-        </CardContent>
-      </Card>
+      {/* Job Board integrations have moved to Settings → Integrations; no UI here by design */}
 
       {/* Bulk Actions */}
       <Card>

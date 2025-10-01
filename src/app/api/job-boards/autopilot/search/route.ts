@@ -36,6 +36,7 @@ export async function POST(req: NextRequest) {
     const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : DEFAULT_AUTOPILOT_TIMEOUT_MS
     const mode: 'speed'|'quality' = body.mode === 'quality' ? 'quality' : 'speed'
     const filters = body.filters || {}
+    const domains: string[] = Array.isArray(body.domains) ? body.domains.filter((d: string)=> typeof d === 'string' && d.includes('.')).slice(0, 12) : []
 
     const keywords = keywordsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
     const locations = locationsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
           const q = `${(kw || 'jobs')} ${loc || ''}`.trim()
           const tasks: Array<Promise<any>> = [
             withTimeout(webScraper.searchJobsByGoogle(opts), scraperTimeout).catch(()=>[]),
-            (q ? withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca'], 20, 'month'), searchTimeout).catch(()=>[]) : Promise.resolve([]))
+            (q ? withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, (domains.length ? domains : ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','jobboom.com','glassdoor.ca']), 20, 'month'), searchTimeout).catch(()=>[]) : Promise.resolve([]))
           ]
           const settled = await Promise.allSettled(tasks)
           for (const s of settled) {

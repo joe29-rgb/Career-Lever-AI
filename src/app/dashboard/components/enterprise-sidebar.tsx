@@ -8,7 +8,7 @@ export function EnterpriseSidebar() {
   const pathname = usePathname()
   const nav = [
     { label: 'Overview', href: '/dashboard', icon: LineChart },
-    { label: 'Create Application', href: '/create-application', icon: Layers },
+    { label: 'Career Finder', href: '/career-finder/resume', icon: Layers },
     { label: 'Analytics', href: '/analytics', icon: LineChart },
     { label: 'Job Boards', href: '/job-boards', icon: Briefcase },
     { label: 'Resume Builder', href: '/resume-builder', icon: Wand2 },

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const redirectBase = process.env.NEXTAUTH_URL || getOrigin(req)
     if (!clientId || !redirectBase) return NextResponse.json({ error: 'Missing GOOGLE_CLIENT_ID or base URL' }, { status: 500 })
     const redirectUri = `${redirectBase.replace(/\/$/, '')}/api/oauth/gmail/callback`
-    const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly openid email profile')
+    const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.modify openid email profile')
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`
     return NextResponse.redirect(url)
   } catch (e) {

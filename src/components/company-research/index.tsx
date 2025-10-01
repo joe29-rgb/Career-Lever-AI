@@ -31,9 +31,11 @@ type CompanyResearchProps = {
   initialCompanyName?: string
   onResearchComplete?: (data: CompanyData) => void
   onError?: (error: string) => void
+  titleOverride?: string
+  descriptionOverride?: string
 }
 
-export default function CompanyResearch({ initialCompanyName, onResearchComplete, onError }: CompanyResearchProps = {}) {
+export default function CompanyResearch({ initialCompanyName, onResearchComplete, onError, titleOverride, descriptionOverride }: CompanyResearchProps = {}) {
   const [companyName, setCompanyName] = useState(initialCompanyName || (typeof window !== 'undefined' ? localStorage.getItem('job:company') || '' : ''))
   const [website, setWebsite] = useState<string>(()=>{ try { return localStorage.getItem('job:website') || '' } catch { return '' } })
   const [jobTitle, setJobTitle] = useState<string>(()=>{ try { return localStorage.getItem('job:title') || '' } catch { return '' } })
@@ -49,6 +51,12 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
   const [loadingPsych, setLoadingPsych] = useState(false)
   const [marketIntel, setMarketIntel] = useState<string>('')
   const [loadingIntel, setLoadingIntel] = useState(false)
+  // Intro email composer state
+  const [composeOpen, setComposeOpen] = useState(false)
+  const [composeSubject, setComposeSubject] = useState('')
+  const [composeBody, setComposeBody] = useState('')
+  const [composeTo, setComposeTo] = useState('')
+  const [downloading, setDownloading] = useState(false)
 
   const handleResearch = async () => {
     if (!companyName.trim()) {
@@ -185,15 +193,83 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
     } finally { setLoadingIntel(false) }
   }
 
+  // Intro email helpers
+  const openComposer = (person: any) => {
+    const subj = `Introduction regarding ${jobTitle || 'an opportunity'} – ${companyName}`
+    const greeting = `Hello ${person?.name?.split(' ')[0] || 'there'},`
+    const body = `${greeting}\n\n` +
+      `I’m reaching out regarding ${jobTitle || 'an opportunity'} at ${companyName}. ` +
+      `I believe my background aligns well and I’d welcome the chance to connect.\n\n` +
+      `Please see attached resume and a brief cover letter summarizing my fit. ` +
+      `Happy to share more details or schedule a short call at your convenience.\n\n` +
+      `Best regards,\n` +
+      (typeof window !== 'undefined' ? (localStorage.getItem('user:name') || 'Candidate') : 'Candidate')
+    setComposeSubject(subj)
+    setComposeBody(body)
+    setComposeTo(typeof person?.email === 'string' ? person.email : '')
+    setComposeOpen(true)
+  }
+
+  const mailtoHref = () => {
+    const to = composeTo || ''
+    const s = encodeURIComponent(composeSubject || '')
+    const b = encodeURIComponent(composeBody || '')
+    return `mailto:${to}?subject=${s}&body=${b}`
+  }
+
+  const downloadPdfFromHtml = async (html: string, filename: string) => {
+    const wrapped = `<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>${filename}</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${html.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
+    setDownloading(true)
+    try {
+      const resp = await fetch('/api/resume/export/pdf', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ html: wrapped, filename: `${filename}.pdf` }) })
+      if (!resp.ok) throw new Error('Failed')
+      const blob = await resp.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${filename}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {}
+    finally { setDownloading(false) }
+  }
+
+  const downloadLatestResume = async () => {
+    try {
+      const rl = await fetch('/api/resume/list')
+      if (!rl.ok) return
+      const rj = await rl.json()
+      const txt: string = rj?.resumes?.[0]?.extractedText || ''
+      if (!txt) return
+      const name = `${companyName || 'Company'}_${jobTitle || 'Role'}_Resume`
+      await downloadPdfFromHtml(txt, name)
+    } catch {}
+  }
+
+  const downloadLatestCoverLetter = async () => {
+    try {
+      const cl = await fetch('/api/cover-letter/list')
+      if (!cl.ok) return
+      const cj = await cl.json()
+      const latest = Array.isArray(cj.letters) && cj.letters.length ? cj.letters[0] : null
+      const content: string = latest?.content || ''
+      if (!content) return
+      const name = `${companyName || 'Company'}_${jobTitle || 'Role'}_CoverLetter`
+      await downloadPdfFromHtml(content, name)
+    } catch {}
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building className="h-5 w-5" />
-          Company Research
+          {titleOverride || 'Company Research'}
         </CardTitle>
           <CardDescription>
-          Get comprehensive insights about companies from multiple sources. Use responsibly and verify before contacting.
+          {descriptionOverride || 'Get comprehensive insights about companies from multiple sources. Use responsibly and verify before contacting.'}
           </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -391,21 +467,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
                                 <a href={p.profileUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4 mr-1" /> Profile</a>
                               </Button>
                             )}
-                            {/* Quick outreach mailto using latest cover letter/resume */}
-                            <Button size="sm" variant="outline" onClick={() => {
-                              const subject = encodeURIComponent(`Introduction regarding ${jobTitle || 'an open role'}`)
-                              const body = encodeURIComponent(
-                                `Hello ${p.name?.split(' ')[0] || 'there'},\n\n` +
-                                `I wanted to introduce myself regarding ${jobTitle || 'an opportunity'} at ${companyName}. ` +
-                                `I've attached my resume and a brief cover letter summarizing my fit. ` +
-                                `Happy to share more details or connect for a short call.\n\n` +
-                                `Best regards,\n${(typeof window !== 'undefined' ? (localStorage.getItem('user:name') || 'Candidate') : 'Candidate')}`
-                              )
-                              const email = (p.email && typeof p.email === 'string' && p.email.includes('@')) ? p.email : ''
-                              window.location.href = `mailto:${email}?subject=${subject}&body=${body}`
-                            }}>
-                              Email
-                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => openComposer(p)}>Compose</Button>
                             <Button size="sm" variant="secondary" onClick={() => showProfileForContact(idx, p)} disabled={profileLoading && profileIndex === idx}>
                               {profileLoading && profileIndex === idx ? 'Loading…' : 'Insights'}
                             </Button>
@@ -636,6 +698,36 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
             Enter a company name and click Research to get reviews, social signals, contacts, and sources.
           </div>
         )}
+      {/* Intro Email Composer Modal */}
+      {composeOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg w-full max-w-2xl p-4 space-y-3">
+            <div className="text-sm font-medium">Compose Introduction Email</div>
+            <div className="grid grid-cols-1 gap-2 text-sm">
+              <div>
+                <div className="text-xs text-gray-600">To</div>
+                <input className="border rounded p-2 w-full" value={composeTo} onChange={(e)=>setComposeTo(e.target.value)} placeholder="email@company.com" />
+              </div>
+              <div>
+                <div className="text-xs text-gray-600">Subject</div>
+                <input className="border rounded p-2 w-full" value={composeSubject} onChange={(e)=>setComposeSubject(e.target.value)} />
+              </div>
+              <div>
+                <div className="text-xs text-gray-600">Body</div>
+                <textarea className="border rounded p-2 w-full h-40" value={composeBody} onChange={(e)=>setComposeBody(e.target.value)} />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <a className="px-3 py-2 border rounded" href={mailtoHref()}>Open in Email</a>
+              <button className="px-3 py-2 border rounded" onClick={()=>navigator.clipboard.writeText(`Subject: ${composeSubject}\n\n${composeBody}`)}>Copy</button>
+              <button className="px-3 py-2 border rounded" onClick={downloadLatestResume} disabled={downloading}>Download Resume PDF</button>
+              <button className="px-3 py-2 border rounded" onClick={downloadLatestCoverLetter} disabled={downloading}>Download Cover Letter PDF</button>
+              <div className="flex-1" />
+              <button className="px-3 py-2 border rounded" onClick={()=>setComposeOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       </CardContent>
     </Card>
   )

@@ -4,6 +4,8 @@ import connectToDatabase from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
 import { PerplexityService } from '@/lib/perplexity-service'
 import { z } from 'zod'
+import { extractKeywords } from '@/lib/utils'
+import { getTemplateById, ResumeFormatter, getTemplateCss } from '@/lib/resume-templates'
 import { isRateLimited } from '@/lib/rate-limit'
 
 const ppx = new PerplexityService()
@@ -76,23 +78,27 @@ export async function POST(request: NextRequest) {
     if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
 
     const schema = z.object({
-      resumeData: z.any(),
+      resumeData: z.any().optional(),
+      resumeText: z.string().max(200000).optional(),
       template: z.string().min(2).max(40).default('modern'),
       targetJob: z.string().max(100).optional(),
       industry: z.string().max(100).optional(),
       experienceLevel: z.enum(['entry','mid','senior']).default('mid'),
       jobDescription: z.string().max(20000).optional(),
+      tone: z.enum(['professional','conversational','technical']).optional()
     })
     const raw = await request.json()
     const parsed = schema.safeParse(raw)
     if (!parsed.success) return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     const {
       resumeData,
+      resumeText: resumeTextInput,
       template = 'modern',
       targetJob,
       industry,
       experienceLevel = 'mid',
-      jobDescription
+      jobDescription,
+      tone
     } = parsed.data
 
     if (!resumeData) {
@@ -106,24 +112,33 @@ export async function POST(request: NextRequest) {
 
     if (jobDescription && typeof jobDescription === 'string' && jobDescription.length > 20) {
       // Serialize current builder data to plain text resume
-      const resumeText = serializeResumeToPlainText(resumeData)
-      const { ENHANCED_RESUME_SYSTEM_PROMPT, buildEnhancedResumeUserPrompt } = await import('@/lib/prompts/perplexity')
-      const user = buildEnhancedResumeUserPrompt({
-        resumeText,
-        jobDescription,
-        jobTitle: targetJob,
-        companyName: '',
-        candidate: { fullName: resumeData?.personalInfo?.fullName, location: resumeData?.personalInfo?.location, linkedin: resumeData?.personalInfo?.linkedin }
-      })
-      const out = await ppx.makeRequest(ENHANCED_RESUME_SYSTEM_PROMPT, user, { maxTokens: 3000, temperature: 0.35 })
-      const tailored = { customizedResume: (out.content || '').trim(), matchScore: 0, suggestions: [] as string[] }
-
-      const tailoredHtml = wrapTailoredTextAsHtml(tailored.customizedResume, resumeData.personalInfo.fullName)
+      const resumeText = typeof resumeTextInput === 'string' && resumeTextInput.length > 0 ? resumeTextInput : serializeResumeToPlainText(resumeData || {})
+      const kws = extractKeywords(jobDescription || '')
+      const tpl = getTemplateById(template || 'modern')
+      const jt = targetJob || 'Role'
+      const cn = ''
+      const keywordsList = Array.isArray(kws) ? kws.slice(0, 20) : []
+      const toneStr = tone || 'professional'
+      const basePrompt = (() => {
+        if (tpl.id === 'professional') {
+          return `You are a seasoned executive resume writer for traditional, corporate-focused resumes.\n\nTEMPLATE: Professional\nTARGET: ${jt} at ${cn}\nTONE: ${toneStr}\n\nFORMATTING: Traditional, ATS-safe, quantified achievements, leadership emphasis.\nKEYWORDS: ${keywordsList.join(', ')}\nSTRUCTURE: Executive Summary; Core Competencies; Experience; Education; Affiliations; Achievements.\n\nSTRICT OUTPUT: Return ONLY an HTML fragment using classes: .section, .section-header, .job-entry, .job-title, .company-info, .job-description (UL of LIs). No markdown; no <html>/<head>/<body>.`
+        } else if (tpl.id === 'creative') {
+          return `You are a creative industry resume specialist for marketing/design roles.\n\nTEMPLATE: Creative\nTARGET: ${jt} at ${cn}\nTONE: ${toneStr}\n\nFORMATTING: Balanced creativity + ATS compatibility, project outcomes, metrics.\nKEYWORDS: ${keywordsList.join(', ')}\nSTRUCTURE: Creative Profile; Core Creative Competencies; Experience; Projects; Education; Proficiencies.\n\nSTRICT OUTPUT: Return ONLY an HTML fragment using classes: .section, .section-header, .job-entry, .job-title, .company-info, .job-description. No markdown; no wrapper HTML.`
+        } else if (tpl.id === 'tech') {
+          return `You are a technical resume specialist for engineering roles.\n\nTEMPLATE: Tech-Focused\nTARGET: ${jt} at ${cn}\nTONE: ${toneStr}\n\nFORMATTING: Precise technical terminology, system metrics, architecture decisions.\nKEYWORDS: ${keywordsList.join(', ')}\nSTRUCTURE: Technical Summary; Technical Skills; Experience; Projects; Education; Achievements.\n\nSTRICT OUTPUT: Return ONLY an HTML fragment using classes: .section, .section-header, .job-entry, .job-title, .company-info, .job-description. No markdown; no wrapper HTML.`
+        }
+        return `You are an expert resume writer for modern, ATS-optimized resumes.\n\nTEMPLATE: Modern\nTARGET: ${jt} at ${cn}\nTONE: ${toneStr}\n\nFORMATTING: Clean, scannable, quantified achievements, standard headings.\nKEYWORDS: ${keywordsList.join(', ')}\nSTRUCTURE: Summary; Core Competencies; Experience; Education; Technical Skills; Achievements.\n\nSTRICT OUTPUT: Return ONLY an HTML fragment using classes: .section, .section-header, .job-entry, .job-title, .company-info, .job-description. No markdown; no wrapper HTML.`
+      })()
+      const system = basePrompt
+      const user = `Original resume (plain text):\n${resumeText}\n\nTarget job description:\n${jobDescription}\n\nReturn FINAL HTML fragment only (no markdown, no wrapper tags). Use ATS-safe professional formatting and the specified classes.`
+      const out = await ppx.makeRequest(system, user, { maxTokens: 3000, temperature: 0.35 })
+      const fragment = (out.content || '').trim()
+      const tailoredHtml = wrapHtmlFragmentWithTemplateCss(fragment, tpl)
       return NextResponse.json({
         success: true,
-        resumeText: tailored.customizedResume,
-        matchScore: tailored.matchScore,
-        suggestions: tailored.suggestions,
+        resumeText: fragment.replace(/<[^>]+>/g, '').trim(),
+        matchScore: 0,
+        suggestions: [] as string[],
         output: {
           html: tailoredHtml,
           css: '',
@@ -231,8 +246,10 @@ Return optimized JSON with the same structure but enhanced content.`
   return resumeData
 }
 
-function wrapTailoredTextAsHtml(text: string, name: string) {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#111;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body><div style="font-weight:700;font-size:16pt;margin-bottom:8px">${name}</div>${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
+function wrapHtmlFragmentWithTemplateCss(fragmentHtml: string, tpl: ReturnType<typeof getTemplateById>) {
+  const safe = (fragmentHtml || '').replace(/<\/?(html|head|body|style)[^>]*>/gi, '')
+  const css = getTemplateCss(tpl)
+  return `<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>${css}</style></head><body><div class=\"resume-container\">${safe}</div></body></html>`
 }
 
 function serializeResumeToPlainText(data: any): string {
@@ -256,10 +273,37 @@ function serializeResumeToPlainText(data: any): string {
 }
 
 async function generateResumeOutput(resume: ResumeData, template: string) {
-  // Stubbed: formatting is handled on client; return basic HTML container for now
-  return { html: wrapTailoredTextAsHtml(JSON.stringify(resume, null, 2), resume.personalInfo.fullName) }
+  const tpl = getTemplateById(template || 'modern')
+  const content = mapResumeDataToContent(resume)
+  const html = ResumeFormatter.formatResume(content, tpl)
+  return { html }
 }
 
 function generateResumePreview(resume: ResumeData, template: string) {
   return { thumbnail: null, summary: `${resume.personalInfo.fullName} — ${resume.experience?.[0]?.position || ''}` }
+}
+
+function mapResumeDataToContent(resume: ResumeData) {
+  return {
+    personalInfo: {
+      fullName: resume.personalInfo.fullName,
+      email: resume.personalInfo.email,
+      phone: resume.personalInfo.phone,
+      location: resume.personalInfo.location,
+      linkedin: resume.personalInfo.linkedin
+    },
+    summary: resume.personalInfo.summary,
+    coreCompetencies: (resume.skills?.technical || []).slice(0, 10),
+    experience: (resume.experience || []).map(e => ({
+      title: e.position,
+      company: e.company,
+      location: e.location,
+      startDate: e.startDate,
+      endDate: e.current ? 'Present' : e.endDate,
+      responsibilities: e.description ? e.description.split(/\n+/).filter(Boolean) : []
+    })),
+    education: (resume.education || []).map(e => `${e.degree}, ${e.institution} (${e.graduationDate})`),
+    skills: [...(resume.skills?.technical || []), ...(resume.skills?.soft || [])],
+    achievements: [] as string[]
+  }
 }

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { getTemplateById, ResumeFormatter } from '@/lib/resume-templates'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -171,6 +172,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
   const [generatedResume, setGeneratedResume] = useState<any>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [jobDescription, setJobDescription] = useState('')
+  const [tone, setTone] = useState<'professional'|'conversational'|'technical'>('professional')
   const [showDiff, setShowDiff] = useState(false)
   const [highlightKeywordsOn, setHighlightKeywordsOn] = useState(true)
   const highlightKeywords = (html: string, keywords: string[]) => {
@@ -418,7 +420,8 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
           targetJob: 'Software Engineer', // This could be dynamic
           industry: 'Technology',
           experienceLevel: 'mid',
-          jobDescription: jobDescription && jobDescription.length > 20 ? jobDescription : undefined
+          jobDescription: jobDescription && jobDescription.length > 20 ? jobDescription : undefined,
+          tone
         }),
       })
 
@@ -525,6 +528,27 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
 
   const completeness = calculateCompleteness()
 
+  // Render formatted preview using templates
+  const buildFormattedHtml = () => {
+    const template = getTemplateById(selectedTemplate)
+    const content: any = {
+      personalInfo: {
+        fullName: resumeData.personalInfo.fullName,
+        email: resumeData.personalInfo.email,
+        phone: resumeData.personalInfo.phone,
+        location: resumeData.personalInfo.location,
+        linkedin: resumeData.personalInfo.linkedin
+      },
+      summary: resumeData.personalInfo.summary,
+      coreCompetencies: resumeData.skills.technical?.slice(0, 10),
+      experience: resumeData.experience.map(e => ({ title: e.position, company: e.company, location: e.location, startDate: e.startDate, endDate: e.current ? 'Present' : e.endDate, responsibilities: [e.description] })),
+      skills: [...(resumeData.skills.technical || []), ...(resumeData.skills.soft || [])],
+      education: resumeData.education.map(e => `${e.degree}, ${e.institution} (${e.graduationDate})`),
+      achievements: []
+    }
+    return ResumeFormatter.formatResume(content, template)
+  }
+
   return (
     <div className="space-y-8">
       {/* Template Selection */}
@@ -591,6 +615,19 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
                   rows={6}
                 />
                 <p className="text-xs text-gray-500">Optional but recommended. At least 20 characters to enable AI tailoring.</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <Label className="text-xs">Tone guidance</Label>
+                    <Select value={tone} onValueChange={(v)=>setTone(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="professional">Professional</SelectItem>
+                        <SelectItem value="conversational">Conversational</SelectItem>
+                        <SelectItem value="technical">Technical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <Tabs value={activeSection} onValueChange={setActiveSection}>
                 <TabsList className="grid w-full grid-cols-5">
@@ -1152,7 +1189,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
                           Highlight keywords
                         </label>
                       </div>
-                      <iframe srcDoc={highlightKeywordsOn ? highlightKeywords(generatedResume.output.html, (generatedResume.analysis?.keyRequirements || []).concat(generatedResume.analysis?.preferredSkills || [])) : generatedResume.output.html} className="w-full h-96 border-0" title="Resume Preview" />
+                      <iframe srcDoc={buildFormattedHtml()} className="w-full h-96 border-0" title="Resume Preview" />
                     </>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2">

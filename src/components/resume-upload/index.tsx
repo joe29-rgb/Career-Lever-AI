@@ -144,6 +144,8 @@ export function ResumeUpload({
 
       setUploadedResume(resume)
       onUploadSuccess(resume)
+      // Enable Autopilot preference best-effort
+      try { await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preferences: { autopilot: { useResume: true } } }) }) } catch {}
 
       // Auto-suggest jobs using resume content
       try {
