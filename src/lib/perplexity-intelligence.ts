@@ -141,6 +141,13 @@ export interface HiringContact {
   alternativeEmails?: string[]
 }
 
+export interface QuickSearchItem {
+  title: string
+  url: string
+  snippet: string
+  source: string
+}
+
 const SYSTEM = `You are a research analyst using real-time web tools.
 Rules:
 - Use only public sources and respect robots.txt by following links provided by Perplexity tools.
@@ -318,9 +325,9 @@ OUTPUT JSON FORMAT:
   }
 
   // Fast SEARCH API for raw listings from specific domains (outside of template strings)
-  static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month') {
+  static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month'): Promise<QuickSearchItem[]> {
     const key = makeKey('ppx:search', { query, domains, maxResults, recency })
-    const cached = getCache(key) as Array<Record<string, unknown>> | undefined
+    const cached = getCache(key) as QuickSearchItem[] | undefined
     if (cached) return cached
     try {
       const resp = await fetch('https://api.perplexity.ai/search', {
@@ -337,16 +344,17 @@ OUTPUT JSON FORMAT:
         })
       })
       if (!resp.ok) throw new Error('ppx search failed')
-      const data: unknown = await resp.json()
-      const results = (data as Record<string, unknown>)?.results as unknown
-      const itemsUnknown: unknown = Array.isArray(results) ? results : (Array.isArray(data as unknown[]) ? data : [])
-      const items: Array<Record<string, unknown>> = Array.isArray(itemsUnknown) ? (itemsUnknown as Array<Record<string, unknown>>) : []
-      const mapped = items.map((it) => ({
-        title: (it.title as string) || (it.snippet as string) || '',
-        url: (it.url as string) || (it.link as string) || '',
-        snippet: (it.snippet as string) || (it.summary as string) || '',
-        source: ((it.domain as string) || (it.source as string) || '')
-      }))
+      const data = await resp.json() as unknown
+      const asRecord = data as Record<string, unknown>
+      const arr = (Array.isArray(asRecord?.results) ? (asRecord.results as unknown[]) : (Array.isArray(data as unknown[]) ? (data as unknown[]) : []))
+      const mapped: QuickSearchItem[] = arr.map((raw: unknown) => {
+        const it = (raw || {}) as Record<string, unknown>
+        const title = typeof it.title === 'string' ? it.title : (typeof it.snippet === 'string' ? String(it.snippet) : '')
+        const url = typeof it.url === 'string' ? it.url : (typeof it.link === 'string' ? String(it.link) : '')
+        const snippet = typeof it.snippet === 'string' ? String(it.snippet) : (typeof it.summary === 'string' ? String(it.summary) : '')
+        const source = typeof it.domain === 'string' ? String(it.domain) : (typeof it.source === 'string' ? String(it.source) : '')
+        return { title, url, snippet, source }
+      })
       setCache(key, mapped)
       return mapped
     } catch {
