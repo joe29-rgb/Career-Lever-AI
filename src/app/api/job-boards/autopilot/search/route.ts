@@ -78,8 +78,8 @@ export async function POST(req: NextRequest) {
           }
         }
         await connectToDatabase()
-        const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean()
-        const resumeText = (resume?.extractedText || '').toString().slice(0, 8000)
+        const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean<import('@/models/Resume').IResume>()
+        const resumeText = ((resume && typeof (resume as any).extractedText === 'string') ? (resume as any).extractedText : '').toString().slice(0, 8000)
         if (resumeText && locations.length && mode === 'quality') {
           const ppxV2 = await withTimeout(
             PerplexityIntelligenceService.jobMarketAnalysisV2(locations[0], resumeText, {
