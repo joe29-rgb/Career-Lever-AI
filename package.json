@@ -8,8 +8,10 @@
         "build": "next build",
         "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
         "lint": "next lint",
-        "type-check": "tsc --noEmit",
-        "test": "vitest run --reporter=verbose"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run --reporter=verbose",
+    "debug:perplexity": "node debug-perplexity.js",
+    "test:perplexity": "PPX_DEBUG=true node -e \"require('./debug-perplexity.js')\""
     },
     "dependencies": {
         "@auth/mongodb-adapter": "^2.0.0",
