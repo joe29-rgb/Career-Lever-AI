@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const browser = await puppeteer.launch({
       args,
       executablePath: execPath,
-      headless: 'new',
+      headless: true,
     })
 
 		const page = await browser.newPage()
