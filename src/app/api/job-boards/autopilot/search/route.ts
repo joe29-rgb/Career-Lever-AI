@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json().catch(()=>({})) as any
-    const keywordsStr: string = (body.keywords || '').toString()
-    const locationsStr: string = (body.locations || '').toString()
+    let keywordsStr: string = (body.keywords || '').toString()
+    let locationsStr: string = (body.locations || '').toString()
     // Load profile preferences for defaults
     await connectToDatabase()
     const prof = await Profile.findOne({ userId: (session.user as any).id }).lean().exec().catch(()=>null as any)
@@ -38,6 +38,23 @@ export async function POST(req: NextRequest) {
     const filters = body.filters || {}
     const domains: string[] = Array.isArray(body.domains) ? body.domains.filter((d: string)=> typeof d === 'string' && d.includes('.')).slice(0, 12) : []
 
+    // Infer missing inputs from profile and resume to avoid empty searches
+    if (!locationsStr && (prof as any)?.location) {
+      locationsStr = String((prof as any).location)
+    }
+    // Try to infer keywords from resume text if not provided
+    if (!keywordsStr) {
+      try {
+        const resumeDoc = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean<import('@/models/Resume').IResume>()
+        const txt = (resumeDoc && typeof (resumeDoc as any).extractedText === 'string') ? (resumeDoc as any).extractedText : ''
+        if (txt && txt.length > 50) {
+          const first = txt.split(/\n|\r/).slice(0, 40).join(' ')
+          const words = first.match(/[A-Za-z][A-Za-z+\-]{3,}/g) || []
+          const unique = Array.from(new Set(words.map((w: string)=>w.toLowerCase()))).slice(0, 10)
+          if (unique.length) keywordsStr = unique.join(', ')
+        }
+      } catch {}
+    }
     const keywords = keywordsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
     const locations = locationsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
     if (!keywords.length && !locations.length) {
@@ -63,8 +80,8 @@ export async function POST(req: NextRequest) {
           }
           if (loc && loc.length > 0) opts.location = loc
           // Run scraper and quick search in parallel, take both best-effort
-          const scraperTimeout = Math.min(timeoutMs, 20000)
-          const searchTimeout = Math.min(timeoutMs, 10000)
+          const scraperTimeout = Math.min(timeoutMs, 30000)
+          const searchTimeout = Math.min(timeoutMs, 15000)
           const q = `${(kw || 'jobs')} ${loc || ''}`.trim()
           const tasks: Array<Promise<any>> = [
             withTimeout(webScraper.searchJobsByGoogle(opts), scraperTimeout).catch(()=>[]),
@@ -100,16 +117,34 @@ export async function POST(req: NextRequest) {
         // Quick domain-filtered search
         const q = `${(keywords[0] || 'jobs')} ${locations[0] || ''}`.trim()
         if (q.length > 0) {
-          const quick = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca'], 20, 'month'), Math.min(timeoutMs, 60000))
+          const quick = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','glassdoor.ca','jobboom.com'], 25, 'month'), Math.min(timeoutMs, 60000))
           for (const j of quick) {
             resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0] })
             if (resultsAll.length >= 40) break
+          }
+          // If still thin, relax recency to year for broader coverage
+          if (resultsAll.length < 10) {
+            const quickYear = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','glassdoor.ca','jobboom.com'], 25, 'year'), Math.min(timeoutMs, 60000)).catch(()=>[] as any[])
+            for (const j of quickYear) {
+              resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0] })
+              if (resultsAll.length >= 50) break
+            }
           }
         }
         await connectToDatabase()
         const resume = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean<import('@/models/Resume').IResume>()
         const resumeText = ((resume && typeof (resume as any).extractedText === 'string') ? (resume as any).extractedText : '').toString().slice(0, 8000)
-        if (resumeText && locations.length && mode === 'quality') {
+        // Try simple AI job listing retrieval regardless of mode when results are still thin
+        if (resultsAll.length < 10 && locations.length && (keywords[0] || '')) {
+          const jlRaw = await withTimeout(PerplexityIntelligenceService.jobListings((keywords[0] || 'job').toString(), locations[0]), Math.min(timeoutMs, 60000)).catch(()=>[] as any[])
+          const jl = Array.isArray(jlRaw) ? jlRaw : []
+          for (const j of jl) {
+            resultsAll.push({ title: j.title, url: j.url, snippet: j.summary, source: 'perplexity', company: j.company, location: j.location })
+            if (resultsAll.length >= 60) break
+          }
+        }
+        // Finally, run deeper analysis even in speed mode if still insufficient
+        if (resumeText && locations.length && resultsAll.length < 10) {
           const ppxV2 = await withTimeout(
             PerplexityIntelligenceService.jobMarketAnalysisV2(locations[0], resumeText, {
               roleHint: keywords[0] || undefined,
@@ -125,7 +160,7 @@ export async function POST(req: NextRequest) {
               title: j.title,
               url: j.url,
               snippet: Array.isArray(j.skills) ? j.skills.join(', ') : '',
-              source: 'perplexity',
+              source: j.source || 'perplexity',
               company: j.company,
               location: j.location
             })

@@ -5,6 +5,21 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+function inferLocationFromText(text: string): string | '' {
+  try {
+    const header = text.split(/\n|\r/).slice(0, 40).join(' ')
+    // Try City, Province code (e.g., Edmonton, AB)
+    const m = header.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*),\s*([A-Z]{2})\b/)
+    if (m && m[0]) return m[0]
+    // Try City, Province full name
+    const provinces = '(Alberta|British Columbia|Ontario|Quebec|Saskatchewan|Manitoba|New Brunswick|Nova Scotia|Prince Edward Island|Newfoundland and Labrador)'
+    const reFull = new RegExp(`([A-Z][a-zA-Z]+(?:\\s+[A-Z][a-zA-Z]+)*),\\s*${provinces}`)
+    const f = header.match(reFull)
+    if (f && f[0]) return f[0]
+  } catch {}
+  return ''
+}
+
 export default function CareerFinderSearchPage() {
   const [keywords, setKeywords] = useState('')
   const [locations, setLocations] = useState('')
@@ -37,6 +52,10 @@ export default function CareerFinderSearchPage() {
             const words = first.match(/[A-Za-z][A-Za-z+\-]{2,}/g) || []
             const top = Array.from(new Set(words)).slice(0, 8).join(', ')
             if (top) setKeywords(top)
+            if (!locations) {
+              const loc = inferLocationFromText(txt)
+              if (loc) setLocations(loc)
+            }
           }
         }
       } catch {}

@@ -110,6 +110,7 @@ export interface JobListing {
   location: string
   address?: string | null
   url: string
+  source?: string
   summary: string
   postedDate: string
   salary?: string | null
@@ -381,7 +382,10 @@ RESUME:\n${resumeText}
 
 FILTERS:\n- Role: ${options.roleHint || '(infer from resume)'}\n- Work Type: ${options.workType || 'any'}\n- Experience: ${options.experienceLevel || 'any'}\n- Min Salary: ${options.salaryMin ? ('$' + options.salaryMin + '+') : 'any'}
 
-Return JSON array with fields: title, company, location, address, url, summary, postedDate, salary, skillMatchPercent, skills, workType, experienceLevel, contacts{hrEmail,hiringManagerEmail,generalEmail,phone,linkedinProfiles}, benefits, requirements.`
+Return JSON array with fields: title, company, location, address, url, source, summary, postedDate, salary, skillMatchPercent, skills, workType, experienceLevel, contacts{hrEmail,hiringManagerEmail,generalEmail,phone,linkedinProfiles}, benefits, requirements.
+
+Prioritize Canadian public sources (Job Bank Canada, Indeed.ca, LinkedIn, Glassdoor.ca, Eluta.ca, Workopolis) and include direct emails when public.
+For each item, set source to the primary domain where the job was found.`
         const res = await client.makeRequest(SYSTEM, prompt, { temperature: 0.15, maxTokens: 2200 })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         return res
@@ -394,6 +398,7 @@ Return JSON array with fields: title, company, location, address, url, summary, 
         skillMatchPercent: Math.max(0, Math.min(100, j.skillMatchPercent || 0)),
         workType: j.workType || 'onsite',
         experienceLevel: j.experienceLevel || 'mid',
+        source: j.source || (typeof j.url === 'string' ? (new URL(j.url)).hostname.replace(/^www\./,'') : undefined),
         benefits: j.benefits || [],
         requirements: j.requirements || []
       }))
