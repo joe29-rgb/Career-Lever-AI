@@ -42,6 +42,21 @@ export default function CareerFinderSearchPage() {
           if (typeof ap.days === 'number') setDays(Math.max(1, Math.min(90, ap.days)))
         }
       } catch {}
+      // Server-side extraction to ensure correctness
+      try {
+        const sig = await fetch('/api/resume/signals')
+        if (sig.ok) {
+          const s = await sig.json()
+          if (Array.isArray(s.keywords) && s.keywords.length && !keywords) {
+            setKeywords(s.keywords.slice(0, 12).join(', '))
+            try { localStorage.setItem('cf:signals:keywords', JSON.stringify(s.keywords)) } catch {}
+          }
+          if (s.location && !locations) {
+            setLocations(s.location)
+            try { localStorage.setItem('cf:signals:location', s.location) } catch {}
+          }
+        }
+      } catch {}
       try {
         const rl = await fetch('/api/resume/list')
         if (rl.ok) {
