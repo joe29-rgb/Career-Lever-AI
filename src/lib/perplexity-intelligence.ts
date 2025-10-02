@@ -458,4 +458,27 @@ For each item, set source to the primary domain where the job was found.`
     keys.forEach(k => cache.delete(k))
     return keys.length
   }
+
+  // Extracts normalized keywords and a likely location from a full resume using PPX
+  static async extractResumeSignals(resumeText: string, maxKeywords: number = 18): Promise<{ keywords: string[]; location?: string }> {
+    const key = makeKey('ppx:resume:signals', { t: resumeText.slice(0, 2000), maxKeywords })
+    const cached = getCache(key) as { keywords: string[]; location?: string } | undefined
+    if (cached) return cached
+    try {
+      const client = createClient()
+      const system = `You are a resume NLP analyst with real-time knowledge of hiring terminology.\nReturn STRICT JSON only.`
+      const user = `Analyze this full resume and extract: (1) candidate LOCATION as "City, Province|State" if present; (2) 12-${Math.max(12, Math.min(30, maxKeywords))} normalized KEYWORDS covering roles, core skills, technologies, and industry terms.\n\nRULES:\n- Exclude personal identifiers, emails, URLs, phone numbers, 'linkedin', 'gmail', 'www'\n- Prefer terms from Experience/Achievements sections\n- Normalize technology names (e.g., node -> Node.js)\n- Output JSON only in this format:\n{ "location": "City, AB" | "City, State" | null, "keywords": ["term1", "term2", ...] }\n\nRESUME:\n${resumeText}`
+      const out = await client.makeRequest(system, user, { temperature: 0.1, maxTokens: 800 })
+      const text = (out.content || '').trim()
+      const parsed = JSON.parse(text) as { location?: string | null; keywords?: string[] }
+      const kws = Array.isArray(parsed.keywords) ? parsed.keywords.map(s => String(s)).filter(Boolean) : []
+      const loc = parsed.location && typeof parsed.location === 'string' ? parsed.location : undefined
+      const result = { keywords: kws.slice(0, maxKeywords), location: loc }
+      setCache(key, result)
+      return result
+    } catch {
+      // Fallback: empty results
+      return { keywords: [], location: undefined }
+    }
+  }
 }

@@ -117,15 +117,27 @@ export async function POST(req: NextRequest) {
     if (!locationsStr && (prof as any)?.location) {
       locationsStr = String((prof as any).location)
     }
-    // Try to infer keywords from resume text if not provided (full resume, weighted extraction)
+    // Try to infer keywords from resume text if not provided (via PPX NLP extraction, fallback to weighted local)
     if (!keywordsStr) {
       try {
         const resumeDoc = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean<import('@/models/Resume').IResume>()
         const txt = (resumeDoc && typeof (resumeDoc as any).extractedText === 'string') ? (resumeDoc as any).extractedText : ''
         if (txt && txt.length > 50) {
-          const top = extractTopKeywords(txt, 12)
-          if (top.length) keywordsStr = top.join(', ')
-          // also infer location server-side if absent
+          // Primary: ask Perplexity to extract signals from full resume
+          try {
+            const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 18)
+            if (Array.isArray(signals.keywords) && signals.keywords.length) {
+              keywordsStr = signals.keywords.join(', ')
+            }
+            if (!locationsStr && signals.location) {
+              locationsStr = signals.location
+            }
+          } catch {}
+          // Fallback: local extraction
+          if (!keywordsStr) {
+            const top = extractTopKeywords(txt, 12)
+            if (top.length) keywordsStr = top.join(', ')
+          }
           if (!locationsStr) {
             const loc = inferLocationFromResumeText(txt)
             if (loc) locationsStr = loc
