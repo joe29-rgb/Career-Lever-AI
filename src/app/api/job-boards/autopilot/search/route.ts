@@ -18,6 +18,73 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   })
 }
 
+// --- Helpers: robust keyword and location inference from full resume text ---
+const STOPWORDS = new Set([
+  'the','and','for','with','from','that','this','are','was','were','have','has','had','into','onto','over','under','while','during','within','without','between','among','about','your','their','our','its','his','her','they','them','you','i',
+  'to','of','in','on','at','by','an','a','as','or','but','is','be','it','we','my','me','us','will','can','able','using','used','via','etc','per',
+  // noise
+  'https','http','www','com','linkedin','gmail','outlook','email','phone','linkedincom','httpps','joemcdonald','joe','mcdonald'
+])
+
+function inferLocationFromResumeText(text: string): string | undefined {
+  try {
+    const header = text.split(/\n|\r/).slice(0, 80).join(' ')
+    const m = header.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*),\s*([A-Z]{2})\b/)
+    if (m && m[0]) return m[0]
+    const provinces = '(Alberta|British Columbia|Ontario|Quebec|Saskatchewan|Manitoba|New Brunswick|Nova Scotia|Prince Edward Island|Newfoundland and Labrador)'
+    const reFull = new RegExp(`([A-Z][a-zA-Z]+(?:\\s+[A-Z][a-zA-Z]+)*),\\s*${provinces}`)
+    const f = header.match(reFull)
+    if (f && f[0]) return f[0]
+  } catch {}
+  return undefined
+}
+
+function extractTopKeywords(resumeText: string, limit: number = 12): string[] {
+  if (!resumeText) return []
+  const cleaned = resumeText.replace(/https?:\/\/\S+/g, ' ').replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, ' ')
+  const tokens = cleaned.match(/[A-Za-z][A-Za-z+\-]{3,}/g) || []
+  const freq = new Map<string, number>()
+  for (const raw of tokens) {
+    const t = raw.toLowerCase()
+    if (STOPWORDS.has(t)) continue
+    // skip obvious noise
+    if (t.length > 24) continue
+    const score = (freq.get(t) || 0) + 1
+    freq.set(t, score)
+  }
+  // boost tokens appearing near experience/responsibilities/achievements sections
+  const lines = cleaned.split(/\n|\r/)
+  const boostKeys = ['experience','responsibilities','achievements','projects','work','employment']
+  for (const line of lines) {
+    const lower = line.toLowerCase()
+    if (boostKeys.some(k => lower.includes(k))) {
+      const ls = line.match(/[A-Za-z][A-Za-z+\-]{3,}/g) || []
+      for (const raw of ls) {
+        const t = raw.toLowerCase()
+        if (STOPWORDS.has(t)) continue
+        freq.set(t, (freq.get(t) || 0) + 1)
+      }
+    }
+  }
+  // Prefer domain-relevant terms: tech, sales, marketing, operations, finance
+  const domainBoost = new Set(['engineer','developer','software','react','node','typescript','python','aws','sales','account','manager','marketing','campaign','seo','sem','operations','logistics','supply','finance','accounting','advisor','service','support','design','product'])
+  domainBoost.forEach((t) => {
+    if (freq.has(t)) freq.set(t, (freq.get(t) || 0) + 2)
+  })
+  const sorted = Array.from(freq.entries()).sort((a,b) => b[1] - a[1]).map(([k]) => k)
+  // de-duplicate stems roughly (keep first occurrence)
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const k of sorted) {
+    const stem = k.replace(/(ing|ed|er|ers|s)$/,'')
+    if (seen.has(stem)) continue
+    seen.add(stem)
+    out.push(k)
+    if (out.length >= limit) break
+  }
+  return out
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -42,16 +109,19 @@ export async function POST(req: NextRequest) {
     if (!locationsStr && (prof as any)?.location) {
       locationsStr = String((prof as any).location)
     }
-    // Try to infer keywords from resume text if not provided
+    // Try to infer keywords from resume text if not provided (full resume, weighted extraction)
     if (!keywordsStr) {
       try {
         const resumeDoc = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean<import('@/models/Resume').IResume>()
         const txt = (resumeDoc && typeof (resumeDoc as any).extractedText === 'string') ? (resumeDoc as any).extractedText : ''
         if (txt && txt.length > 50) {
-          const first = txt.split(/\n|\r/).slice(0, 40).join(' ')
-          const words = first.match(/[A-Za-z][A-Za-z+\-]{3,}/g) || []
-          const unique = Array.from(new Set(words.map((w: string)=>w.toLowerCase()))).slice(0, 10)
-          if (unique.length) keywordsStr = unique.join(', ')
+          const top = extractTopKeywords(txt, 12)
+          if (top.length) keywordsStr = top.join(', ')
+          // also infer location server-side if absent
+          if (!locationsStr) {
+            const loc = inferLocationFromResumeText(txt)
+            if (loc) locationsStr = loc
+          }
         }
       } catch {}
     }
