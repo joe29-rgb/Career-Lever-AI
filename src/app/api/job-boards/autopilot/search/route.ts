@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     }
 
     const afterDate = new Date(Date.now() - days*24*60*60*1000).toISOString().slice(0,10)
-    const resultsAll: Array<{ title?: string; url: string; snippet?: string; source: string; company?: string; location?: string }> = []
+    const resultsAll: Array<{ title?: string; url: string; snippet?: string; source: string; company?: string; location?: string; postedDate?: string }> = []
 
     // Build simple cartesian of keywords x locations; if either empty, run with the other
     const kwList = keywords.length ? keywords : ['']
