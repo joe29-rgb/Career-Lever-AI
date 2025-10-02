@@ -28,13 +28,21 @@ const STOPWORDS = new Set([
 
 function inferLocationFromResumeText(text: string): string | undefined {
   try {
-    const header = text.split(/\n|\r/).slice(0, 80).join(' ')
-    const m = header.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*),\s*([A-Z]{2})\b/)
-    if (m && m[0]) return m[0]
+    const full = text.replace(/\s+/g, ' ')
+    // City, Province code (Canada)
+    const caCode = full.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)\b/g)
+    if (caCode && caCode.length) return caCode[0]
+    // City, Province full name
     const provinces = '(Alberta|British Columbia|Ontario|Quebec|Saskatchewan|Manitoba|New Brunswick|Nova Scotia|Prince Edward Island|Newfoundland and Labrador)'
-    const reFull = new RegExp(`([A-Z][a-zA-Z]+(?:\\s+[A-Z][a-zA-Z]+)*),\\s*${provinces}`)
-    const f = header.match(reFull)
-    if (f && f[0]) return f[0]
+    const reFull = new RegExp(`([A-Z][a-zA-Z]+(?:\\s+[A-Z][a-zA-Z]+)*),\\s*${provinces}`, 'g')
+    const caFull = full.match(reFull)
+    if (caFull && caFull.length) return caFull[0]
+    // Location: City, Province
+    const locLine = full.match(/Location[:\s-]+([A-Z][A-Za-z\s]+,\s*(?:[A-Z]{2}|[A-Za-z\s]+))/i)
+    if (locLine && locLine[1]) return locLine[1].trim()
+    // Canadian postal code hint near city
+    const postal = full.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*)[^\n]{0,40}\b([A-Z]\d[A-Z])\s?\d[A-Z]\d\b/)
+    if (postal && postal[1]) return postal[1]
   } catch {}
   return undefined
 }
@@ -125,8 +133,13 @@ export async function POST(req: NextRequest) {
         }
       } catch {}
     }
-    const keywords = keywordsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
+    let keywords = keywordsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
     const locations = locationsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
+    // Remove location tokens from keywords to avoid noise like city/province in keywords
+    if (locations.length && keywords.length) {
+      const locTokens = new Set<string>(locations.join(' ').toLowerCase().split(/[^a-zA-Z]+/).filter(t=>t.length>=2))
+      keywords = keywords.filter(k => !locTokens.has(k.toLowerCase()))
+    }
     if (!keywords.length && !locations.length) {
       return NextResponse.json({ error: 'Provide at least one keyword or location' }, { status: 400 })
     }
