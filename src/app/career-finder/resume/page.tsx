@@ -9,7 +9,7 @@ import { ResumeBuilder } from '@/app/resume-builder/components/resume-builder'
 export default function CareerFinderResumePage() {
   const router = useRouter()
   const [hasResume, setHasResume] = useState<boolean>(false)
-  const [showBuilder, setShowBuilder] = useState<boolean>(false)
+  const [showBuilder, setShowBuilder] = useState<boolean>(true)
   useEffect(() => {
     (async () => {
       try {
@@ -25,12 +25,7 @@ export default function CareerFinderResumePage() {
     <div className="space-y-4">
       <div className="text-sm text-gray-700">Upload your resume or build one. When done, proceed to search.</div>
       {!showBuilder && (
-        <>
-          <ResumeUpload onUploadSuccess={() => router.push('/career-finder/search')} onUploadError={()=>{}} />
-          <div className="text-sm">
-            No resume? <button className="underline" onClick={()=>setShowBuilder(true)}>Build one</button>
-          </div>
-        </>
+        <ResumeUpload onUploadSuccess={() => router.push('/career-finder/search')} onUploadError={()=>{}} />
       )}
       {showBuilder && (
         <div className="border rounded p-3">

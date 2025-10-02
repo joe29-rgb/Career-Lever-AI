@@ -147,6 +147,7 @@ export interface QuickSearchItem {
   url: string
   snippet: string
   source: string
+  postedDate?: string
 }
 
 const SYSTEM = `You are a research analyst using real-time web tools.
@@ -354,7 +355,8 @@ OUTPUT JSON FORMAT:
         const url = typeof it.url === 'string' ? it.url : (typeof it.link === 'string' ? String(it.link) : '')
         const snippet = typeof it.snippet === 'string' ? String(it.snippet) : (typeof it.summary === 'string' ? String(it.summary) : '')
         const source = typeof it.domain === 'string' ? String(it.domain) : (typeof it.source === 'string' ? String(it.source) : '')
-        return { title, url, snippet, source }
+        const published = (typeof (it as any).published_time === 'string' ? (it as any).published_time : (typeof (it as any).date === 'string' ? (it as any).date : undefined))
+        return { title, url, snippet, source, postedDate: published }
       })
       setCache(key, mapped)
       return mapped
@@ -460,14 +462,33 @@ For each item, set source to the primary domain where the job was found.`
   }
 
   // Extracts normalized keywords and a likely location from a full resume using PPX
-  static async extractResumeSignals(resumeText: string, maxKeywords: number = 18): Promise<{ keywords: string[]; location?: string }> {
-    const key = makeKey('ppx:resume:signals', { t: resumeText.slice(0, 2000), maxKeywords })
-    const cached = getCache(key) as { keywords: string[]; location?: string } | undefined
+  static async extractResumeSignals(
+    resumeText: string,
+    maxKeywords: number = 18,
+    locationHint?: string
+  ): Promise<{ keywords: string[]; location?: string; locations?: string[] }> {
+    const key = makeKey('ppx:resume:signals:v2', { t: resumeText.slice(0, 2000), maxKeywords, locationHint: locationHint || '' })
+    const cached = getCache(key) as { keywords: string[]; location?: string; locations?: string[] } | undefined
     if (cached) return cached
     try {
       const client = createClient()
       const system = `You are a resume NLP analyst with real-time knowledge of hiring terminology. Return STRICT JSON only.`
-      const user = `Read the provided resume. Extract and return two ranked lists:\n1) Industry-Weighted Keywords: Prioritize the most important skills, technologies, roles, and industries based on work history, achievements, and frequency.\n2) Location Keywords: List and rank all city/region/province references in the resume; prioritize those tied to work history and current role.\n\nRULES:\n- Exclude emails, URLs, phone numbers, and generic tokens like 'linkedin', 'gmail', 'www'\n- Normalize technology names (e.g., node -> Node.js, ts -> TypeScript)\n- Keep lists concise and ready for job matching\n- Output ONLY JSON in this exact schema:\n{\n  "industryWeighted": ["keyword1", "keyword2", ...],\n  "locationKeywords": ["City, Province", "Region", ...],\n  "primaryLocation": "City, Province" | null\n}\n\nRESUME:\n${resumeText}`
+      const user = `Read the provided resume. Extract and return two ranked lists:
+1) Industry-Weighted Keywords: Prioritize important skills, technologies, roles, and industries based on cumulative tenure across work history (weight longer roles higher; do not overweight very recent < 6 months). Normalize technologies (e.g., node -> Node.js, ts -> TypeScript).
+2) Location Keywords: List and rank all city/region/province mentions; prefer the most recent long-tenure role and the header location. ${locationHint ? `If ${locationHint} appears in header or work history, rank it first.` : ''}
+
+CRITICAL CLEANUP:
+- Ignore PDF metadata or artifacts (Producer, Creator, Skia, xref, obj/endobj, CreationDate, ModDate, Title, stream) and any URLs/emails/phone numbers.
+- Exclude tokens like 'linkedin', 'gmail', 'www'.
+
+OUTPUT ONLY JSON in this schema:
+{
+  "industryWeighted": ["keyword1", "keyword2", ...],
+  "locationKeywords": ["City, Province", "Region", ...],
+  "primaryLocation": "City, Province" | null
+}
+
+RESUME:\n${resumeText}`
       const out = await client.makeRequest(system, user, { temperature: 0.1, maxTokens: 800 })
       const text = (out.content || '').trim()
       const parsed = JSON.parse(text) as { industryWeighted?: string[]; locationKeywords?: string[]; primaryLocation?: string | null; location?: string | null; keywords?: string[] }
@@ -478,12 +499,12 @@ For each item, set source to the primary domain where the job was found.`
           typeof parsed.location === 'string' ? parsed.location : undefined
         )
       )
-      const result = { keywords: kws.slice(0, maxKeywords), location: loc }
+      const result = { keywords: kws.slice(0, maxKeywords), location: loc, locations: Array.isArray(parsed.locationKeywords) ? parsed.locationKeywords : undefined }
       setCache(key, result)
       return result
     } catch {
       // Fallback: empty results
-      return { keywords: [], location: undefined }
+      return { keywords: [], location: undefined, locations: undefined }
     }
   }
 }

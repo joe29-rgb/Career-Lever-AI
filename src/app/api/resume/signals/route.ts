@@ -15,12 +15,15 @@ export async function GET(req: NextRequest) {
     const resumeDoc = await Resume.findOne({ userId: (session.user as any).id }).sort({ createdAt: -1 }).lean<import('@/models/Resume').IResume>().exec()
     const txt = (resumeDoc && typeof (resumeDoc as any).extractedText === 'string') ? (resumeDoc as any).extractedText : ''
     if (!txt || txt.length < 30) {
-      return NextResponse.json({ success: true, keywords: [], location: null })
+      return NextResponse.json({ success: true, keywords: [], location: null, locations: [] })
     }
-    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 20)
-    return NextResponse.json({ success: true, keywords: signals.keywords || [], location: signals.location || null })
+    // Provide header location hint if present to guide PPX
+    const headerMatch = txt.split(/\n|\r/).slice(0, 40).join(' ').match(/([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)/)
+    const hint = headerMatch && headerMatch[0] ? headerMatch[0] : undefined
+    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 20, hint)
+    return NextResponse.json({ success: true, keywords: signals.keywords || [], location: signals.location || null, locations: signals.locations || [] })
   } catch (e) {
-    return NextResponse.json({ success: true, keywords: [], location: null })
+    return NextResponse.json({ success: true, keywords: [], location: null, locations: [] })
   }
 }
 
