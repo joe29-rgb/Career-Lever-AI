@@ -28,9 +28,12 @@ export default function CareerFinderSearchPage() {
   const router = useRouter()
   const [radiusKm, setRadiusKm] = useState(75)
   const [days, setDays] = useState(10)
+  const [hasTopChoice, setHasTopChoice] = useState(false)
+  const [topChoiceUrl, setTopChoiceUrl] = useState<string>('')
 
   useEffect(() => {
     (async () => {
+      try { localStorage.setItem('cf:progress', JSON.stringify({ step: 2, total: 7 })) } catch {}
       try {
         const r = await fetch('/api/profile')
         if (r.ok) {
@@ -74,6 +77,10 @@ export default function CareerFinderSearchPage() {
           }
         }
       } catch {}
+      // Initialize top choice state
+      try { setHasTopChoice(!!localStorage.getItem('cf:topChoice')) } catch {}
+      // If Autopilot is ready from previous upload/build, auto-run
+      try { if (localStorage.getItem('cf:autopilotReady') === '1') runSearch() } catch {}
     })()
   }, [])
 
@@ -81,10 +88,13 @@ export default function CareerFinderSearchPage() {
     setLoading(true)
     setResults([])
     try {
-      const resp = await fetch('/api/job-boards/autopilot/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords, locations, radiusKm, days, limit: 20, mode: 'speed', domains: ['jobbank.gc.ca','indeed.ca','linkedin.com','workopolis.com','jobboom.com','glassdoor.ca','eluta.ca'] }) })
+      const resp = await fetch('/api/job-boards/autopilot/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords, locations, radiusKm: 75, days: 10, limit: 20, mode: 'speed', domains: ['jobbank.gc.ca','indeed.ca','linkedin.com','workopolis.com','jobboom.com','glassdoor.ca','eluta.ca'], filters: { salaryMin: 0, salaryMax: 100000, maxResults: 20 } }) })
       const json = await resp.json()
       if (!resp.ok || json.error) throw new Error(json.error || 'search failed')
-      setResults(json.results || [])
+      // Filter client-side to last 10 days if server returns broader range
+      const cutoff = Date.now() - 10*24*60*60*1000
+      const filtered = (json.results || []).filter((r:any)=> !r.postedDate || (new Date(r.postedDate).getTime() >= cutoff))
+      setResults(filtered)
     } catch {}
     finally { setLoading(false) }
   }
@@ -111,21 +121,40 @@ export default function CareerFinderSearchPage() {
       </div>
       <div className="space-y-2">
         {results.slice(0, 50).map((r, i) => (
-          <div key={i} className="text-sm border rounded p-3 flex items-center justify-between gap-2">
+          <div key={i} className={`text-sm border rounded p-3 flex items-center justify-between gap-2 ${topChoiceUrl===r.url?'ring-2 ring-blue-500':''}`}>
             <div className="min-w-0">
               <div className="font-medium truncate">{r.title || 'Untitled role'}</div>
-              <div className="text-gray-600 truncate">{[r.company, r.location, r.source].filter(Boolean).join(' • ')}</div>
+              <div className="text-gray-600 truncate">{[r.company, r.location].filter(Boolean).join(' • ')}</div>
+              <div className="text-xs text-gray-700">
+                {r.salary || r.pay ? <span className="mr-2">{r.salary || r.pay}</span> : null}
+                {r.postedDate ? <span className="text-gray-500">Posted: {new Date(r.postedDate).toLocaleDateString()}</span> : null}
+              </div>
+              <div className="flex gap-2 items-center mt-1">
+                {r.url && <a className="text-xs text-blue-600 underline truncate max-w-[240px]" href={r.url} target="_blank" rel="noopener noreferrer">Open posting</a>}
+                {r.source && <span className="text-xs text-gray-500">{r.source}</span>}
+              </div>
             </div>
             {r.url && (
-              <button className="px-2 py-1 border rounded" onClick={async ()=>{
-                try {
-                  const imp = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: r.url }) })
-                  const jd = await imp.json().catch(()=>({}))
-                  const sel = { url: r.url, title: r.title, company: r.company, location: r.location, description: (jd && (jd.description || jd.jobDescription)) || '' }
-                  try { localStorage.setItem('cf:selectedJob', JSON.stringify(sel)) } catch {}
-                  router.push('/career-finder/job')
-                } catch { router.push('/career-finder/job') }
-              }}>Select</button>
+              <div className="flex flex-col gap-2 shrink-0">
+                <button className="px-2 py-1 border rounded" onClick={async ()=>{
+                  try {
+                    const imp = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: r.url }) })
+                    const jd = await imp.json().catch(()=>({}))
+                    const sel = { url: r.url, title: r.title, company: r.company, location: r.location, description: (jd && (jd.description || jd.jobDescription)) || '' }
+                    try { localStorage.setItem('cf:selectedJob', JSON.stringify(sel)) } catch {}
+                    router.push('/career-finder/job')
+                  } catch { router.push('/career-finder/job') }
+                }}>Select</button>
+                <button className={`px-2 py-1 border rounded ${topChoiceUrl===r.url?'bg-blue-50 border-blue-500':''}`} onClick={()=>{
+                  try {
+                    const sel = { url: r.url, title: r.title, company: r.company, location: r.location }
+                    localStorage.setItem('cf:topChoice', JSON.stringify(sel))
+                    setTopChoiceUrl(r.url || '')
+                    setHasTopChoice(true)
+                    try { localStorage.removeItem('cf:autopilotReady') } catch {}
+                  } catch {}
+                }}>Top Choice</button>
+              </div>
             )}
           </div>
         ))}
@@ -140,12 +169,18 @@ export default function CareerFinderSearchPage() {
               const top = results[0]
               const sel = { url: top.url, title: top.title, company: top.company, location: top.location }
               localStorage.setItem('cf:topChoice', JSON.stringify(sel))
+              setHasTopChoice(true)
+              try { localStorage.removeItem('cf:autopilotReady') } catch {}
             } catch {}
           }}>Set Top Choice</button>
         </div>
       )}
       <div className="text-right">
-        <a className="inline-block px-4 py-2 border rounded" href="/career-finder/job">Next</a>
+        {hasTopChoice ? (
+          <a className="inline-block px-4 py-2 border rounded" href="/career-finder/job">Next</a>
+        ) : (
+          <button className="inline-block px-4 py-2 border rounded opacity-60" disabled>Select a Top Choice to continue</button>
+        )}
       </div>
     </div>
   )

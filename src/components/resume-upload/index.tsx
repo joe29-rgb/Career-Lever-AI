@@ -157,7 +157,9 @@ export function ResumeUpload({
         }
       } catch {}
 
-      toast.success('Resume uploaded successfully!')
+      // Mark Autopilot ready and move wizard
+      try { localStorage.setItem('cf:autopilotReady', '1'); localStorage.setItem('cf:progress', JSON.stringify({ step: 2, total: 7 })) } catch {}
+      toast.success('Resume uploaded successfully! Autopilot enabled.')
 
     } catch (error) {
       console.error('Upload error:', error)

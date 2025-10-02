@@ -105,8 +105,8 @@ export async function POST(req: NextRequest) {
     await connectToDatabase()
     const prof = await Profile.findOne({ userId: (session.user as any).id }).lean().exec().catch(()=>null as any)
     const ap = (prof as any)?.preferences?.autopilot || {}
-    const radiusKm: number = typeof body.radiusKm === 'number' ? Math.max(1, Math.min(500, body.radiusKm)) : (typeof ap.radiusKm === 'number' ? ap.radiusKm : 150)
-    const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : (typeof ap.days === 'number' ? ap.days : 30)
+    const radiusKm: number = typeof body.radiusKm === 'number' ? Math.max(1, Math.min(500, body.radiusKm)) : (typeof ap.radiusKm === 'number' ? ap.radiusKm : 75)
+    const days: number = typeof body.days === 'number' ? Math.max(1, Math.min(90, body.days)) : (typeof ap.days === 'number' ? ap.days : 10)
     const limitPerQuery: number = typeof body.limit === 'number' ? Math.max(5, Math.min(50, body.limit)) : (typeof ap.maxResults === 'number' ? Math.max(5, Math.min(50, ap.maxResults)) : 20)
     const timeoutMs: number = typeof body.timeoutMs === 'number' ? Math.max(30000, Math.min(180000, body.timeoutMs)) : DEFAULT_AUTOPILOT_TIMEOUT_MS
     const mode: 'speed'|'quality' = body.mode === 'quality' ? 'quality' : 'speed'
@@ -193,7 +193,8 @@ export async function POST(req: NextRequest) {
                   const url = (j.url as string) || (j.link as string)
                   const company = (j.company as string) || (j.companyName as string) || undefined
                   const location = (j.location as string) || (loc || undefined)
-                  if (url) resultsAll.push({ title, url, company, location, source: (j.source as string) || 'perplexity' })
+                  const postedDate = (j as any).postedDate || (j as any).published_time || (j as any).date
+                  if (url) resultsAll.push({ title, url, company, location, source: (j.source as string) || 'perplexity', postedDate })
                 }
               }
             }
@@ -212,16 +213,16 @@ export async function POST(req: NextRequest) {
         // Quick domain-filtered search
         const q = `${(keywords[0] || 'jobs')} ${locations[0] || ''}`.trim()
         if (q.length > 0) {
-          const quick = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','glassdoor.ca','jobboom.com'], 25, 'month'), Math.min(timeoutMs, 60000))
+          const quick = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','glassdoor.ca','jobboom.com'], 25, 'week'), Math.min(timeoutMs, 60000))
           for (const j of quick) {
-            resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0] })
+            resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0], postedDate: j.postedDate })
             if (resultsAll.length >= 40) break
           }
           // If still thin, relax recency to year for broader coverage
           if (resultsAll.length < 10) {
-            const quickYear = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','glassdoor.ca','jobboom.com'], 25, 'year'), Math.min(timeoutMs, 60000)).catch(()=>[] as any[])
+          const quickYear = await withTimeout(PerplexityIntelligenceService.jobQuickSearch(q, ['indeed.ca','linkedin.com','jobbank.gc.ca','workopolis.com','eluta.ca','glassdoor.ca','jobboom.com'], 25, 'month'), Math.min(timeoutMs, 60000)).catch(()=>[] as any[])
             for (const j of quickYear) {
-              resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0] })
+              resultsAll.push({ title: j.title, url: j.url, snippet: j.snippet, source: j.source || 'perplexity', company: undefined, location: locations[0], postedDate: j.postedDate })
               if (resultsAll.length >= 50) break
             }
           }
@@ -257,7 +258,8 @@ export async function POST(req: NextRequest) {
               snippet: Array.isArray(j.skills) ? j.skills.join(', ') : '',
               source: j.source || 'perplexity',
               company: j.company,
-              location: j.location
+              location: j.location,
+              postedDate: (j as any).postedDate
             })
           }
         }
@@ -265,6 +267,17 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('Autopilot PPX augmentation failed', e)
     }
+
+    // Optional server-side recency filter by postedDate if present
+    try {
+      const cutoff = new Date(Date.now() - days*24*60*60*1000).getTime()
+      for (let i = resultsAll.length - 1; i >= 0; i--) {
+        const d = (resultsAll[i] as any).postedDate
+        if (d && !Number.isNaN(Date.parse(d))) {
+          if (new Date(d).getTime() < cutoff) resultsAll.splice(i, 1)
+        }
+      }
+    } catch {}
 
     // De-dupe by normalized URL
     const seen = new Set<string>()

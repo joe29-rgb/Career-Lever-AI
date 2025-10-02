@@ -14,7 +14,14 @@ const steps = [
 
 export function CareerFinderProgress() {
   const pathname = usePathname()
-  const idx = Math.max(0, steps.findIndex(s => pathname?.includes(`/career-finder/${s.key}`)))
+  // Derive index from path or persisted localStorage
+  let idx = Math.max(0, steps.findIndex(s => pathname?.includes(`/career-finder/${s.key}`)))
+  try {
+    const persisted = JSON.parse(localStorage.getItem('cf:progress') || 'null')
+    if (persisted && typeof persisted.step === 'number') {
+      idx = Math.max(idx, Math.min(steps.length - 1, (persisted.step - 1)))
+    }
+  } catch {}
   const percent = Math.round(((idx + 1) / steps.length) * 100)
 
   return (

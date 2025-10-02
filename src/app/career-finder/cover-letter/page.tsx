@@ -9,12 +9,20 @@ export default function CareerFinderCoverLetterPage() {
   const [letterA, setLetterA] = useState('')
   const [letterB, setLetterB] = useState('')
   const [selected, setSelected] = useState<'A'|'B'|'none'>('none')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
+      try { localStorage.setItem('cf:progress', JSON.stringify({ step: 6, total: 7 })) } catch {}
       setLoading(true)
       try {
-        // Load resume text
+        // Pull selected template/tone and selected resume variant
+        let chosenTone = 'professional'
+        try { const t = localStorage.getItem('cf:tone'); if (t) chosenTone = t } catch {}
+        let selectedHtml = ''
+        try { selectedHtml = localStorage.getItem('cf:selectedResumeHtml') || '' } catch {}
+
+        // Load resume text (fallback)
         let resumeText = ''
         try {
           const rl = await fetch('/api/resume/list')
@@ -29,16 +37,36 @@ export default function CareerFinderCoverLetterPage() {
         const jobTitle = selectedJob?.title || 'Role'
         const companyName = selectedJob?.company || 'Company'
         const jobDescription = (selectedJob?.description || '').toString().slice(0, 8000)
-        const payload = { raw: true, jobTitle, companyName, jobDescription, resumeText, save: false }
+        // Load company insights (auto) to provide culture/news/contacts
+        let companyData: any = null
+        try {
+          const website = (()=>{ try{ const u=new URL(selectedJob?.url||''); return 'https://'+u.hostname.replace(/^www\./,'') }catch{return ''} })()
+          const cr = await fetch('/api/v2/company/deep-research', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ companyName, website: website || undefined, jobTitle: jobTitle || undefined }) })
+          if (cr.ok) {
+            const cj = await cr.json()
+            companyData = cj.companyData || cj.research || null
+          }
+        } catch {}
+        // Extract company tone/psychology for styling
+        let psychology: any = null
+        try {
+          if (jobDescription) {
+            const p = await fetch('/api/insights/psychology', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ jobDescription, companySignals: companyData || {} }) })
+            const pj = await p.json().catch(()=>({}))
+            if (p.ok && pj.psychology) psychology = pj.psychology
+          }
+        } catch {}
+        const payload = { raw: true, jobTitle, companyName, jobDescription, resumeText: (selectedHtml || resumeText), companyData, psychology, save: false }
         // Generate two variants by tweaking tone/length
         const [ra, rb] = await Promise.all([
-          fetch('/api/cover-letter/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, tone: 'professional', length: 'medium' }) }),
-          fetch('/api/cover-letter/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, tone: 'conversational', length: 'short' }) })
+          fetch('/api/cover-letter/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, tone: chosenTone || 'professional', length: 'medium' }) }),
+          fetch('/api/cover-letter/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, tone: (chosenTone === 'professional' ? 'conversational' : 'professional'), length: 'short' }) })
         ])
         const ja = await ra.json().catch(()=>({}))
         const jb = await rb.json().catch(()=>({}))
         if (ra.ok && ja.coverLetter) setLetterA(ja.coverLetter)
         if (rb.ok && jb.coverLetter) setLetterB(jb.coverLetter)
+        if ((!ra.ok || !rb.ok) && !ja.coverLetter && !jb.coverLetter) setError('Failed to generate cover letters')
       } catch {}
       setLoading(false)
     })()
@@ -55,6 +83,7 @@ export default function CareerFinderCoverLetterPage() {
     <div className="space-y-4">
       <div className="text-sm text-gray-700">Choose one of the generated cover letters.</div>
       {loading && <div className="text-sm">Generating letters…</div>}
+      {error && <div className="text-xs text-red-600">{error}</div>}
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className={`border rounded p-3 text-sm ${selected==='A'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('A')}>

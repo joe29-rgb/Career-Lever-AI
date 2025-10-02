@@ -2,7 +2,7 @@ export class PerplexityService {
   private readonly apiKey: string
   private readonly baseURL = (process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai') + '/chat/completions'
   private readonly defaultModel = process.env.PERPLEXITY_MODEL || 'sonar-pro'
-  private static memoryCache: Map<string, { expiresAt: number; value: any }> = new Map()
+  private static memoryCache: Map<string, { expiresAt: number; value: { content: string; usage?: unknown; cost: number } }> = new Map()
   private static defaultTtlMs = Number(process.env.PPX_CACHE_TTL_MS || 24*60*60*1000)
   private readonly debug: boolean = process.env.NODE_ENV === 'development' || process.env.PPX_DEBUG === 'true'
 
@@ -23,7 +23,7 @@ export class PerplexityService {
     systemPrompt: string,
     userPrompt: string,
     options: { maxTokens?: number; temperature?: number; model?: string } = {}
-  ): Promise<{ content: string; usage?: any; cost: number }> {
+  ): Promise<{ content: string; usage?: unknown; cost: number }> {
     if (this.debug) {
       console.log('🚀 Perplexity Request:')
       console.log('   System:', systemPrompt.slice(0, 100) + '...')
@@ -53,22 +53,26 @@ export class PerplexityService {
       try { console.log('📤 Request payload:', JSON.stringify(payload).slice(0, 400) + '…') } catch {}
     }
 
-    const doFetch = async () => fetch(this.baseURL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-        'User-Agent': 'CareerLever/1.0'
-      },
-      body: JSON.stringify(payload),
-    })
+    // timeout implemented below via AbortController
 
     const maxRetries = 3
-    let lastErr: any
+    let lastErr: unknown
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         if (this.debug) console.log(`🔄 Attempt ${attempt + 1}/${maxRetries}`)
-        const res = await doFetch()
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 600000)
+        const res: Response = await fetch(this.baseURL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'CareerLever/1.0'
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        })
+        clearTimeout(timer)
         if (this.debug) {
           console.log(`📡 Response status: ${res.status} ${res.statusText}`)
           try { console.log('📡 Response headers:', Object.fromEntries(res.headers.entries())) } catch {}
@@ -89,13 +93,13 @@ export class PerplexityService {
           }
           throw error
         }
-        const data = await res.json()
+        const data: { choices?: Array<{ message?: { content?: string } }>; usage?: unknown } = await res.json()
         if (!data?.choices?.[0]?.message?.content) {
           const err = new Error(`Invalid response structure: ${JSON.stringify(data).slice(0, 400)}`)
           if (this.debug) console.error('❌ Invalid response:', err.message)
           throw err
         }
-        const value = {
+        const value: { content: string; usage?: unknown; cost: number } = {
           content: data.choices[0].message.content,
           usage: data?.usage,
           cost: this.calculateCost(data?.usage),
@@ -107,10 +111,11 @@ export class PerplexityService {
         }
         PerplexityService.memoryCache.set(key, { expiresAt: Date.now() + PerplexityService.defaultTtlMs, value })
         return value
-      } catch (e: any) {
+      } catch (e: unknown) {
         lastErr = e
-        if (this.debug) console.error(`❌ Attempt ${attempt + 1} failed:`, e?.message || e)
-        if (String(e?.message || '').includes('401') || String(e?.message || '').includes('403')) break
+        const msg = (e as Error)?.message || String(e)
+        if (this.debug) console.error(`❌ Attempt ${attempt + 1} failed:`, msg)
+        if (msg.includes('401') || msg.includes('403')) break
         if (attempt === maxRetries - 1) break
         const backoff = 400 * Math.pow(2, attempt)
         if (this.debug) console.log(`⏳ Retrying in ${backoff}ms...`)
@@ -126,15 +131,20 @@ export class PerplexityService {
     return this.makeRequest(system, userPrompt, { model: options.model || this.defaultModel, maxTokens: options.maxTokens, temperature: options.temperature })
   }
 
-  private calculateCost(usage: any): number {
+  private calculateCost(usage: unknown): number {
     if (!usage) return 0
-    const inputCost = (Number(usage.prompt_tokens || 0) / 1_000_000) * 3
-    const outputCost = (Number(usage.completion_tokens || 0) / 1_000_000) * 15
+    const u = usage as Record<string, unknown>
+    const promptTokens = Number((u as Record<string, unknown>).prompt_tokens as number ?? 0)
+    const completionTokens = Number((u as Record<string, unknown>).completion_tokens as number ?? 0)
+    const inputCost = (promptTokens / 1_000_000) * 3
+    const outputCost = (completionTokens / 1_000_000) * 15
     return inputCost + outputCost
   }
 
-  private makeCacheKey(system: string, user: string, options: any): string {
-    const cryptoMod = require('crypto') as typeof import('crypto')
+  private makeCacheKey(system: string, user: string, options: unknown): string {
+    // dynamic import is not allowed in sync context; fall back to require typed as unknown
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const cryptoMod: typeof import('crypto') = require('crypto')
     const h = cryptoMod.createHash('sha256').update(system + '\n' + user + '\n' + JSON.stringify(options || {})).digest('hex')
     return `ppx:${h}`
   }
@@ -149,8 +159,9 @@ export class PerplexityService {
       const rt = Date.now() - started
       const ok = res.content.trim().toLowerCase().includes('ok')
       return { status: ok && rt < 5000 ? 'healthy' : 'degraded', details: { ...details, connectivity: true, responseTime: rt } }
-    } catch (e: any) {
-      return { status: 'unhealthy', details: { ...details, error: e?.message || 'health failed' } }
+    } catch (e: unknown) {
+      const msg = (e as Error)?.message || 'health failed'
+      return { status: 'unhealthy', details: { ...details, error: msg } }
     }
   }
 

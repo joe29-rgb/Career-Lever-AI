@@ -133,9 +133,10 @@ const TEMPLATES = [
 
 interface ResumeBuilderProps {
   userId: string
+  mode?: 'full' | 'contentOnly'
 }
 
-export function ResumeBuilder({ userId }: ResumeBuilderProps) {
+export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('modern')
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
@@ -552,6 +553,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
   return (
     <div className="space-y-8">
       {/* Template Selection */}
+      {mode === 'full' && (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -591,6 +593,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Builder Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1154,6 +1157,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
         </div>
 
         {/* Preview Panel */}
+        {mode === 'full' && (
         <div className="space-y-6">
           {/* Resume Preview */}
           <Card>
@@ -1325,6 +1329,7 @@ export function ResumeBuilder({ userId }: ResumeBuilderProps) {
             </CardContent>
           </Card>
         </div>
+        )}
       </div>
     </div>
   )

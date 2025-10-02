@@ -33,9 +33,14 @@ type CompanyResearchProps = {
   onError?: (error: string) => void
   titleOverride?: string
   descriptionOverride?: string
+  autoRun?: boolean
+  hideInputs?: boolean
+  hideActions?: boolean
+  defaultSubject?: string
+  defaultBody?: string
 }
 
-export default function CompanyResearch({ initialCompanyName, onResearchComplete, onError, titleOverride, descriptionOverride }: CompanyResearchProps = {}) {
+export default function CompanyResearch({ initialCompanyName, onResearchComplete, onError, titleOverride, descriptionOverride, autoRun, hideInputs, hideActions, defaultSubject, defaultBody }: CompanyResearchProps = {}) {
   const [companyName, setCompanyName] = useState(initialCompanyName || (typeof window !== 'undefined' ? localStorage.getItem('job:company') || '' : ''))
   const [website, setWebsite] = useState<string>(()=>{ try { return localStorage.getItem('job:website') || '' } catch { return '' } })
   const [jobTitle, setJobTitle] = useState<string>(()=>{ try { return localStorage.getItem('job:title') || '' } catch { return '' } })
@@ -57,6 +62,25 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
   const [composeBody, setComposeBody] = useState('')
   const [composeTo, setComposeTo] = useState('')
   const [downloading, setDownloading] = useState(false)
+
+  // Auto-run research on mount if requested
+  useEffect(() => {
+    if (autoRun && !researchResult && !isResearching) {
+      // Derive defaults from localStorage if present
+      try {
+        const c = localStorage.getItem('job:company') || ''
+        const w = localStorage.getItem('job:website') || ''
+        const t = localStorage.getItem('job:title') || ''
+        const l = localStorage.getItem('job:location') || ''
+        if (c) setCompanyName(c)
+        if (w) setWebsite(w)
+        if (t) setJobTitle(t)
+        if (l) setLocation(l)
+      } catch {}
+      // Fire and forget
+      handleResearch()
+    }
+  }, [])
 
   const handleResearch = async () => {
     if (!companyName.trim()) {
@@ -195,15 +219,16 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
 
   // Intro email helpers
   const openComposer = (person: any) => {
-    const subj = `Introduction regarding ${jobTitle || 'an opportunity'} – ${companyName}`
+    const subj = (defaultSubject && defaultSubject.trim()) ? defaultSubject : `Introduction regarding ${jobTitle || 'an opportunity'} – ${companyName}`
     const greeting = `Hello ${person?.name?.split(' ')[0] || 'there'},`
-    const body = `${greeting}\n\n` +
+    const fallbackBody = `${greeting}\n\n` +
       `I’m reaching out regarding ${jobTitle || 'an opportunity'} at ${companyName}. ` +
       `I believe my background aligns well and I’d welcome the chance to connect.\n\n` +
       `Please see attached resume and a brief cover letter summarizing my fit. ` +
       `Happy to share more details or schedule a short call at your convenience.\n\n` +
       `Best regards,\n` +
       (typeof window !== 'undefined' ? (localStorage.getItem('user:name') || 'Candidate') : 'Candidate')
+    const body = (defaultBody && defaultBody.trim()) ? defaultBody : fallbackBody
     setComposeSubject(subj)
     setComposeBody(body)
     setComposeTo(typeof person?.email === 'string' ? person.email : '')
@@ -238,23 +263,34 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
 
   const downloadLatestResume = async () => {
     try {
-      const rl = await fetch('/api/resume/list')
-      if (!rl.ok) return
-      const rj = await rl.json()
-      const txt: string = rj?.resumes?.[0]?.extractedText || ''
-      if (!txt) return
+      // Prefer selected optimized HTML from optimizer step
+      let html = ''
+      try { html = localStorage.getItem('cf:selectedResumeHtml') || '' } catch {}
+      if (!html) {
+        const rl = await fetch('/api/resume/list')
+        if (!rl.ok) return
+        const rj = await rl.json()
+        const txt: string = rj?.resumes?.[0]?.extractedText || ''
+        if (!txt) return
+        html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resume</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${txt.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>`
+      }
       const name = `${companyName || 'Company'}_${jobTitle || 'Role'}_Resume`
-      await downloadPdfFromHtml(txt, name)
+      await downloadPdfFromHtml(html, name)
     } catch {}
   }
 
   const downloadLatestCoverLetter = async () => {
     try {
-      const cl = await fetch('/api/cover-letter/list')
-      if (!cl.ok) return
-      const cj = await cl.json()
-      const latest = Array.isArray(cj.letters) && cj.letters.length ? cj.letters[0] : null
-      const content: string = latest?.content || ''
+      // Prefer selected cover letter from wizard
+      let content = ''
+      try { content = localStorage.getItem('cf:selectedCoverLetter') || '' } catch {}
+      if (!content) {
+        const cl = await fetch('/api/cover-letter/list')
+        if (!cl.ok) return
+        const cj = await cl.json()
+        const latest = Array.isArray(cj.letters) && cj.letters.length ? cj.letters[0] : null
+        content = latest?.content || ''
+      }
       if (!content) return
       const name = `${companyName || 'Company'}_${jobTitle || 'Role'}_CoverLetter`
       await downloadPdfFromHtml(content, name)
@@ -282,6 +318,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
         )}
 
         {/* Form */}
+        {!hideInputs && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="companyName">Company Name *</Label>
@@ -300,6 +337,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
             <Input id="location" placeholder="e.g., Edmonton, AB" value={location} onChange={(e)=>setLocation(e.target.value)} disabled={isResearching} />
           </div>
         </div>
+        )}
 
         {/* Progress */}
         {isResearching && (
@@ -318,6 +356,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
         )}
 
         {/* Actions */}
+        {!hideActions && (
         <div className="flex gap-3">
           <Button onClick={handleResearch} disabled={isResearching || !companyName.trim()} className="flex-1">
             {isResearching ? (<><Search className="mr-2 h-4 w-4" /> Researching...</>) : (<><Search className="mr-2 h-4 w-4" /> Research Company</>) }
@@ -328,6 +367,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
             </Button>
           )}
         </div>
+        )}
 
         {/* Results */}
         {researchResult && (
