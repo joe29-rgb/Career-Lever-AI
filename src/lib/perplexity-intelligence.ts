@@ -466,13 +466,18 @@ For each item, set source to the primary domain where the job was found.`
     if (cached) return cached
     try {
       const client = createClient()
-      const system = `You are a resume NLP analyst with real-time knowledge of hiring terminology.\nReturn STRICT JSON only.`
-      const user = `Analyze this full resume and extract: (1) candidate LOCATION as "City, Province|State" if present; (2) 12-${Math.max(12, Math.min(30, maxKeywords))} normalized KEYWORDS covering roles, core skills, technologies, and industry terms.\n\nRULES:\n- Exclude personal identifiers, emails, URLs, phone numbers, 'linkedin', 'gmail', 'www'\n- Prefer terms from Experience/Achievements sections\n- Normalize technology names (e.g., node -> Node.js)\n- Output JSON only in this format:\n{ "location": "City, AB" | "City, State" | null, "keywords": ["term1", "term2", ...] }\n\nRESUME:\n${resumeText}`
+      const system = `You are a resume NLP analyst with real-time knowledge of hiring terminology. Return STRICT JSON only.`
+      const user = `Read the provided resume. Extract and return two ranked lists:\n1) Industry-Weighted Keywords: Prioritize the most important skills, technologies, roles, and industries based on work history, achievements, and frequency.\n2) Location Keywords: List and rank all city/region/province references in the resume; prioritize those tied to work history and current role.\n\nRULES:\n- Exclude emails, URLs, phone numbers, and generic tokens like 'linkedin', 'gmail', 'www'\n- Normalize technology names (e.g., node -> Node.js, ts -> TypeScript)\n- Keep lists concise and ready for job matching\n- Output ONLY JSON in this exact schema:\n{\n  "industryWeighted": ["keyword1", "keyword2", ...],\n  "locationKeywords": ["City, Province", "Region", ...],\n  "primaryLocation": "City, Province" | null\n}\n\nRESUME:\n${resumeText}`
       const out = await client.makeRequest(system, user, { temperature: 0.1, maxTokens: 800 })
       const text = (out.content || '').trim()
-      const parsed = JSON.parse(text) as { location?: string | null; keywords?: string[] }
-      const kws = Array.isArray(parsed.keywords) ? parsed.keywords.map(s => String(s)).filter(Boolean) : []
-      const loc = parsed.location && typeof parsed.location === 'string' ? parsed.location : undefined
+      const parsed = JSON.parse(text) as { industryWeighted?: string[]; locationKeywords?: string[]; primaryLocation?: string | null; location?: string | null; keywords?: string[] }
+      const kwsRaw = Array.isArray(parsed.industryWeighted) ? parsed.industryWeighted : (Array.isArray(parsed.keywords) ? parsed.keywords : [])
+      const kws = kwsRaw.map(s => String(s)).filter(Boolean)
+      const loc = (typeof parsed.primaryLocation === 'string' && parsed.primaryLocation) ? parsed.primaryLocation : (
+        Array.isArray(parsed.locationKeywords) && parsed.locationKeywords.length ? String(parsed.locationKeywords[0]) : (
+          typeof parsed.location === 'string' ? parsed.location : undefined
+        )
+      )
       const result = { keywords: kws.slice(0, maxKeywords), location: loc }
       setCache(key, result)
       return result
