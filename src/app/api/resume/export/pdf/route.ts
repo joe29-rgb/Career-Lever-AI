@@ -46,14 +46,18 @@ export async function POST(request: NextRequest) {
     process.env.all_proxy = ''
     process.env.NO_PROXY = '*'
     process.env.no_proxy = '*'
+    // Prefer system chromium path in Railway if available, fallback to @sparticuz/chromium
+    const execPath = process.env.CHROMIUM_PATH || await chromium.executablePath()
     const browser = await puppeteer.launch({
       args,
-      executablePath: await chromium.executablePath(),
-      headless: true,
+      executablePath: execPath,
+      headless: 'new',
     })
 
 		const page = await browser.newPage()
-		await page.setContent(html, { waitUntil: 'networkidle0' })
+    // Ensure minimal HTML skeleton if the client passed text only
+    const safeHtml = /<html|<body|<div|<section/i.test(html) ? html : `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><pre style="white-space:pre-wrap;font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#111">${html.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body></html>`
+    await page.setContent(safeHtml, { waitUntil: 'networkidle0' })
 		const pdfBuffer = await page.pdf({
 			format: 'A4',
 			printBackground: true,

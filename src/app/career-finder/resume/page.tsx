@@ -4,10 +4,12 @@ import { ResumeUpload } from '@/components/resume-upload'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { ResumeBuilder } from '@/app/resume-builder/components/resume-builder'
 
 export default function CareerFinderResumePage() {
   const router = useRouter()
   const [hasResume, setHasResume] = useState<boolean>(false)
+  const [showBuilder, setShowBuilder] = useState<boolean>(false)
   useEffect(() => {
     (async () => {
       try {
@@ -22,10 +24,19 @@ export default function CareerFinderResumePage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-700">Upload your resume or build one. When done, proceed to search.</div>
-      <ResumeUpload onUploadSuccess={() => router.push('/career-finder/search')} onUploadError={()=>{}} />
-      <div className="text-sm">
-        No resume? <Link className="underline" href="/resume-builder">Build one</Link>
-      </div>
+      {!showBuilder && (
+        <>
+          <ResumeUpload onUploadSuccess={() => router.push('/career-finder/search')} onUploadError={()=>{}} />
+          <div className="text-sm">
+            No resume? <button className="underline" onClick={()=>setShowBuilder(true)}>Build one</button>
+          </div>
+        </>
+      )}
+      {showBuilder && (
+        <div className="border rounded p-3">
+          <ResumeBuilder userId="me" />
+        </div>
+      )}
       <div className="text-right">
         {hasResume ? (
           <Link className="inline-block px-4 py-2 border rounded" href="/career-finder/search">Next</Link>
