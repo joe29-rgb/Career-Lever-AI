@@ -101,6 +101,14 @@ export interface IntelligenceResponse {
   contacts: Array<{ name: string; title: string; url?: string; source?: string; confidence: number }>
   growth: Array<{ signal: string; source?: string; confidence: number }>
   summary: string
+  description: string  // ADDED: Company overview
+  size: string  // ADDED: Employee count or scale
+  revenue: string  // ADDED: Annual revenue estimate
+  industry: string  // ADDED: Primary industry/sector
+  founded: string  // ADDED: Founding year
+  headquarters: string  // ADDED: HQ location
+  psychology: string  // ADDED: Company culture/psychology insights
+  marketIntelligence: string  // ADDED: Market position and trends
 }
 
 // V2 Data structures (for job listings and contacts)
@@ -176,7 +184,7 @@ export class PerplexityIntelligenceService {
       const out = await withRetry(async () => {
         const client = createClient()
         const user = `Research current intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
-Return a JSON object with: company, freshness (ISO datetime), sources[{title,url}], confidence (0..1), financials[{metric,value,confidence,source}], culture[{point,confidence,source}], salaries[{title,range,currency,geo,source,confidence}], contacts[{name,title,url,source,confidence}], growth[{signal,source,confidence}], summary.`
+Return a JSON object with: company, description (overview), size (employee count), revenue (annual estimate), industry, founded (year), headquarters (location), psychology (culture insights), marketIntelligence (position/trends), freshness (ISO datetime), sources[{title,url}], confidence (0..1), financials[{metric,value,confidence,source}], culture[{point,confidence,source}], salaries[{title,range,currency,geo,source,confidence}], contacts[{name,title,url,source,confidence}], growth[{signal,source,confidence}], summary.`
         const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400 })
         if (!res.content?.trim()) throw new Error('Empty response')
         return res
