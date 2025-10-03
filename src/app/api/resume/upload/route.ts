@@ -100,17 +100,51 @@ export async function POST(request: NextRequest) {
 
     const tooShort = !extractedText || extractedText.trim().length < 50
     if (tooShort && !pastedText) {
-      // Attempt a super-lightweight fallback by reading first 2KB as text (best effort)
+      // Attempt server-side pdfjs-dist fallback before ASCII
       try {
         if (file) {
+          const bytes = await file.arrayBuffer();
+          const buffer = Buffer.from(bytes);
+          const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
+          // Disable worker in Node context
+          // @ts-ignore
+          if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) pdfjsLib.GlobalWorkerOptions.workerSrc = undefined
+          // @ts-ignore
+          const loadingTask = pdfjsLib.getDocument({ data: buffer })
+          // @ts-ignore
+          const pdf = await loadingTask.promise
+          let textOut = ''
+          const numPages = Math.min(pdf.numPages || 1, 20)
+          for (let p = 1; p <= numPages; p++) {
+            // @ts-ignore
+            const page = await pdf.getPage(p)
+            const content = await page.getTextContent()
+            const pageText = content.items.map((it:any)=> it.str).join(' ')
+            textOut += ' ' + pageText
+          }
+          textOut = (textOut || '')
+            .replace(/https?:\/\/\S+/g, ' ')
+            .replace(/[\u0000-\u001F\u007F]+/g, ' ')
+            .replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+          if (textOut && textOut.length >= 80) {
+            extractedText = textOut
+            extractionMethod = 'server_pdfjs'
+          }
+        }
+      } catch {}
+      // Fallback to lightweight ASCII if still short
+      try {
+        if ((!extractedText || extractedText.length < 50) && file) {
           const bytes = await file.arrayBuffer();
           const buffer = Buffer.from(bytes);
           const ascii = buffer.toString('utf8')
             .replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ')
             .replace(/https?:\/\/\S+/g, ' ')
-            .replace(/[\u0000-\u001F]+/g, ' ')
+            .replace(/[\u0000-\u001F\u007F]+/g, ' ')
             .replace(/\s+/g, ' ')
-            .slice(0, 4000)
+            .slice(0, 8000)
           if (ascii && ascii.length >= 50) {
             extractedText = ascii
             extractionMethod = 'ascii_fallback'
