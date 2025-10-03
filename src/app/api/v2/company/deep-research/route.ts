@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { WebScraperService } from '@/lib/web-scraper'
-import { connectToDatabase } from '@/lib/mongodb'
+import connectToDatabase from '@/lib/mongodb' // Default import
 import Profile from '@/models/Profile'
 
 const webScraper = new WebScraperService()

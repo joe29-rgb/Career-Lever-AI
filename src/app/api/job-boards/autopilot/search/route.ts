@@ -5,7 +5,7 @@ import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { scrapeCanadianJobs } from '@/lib/canadian-job-scraper'
 import Resume from '@/models/Resume'
 import Profile from '@/models/Profile'
-import { connectToDatabase } from '@/lib/mongodb'
+import connectToDatabase from '@/lib/mongodb' // Default import
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     )
 
     const allJobs = [...scrapedJobs, ...perplexityJobs]
-
+    
     // Dedupe by title + company (case-insensitive)
     const uniqueJobs = allJobs.filter((job, index, self) => 
       index === self.findIndex(j => 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[AUTOPILOT] Scraped:', scrapedJobs.length, 'Perplexity:', perplexityJobs.length, 'Unique recent Canadian:', canadianJobs.length)
 
-    // Save to profile for analytics
+    // Save search metadata to profile for analytics
     await Profile.findOneAndUpdate(
       { userId: session.user.id },
       { 
@@ -90,22 +90,22 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[AUTOPILOT] Full search failed:', error)
-    // Graceful fallback to small real-like set
+    console.error('[AUTOPILOT] Search failed:', error)
+    // Fallback to small mock set for grace
     return NextResponse.json({
       success: true,
       results: [
         { 
           title: 'Software Developer - Edmonton', 
           company: 'Local Tech Firm', 
-          location: 'Edmonton, AB', 
+          location: locations, 
           url: 'https://jobbank.gc.ca/jobsearch/jobposting123', 
           postedDate: new Date(Date.now() - 3*24*60*60*1000).toISOString(),
           source: 'Job Bank Fallback'
         }
       ],
       metadata: { error: (error as Error).message, fallback: true }
-    }, { status: 200 })
+    }, { status: 200 }) // Graceful degradation
   }
 }
 

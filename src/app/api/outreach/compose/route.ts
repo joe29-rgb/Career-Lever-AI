@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { composeEmail } from '@/lib/email-service'
 import Application from '@/models/Application' // Assume model exists or create
-import { connectToDatabase } from '@/lib/mongodb'
+import connectToDatabase from '@/lib/mongodb' // Default import
 
 export async function POST(request: NextRequest) {
   try {

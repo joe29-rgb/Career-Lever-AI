@@ -51,6 +51,7 @@
         "framer-motion": "^10.18.0",
         "jsonwebtoken": "^9.0.0",
         "jspdf": "^2.5.0",
+        "luc": "^0.3.1",
         "lucide-react": "^0.294.0",
         "mongodb": "^6.19.0",
         "mongoose": "^8.0.0",
