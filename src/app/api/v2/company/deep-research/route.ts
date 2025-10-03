@@ -26,13 +26,17 @@ export async function POST(request: NextRequest) {
     console.log('[COMPANY] Researching:', companyName)
 
     // Step 1: Basic company research via Perplexity V2
-    const research = await PerplexityIntelligenceService.researchCompanyV2(companyName, targetRole, location)
+    const research = await PerplexityIntelligenceService.researchCompanyV2({ 
+      company: companyName, 
+      role: targetRole, 
+      geo: location 
+    })
 
     // Step 2: Website scraping for contacts
     let siteContacts = { emails: [], phones: [], addresses: [] }
     if (companyWebsite) {
       try {
-        siteContacts = await webScraper.scrapeCompanyWebsite(companyWebsite)
+        siteContacts = await webScraper.scrapeContactInfoFromWebsite(companyWebsite)
         console.log('[COMPANY] Site contacts found:', siteContacts.emails.length)
       } catch (error) {
         console.error('[COMPANY] Site scrape failed:', error)
