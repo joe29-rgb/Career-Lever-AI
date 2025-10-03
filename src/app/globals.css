@@ -947,8 +947,8 @@
     /* Job Card Styles (inspired by Dribbble: white cards on dark, purple accents, hover lift) */
     
     .job-card {
-        @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover: shadow-lg transition-all duration-200 overflow-hidden;
-        group-hover: translateY(-2px);
+        @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden;
+        group-hover:translateY(-2px);
         border-radius: 1rem;
     }
     
@@ -1015,7 +1015,7 @@
     }
     
     .apply-btn {
-        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover:from-purple-600 hover:to-blue-600 hover:scale-105;
+        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover: from-purple-600 hover: to-blue-600 hover: scale-105;
     }
     /* Search Hero (top of jobs/dashboard pages) */
     
