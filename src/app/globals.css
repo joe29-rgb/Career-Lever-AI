@@ -725,6 +725,7 @@
 
 
 /* Job Card Styles - Fixed Tailwind @apply without spaces */
+
 .job-card {
   @apply relative bg-card border border-border rounded-xl p-6 shadow-md transition-all duration-200 overflow-hidden;
 }
@@ -738,10 +739,10 @@
 }
 
 .job-card-header {
-    display: flex;
-    align-items: start;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
 }
 
 .job-logo {
