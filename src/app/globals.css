@@ -727,14 +727,8 @@
 /* Job Card Styles (inspired by Dribbble: white cards on dark, purple accents, hover lift) */
 
 .job-card {
-    position: relative;
-    background: hsl(var(--card));
-    border: 1px solid hsl(var(--border));
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    transition: all 0.2s ease;
-    overflow: hidden;
+    @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden;
+    group-hover:translateY(-2px);
 }
 
 .job-card:hover {
@@ -745,8 +739,7 @@
 
 /* Group hover for lift effect */
 
-.group-hover:translateY(-2px);
-
+group-hover:translateY(-2px);
 .job-card-header {
     display: flex;
     align-items: start;
