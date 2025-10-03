@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       searchMeta: {
         query: `${keywords} in ${location}`,
         total: jobs.length,
-        sources: [...new Set(jobs.map(j => j.source))],
+        sources: Array.from(new Set(jobs.map(j => j.source))),
         searchedAt: new Date().toISOString()
       }
     })
