@@ -467,29 +467,24 @@ For each item, set source to the primary domain where the job was found.`
     maxKeywords: number = 50,
     locationHint?: string
   ): Promise<{ keywords: string[]; location?: string; locations?: string[] }> {
-    const key = makeKey('ppx:resume:signals:v2', { t: resumeText.slice(0, 2000), maxKeywords, locationHint: locationHint || '' })
+    const key = makeKey('ppx:resume:signals:v2', { t: resumeText, maxKeywords, locationHint: locationHint || '' })
     const cached = getCache(key) as { keywords: string[]; location?: string; locations?: string[] } | undefined
     if (cached) return cached
     try {
       const client = createClient()
-      const system = `You are a resume NLP analyst with real-time knowledge of hiring terminology. Return STRICT JSON only.`
-      const user = `Read the provided resume. Extract and return two ranked lists:
-1) Industry-Weighted Keywords: Prioritize important skills, technologies, roles, and industries based on cumulative tenure across work history (weight longer roles higher; do not overweight very recent < 6 months). Normalize technologies (e.g., node -> Node.js, ts -> TypeScript).
-2) Location Keywords: List and rank all city/region/province mentions; prefer the most recent long-tenure role and the header location. ${locationHint ? `If ${locationHint} appears in header or work history, rank it first.` : ''}
+      const system = `You are a resume NLP analyst. Return STRICT JSON only.`
+      const user = `Extract industry-weighted keywords and location from this resume. Weight by job tenure and normalize technologies.
 
-CRITICAL CLEANUP:
-- Ignore PDF metadata or artifacts (Producer, Creator, Skia, xref, obj/endobj, CreationDate, ModDate, Title, stream) and any URLs/emails/phone numbers.
-- Exclude tokens like 'linkedin', 'gmail', 'www'.
-
-OUTPUT ONLY JSON in this schema:
-{
-  "industryWeighted": ["keyword1", "keyword2", ...],
-  "locationKeywords": ["City, Province", "Region", ...],
-  "primaryLocation": "City, Province" | null
+Return JSON: {
+  "industryWeighted": ["keyword1", ...],
+  "locationKeywords": ["City, Province", ...],
+  "primaryLocation": "City, Province"
 }
 
+${locationHint ? `Header location hint: ${locationHint}` : ''}
+
 RESUME:\n${resumeText}`
-      const out = await client.makeRequest(system, user, { temperature: 0.05, maxTokens: 1500 })
+      const out = await client.makeRequest(system, user, { temperature: 0.2, maxTokens: 1200 })
       const text = (out.content || '').trim()
       // Debug raw response preview
       try { console.log('[signals:raw]', text.slice(0, 500)) } catch {}
