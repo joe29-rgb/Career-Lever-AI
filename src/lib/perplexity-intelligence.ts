@@ -148,6 +148,9 @@ export interface QuickSearchItem {
   snippet: string
   source: string
   postedDate?: string
+  location?: string
+  company?: string
+  date?: string
 }
 
 const SYSTEM = `You are a research analyst using real-time web tools.

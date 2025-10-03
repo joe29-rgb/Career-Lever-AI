@@ -6,6 +6,7 @@ import { scrapeCanadianJobs } from '@/lib/canadian-job-scraper'
 import Resume from '@/models/Resume'
 import Profile from '@/models/Profile'
 import connectToDatabase from '@/lib/mongodb' // Default import
+import { scrapeRealCanadianJobs } from '@/lib/real-canadian-scraper'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,13 +25,13 @@ export async function POST(request: NextRequest) {
 
     console.log('[AUTOPILOT] Search params:', { keywords, locations, radiusKm, days, limit })
 
-    // Real Canadian scraping
-    const scrapedJobs = await scrapeCanadianJobs(keywords.split(',').map((k: string) => k.trim()).filter(Boolean), locations)
-
-    // Perplexity quick search for additional results
+    // Replace with real scraping
+    const scrapedJobs = await scrapeRealCanadianJobs(keywords, locations)
+    
+    // Perplexity for additional
     const perplexityJobs = await PerplexityIntelligenceService.jobQuickSearch(
       `${keywords} ${locations}`,
-      ['jobbank.gc.ca', 'ca.indeed.com', 'ca.linkedin.com', 'workopolis.com', 'jobboom.com', 'glassdoor.ca', 'eluta.ca'],
+      ['jobbank.gc.ca', 'ca.indeed.com'],
       Math.max(0, limit - scrapedJobs.length),
       `${days}d`
     )
@@ -54,8 +55,8 @@ export async function POST(request: NextRequest) {
 
     // Prioritize Canadian locations
     const canadianJobs = recentJobs.filter(job =>
-      job.location.includes('AB') || job.location.includes('ON') || job.location.includes('BC') || // Provinces
-      job.location.toLowerCase().includes('canada') || job.location.toLowerCase().includes('edmonton')
+      (job.location || '').includes('AB') || (job.location || '').includes('ON') || (job.location || '').includes('BC') ||
+      (job.location || '').toLowerCase().includes('canada') || (job.location || '').toLowerCase().includes('edmonton')
     )
 
     console.log('[AUTOPILOT] Scraped:', scrapedJobs.length, 'Perplexity:', perplexityJobs.length, 'Unique recent Canadian:', canadianJobs.length)
