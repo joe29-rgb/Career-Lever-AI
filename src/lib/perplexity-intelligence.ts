@@ -464,7 +464,7 @@ For each item, set source to the primary domain where the job was found.`
   // Extracts normalized keywords and a likely location from a full resume using PPX
   static async extractResumeSignals(
     resumeText: string,
-    maxKeywords: number = 18,
+    maxKeywords: number = 50,
     locationHint?: string
   ): Promise<{ keywords: string[]; location?: string; locations?: string[] }> {
     const key = makeKey('ppx:resume:signals:v2', { t: resumeText.slice(0, 2000), maxKeywords, locationHint: locationHint || '' })
@@ -489,8 +489,10 @@ OUTPUT ONLY JSON in this schema:
 }
 
 RESUME:\n${resumeText}`
-      const out = await client.makeRequest(system, user, { temperature: 0.1, maxTokens: 800 })
+      const out = await client.makeRequest(system, user, { temperature: 0.05, maxTokens: 1500 })
       const text = (out.content || '').trim()
+      // Debug raw response preview
+      try { console.log('[signals:raw]', text.slice(0, 500)) } catch {}
       const parsed = JSON.parse(text) as { industryWeighted?: string[]; locationKeywords?: string[]; primaryLocation?: string | null; location?: string | null; keywords?: string[] }
       const kwsRaw = Array.isArray(parsed.industryWeighted) ? parsed.industryWeighted : (Array.isArray(parsed.keywords) ? parsed.keywords : [])
       const kws = kwsRaw.map(s => String(s)).filter(Boolean)

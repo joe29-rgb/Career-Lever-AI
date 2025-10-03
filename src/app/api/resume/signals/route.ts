@@ -20,8 +20,12 @@ export async function GET(req: NextRequest) {
     // Provide header location hint if present to guide PPX
     const headerMatch = txt.split(/\n|\r/).slice(0, 40).join(' ').match(/([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)/)
     const hint = headerMatch && headerMatch[0] ? headerMatch[0] : undefined
+    // Debug: log resume snippet being sent
+    try {
+      console.log('[signals:input]', { len: txt.length, preview: txt.slice(0, 500) })
+    } catch {}
     const started = Date.now()
-    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 20, hint)
+    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 50, hint)
     const durationMs = Date.now() - started
     // Basic verification logging (best-effort, do not block)
     try {

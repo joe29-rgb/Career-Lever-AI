@@ -75,7 +75,9 @@ export async function POST(request: NextRequest) {
       try {
         const pdfParse = (await import('pdf-parse')).default
         const pdfData = await pdfParse(buffer)
-        extractedText = pdfData.text?.trim() || ''
+        // Clean obvious PDF artifacts
+        const raw = (pdfData.text || '')
+        extractedText = raw.replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ').replace(/https?:\/\/\S+/g, ' ').replace(/[\u0000-\u001F]+/g, ' ').replace(/\s+/g, ' ').trim()
         if (extractedText) extractionMethod = 'server_pdf_parse'
       } catch (error) {
         // Quiet noisy environment errors; rely on clientText/paste when available
@@ -103,7 +105,12 @@ export async function POST(request: NextRequest) {
         if (file) {
           const bytes = await file.arrayBuffer();
           const buffer = Buffer.from(bytes);
-          const ascii = buffer.toString('utf8').replace(/\s+/g, ' ').slice(0, 2000)
+          const ascii = buffer.toString('utf8')
+            .replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ')
+            .replace(/https?:\/\/\S+/g, ' ')
+            .replace(/[\u0000-\u001F]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .slice(0, 4000)
           if (ascii && ascii.length >= 50) {
             extractedText = ascii
             extractionMethod = 'ascii_fallback'
@@ -170,7 +177,8 @@ export async function POST(request: NextRequest) {
       const skills = Array.from(new Set((text.match(/[A-Za-z][A-Za-z0-9+.#-]{2,}/g) || [])
         .filter(w => w.length <= 30)
         .slice(0, 200)))
-      const locationMatch = (text.match(/([A-Z][a-zA-Z]+),\s*([A-Z]{2,3})/) || [])[0]
+      // Prefer Canadian province codes, avoid false matches by requiring comma and 2-letter code from known set
+      const locationMatch = (text.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)\b/) || [])[0]
       const industries: string[] = []
       if (/healthcare|hospital|clinic/i.test(text)) industries.push('healthcare')
       if (/fintech|bank|finance|insurance/i.test(text)) industries.push('finance')
