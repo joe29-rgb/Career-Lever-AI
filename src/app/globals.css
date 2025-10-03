@@ -517,18 +517,21 @@
         -webkit-line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        line-clamp: 1;
     }
     .line-clamp-2 {
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        line-clamp: 2;
     }
     .line-clamp-3 {
         display: -webkit-box;
         -webkit-line-clamp: 3;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        line-clamp: 3;
     }
     /* Custom scrollbar */
      ::-webkit-scrollbar {
@@ -742,9 +745,7 @@
 
 /* Group hover for lift effect */
 
-.group:hover .job-card {
-    transform: translateY(-2px);
-}
+.group-hover:translateY(-2px);
 
 .job-card-header {
     display: flex;
@@ -929,8 +930,9 @@
 }
 
 .search-input:focus-visible {
-    ring-width: 2px;
-    ring-color: hsl(var(--primary));
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px hsl(var(--ring) / 0.1);
 }
 
 .search-btn {
