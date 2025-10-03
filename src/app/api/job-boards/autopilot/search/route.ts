@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
     console.log('[AUTOPILOT] Search params:', { keywords, locations, radiusKm, days, limit })
 
     // Real Canadian scraping
-    const scrapedJobs = await scrapeCanadianJobs(keywords.split(',').map(k => k.trim()).filter(Boolean), locations)
-    
+    const scrapedJobs = await scrapeCanadianJobs(keywords.split(',').map((k: string) => k.trim()).filter(Boolean), locations)
+
     // Perplexity quick search for additional results
     const perplexityJobs = await PerplexityIntelligenceService.jobQuickSearch(
       `${keywords} ${locations}`,
@@ -36,11 +36,11 @@ export async function POST(request: NextRequest) {
     )
 
     const allJobs = [...scrapedJobs, ...perplexityJobs]
-    
+
     // Dedupe by title + company (case-insensitive)
-    const uniqueJobs = allJobs.filter((job, index, self) => 
-      index === self.findIndex(j => 
-        j.title.toLowerCase().includes(job.title.toLowerCase()) && 
+    const uniqueJobs = allJobs.filter((job, index, self) =>
+      index === self.findIndex(j =>
+        j.title.toLowerCase().includes(job.title.toLowerCase()) &&
         j.company.toLowerCase().includes(job.company.toLowerCase())
       )
     )
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Prioritize Canadian locations
-    const canadianJobs = recentJobs.filter(job => 
+    const canadianJobs = recentJobs.filter(job =>
       job.location.includes('AB') || job.location.includes('ON') || job.location.includes('BC') || // Provinces
       job.location.toLowerCase().includes('canada') || job.location.toLowerCase().includes('edmonton')
     )
@@ -63,15 +63,15 @@ export async function POST(request: NextRequest) {
     // Save search metadata to profile for analytics
     await Profile.findOneAndUpdate(
       { userId: session.user.id },
-      { 
-        $set: { 
-          lastSearch: { 
-            keywords, 
-            locations, 
-            timestamp: new Date(), 
+      {
+        $set: {
+          lastSearch: {
+            keywords,
+            locations,
+            timestamp: new Date(),
             resultsCount: canadianJobs.length,
             sources: { scraped: scrapedJobs.length, perplexity: perplexityJobs.length }
-          } 
+          }
         },
         $push: { searchHistory: { keywords, locations, results: canadianJobs.length, date: new Date() } }
       },
@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       results: canadianJobs.slice(0, limit),
-      metadata: { 
-        scraped: scrapedJobs.length, 
-        perplexity: perplexityJobs.length, 
-        unique: uniqueJobs.length, 
-        canadian: canadianJobs.length 
+      metadata: {
+        scraped: scrapedJobs.length,
+        perplexity: perplexityJobs.length,
+        unique: uniqueJobs.length,
+        canadian: canadianJobs.length
       }
     })
 
@@ -95,12 +95,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       results: [
-        { 
-          title: 'Software Developer - Edmonton', 
-          company: 'Local Tech Firm', 
-          location: locations, 
-          url: 'https://jobbank.gc.ca/jobsearch/jobposting123', 
-          postedDate: new Date(Date.now() - 3*24*60*60*1000).toISOString(),
+        {
+          title: 'Software Developer - Edmonton',
+          company: 'Local Tech Firm',
+          location: 'Edmonton, AB',
+          url: 'https://jobbank.gc.ca/jobsearch/jobposting123',
+          postedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
           source: 'Job Bank Fallback'
         }
       ],

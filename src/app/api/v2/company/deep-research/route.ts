@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     // Step 1: Basic company research via Perplexity V2
     const research = await PerplexityIntelligenceService.researchCompanyV2(companyName, targetRole, location)
-    
+
     // Step 2: Website scraping for contacts
     let siteContacts = { emails: [], phones: [], addresses: [] }
     if (companyWebsite) {
@@ -42,11 +42,11 @@ export async function POST(request: NextRequest) {
     // Step 3: Real hiring contacts via Perplexity (LinkedIn + site search)
     const hiringQuery = `${companyName} hiring manager OR recruiter email OR contact site:linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')} OR site:${companyWebsite}`
     const contacts = await PerplexityIntelligenceService.hiringContactsV2(hiringQuery, companyName)
-    
+
     console.log('[COMPANY] Perplexity contacts:', contacts.emails.length)
 
     // Merge contacts (dedupe emails)
-    const allEmails = [...new Set([...siteContacts.emails, ...contacts.emails])].filter(email => 
+    const allEmails = [...new Set([...siteContacts.emails, ...contacts.emails])].filter(email =>
       email.includes('@') && !email.includes('example.com') // Basic validation
     )
     const allPhones = [...new Set([...siteContacts.phones, ...contacts.phones])]
