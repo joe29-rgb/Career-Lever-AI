@@ -948,7 +948,7 @@
     
     .job-card {
         @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden;
-        group-hover: transform translateY(-2px);
+        group-hover: translateY(-2px);
         border-radius: 1rem;
     }
     
@@ -1015,8 +1015,9 @@
     }
     
     .apply-btn {
-        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover: from-purple-600 hover: to-blue-600 hover: scale-105;
+        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover:from-purple-600 hover:to-blue-600 hover:scale-105;
     }
+    
     /* Search Hero (top of jobs/dashboard pages) */
     
     .search-hero {
@@ -1024,15 +1025,15 @@
     }
     
     .search-input-group {
-        @apply flex flex-col lg: flex-row gap-4 max-w-4xl mx-auto;
+        @apply flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto;
     }
     
     .search-input {
-        @apply flex-1 rounded-lg border border-border px-4 py-3 bg-background/80 text-foreground placeholder: text-muted-foreground focus-visible: ring-2 focus-visible: ring-primary focus-visible: ring-offset-2;
+        @apply flex-1 rounded-lg border border-border px-4 py-3 bg-background/80 text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
     }
     
     .search-btn {
-        @apply w-full lg: w-auto px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover: from-purple-600 hover: to-blue-600 font-semibold hover: scale-105 transition-all duration-200;
+        @apply w-full lg:w-auto px-6 py-3 rounded-lg bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover:from-purple-600 hover:to-blue-600 font-semibold hover:scale-105 transition-all duration-200;
     }
     
     .search-icon {
