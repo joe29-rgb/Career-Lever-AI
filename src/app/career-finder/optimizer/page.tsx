@@ -76,7 +76,7 @@ export default function CareerFinderOptimizerPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mobile-container space-y-4">
       <div className="text-sm text-gray-700">Choose a template, generate A/B variants by tone, and select one to continue.</div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
         {TEMPLATES.map(t => (

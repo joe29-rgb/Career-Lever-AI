@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { ThemeManager } from '@/lib/theme-manager'
+import { DeviceManager } from '@/lib/device-manager'
 import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 import { TopNav } from '@/components/top-nav'
@@ -32,10 +35,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className + ' bg-background text-foreground min-h-screen'}>
+        <script dangerouslySetInnerHTML={{ __html: `try{(${function(){
+          if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
+        }.toString()})()}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{(${ThemeManager.init.toString()})()}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `try{(${DeviceManager.init.toString()})()}catch(e){}` }} />
         <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
           <TopNav />
+          <ThemeToggle />
           <div aria-live="polite" aria-atomic="true" className="sr-only" />
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
             <AppShell>{children}</AppShell>

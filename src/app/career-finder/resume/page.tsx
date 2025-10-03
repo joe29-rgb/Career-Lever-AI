@@ -25,7 +25,7 @@ export default function CareerFinderResumePage() {
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-700">Upload your resume or build one. When done, proceed to search.</div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="mobile-container grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="border rounded p-3">
           <h3 className="font-medium mb-2">Resume Upload</h3>
           {/* Existing resumes selector (best-effort) */}

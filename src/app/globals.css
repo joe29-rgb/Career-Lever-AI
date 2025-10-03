@@ -56,6 +56,51 @@
             --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --gradient-success: linear-gradient(135deg, #667eea 0%, #10b981 100%);
         }
+        /* Theme attribute selectors */
+        [data-theme="light"] {
+            color-scheme: light;
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 84% 4.9%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 84% 4.9%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+        }
+        [data-theme="dark"] {
+            color-scheme: dark;
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 217.2 91.2% 59.8%;
+            --primary-foreground: 222.2 84% 4.9%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 224.3 76.3% 94.1%;
+        }
         /* Skip link */
         .skip-link {
             position: absolute;
@@ -120,6 +165,20 @@
             --border: 217.2 32.6% 17.5%;
             --input: 217.2 32.6% 17.5%;
             --ring: 224.3 76.3% 94.1%;
+        }
+        /* Brand base colors (as requested) */
+         :root {
+            --brand-blue: #2563eb;
+            --brand-red: #ef4444;
+            --brand-yellow: #f59e0b;
+            --brand-green: #10b981;
+            --brand-orange: #fb923c;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+            --op-80: 0.8;
+            --op-60: 0.6;
+            --op-40: 0.4;
         }
         /* Mobile-first responsive utilities */
         body {
@@ -555,6 +614,110 @@
     }
     
     @layer components {
+        /* Universal Button System */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.875rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            box-shadow: var(--shadow-sm);
+        }
+        .btn:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .btn-primary {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: transparent;
+        }
+        .btn-primary:hover {
+            filter: brightness(0.98);
+        }
+        .btn-secondary {
+            background: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+        .btn-ghost {
+            background: transparent;
+            border-color: transparent;
+            color: hsl(var(--foreground));
+        }
+        .btn-mobile {
+            min-height: 44px;
+            min-width: 44px;
+            padding: 0.75rem 1rem;
+        }
+        .btn-desktop {
+            min-height: 36px;
+            padding: 0.5rem 0.875rem;
+        }
+        /* Universal Input System */
+        .input {
+            width: 100%;
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.5rem;
+            padding: 0.625rem 0.75rem;
+            box-shadow: var(--shadow-sm) inset;
+        }
+        .input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+        .input:focus {
+            outline: none;
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 3px color-mix(in hsl, hsl(var(--ring)) 25%, transparent);
+        }
+        .input-mobile {
+            min-height: 44px;
+        }
+        .input-desktop {
+            min-height: 36px;
+        }
+        /* Card System */
+        .card,
+        .border.rounded {
+            /* apply to legacy card wrappers */
+            background: hsl(var(--card));
+            color: hsl(var(--foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-sm);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .desktop-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+        }
+        /* Container System */
+        .mobile-container {
+            @apply mx-auto px-4;
+        }
+        .desktop-container {
+            @apply mx-auto px-6 lg: px-8;
+        }
+        .desktop-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 1023px) {
+            .desktop-layout {
+                grid-template-columns: 1fr;
+            }
+        }
         /* Enterprise Typography Scale */
         .text-display-lg {
             font-size: 3.5rem;

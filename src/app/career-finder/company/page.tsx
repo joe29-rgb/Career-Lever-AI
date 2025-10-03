@@ -2,7 +2,7 @@ import CompanyResearch from '@/components/company-research'
 
 export default function CareerFinderCompanyPage() {
   return (
-    <div className="space-y-4">
+    <div className="mobile-container space-y-4">
       {/* Persist wizard progress */}
       <script dangerouslySetInnerHTML={{ __html: `try{localStorage.setItem('cf:progress', JSON.stringify({ step: 4, total: 7 }))}catch(e){}` }} />
       {/* Preload from selected job into local storage for CompanyResearch defaults */}

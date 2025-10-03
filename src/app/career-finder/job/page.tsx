@@ -42,7 +42,7 @@ export default function CareerFinderJobPage() {
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className="mobile-container space-y-4">
       <div className="text-sm text-gray-700">Job analysis auto-runs when you arrive on this page.</div>
       {loading && <div className="text-sm">Analyzing job…</div>}
       {!loading && analysis && (

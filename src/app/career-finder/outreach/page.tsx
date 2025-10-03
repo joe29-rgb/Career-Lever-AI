@@ -29,7 +29,7 @@ export default function CareerFinderOutreachPage() {
     } catch {}
   }, [])
   return (
-    <div className="space-y-4">
+    <div className="mobile-container space-y-4">
       <div className="text-sm text-gray-700">Select a contact and use the composer to send your intro. Applications will be tracked.</div>
       <div className="text-xs text-gray-600">After sending your email, click below to record the application:</div>
       <Button size="sm" variant="outline" onClick={async ()=>{

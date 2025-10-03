@@ -80,7 +80,7 @@ export default function CareerFinderCoverLetterPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mobile-container space-y-4">
       <div className="text-sm text-gray-700">Choose one of the generated cover letters.</div>
       {loading && <div className="text-sm">Generating letters…</div>}
       {error && <div className="text-xs text-red-600">{error}</div>}

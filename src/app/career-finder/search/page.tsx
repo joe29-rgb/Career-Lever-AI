@@ -109,14 +109,14 @@ export default function CareerFinderSearchPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
           <div className="text-xs text-gray-600">Keywords</div>
-          <Input value={keywords} onChange={(e)=>setKeywords(e.target.value)} placeholder="e.g., software, react, node" />
+          <input className="input input-mobile" value={keywords} onChange={(e)=>setKeywords(e.target.value)} placeholder="e.g., software, react, node" />
         </div>
         <div>
           <div className="text-xs text-gray-600">Location</div>
-          <Input value={locations} onChange={(e)=>setLocations(e.target.value)} placeholder="e.g., Edmonton, AB" />
+          <input className="input input-mobile" value={locations} onChange={(e)=>setLocations(e.target.value)} placeholder="e.g., Edmonton, AB" />
         </div>
         <div className="flex items-end">
-          <Button onClick={runSearch} disabled={loading}>{loading ? 'Searching…' : 'Refresh'}</Button>
+          <button className="btn btn-primary btn-mobile" onClick={runSearch} disabled={loading}>{loading ? 'Searching…' : 'Refresh'}</button>
         </div>
       </div>
       <div className="space-y-2">
@@ -136,7 +136,7 @@ export default function CareerFinderSearchPage() {
             </div>
             {r.url && (
               <div className="flex flex-col gap-2 shrink-0">
-                <button className="px-2 py-1 border rounded" onClick={async ()=>{
+                <button className="btn btn-secondary btn-mobile" onClick={async ()=>{
                   try {
                     const imp = await fetch('/api/jobs/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl: r.url }) })
                     const jd = await imp.json().catch(()=>({}))
@@ -145,7 +145,7 @@ export default function CareerFinderSearchPage() {
                     router.push('/career-finder/job')
                   } catch { router.push('/career-finder/job') }
                 }}>Select</button>
-                <button className={`px-2 py-1 border rounded ${topChoiceUrl===r.url?'bg-blue-50 border-blue-500':''}`} onClick={()=>{
+                <button className={`btn btn-ghost btn-mobile ${topChoiceUrl===r.url?'bg-blue-50 border-blue-500':''}`} onClick={()=>{
                   try {
                     const sel = { url: r.url, title: r.title, company: r.company, location: r.location }
                     localStorage.setItem('cf:topChoice', JSON.stringify(sel))
