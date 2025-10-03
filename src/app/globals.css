@@ -724,22 +724,19 @@
 }
 
 
-/* Job Card Styles (inspired by Dribbble: white cards on dark, purple accents, hover lift) */
-
+/* Job Card Styles - Fixed Tailwind @apply without spaces */
 .job-card {
-    @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden;
-    group-hover:translateY(-2px);
+  @apply relative bg-card border border-border rounded-xl p-6 shadow-md transition-all duration-200 overflow-hidden;
 }
 
 .job-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px -5px hsl(var(--ring) / 0.3);
+  @apply shadow-lg transform translate-y-[-2px];
 }
 
+.group:hover .job-card {
+  @apply translate-y-[-2px];
+}
 
-/* Group hover for lift effect */
-
-group-hover:translateY(-2px);
 .job-card-header {
     display: flex;
     align-items: start;
