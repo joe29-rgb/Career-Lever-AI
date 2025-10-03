@@ -6,6 +6,15 @@ import Application from '@/models/Application' // Assume model exists or create
 import connectToDatabase from '@/lib/mongodb' // Default import
 import { ApplicationPDFComposer } from '@/lib/pdf-composer'
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => resolve((reader.result as string).split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase()
@@ -41,16 +50,6 @@ export async function POST(request: NextRequest) {
     // Convert blobs to base64
     const resumeBase64 = await blobToBase64(packageData.resumePDF)
     const coverBase64 = await blobToBase64(packageData.coverLetterPDF)
-
-    // Helper function (add at top)
-    function blobToBase64(blob: Blob): Promise<string> {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-    }
 
     const emailData = await composeEmail({
       recipient: contacts.email,
