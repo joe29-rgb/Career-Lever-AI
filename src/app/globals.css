@@ -947,7 +947,7 @@
     /* Job Card Styles (inspired by Dribbble: white cards on dark, purple accents, hover lift) */
     
     .job-card {
-        @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover: shadow-lg transition-all duration-200 overflow-hidden;
+        @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden;
         group-hover: transform translateY(-2px);
         border-radius: 1rem;
     }
