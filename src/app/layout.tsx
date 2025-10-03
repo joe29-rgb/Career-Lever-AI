@@ -3,8 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { ThemeManager } from '@/lib/theme-manager'
-import { DeviceManager } from '@/lib/device-manager'
+import { ClientInit } from '@/components/client-init'
 import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 import { TopNav } from '@/components/top-nav'
@@ -38,8 +37,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `try{(${function(){
           if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
         }.toString()})()}catch(e){}` }} />
-        <script dangerouslySetInnerHTML={{ __html: `try{(${ThemeManager.init.toString()})()}catch(e){}` }} />
-        <script dangerouslySetInnerHTML={{ __html: `try{(${DeviceManager.init.toString()})()}catch(e){}` }} />
+        <ClientInit />
         <meta name="mobile-web-app-capable" content="yes" />
         <Providers>
           <a href="#main" className="skip-link">Skip to content</a>
