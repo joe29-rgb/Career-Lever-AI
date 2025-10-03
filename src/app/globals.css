@@ -947,8 +947,8 @@
     /* Job Card Styles (inspired by Dribbble: white cards on dark, purple accents, hover lift) */
     
     .job-card {
-        @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover: shadow-lg transition-all duration-200 overflow-hidden;
-        group-hover: translateY(-2px);
+        @apply relative bg-card border border-border rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden;
+        group-hover:translateY(-2px);
         border-radius: 1rem;
     }
     
@@ -1024,7 +1024,7 @@
     }
     
     .search-input-group {
-        @apply flex flex-col sm:flex-row gap-3 max-w-2xl mx-auto;
+        @apply flex flex-col sm: flex-row gap-3 max-w-2xl mx-auto;
     }
     
     .search-input {
