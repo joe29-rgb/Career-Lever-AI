@@ -25,13 +25,13 @@ export async function POST(request: NextRequest) {
 
     console.log('[AUTOPILOT] Search params:', { keywords, locations, radiusKm, days, limit })
 
-    // Replace with real scraping
+    // Real Canadian scraping
     const scrapedJobs = await scrapeRealCanadianJobs(keywords, locations)
-    
-    // Perplexity for additional
+
+    // Perplexity quick search for additional results
     const perplexityJobs = await PerplexityIntelligenceService.jobQuickSearch(
       `${keywords} ${locations}`,
-      ['jobbank.gc.ca', 'ca.indeed.com'],
+      ['jobbank.gc.ca', 'ca.indeed.com', 'ca.linkedin.com', 'workopolis.com', 'jobboom.com', 'glassdoor.ca', 'eluta.ca'],
       Math.max(0, limit - scrapedJobs.length),
       `${days}d`
     )
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Prioritize Canadian locations
     const canadianJobs = recentJobs.filter(job =>
-      (job.location || '').includes('AB') || (job.location || '').includes('ON') || (job.location || '').includes('BC') ||
+      (job.location || '').includes('AB') || (job.location || '').includes('ON') || (job.location || '').includes('BC') || // Provinces
       (job.location || '').toLowerCase().includes('canada') || (job.location || '').toLowerCase().includes('edmonton')
     )
 
