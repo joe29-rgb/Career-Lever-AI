@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Step 2: Website scraping for contacts
-    let siteContacts = { emails: [], phones: [], addresses: [] }
+    let siteContacts: { emails: string[]; phones: string[]; addresses: string[] } = { emails: [], phones: [], addresses: [] }
     if (companyWebsite) {
       try {
         siteContacts = await webScraper.scrapeContactInfoFromWebsite(companyWebsite)
