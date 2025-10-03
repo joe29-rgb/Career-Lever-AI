@@ -1,43 +1,67 @@
 import { WebScraperService } from './web-scraper'
+import * as cheerio from 'cheerio'
 
 export class EnhancedCanadianJobScraper {
   private scraper = new WebScraperService()
   
   async scrapeJobBankDirect(keywords: string, location: string) {
-    // Simulate direct Job Bank scraping with fetch
     const searchUrl = `https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=${encodeURIComponent(keywords)}&locationstring=${encodeURIComponent(location)}`
     const response = await fetch(searchUrl)
     const html = await response.text()
-    // Parse HTML for jobs (in production, use cheerio)
-    // For now, return mock parsed jobs
-    return [
-      {
-        title: 'Sample Job from Job Bank',
-        company: 'Sample Company',
-        location,
-        url: searchUrl,
-        salary: '$50,000',
-        date: new Date().toISOString()
+    const $ = cheerio.load(html)
+    
+    const jobs = []
+    $('.resultJobItem').each((i, elem) => {
+      const title = $(elem).find('h3 a').text().trim()
+      const company = $(elem).find('.business').text().trim()
+      const loc = $(elem).find('.location').text().trim()
+      const url = $(elem).find('h3 a').attr('href')
+      const salary = $(elem).find('.salary').text().trim()
+      const date = $(elem).find('.date').text().trim()
+      
+      if (title) {
+        jobs.push({
+          title,
+          company,
+          location: loc || location,
+          url: url ? `https://www.jobbank.gc.ca${url}` : searchUrl,
+          salary,
+          date: new Date(date).toISOString() || new Date().toISOString()
+        })
       }
-    ]
+    })
+    
+    return jobs.slice(0, 15)
   }
   
   async scrapeIndeedCanadaDirect(keywords: string, location: string) {
-    // Simulate direct Indeed scraping
     const searchUrl = `https://ca.indeed.com/jobs?q=${encodeURIComponent(keywords)}&l=${encodeURIComponent(location)}`
     const response = await fetch(searchUrl)
     const html = await response.text()
-    // Parse for jobs
-    return [
-      {
-        title: 'Sample Job from Indeed',
-        company: 'Sample Inc',
-        location,
-        url: searchUrl,
-        salary: '$60,000',
-        date: new Date().toISOString()
+    const $ = cheerio.load(html)
+    
+    const jobs = []
+    $('.job_seen_beacon').each((i, elem) => {
+      const title = $(elem).find('h2 a span').text().trim()
+      const company = $(elem).find('.companyName').text().trim()
+      const loc = $(elem).find('.companyLocation').text().trim()
+      const url = $(elem).find('h2 a').attr('href')
+      const salary = $(elem).find('.salary-snippet').text().trim()
+      const date = $(elem).find('.date').text().trim()
+      
+      if (title) {
+        jobs.push({
+          title,
+          company,
+          location: loc || location,
+          url: url ? `https://ca.indeed.com${url}` : searchUrl,
+          salary,
+          date: new Date(date).toISOString() || new Date().toISOString()
+        })
       }
-    ]
+    })
+    
+    return jobs.slice(0, 15)
   }
   
   async combineAllSources(keywords: string, location: string) {
@@ -47,13 +71,15 @@ export class EnhancedCanadianJobScraper {
       this.scraper.searchJobsByGoogle({ jobTitle: keywords, location })
     ])
     
-    // Deduplicate by url
     const allJobs = results.flat()
     const uniqueJobs = allJobs.filter((job, index, self) => 
       index === self.findIndex(j => j.url === job.url)
     )
     
-    // Rank by relevance (simple score)
-    return uniqueJobs.sort((a, b) => (b.salary || 0) - (a.salary || 0))
+    return uniqueJobs.sort((a, b) => {
+      const scoreA = parseFloat(a.salary.replace('$', '')) || 0
+      const scoreB = parseFloat(b.salary.replace('$', '')) || 0
+      return scoreB - scoreA
+    })
   }
 }

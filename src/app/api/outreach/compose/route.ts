@@ -38,6 +38,20 @@ export async function POST(request: NextRequest) {
     const pdfComposer = new ApplicationPDFComposer()
     const packageData = await pdfComposer.generateApplicationPackage(resumeText, coverText, { jobId, company, jobTitle })
 
+    // Convert blobs to base64
+    const resumeBase64 = await blobToBase64(packageData.resumePDF)
+    const coverBase64 = await blobToBase64(packageData.coverLetterPDF)
+
+    // Helper function (add at top)
+    function blobToBase64(blob: Blob): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve((reader.result as string).split(',')[1])
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    }
+
     const emailData = await composeEmail({
       recipient: contacts.email,
       subjects,
@@ -67,11 +81,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...emailData,
-      resumePDF: packageData.resumePDF, // Base64 or URL for download
-      coverLetterPDF: packageData.coverLetterPDF,
-      instructions: "Download the PDFs and attach to your email client.",
-      applicationId: application._id,
-      tracking: { status: 'composed', sentAt: application.sentAt }
+      resumePDFBase64: resumeBase64,
+      coverLetterPDFBase64: coverBase64,
+      instructions: "Use the base64 strings to create downloadable PDFs and attach to your email."
     })
 
   } catch (error) {
