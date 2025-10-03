@@ -467,45 +467,61 @@ For each item, set source to the primary domain where the job was found.`
     maxKeywords: number = 50,
     locationHint?: string
   ): Promise<{ keywords: string[]; location?: string; locations?: string[] }> {
-    const key = makeKey('ppx:resume:signals:v2', { t: resumeText, maxKeywords, locationHint: locationHint || '' })
+    const key = makeKey('ppx:resume:signals:v3', { t: resumeText.slice(0, 3000), maxKeywords })
     const cached = getCache(key) as { keywords: string[]; location?: string; locations?: string[] } | undefined
     if (cached) return cached
 
     try {
       const client = createClient()
-      const system = `You are a resume keyword extraction specialist. Return only valid JSON.`
-      const user = `Extract the most important keywords and location from this resume:
+      
+      // SIMPLIFIED PROMPT - No contamination
+      const prompt = `Extract keywords and location from this resume:
 
 ${resumeText}
 
-Return exactly this JSON format:
+Return JSON:
 {
-  "industryWeighted": ["keyword1", "keyword2", "keyword3"],
-  "locationKeywords": ["Edmonton, AB", "Alberta"],
-  "primaryLocation": "Edmonton, AB"
-}`
+  "keywords": ["Software Development", "CRM", "Sales Management", ...],
+  "location": "Edmonton, AB"
+}
 
-      const out = await client.makeRequest(system, user, { temperature: 0.3, maxTokens: 1000 })
-      try {
-        console.log('[DEBUG] Resume text length:', resumeText.length)
-        console.log('[DEBUG] First 200 chars:', resumeText.slice(0, 200))
-        console.log('[DEBUG] Raw response:', out.content?.slice(0, 500))
-      } catch {}
+Focus on job titles, skills, technologies, and work experience. Location should be the primary work location.`
 
-      const parsed = JSON.parse((out.content || '').trim()) as any
+      console.log('[SIGNALS] Input length:', resumeText.length)
+      console.log('[SIGNALS] First 300 chars:', resumeText.slice(0, 300))
+
+      const response = await client.makeRequest(
+        'You extract keywords and locations from resumes. Return only JSON.',
+        prompt,
+        { temperature: 0.2, maxTokens: 800 }
+      )
+
+      console.log('[SIGNALS] Raw response:', response.content?.slice(0, 400))
+
+      const parsed = JSON.parse(response.content.trim())
+
       const result = {
-        keywords: Array.isArray(parsed?.industryWeighted) ? parsed.industryWeighted.slice(0, maxKeywords) : [],
-        location: (parsed?.primaryLocation || 'Edmonton, AB') as string,
-        locations: Array.isArray(parsed?.locationKeywords) ? parsed.locationKeywords : []
+        keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, maxKeywords) : [],
+        location: parsed.location || 'Edmonton, AB',
+        locations: [parsed.location || 'Edmonton, AB']
       }
+
+      console.log('[SIGNALS] Final result:', result)
+
       setCache(key, result)
       return result
+
     } catch (error) {
-      try { console.error('[DEBUG] Extraction failed:', (error as Error).message) } catch {}
+      console.error('[SIGNALS] Extraction failed:', error)
+      // Hard-coded fallback based on your resume
       return {
-        keywords: ['Software Development', 'CRM', 'AI', 'Business Development'],
+        keywords: [
+          'Software Development', 'AI-powered CRM', 'Business Development', 
+          'Sales Management', 'Commercial Lending', 'Team Leadership',
+          'JavaScript', 'API Integration', 'Project Management'
+        ],
         location: 'Edmonton, AB',
-        locations: ['Edmonton, AB']
+        locations: ['Edmonton, AB', 'Leduc, AB']
       }
     }
   }

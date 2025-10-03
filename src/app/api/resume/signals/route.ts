@@ -43,4 +43,54 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // Validate input
+    if (!body.resumeText || typeof body.resumeText !== 'string') {
+      return NextResponse.json(
+        { error: 'Missing or invalid resumeText field' },
+        { status: 400 }
+      )
+    }
+
+    if (body.resumeText.length < 50) {
+      return NextResponse.json(
+        { error: 'Resume text too short (minimum 50 characters)' },
+        { status: 400 }
+      )
+    }
+
+    console.log('[API] Processing resume signals request')
+    console.log('[API] Resume length:', body.resumeText.length)
+
+    const signals = await PerplexityIntelligenceService.extractResumeSignals(
+      body.resumeText,
+      body.maxKeywords || 50,
+      body.locationHint
+    )
+
+    console.log('[API] Extraction successful:', signals)
+
+    return NextResponse.json({
+      success: true,
+      keywords: signals.keywords,
+      location: signals.location,
+      metadata: {
+        keywordCount: signals.keywords.length,
+        primaryLocation: signals.location,
+        extractedAt: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('[API] Signals extraction error:', error)
+    return NextResponse.json(
+      { error: 'Signal extraction failed', details: (error as Error).message },
+      { status: 500 }
+    )
+  }
+}
+
 

@@ -10,19 +10,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Resume } from '@/types'
 import toast from 'react-hot-toast'
+import { useToast } from '@/components/ui/use-toast'
+import { Input } from '@/components/ui/input'
 
 interface ResumeUploadProps {
   onUploadSuccess: (resume: Resume) => void
   onUploadError: (error: string) => void
   maxFileSize?: number
   acceptedTypes?: string[]
+  setKeywords?: (keywords: string[]) => void
+  setLocation?: (location: string) => void
 }
 
 export function ResumeUpload({
   onUploadSuccess,
   onUploadError,
   maxFileSize = 10 * 1024 * 1024, // 10MB
-  acceptedTypes = ['application/pdf']
+  acceptedTypes = ['application/pdf'],
+  setKeywords,
+  setLocation
 }: ResumeUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -31,6 +37,7 @@ export function ResumeUpload({
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
   const [pastedText, setPastedText] = useState('')
   const [clientExtract, setClientExtract] = useState('')
+  const { toast } = useToast()
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
@@ -87,6 +94,45 @@ export function ResumeUpload({
       return text.trim()
     } catch {
       return ''
+    }
+  }
+
+  const processResumeSignals = async (resumeText: string) => {
+    try {
+      const response = await fetch('/api/resume/signals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText,
+          maxKeywords: 50,
+          locationHint: 'Edmonton, AB'
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        console.error('Signals API error:', error)
+        throw new Error(error.error || 'Signal extraction failed')
+      }
+
+      const data = await response.json()
+
+      console.log('Extracted signals:', data)
+
+      // Use the extracted data
+      if (setKeywords) setKeywords(data.keywords)
+      if (setLocation) setLocation(data.location)
+
+      return data
+
+    } catch (error) {
+      console.error('Signal processing failed:', error)
+      toast({
+        title: 'Extraction Failed',
+        description: 'Could not extract keywords/location. Using defaults.',
+        variant: 'destructive'
+      })
+      throw error
     }
   }
 
@@ -160,6 +206,11 @@ export function ResumeUpload({
       // Mark Autopilot ready and move wizard
       try { localStorage.setItem('cf:autopilotReady', '1'); localStorage.setItem('cf:progress', JSON.stringify({ step: 2, total: 7 })) } catch {}
       toast.success('Resume uploaded successfully! Autopilot enabled.')
+
+      // Extract signals after upload
+      if (data.extractedText && data.extractedText.length > 50) {
+        await processResumeSignals(data.extractedText)
+      }
 
     } catch (error) {
       console.error('Upload error:', error)

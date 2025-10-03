@@ -1,140 +1,124 @@
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
-import { redirect } from 'next/navigation'
-import { JobsActions } from './components/jobs-actions'
-import { LocalDiscover } from './components/local-discover'
-import { t, type Locale } from '@/lib/i18n'
+'use client'
 
-export default async function JobsPage() {
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/auth/signin')
-  const locale = ((await import('next/headers')).headers().get('x-locale') || 'en') as Locale
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import Link from 'next/link'
+import { MagnifyingGlassIcon, FunnelIcon, MapPinIcon } from '@heroicons/react/24/outline'
+import { JobCard } from '@/components/job-card'
+
+// Mock job data - replace with your API fetch
+const mockJobs = [
+  { id: 1, title: 'Senior Software Engineer', company: 'Tech Corp', location: 'Toronto, ON', salary: '$120k - $160k', skills: ['React', 'Node.js', 'TypeScript'], url: '/jobs/1', logo: '/tech-corp-logo.png' },
+  { id: 2, title: 'Marketing Manager', company: 'Brand Inc', location: 'Vancouver, BC', salary: '$90k - $110k', skills: ['SEO', 'Content', 'Analytics'], url: '/jobs/2', logo: '/brand-logo.png' },
+  // Add more or fetch from API
+]
+
+export default function JobsPage() {
+  const [jobs, setJobs] = useState(mockJobs)
+  const [filters, setFilters] = useState({ location: '', salaryMin: '', salaryMax: '', remote: false })
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const { data: session } = useSession()
+
+  useEffect(() => {
+    // Fetch jobs from your API here
+    // Example: fetch('/api/jobs/recommend', { method: 'POST', body: JSON.stringify({ filters, query: searchQuery }) })
+    // .then(res => res.json()).then(setJobs)
+  }, [filters, searchQuery])
+
+  const handleFilterChange = (key: string, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+  }
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+    if (!sidebarOpen) document.body.classList.add('sidebar-open')
+    else document.body.classList.remove('sidebar-open')
+  }
+
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">{t(locale, 'jobs.pageTitle', 'Jobs')}</h1>
-      <PrefillSuggestBanner />
-      <JobImport />
-      <SearchImport />
-      <section className="space-y-3">
-        <LocalDiscover />
+    <div className="min-h-screen bg-background">
+      {/* Hero Search */}
+      <section className="search-hero">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-foreground mb-4">Find Your Next Opportunity</h1>
+          <div className="search-input-group">
+            <div className="relative flex-1">
+              <MagnifyingGlassIcon className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search jobs by title, company, or keywords..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+            </div>
+            <button className="search-btn">
+              <MagnifyingGlassIcon className="w-5 h-5 mr-2" />
+              Search
+            </button>
+          </div>
+        </div>
       </section>
-      <CalendarQuick />
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Import from Connected Boards</h2>
-        <JobsActions />
-      </section>
-      <Recommendations />
-    </div>
-  )
-}
 
-function PrefillSuggestBanner() {
-  if (typeof window === 'undefined') return null as any
-  let last: any = null
-  try { const raw = localStorage.getItem('jobs:lastSuggest'); if (raw) last = JSON.parse(raw) } catch {}
-  if (!last || !Array.isArray(last.results) || last.results.length === 0) return null as any
-  return (
-    <div className="border rounded p-3 bg-blue-50 text-sm">
-      <div className="font-medium mb-1">Suggested jobs for {last.titles?.join(', ')}</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {last.results.slice(0,6).map((r:any,i:number)=> (
-          <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" className="border rounded p-2 bg-white hover:shadow">
-            <div className="text-gray-500 text-xs mb-1">{r.source}</div>
-            <div className="font-medium line-clamp-1">{r.title || r.url}</div>
-            {r.snippet && <div className="text-xs text-gray-600 line-clamp-2 mt-1">{r.snippet}</div>}
-          </a>
-        ))}
+      <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto px-4 py-8">
+        {/* Main Content: Job Grid */}
+        <main className="flex-1">
+          <div className="job-grid">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </div>
+        </main>
+
+        {/* Sidebar: Filters */}
+        <aside className={`filter-sidebar lg:translate-x-0 ${sidebarOpen ? 'sidebar-open' : ''}`}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-foreground">Filters</h2>
+            <button onClick={toggleSidebar} className="sidebar-toggle">
+              <FunnelIcon className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">Location</label>
+            <div className="filter-checkbox">
+              <input type="checkbox" id="remote" checked={filters.remote} onChange={(e) => handleFilterChange('remote', e.target.checked)} />
+              <span>Remote</span>
+            </div>
+            <input
+              type="text"
+              placeholder="e.g., Toronto, ON"
+              value={filters.location}
+              onChange={(e) => handleFilterChange('location', e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          <div className="filter-group">
+            <label className="filter-label">Salary Range</label>
+            <input
+              type="number"
+              placeholder="Min Salary"
+              value={filters.salaryMin}
+              onChange={(e) => handleFilterChange('salaryMin', e.target.value)}
+              className="w-full p-2 border rounded mb-2"
+            />
+            <input
+              type="number"
+              placeholder="Max Salary"
+              value={filters.salaryMax}
+              onChange={(e) => handleFilterChange('salaryMax', e.target.value)}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          {/* Add more filters as needed */}
+        </aside>
       </div>
+
+      {/* Overlay for mobile sidebar */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={toggleSidebar} />
+      )}
     </div>
-  )
-}
-
-function JobImport() {
-  async function importAction(formData: FormData) {
-    'use server'
-    const jobUrl = String(formData.get('jobUrl') || '')
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/jobs/import`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobUrl })
-    })
-    // no-op, page can show toast client-side in future
-  }
-  return (
-    <form action={importAction} className="space-y-3">
-      <label className="block text-sm font-medium">Import job from URL</label>
-      <input name="jobUrl" type="url" placeholder="Paste job link (LinkedIn, Indeed, etc.)" className="w-full border rounded p-2" required />
-      <button className="px-4 py-2 bg-blue-600 text-white rounded">Import</button>
-    </form>
-  )
-}
-
-function SearchImport() {
-  async function importSearch(formData: FormData) {
-    'use server'
-    const searchUrl = String(formData.get('searchUrl') || '')
-    const limit = Number(formData.get('limit') || '15')
-    await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/jobs/scrape/search`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ searchUrl, limit })
-    })
-  }
-  return (
-    <form action={importSearch} className="space-y-3">
-      <label className="block text-sm font-medium">Bulk import by search URL (Indeed, ZipRecruiter, Job Bank, Google Jobs)</label>
-      <input name="searchUrl" type="url" placeholder="Paste search URL" className="w-full border rounded p-2" required />
-      <div className="flex items-center gap-2">
-        <input name="limit" type="number" min={1} max={50} defaultValue={15} className="w-24 border rounded p-2" />
-        <button className="px-4 py-2 border rounded">Fetch</button>
-      </div>
-      <p className="text-xs text-gray-500">Only public pages. If a site requires login, use manual import or the upcoming browser extension.</p>
-    </form>
-  )
-}
-
-function Recommendations() {
-  async function recommend(formData: FormData) {
-    'use server'
-    const url1 = String(formData.get('url1') || '')
-    const url2 = String(formData.get('url2') || '')
-    const url3 = String(formData.get('url3') || '')
-    const searchUrls = [url1, url2, url3].filter(Boolean)
-    if (searchUrls.length === 0) return
-    await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/jobs/recommend`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ searchUrls, limitPerSource: 10 })
-    })
-  }
-  return (
-    <form action={recommend} className="space-y-3">
-      <h2 className="text-lg font-semibold">Recommendations (seed by search URLs)</h2>
-      <input name="url1" type="url" placeholder="Search URL #1 (e.g., Indeed)" className="w-full border rounded p-2" />
-      <input name="url2" type="url" placeholder="Search URL #2 (optional)" className="w-full border rounded p-2" />
-      <input name="url3" type="url" placeholder="Search URL #3 (optional)" className="w-full border rounded p-2" />
-      <button className="px-4 py-2 bg-purple-600 text-white rounded">Get Recommendations</button>
-      <p className="text-xs text-gray-500">We’ll fetch public jobs from these sources and rank them against your resume.</p>
-    </form>
-  )
-}
-
-function CalendarQuick() {
-  async function createAction(formData: FormData) {
-    'use server'
-    const payload = {
-      summary: String(formData.get('summary') || ''),
-      start: String(formData.get('start') || ''),
-      end: String(formData.get('end') || ''),
-      description: String(formData.get('description') || ''),
-      location: String(formData.get('location') || '')
-    }
-    await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/calendar/events`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-  }
-  return (
-    <form action={createAction} className="space-y-3">
-      <h2 className="text-lg font-semibold">Quick Calendar Event</h2>
-      <input name="summary" placeholder="Interview with Acme" className="w-full border rounded p-2" required />
-      <input name="start" type="datetime-local" className="w-full border rounded p-2" required />
-      <input name="end" type="datetime-local" className="w-full border rounded p-2" required />
-      <input name="location" placeholder="Google Meet" className="w-full border rounded p-2" />
-      <textarea name="description" placeholder="Notes" className="w-full border rounded p-2" />
-      <button className="px-4 py-2 bg-green-600 text-white rounded">Create Event</button>
-    </form>
   )
 }
 

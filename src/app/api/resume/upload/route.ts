@@ -1,277 +1,151 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { promises as fs } from 'fs';
-import path from 'path';
-import connectToDatabase from '@/lib/mongodb';
-import Resume from '@/models/Resume';
-import Profile from '@/models/Profile';
-import Counter from '@/models/Counter';
-import { authOptions } from '@/lib/auth';
-import { isRateLimited } from '@/lib/rate-limit';
-import { isSameOrigin } from '@/lib/security';
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import Resume from '@/models/Resume'
+import connectToDatabase from '@/lib/mongodb'
+import { isRateLimited } from '@/lib/rate-limit'
+import { isSameOrigin } from '@/lib/security'
+import pdfParse from 'pdf-parse'
+import pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
+import { promises as fs } from 'fs'
+import path from 'path'
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+function cleanExtractedText(text: string): string {
+  return text
+    .replace(/\b(obj|endobj|stream|endstream|xref|trailer|startxref)\b/gi, '') // PDF artifacts
+    .replace(/https?:\/\/[^\s]+/gi, '') // URLs
+    .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '') // Emails (during parsing)
+    .replace(/\s+/g, ' ') // Whitespace
+    .trim()
+}
+
+async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string }> {
+  let text = ''
+  let method = 'server_pdf_parse'
+
+  try {
+    // Primary: pdf-parse (fast)
+    const result = await pdfParse(buffer)
+    if (result.text && result.text.trim().length > 100) {
+      text = cleanExtractedText(result.text)
+      console.log('[PDF] pdf-parse success, length:', text.length)
+      return { text, method }
+    }
+  } catch (error) {
+    console.log('[PDF] pdf-parse failed, trying pdfjs-dist:', error.message)
+  }
+
+  try {
+    // Fallback: pdfjs-dist (more reliable)
+    const doc = await pdfjsLib.getDocument({ data: buffer }).promise
+    let fullText = ''
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i)
+      const textContent = await page.getTextContent()
+      const pageText = textContent.items.map((item: any) => item.str || '').join(' ')
+      fullText += pageText + '\n'
+    }
+    text = cleanExtractedText(fullText)
+    if (text.length > 50) {
+      console.log('[PDF] pdfjs-dist success, length:', text.length)
+      return { text, method }
+    }
+  } catch (error) {
+    console.error('[PDF] Both methods failed:', error)
+  }
+
+  // ASCII fallback
+  try {
+    text = buffer.toString('ascii', 0, buffer.length)
+      .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    method = 'ascii_fallback'
+    console.log('[PDF] ASCII fallback, length:', text.length)
+  } catch {}
+
+  return { text, method }
+}
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    await connectToDatabase()
+
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Basic CSRF/same-origin check for browser requests
-    if (!isSameOrigin(request)) {
-      return NextResponse.json({ error: 'Invalid origin' }, { status: 400 })
+    if (isRateLimited(session.user.id, 'resume:upload')) {
+      return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
-    const limiter = isRateLimited((session.user as any).id, 'resume:upload')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
-
-    // Connect to database
-    await connectToDatabase();
-
-    // Handle file upload or pasted text
-    const formData = await request.formData();
-    const file = formData.get('resume') as File;
-    const pastedText = (formData.get('pastedText') as string) || ''
-    const clientText = (formData.get('clientText') as string) || ''
+    const data = await request.formData()
+    const file = data.get('file') as File
+    const pastedText = data.get('pastedText') as string
 
     if (!file && !pastedText) {
       return NextResponse.json({ error: 'No file or text provided' }, { status: 400 })
     }
 
-    if (file) {
-      // Validate file type (server-side MIME is not fully trustworthy; enforce extension + size too)
-      if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-        return NextResponse.json(
-          { error: 'Only PDF files are allowed' },
-          { status: 400 }
-        );
+    let extractedText = ''
+    let extractionMethod = ''
+    let extractionError = ''
+
+    if (file && file.size > 0) {
+      if (!isSameOrigin(request) || file.size > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: 'Invalid file' }, { status: 400 })
       }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        return NextResponse.json(
-          { error: 'File size too large. Maximum 10MB allowed.' },
-          { status: 400 }
-        );
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const filename = file.name || 'resume.pdf'
+
+      if (path.extname(filename).toLowerCase() === '.pdf') {
+        const { text, method } = await extractTextFromPDF(buffer)
+        extractedText = text
+        extractionMethod = method
+        if (!text || text.length < 50) {
+          extractionError = 'PDF parsing failed; please paste text or upload text-based PDF'
+        }
+      } else {
+        extractedText = await file.text()
+        extractionMethod = 'direct_text'
       }
-    }
-
-    let extractedText: string = ''
-    let extractionMethod: 'server_pdf_parse' | 'client_pdfjs' | 'pasted_text' | 'ascii_fallback' | '' = ''
-    let extractionError: string | undefined
-    if (file) {
-      // Convert file to buffer
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      // Extract text from PDF
-      try {
-        const pdfParse = (await import('pdf-parse')).default
-        const pdfData = await pdfParse(buffer)
-        // Clean obvious PDF artifacts
-        const raw = (pdfData.text || '')
-        extractedText = raw.replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ').replace(/https?:\/\/\S+/g, ' ').replace(/[\u0000-\u001F]+/g, ' ').replace(/\s+/g, ' ').trim()
-        if (extractedText) extractionMethod = 'server_pdf_parse'
-      } catch (error) {
-        // Quiet noisy environment errors; rely on clientText/paste when available
-        console.warn('PDF parsing failed on server; will rely on client text if provided')
-        extractedText = ''
-        extractionError = 'server_pdf_parse_failed'
-      }
-
-      // If pdf-parse yields no text (likely image-only PDF), rely on pasted text path instead of OCR on server
     } else if (pastedText) {
-      extractedText = pastedText.trim()
-      if (extractedText) extractionMethod = 'pasted_text'
+      extractedText = pastedText
+      extractionMethod = 'pasted_text'
     }
 
-    // Prefer client-extracted text when supplied
-    if (clientText && clientText.trim().length >= 50) {
-      extractedText = clientText.trim()
-      extractionMethod = 'client_pdfjs'
+    extractedText = cleanExtractedText(extractedText)
+
+    if (!extractedText || extractedText.length < 20) {
+      return NextResponse.json({ error: 'No readable content' }, { status: 400 })
     }
 
-    const tooShort = !extractedText || extractedText.trim().length < 50
-    if (tooShort && !pastedText) {
-      // Attempt server-side pdfjs-dist fallback before ASCII
-      try {
-        if (file) {
-          const bytes = await file.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-          const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
-          // Disable worker in Node context
-          // @ts-ignore
-          if (pdfjsLib && pdfjsLib.GlobalWorkerOptions) pdfjsLib.GlobalWorkerOptions.workerSrc = undefined
-          // @ts-ignore
-          const loadingTask = pdfjsLib.getDocument({ data: buffer })
-          // @ts-ignore
-          const pdf = await loadingTask.promise
-          let textOut = ''
-          const numPages = Math.min(pdf.numPages || 1, 20)
-          for (let p = 1; p <= numPages; p++) {
-            // @ts-ignore
-            const page = await pdf.getPage(p)
-            const content = await page.getTextContent()
-            const pageText = content.items.map((it:any)=> it.str).join(' ')
-            textOut += ' ' + pageText
-          }
-          textOut = (textOut || '')
-            .replace(/https?:\/\/\S+/g, ' ')
-            .replace(/[\u0000-\u001F\u007F]+/g, ' ')
-            .replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-          if (textOut && textOut.length >= 80) {
-            extractedText = textOut
-            extractionMethod = 'server_pdfjs'
-          }
-        }
-      } catch {}
-      // Fallback to lightweight ASCII if still short
-      try {
-        if ((!extractedText || extractedText.length < 50) && file) {
-          const bytes = await file.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-          const ascii = buffer.toString('utf8')
-            .replace(/\b(?:xref|obj|endobj|stream|endstream|Creator|Producer|CreationDate|ModDate|Title):?\b.*$/gmi, ' ')
-            .replace(/https?:\/\/\S+/g, ' ')
-            .replace(/[\u0000-\u001F\u007F]+/g, ' ')
-            .replace(/\s+/g, ' ')
-            .slice(0, 8000)
-          if (ascii && ascii.length >= 50) {
-            extractedText = ascii
-            extractionMethod = 'ascii_fallback'
-          }
-        }
-      } catch {}
-    }
-
-    // Save file if present
-    let fileUrl: string | undefined
-    if (file) {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'resumes');
-      await fs.mkdir(uploadsDir, { recursive: true });
-      const fileName = `${Date.now()}-${file.name}`;
-      const filePath = path.join(uploadsDir, fileName);
-      await fs.writeFile(filePath, buffer);
-      fileUrl = `/uploads/resumes/${fileName}`
-    }
-
-    // Compute rough years of experience from work history timelines (best-effort)
-    let yearsExperience: number | undefined = undefined
-    try {
-      const years = Array.from(new Set((extractedText.match(/\b(19\d{2}|20\d{2})\b/g) || []).map(y => parseInt(y, 10)).filter(y => y >= 1970 && y <= new Date().getFullYear())))
-      if (years.length >= 2) {
-        const minY = Math.min(...years)
-        const maxY = Math.max(...years)
-        const span = Math.max(0, Math.min(50, (maxY - minY) + 1))
-        yearsExperience = span >= 1 ? span : undefined
-      }
-    } catch {}
-
-    // Create resume record in database
-    const emailFromText = (extractedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/) || [])[0]
-    const phoneFromText = (extractedText.match(/(\+?\d[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}/) || [])[0]
     const resume = new Resume({
       userId: session.user.id,
-      originalFileName: file ? file.name : 'pasted-text.txt',
-      fileUrl: fileUrl,
+      filename: file?.name || 'pasted-resume.txt',
       extractedText,
-      customizedVersions: [],
-      userName: session.user.name || undefined,
-      contactEmail: emailFromText || session.user.email || undefined,
-      contactPhone: phoneFromText || undefined,
-      yearsExperience,
-    });
+      extractionMethod,
+      extractionError: extractionError || undefined,
+      uploadedAt: new Date(),
+    })
 
-    await resume.save();
-
-    // Derive profile fields from resume and persist to Profile (upsert)
-    try {
-      const userId = (session.user as any).id
-      // Ensure profile exists with userNo
-      let prof: any = await Profile.findOne({ userId })
-      if (!prof) {
-        const ctr = await Counter.findOneAndUpdate({ key: 'userNo' }, { $inc: { value: 1 } }, { upsert: true, new: true })
-        prof = await Profile.create({ userId, userNo: ctr.value, plan: 'free' })
-      }
-
-      // Extract fields
-      const text = extractedText || ''
-      const titleMatch = (text.match(/(Senior|Lead|Principal|Staff|Junior)?\s*(Software|Sales|Account|Marketing|Data|Operations|Project|Product)\s(Engineer|Developer|Manager|Analyst|Specialist)/i) || [])[0]
-      const skills = Array.from(new Set((text.match(/[A-Za-z][A-Za-z0-9+.#-]{2,}/g) || [])
-        .filter(w => w.length <= 30)
-        .slice(0, 200)))
-      // Prefer Canadian province codes, avoid false matches by requiring comma and 2-letter code from known set
-      const locationMatch = (text.match(/([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)*),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)\b/) || [])[0]
-      const industries: string[] = []
-      if (/healthcare|hospital|clinic/i.test(text)) industries.push('healthcare')
-      if (/fintech|bank|finance|insurance/i.test(text)) industries.push('finance')
-      if (/e-?commerce|retail/i.test(text)) industries.push('commerce')
-      if (/automotive|manufactur/i.test(text)) industries.push('automotive')
-
-      const targetTitles: string[] = []
-      if (titleMatch) targetTitles.push(titleMatch)
-      // Guess seniority from keywords
-      const seniority = /principal|staff|lead|senior/i.test(text) ? 'senior' : /junior|entry/i.test(text) ? 'entry' : 'mid'
-
-      await Profile.findOneAndUpdate(
-        { userId },
-        {
-          $set: {
-            title: titleMatch || undefined,
-            location: locationMatch || undefined,
-            yearsExperience: yearsExperience,
-            seniority,
-            skills: skills.slice(0, 100),
-            targetTitles: Array.from(new Set(targetTitles.map(t => t.replace(/\s+/g,' ').trim()))).slice(0, 5),
-            industries,
-          }
-        },
-        { new: true }
-      )
-    } catch {}
-
-    // Kick off Autopilot public search in background (best-effort)
-    try {
-      const origin = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-      const keywords = (extractedText || '').split(/\n|\r/).slice(0, 10).join(' ').split(/[^A-Za-z0-9+.#-]+/).slice(0, 12).join(', ')
-      const locations = ((extractedText.match(/([A-Z][a-zA-Z]+),\s*([A-Z]{2,3})/) || [])[0]) || ''
-      fetch(`${origin}/api/job-boards/autopilot/search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords, locations, radiusKm: 25, days: 14, limit: 20 }) }).catch(()=>{})
-    } catch {}
+    await resume.save()
 
     return NextResponse.json({
       success: true,
-      resume: {
-        _id: resume._id,
-        originalFileName: resume.originalFileName,
-        fileUrl: resume.fileUrl,
-        extractedText: (extractedText || '').substring(0, 500) + ((extractedText || '').length > 500 ? '...' : ''),
-        yearsExperience: resume.yearsExperience,
-        customizedVersions: resume.customizedVersions,
-        createdAt: resume.createdAt,
-      },
-      message: tooShort ? 'Uploaded, but text extraction was limited.' : 'Resume uploaded successfully',
-      extractionWarning: tooShort || extractionMethod !== 'server_pdf_parse',
+      resumeId: resume._id,
+      extractedText: extractedText.substring(0, 500) + (extractedText.length > 500 ? '...' : ''),
       extractionMethod,
       extractionError,
-    });
-
+    })
   } catch (error) {
-    console.error('Resume upload error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Upload error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
