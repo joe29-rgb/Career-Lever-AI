@@ -32,7 +32,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
       return { text, method }
     }
   } catch (error) {
-    console.log('[PDF] pdf-parse failed, trying pdfjs-dist:', error.message)
+    console.log('[PDF] pdf-parse failed, trying pdfjs-dist:', (error as Error).message)
   }
 
   try {
@@ -51,7 +51,8 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
       return { text, method }
     }
   } catch (error) {
-    console.error('[PDF] Both methods failed:', error)
+    console.error('[PDF] pdfjs-dist failed:', (error as Error).message)
+    throw new Error(`PDF extraction failed: ${(error as Error).message}`)
   }
 
   // ASCII fallback

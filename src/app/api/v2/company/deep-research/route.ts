@@ -45,21 +45,25 @@ export async function POST(request: NextRequest) {
 
     // Step 3: Real hiring contacts via Perplexity (LinkedIn + site search)
     const hiringQuery = `${companyName} hiring manager OR recruiter email OR contact site:linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')} OR site:${companyWebsite}`
-    const contacts = await PerplexityIntelligenceService.hiringContactsV2(hiringQuery, companyName)
+    const contacts = await PerplexityIntelligenceService.hiringContactsV2(hiringQuery)
 
-    console.log('[COMPANY] Perplexity contacts:', contacts.emails.length)
+    // Extract emails and phones from contacts.data
+    const perplexityEmails = contacts.data.map(c => c.email).filter((email): email is string => Boolean(email))
+    const perplexityPhones = contacts.data.map(c => c.phone).filter((phone): phone is string => Boolean(phone))
+
+    console.log('[COMPANY] Perplexity contacts:', perplexityEmails.length)
 
     // Merge contacts (dedupe emails)
-    const allEmails = [...new Set([...siteContacts.emails, ...contacts.emails])].filter(email =>
+    const allEmails = Array.from(new Set([...siteContacts.emails, ...perplexityEmails])).filter(email =>
       email.includes('@') && !email.includes('example.com') // Basic validation
     )
-    const allPhones = [...new Set([...siteContacts.phones, ...contacts.phones])]
+    const allPhones = Array.from(new Set([...siteContacts.phones, ...perplexityPhones]))
 
     // Enhance with confidence (Perplexity sources + validation)
     const validatedContacts = allEmails.map(email => ({
       email,
-      confidence: contacts.emails.includes(email) ? 85 : 60, // Higher for Perplexity
-      sources: contacts.emails.includes(email) ? ['Perplexity', 'LinkedIn'] : ['Site Scrape']
+      confidence: perplexityEmails.includes(email) ? 85 : 60, // Higher for Perplexity
+      sources: perplexityEmails.includes(email) ? ['Perplexity', 'LinkedIn'] : ['Site Scrape']
     }))
 
     // Save to profile for reuse
@@ -70,19 +74,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      company: research.company,
-      description: research.description,
-      size: research.size,
-      revenue: research.revenue,
-      industry: research.industry,
-      founded: research.founded,
-      headquarters: research.headquarters,
-      psychology: research.psychology,
-      marketIntelligence: research.marketIntelligence,
+      company: research.data.company,
+      description: research.data.description,
+      size: research.data.size,
+      revenue: research.data.revenue,
+      industry: research.data.industry,
+      founded: research.data.founded,
+      headquarters: research.data.headquarters,
+      psychology: research.data.psychology,
+      marketIntelligence: research.data.marketIntelligence,
       contacts: validatedContacts,
       siteContacts: { ...siteContacts, emails: allEmails, phones: allPhones },
       metadata: {
-        researchSources: research.sources,
+        researchSources: research.data.sources,
         contactCount: validatedContacts.length,
         confidenceAverage: validatedContacts.reduce((sum, c) => sum + c.confidence, 0) / (validatedContacts.length || 1),
         extractedAt: new Date().toISOString()
