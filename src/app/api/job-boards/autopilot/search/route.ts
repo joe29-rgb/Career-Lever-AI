@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
-import { scrapeCanadianJobs } from '@/lib/canadian-job-scraper'
+import { EnhancedCanadianJobScraper } from '@/lib/enhanced-canadian-scraper'
 import Resume from '@/models/Resume'
 import Profile from '@/models/Profile'
 import connectToDatabase from '@/lib/mongodb' // Default import
-import { scrapeRealCanadianJobs } from '@/lib/real-canadian-scraper'
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,13 +24,13 @@ export async function POST(request: NextRequest) {
 
     console.log('[AUTOPILOT] Search params:', { keywords, locations, radiusKm, days, limit })
 
-    // Real Canadian scraping
-    const scrapedJobs = await scrapeRealCanadianJobs(keywords, locations)
+    const scraper = new EnhancedCanadianJobScraper()
+    const scrapedJobs = await scraper.combineAllSources(keywords, locations)
 
     // Perplexity quick search for additional results
     const perplexityJobs = await PerplexityIntelligenceService.jobQuickSearch(
       `${keywords} ${locations}`,
-      ['jobbank.gc.ca', 'ca.indeed.com', 'ca.linkedin.com', 'workopolis.com', 'jobboom.com', 'glassdoor.ca', 'eluta.ca'],
+      ['jobbank.gc.ca', 'ca.indeed.com'],
       Math.max(0, limit - scrapedJobs.length),
       `${days}d`
     )

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { composeEmail } from '@/lib/email-service'
 import Application from '@/models/Application' // Assume model exists or create
 import connectToDatabase from '@/lib/mongodb' // Default import
+import { ApplicationPDFComposer } from '@/lib/pdf-composer'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,6 +35,9 @@ export async function POST(request: NextRequest) {
       "I'm reaching out regarding the ${jobTitle} opening—my track record in [achievement] makes me a strong fit."
     ]
 
+    const pdfComposer = new ApplicationPDFComposer()
+    const packageData = await pdfComposer.generateApplicationPackage(resumeText, coverText, { jobId, company, jobTitle })
+
     const emailData = await composeEmail({
       recipient: contacts.email,
       subjects,
@@ -63,6 +67,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       ...emailData,
+      resumePDF: packageData.resumePDF, // Base64 or URL for download
+      coverLetterPDF: packageData.coverLetterPDF,
+      instructions: "Download the PDFs and attach to your email client.",
       applicationId: application._id,
       tracking: { status: 'composed', sentAt: application.sentAt }
     })
