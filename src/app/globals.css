@@ -1015,7 +1015,7 @@
     }
     
     .apply-btn {
-        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover: from-purple-600 hover: to-blue-600 hover: scale-105;
+        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 bg-gradient-to-r from-primary to-purple-600 text-primary-foreground hover:from-purple-600 hover:to-blue-600 hover:scale-105;
     }
     /* Search Hero (top of jobs/dashboard pages) */
     
