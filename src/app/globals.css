@@ -876,7 +876,7 @@
     }
     /* Enhanced Theme Variables - Purple Palette */
     
-    :root {
+     :root {
         --background: 0 0% 100%;
         /* white */
         --foreground: 222.2 84% 8%;

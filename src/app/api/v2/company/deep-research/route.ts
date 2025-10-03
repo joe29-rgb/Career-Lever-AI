@@ -1,167 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { webScraper } from '@/lib/web-scraper'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
+import { WebScraperService } from '@/lib/web-scraper'
+import { connectToDatabase } from '@/lib/mongodb'
+import Profile from '@/models/Profile'
 
-export const dynamic = 'force-dynamic'
+const webScraper = new WebScraperService()
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
+    await connectToDatabase()
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const { companyName, jobTitle, website, location } = await req.json()
-    if (!companyName || companyName.trim().length < 2) return NextResponse.json({ error: 'companyName required' }, { status: 400 })
-
-    // V2 research (enhanced)
-    const researchV2 = await PerplexityIntelligenceService.researchCompanyV2({ company: companyName, role: jobTitle, geo: location })
-    // Core scrape (aggregates multiple sources internally)
-    const companyData = await webScraper.scrapeCompanyData(companyName, website)
-
-    // Hiring contacts best-effort (merge web + Perplexity V2)
-    let contacts: Array<any> = []
-    try {
-      const webContacts = await webScraper.searchHiringContacts(companyName, ['recruiter','talent acquisition','hiring manager', jobTitle || ''], location || undefined)
-      let ppxContacts: any[] = []
-      try { const v2 = await PerplexityIntelligenceService.hiringContactsV2(companyName); ppxContacts = v2.data || [] } catch {}
-      const merged: any[] = []
-      const seen = new Set<string>()
-      for (const c of [...webContacts, ...ppxContacts]) {
-        const key = `${(c.name||'').toLowerCase()}|${(c.title||'').toLowerCase()}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        merged.push(c)
-      }
-      contacts = merged
-    } catch {}
-
-    // Glassdoor pros/cons enrichment
-    let gd: any = null
-    try { gd = await webScraper.scrapeGlassdoorReviewsSummary(companyName) } catch {}
-
-    // Supplement with OSINT bundles for richer output
-    let osint: any = null
-    try { osint = await webScraper.searchCompanyIntelByGoogle(companyName, { after: '2025-01-01' }) } catch {}
-    // Twitter/X mentions
-    let twitter: any[] = []
-    try { twitter = await webScraper.searchTwitterMentions(companyName, 6) } catch {}
-    // Supplement socials via Google when direct scrape sparse
-    try {
-      if (!companyData.socialMedia?.facebook) {
-        const fb = await webScraper.searchTwitterMentions(companyName, 3)
-        if (fb?.length) {
-          ;(companyData as any).socialMedia = (companyData as any).socialMedia || {}
-          ;(companyData as any).socialMedia.twitter = { handle: '', followers: 0, recentTweets: fb.map(f=>({ text: f.title || f.snippet, createdAt: new Date(), likes: 0, retweets: 0 })) }
-        }
-      }
-    } catch {}
-
-    const out = {
-      companyProfile: {
-        name: (researchV2.data.company || companyData.companyName || companyName),
-        industry: companyData.industry || null,
-        size: companyData.size || null,
-        description: researchV2.data.summary || companyData.description || null,
-        website: companyData.website || null,
-        locations: location ? [location] : [],
-      },
-      financialHealth: {
-        fundingStatus: null,
-        revenue: null,
-        growthTrend: null,
-        marketPosition: null,
-      },
-      cultureInsights: {
-        values: companyData.culture || [],
-        workEnvironment: null,
-        benefits: companyData.benefits || [],
-        glassdoorRating: companyData.glassdoorRating || null,
-        pros: gd?.pros || [],
-        cons: gd?.cons || [],
-        sentiment: gd ? (webScraper as any).computeSentimentFromProsCons?.(gd.pros, gd.cons) ?? null : null,
-        interviewProcess: null,
-      },
-      recentDevelopments: {
-        news: (companyData.recentNews || []).map((n: any) => ({
-          title: n.title,
-          date: new Date(n.publishedAt).toISOString().slice(0,10),
-          summary: n.summary,
-          relevance: 'Potential talking point for outreach',
-          url: n.url,
-        })).concat((osint?.news || []).map((n: any) => ({
-          title: n.title, date: undefined, summary: n.snippet, relevance: 'Press/coverage', url: n.url
-        }))).slice(0, 12),
-        socialActivity: companyData.linkedinData?.followers ? `LinkedIn followers: ${companyData.linkedinData.followers}` : null,
-        hiringTrends: null,
-      },
-      keyContacts: contacts.slice(0, 8).map((c: any) => ({
-        name: c.name,
-        title: c.title,
-        department: null,
-        linkedinUrl: c.profileUrl || c.linkedinUrl || null,
-        relevance: 'Potential recruiter/decision maker',
-      })),
-      applicationStrategy: {
-        whyThisCompany: [],
-        talkingPoints: [],
-        culturalFit: null,
-        riskFactors: [],
-        opportunities: [],
-      },
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Also return a normalized CompanyData shape so existing UI can consume it directly
-    const companyDataNormalized = {
-      companyName: out.companyProfile.name,
-      website: out.companyProfile.website,
-      industry: out.companyProfile.industry || undefined,
-      size: out.companyProfile.size || undefined,
-      description: out.companyProfile.description || undefined,
-      culture: companyData.culture || [],
-      benefits: companyData.benefits || [],
-      recentNews: (companyData.recentNews || []).map((n: any) => ({
-        title: n.title,
-        url: n.url,
-        publishedAt: n.publishedAt,
-        summary: n.summary
-      })),
-      glassdoorRating: companyData.glassdoorRating,
-      glassdoorReviews: companyData.glassdoorReviews,
-      linkedinData: companyData.linkedinData || undefined,
-      socialMedia: companyData.socialMedia || undefined,
-      hiringContacts: contacts.map((c: any) => ({
-        name: c.name,
-        title: c.title,
-        profileUrl: c.profileUrl || c.linkedinUrl,
-        source: c.source || 'web',
-        email: c.email || null,
-        emailType: c.emailType || null,
-        alternativeEmails: c.alternativeEmails || [],
-      })),
-      contactInfo: (companyData as any).contactInfo || undefined,
-      googleReviewsRating: (companyData as any).googleReviewsRating,
-      googleReviewsCount: (companyData as any).googleReviewsCount,
-      osint: osint ? {
-        financial: osint.financial || [],
-        culture: osint.culture || [],
-        leadership: osint.leadership || [],
-        growth: osint.growth || [],
-        benefits: osint.benefits || [],
-        news: osint.news || [],
-        crunchbase: osint.crunchbase || [],
-        pitchbook: osint.pitchbook || [],
-        twitter: twitter || [],
-      } : undefined,
-      sources: companyData.sources || [],
-      cachedAt: new Date(),
-      expiresAt: new Date(Date.now() + 24*60*60*1000)
+    const body = await request.json()
+    const { companyName, companyWebsite, targetRole, location } = body
+
+    if (!companyName) {
+      return NextResponse.json({ error: 'Missing companyName' }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true, research: out, companyData: companyDataNormalized })
-  } catch (e) {
-    // Return minimal structure so UI still renders and invites refresh
-    const { companyName } = await req.json().catch(()=>({})) as any
-    return NextResponse.json({ success: false, research: null, companyData: { companyName, culture: [], benefits: [], recentNews: [] } }, { status: 200 })
+    console.log('[COMPANY] Researching:', companyName)
+
+    // Step 1: Basic company research via Perplexity V2
+    const research = await PerplexityIntelligenceService.researchCompanyV2(companyName, targetRole, location)
+    
+    // Step 2: Website scraping for contacts
+    let siteContacts = { emails: [], phones: [], addresses: [] }
+    if (companyWebsite) {
+      try {
+        siteContacts = await webScraper.scrapeCompanyWebsite(companyWebsite)
+        console.log('[COMPANY] Site contacts found:', siteContacts.emails.length)
+      } catch (error) {
+        console.error('[COMPANY] Site scrape failed:', error)
+      }
+    }
+
+    // Step 3: Real hiring contacts via Perplexity (LinkedIn + site search)
+    const hiringQuery = `${companyName} hiring manager OR recruiter email OR contact site:linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')} OR site:${companyWebsite}`
+    const contacts = await PerplexityIntelligenceService.hiringContactsV2(hiringQuery, companyName)
+    
+    console.log('[COMPANY] Perplexity contacts:', contacts.emails.length)
+
+    // Merge contacts (dedupe emails)
+    const allEmails = [...new Set([...siteContacts.emails, ...contacts.emails])].filter(email => 
+      email.includes('@') && !email.includes('example.com') // Basic validation
+    )
+    const allPhones = [...new Set([...siteContacts.phones, ...contacts.phones])]
+
+    // Enhance with confidence (Perplexity sources + validation)
+    const validatedContacts = allEmails.map(email => ({
+      email,
+      confidence: contacts.emails.includes(email) ? 85 : 60, // Higher for Perplexity
+      sources: contacts.emails.includes(email) ? ['Perplexity', 'LinkedIn'] : ['Site Scrape']
+    }))
+
+    // Save to profile for reuse
+    await Profile.findOneAndUpdate(
+      { userId: session.user.id },
+      { $push: { companyResearch: { company: companyName, contacts: validatedContacts, date: new Date() } } }
+    )
+
+    return NextResponse.json({
+      success: true,
+      company: research.company,
+      description: research.description,
+      size: research.size,
+      revenue: research.revenue,
+      industry: research.industry,
+      founded: research.founded,
+      headquarters: research.headquarters,
+      psychology: research.psychology,
+      marketIntelligence: research.marketIntelligence,
+      contacts: validatedContacts,
+      siteContacts: { ...siteContacts, emails: allEmails, phones: allPhones },
+      metadata: {
+        researchSources: research.sources,
+        contactCount: validatedContacts.length,
+        confidenceAverage: validatedContacts.reduce((sum, c) => sum + c.confidence, 0) / (validatedContacts.length || 1),
+        extractedAt: new Date().toISOString()
+      }
+    })
+
+  } catch (error) {
+    console.error('[COMPANY] Deep research failed:', error)
+    return NextResponse.json({ error: 'Research failed', details: (error as Error).message }, { status: 500 })
   }
 }
 
