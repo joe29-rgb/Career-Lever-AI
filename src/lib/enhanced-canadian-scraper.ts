@@ -93,8 +93,8 @@ export class EnhancedCanadianJobScraper {
     
     return uniqueJobs
       .sort((a, b) => {
-        const scoreA = a.salary ? parseFloat(a.salary.replace(/[^\d.]/g, '')) || 0 : 0;
-        const scoreB = b.salary ? parseFloat(b.salary.replace(/[^\d.]/g, '')) || 0 : 0;
+        const scoreA = (a as any).salary ? parseFloat((a as any).salary.replace(/[^\d.]/g, '')) || 0 : 0;
+        const scoreB = (b as any).salary ? parseFloat((b as any).salary.replace(/[^\d.]/g, '')) || 0 : 0;
         return scoreB - scoreA;
       });
   }
