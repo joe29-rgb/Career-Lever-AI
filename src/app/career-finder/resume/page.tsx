@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { ResumeUpload } from '@/components/resume-upload'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
