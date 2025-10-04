@@ -29,6 +29,7 @@ interface JobCardProps {
   job: Job
   resumeText?: string // Passed from parent
   coverText?: string // Generated cover
+  className?: string;
 }
 
 export function JobCard({ job, resumeText, coverText, className }: JobCardProps) {
