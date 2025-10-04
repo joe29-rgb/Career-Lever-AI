@@ -199,7 +199,10 @@ export function ResumeUpload({
         const js = await resp.json()
         if (resp.ok && js.success) {
           try { localStorage.setItem('jobs:lastSuggest', JSON.stringify(js)) } catch {}
-          toast({ title: "Success", description: `Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`, variant: "default" })
+          toast({
+            title: `Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`,
+            variant: 'default'
+          })
         }
       } catch {}
 

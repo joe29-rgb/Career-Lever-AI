@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
+import { cn } from '@/lib/utils'
 
 interface Job {
   id: string
@@ -26,10 +27,10 @@ interface Job {
 }
 
 interface JobCardProps {
-  job: Job
-  resumeText?: string // Passed from parent
-  coverText?: string // Generated cover
-  className?: string;
+  job: Job;
+  resumeText?: string;
+  coverText?: string;
+  className?: string;  // ADD THIS LINE
 }
 
 export function JobCard({ job, resumeText, coverText, className }: JobCardProps) {
@@ -84,7 +85,7 @@ export function JobCard({ job, resumeText, coverText, className }: JobCardProps)
   }
 
   return (
-    <div className={`job-card group ${className || ''}`}>
+    <div className={cn("job-card", className)}>
       <Link href={job.url} className="block">
         <div className="job-card-header">
           <div className="job-logo">

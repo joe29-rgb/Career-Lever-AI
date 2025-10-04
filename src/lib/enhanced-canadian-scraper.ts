@@ -1,6 +1,17 @@
 import { WebScraperService } from './web-scraper'
 import * as cheerio from 'cheerio'
 
+interface ScrapedJob {
+  title?: string;
+  company?: string;
+  location?: string;
+  url: string;
+  salary?: string;
+  date?: string;
+  source?: string;
+  snippet?: string;
+}
+
 export class EnhancedCanadianJobScraper {
   private scraper = new WebScraperService()
   
@@ -10,7 +21,7 @@ export class EnhancedCanadianJobScraper {
     const html = await response.text()
     const $ = cheerio.load(html)
     
-    const jobs: { title: string; company: string; location: string; url: string; salary: string; date: string; }[] = []
+    const jobs: { title: string; company?: string; location?: string; url: string; salary?: string; date?: string; snippet?: string; source?: string; }[] = []
     $('.resultJobItem').each((i, elem) => {
       const title = $(elem).find('h3 a').text().trim()
       const company = $(elem).find('.business').text().trim()
@@ -40,7 +51,7 @@ export class EnhancedCanadianJobScraper {
     const html = await response.text()
     const $ = cheerio.load(html)
     
-    const jobs: { title: string; company: string; location: string; url: string; salary: string; date: string; }[] = []
+    const jobs: { title: string; company?: string; location?: string; url: string; salary?: string; date?: string; snippet?: string; source?: string; }[] = []
     $('.job_seen_beacon').each((i, elem) => {
       const title = $(elem).find('h2 a span').text().trim()
       const company = $(elem).find('.companyName').text().trim()
@@ -64,7 +75,7 @@ export class EnhancedCanadianJobScraper {
     return jobs.slice(0, 15)
   }
   
-  async combineAllSources(keywords: string, location: string) {
+  async combineAllSources(keywords: string, location: string): Promise<ScrapedJob[]> {
     const results = await Promise.all([
       this.scrapeJobBankDirect(keywords, location),
       this.scrapeIndeedCanadaDirect(keywords, location),
@@ -77,8 +88,8 @@ export class EnhancedCanadianJobScraper {
     )
     
     return uniqueJobs.sort((a, b) => {
-      const scoreA = parseFloat(a.salary.replace('$', '')) || 0
-      const scoreB = parseFloat(b.salary.replace('$', '')) || 0
+      const scoreA = parseFloat((a.salary || '0').replace('$', '').replace(/[^\d.]/g, '')) || 0
+      const scoreB = parseFloat((b.salary || '0').replace('$', '').replace(/[^\d.]/g, '')) || 0
       return scoreB - scoreA
     })
   }
