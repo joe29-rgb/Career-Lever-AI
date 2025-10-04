@@ -9,8 +9,8 @@ import { useRouter } from 'next/router'
 
 // Mock data - replace with your API fetch (e.g., from /api/job-boards/autopilot/search)
 const mockJobs = [
-  { id: 1, title: 'Software Developer', company: 'Tech Startup', location: 'Edmonton, AB', salary: '$80k - $100k', skills: ['React', 'Node.js'], url: '/apply/1', logo: '/tech-logo.png' },
-  { id: 2, title: 'Account Manager', company: 'Sales Co.', location: 'Toronto, ON', salary: '$90k+', skills: ['Sales', 'CRM'], url: '/apply/2', logo: '/sales-logo.png' },
+  { id: "1", title: 'Software Developer', company: 'Tech Startup', location: 'Edmonton, AB', salary: '$80k - $100k', skills: ['React', 'Node.js'], url: '/apply/1', logo: '/tech-logo.png' },
+  { id: "2", title: 'Account Manager', company: 'Sales Co.', location: 'Toronto, ON', salary: '$90k+', skills: ['Sales', 'CRM'], url: '/apply/2', logo: '/sales-logo.png' },
   // Add more or fetch dynamically
 ]
 
