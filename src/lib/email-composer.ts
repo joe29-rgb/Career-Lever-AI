@@ -1,4 +1,8 @@
-export async function composeJobApplicationEmail(jobData, resumePDF, coverLetterPDF) {
+export async function composeJobApplicationEmail(
+  jobData: { title: string; company: string; hrEmail?: string },
+  resumePDF: Blob,
+  coverLetterPDF: Blob
+) {
   const subject = `Application for ${jobData.title} at ${jobData.company}`
   const body = `Dear Hiring Manager,
 
