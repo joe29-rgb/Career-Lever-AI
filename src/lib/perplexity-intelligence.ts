@@ -200,7 +200,26 @@ Return a JSON object with: company, description (overview), size (employee count
       setCache(key, parsed)
       return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
     } catch (e) {
-      const fb: IntelligenceResponse = { company: input.company, freshness: new Date().toISOString(), sources: [], confidence: 0.3, financials: [], culture: [], salaries: [], contacts: [], growth: [], summary: 'Research failed - please retry' }
+      const fb: IntelligenceResponse = {
+        company: input.company,
+        freshness: new Date().toISOString(),
+        sources: [],
+        confidence: 0.3,
+        financials: [],
+        culture: [],
+        salaries: [],
+        contacts: [],
+        growth: [],
+        summary: 'Research failed - please retry',
+        description: 'No description available',
+        size: 'Unknown',
+        revenue: 'Unknown',
+        industry: 'Unknown',
+        founded: 'Unknown',
+        headquarters: 'Unknown',
+        psychology: 'No insights available',
+        marketIntelligence: 'No market data available'
+      }
       return { success: false, data: fb, metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
     }
   }
@@ -236,7 +255,15 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
         salaries: [],
         contacts: [],
         growth: [],
-        summary: 'No data available'
+        summary: 'No data available',
+        description: 'No description available',
+        size: 'Unknown',
+        revenue: 'Unknown',
+        industry: 'Unknown',
+        founded: 'Unknown',
+        headquarters: 'Unknown',
+        psychology: 'No insights available',
+        marketIntelligence: 'No market data available'
       }
       return fallback
     }
