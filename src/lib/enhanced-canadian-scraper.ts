@@ -10,7 +10,7 @@ export class EnhancedCanadianJobScraper {
     const html = await response.text()
     const $ = cheerio.load(html)
     
-    const jobs = []
+    const jobs: { title: string; company: string; location: string; url: string; salary: string; date: string; }[] = []
     $('.resultJobItem').each((i, elem) => {
       const title = $(elem).find('h3 a').text().trim()
       const company = $(elem).find('.business').text().trim()
@@ -40,7 +40,7 @@ export class EnhancedCanadianJobScraper {
     const html = await response.text()
     const $ = cheerio.load(html)
     
-    const jobs = []
+    const jobs: { title: string; company: string; location: string; url: string; salary: string; date: string; }[] = []
     $('.job_seen_beacon').each((i, elem) => {
       const title = $(elem).find('h2 a span').text().trim()
       const company = $(elem).find('.companyName').text().trim()
