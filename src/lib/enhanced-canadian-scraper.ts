@@ -79,23 +79,33 @@ export class EnhancedCanadianJobScraper {
     return jobs.slice(0, 15)
   }
   
-  async combineAllSources(keywords:string, location:string): Promise<SharedJobResult[]> {
-    const results = await Promise.all([
-      this.scrapeJobBankDirect(keywords, location),
-      this.scrapeIndeedCanadaDirect(keywords, location),
-      this.scraper.searchJobsByGoogle({ jobTitle: keywords, location })
-    ])
-    
-    const allJobs = results.flat()
-    const uniqueJobs = allJobs.filter((job, index, self) => 
+  async combineAllSources(keywords: string, location: string): Promise<SharedJobResult[]> {
+    // Scrape bank and indeed (already SharedJobResult[])
+    const bankJobs = await this.scrapeJobBankDirect(keywords, location);
+    const indeedJobs = await this.scrapeIndeedCanadaDirect(keywords, location);
+
+    // Normalize Google results to SharedJobResult
+    const googleResultsRaw = await this.scraper.searchJobsByGoogle({ jobTitle: keywords, location });
+    const googleJobs: SharedJobResult[] = googleResultsRaw.map(r => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.snippet,
+      source: r.source
+    }));
+
+    // Combine all
+    const allJobs = [...bankJobs, ...indeedJobs, ...googleJobs];
+
+    // Dedupe by URL
+    const uniqueJobs = allJobs.filter((job, index, self) =>
       index === self.findIndex(j => j.url === job.url)
-    )
-    
-    return uniqueJobs
-      .sort((a, b) => {
-        const scoreA = (a as any).salary ? parseFloat((a as any).salary.replace(/[^\d.]/g, '')) || 0 : 0;
-        const scoreB = (b as any).salary ? parseFloat((b as any).salary.replace(/[^\d.]/g, '')) || 0 : 0;
-        return scoreB - scoreA;
-      });
+    );
+
+    // Sort by salary safely
+    return uniqueJobs.sort((a, b) => {
+      const scoreA = a.salary ? parseFloat(a.salary.replace(/[^\d.]/g, '')) : 0;
+      const scoreB = b.salary ? parseFloat(b.salary.replace(/[^\d.]/g, '')) : 0;
+      return scoreB - scoreA;
+    });
   }
 }
