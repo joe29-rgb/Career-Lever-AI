@@ -3,17 +3,23 @@ import * as cheerio from 'cheerio'
 
 // ─── Shared Job Result Type ─────────────────────────────────────────────────
 export interface SharedJobResult {
-  title?: string
-  company?: string
-  location?: string
-  url: string
-  salary?: string
-  date?: string
-  snippet?: string
-  source?: string
+  kind: 'bank'|'indeed'|'google';   // discriminant
+  title?: string;
+  company?: string;
+  location?: string;
+  url: string;
+  salary?: string;
+  date?: string;
+  snippet?: string;
+  source?: string;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+
+// Type guard for jobs with salary
+function hasSalary(job: SharedJobResult): job is SharedJobResult & { salary: string } {
+  return typeof job.salary === 'string';
+}
 
 export class EnhancedCanadianJobScraper {
   private scraper = new WebScraperService()
@@ -24,7 +30,7 @@ export class EnhancedCanadianJobScraper {
     const html = await response.text()
     const $ = cheerio.load(html)
     
-    const jobs: { title: string; company?: string; location?: string; url: string; salary?: string; date?: string; snippet?: string; source?: string; }[] = []
+    const jobs: SharedJobResult[] = []
     $('.resultJobItem').each((i, elem) => {
       const title = $(elem).find('h3 a').text().trim()
       const company = $(elem).find('.business').text().trim()
@@ -35,6 +41,7 @@ export class EnhancedCanadianJobScraper {
       
       if (title) {
         jobs.push({
+          kind: 'bank',
           title,
           company,
           location: loc || location,
@@ -54,7 +61,7 @@ export class EnhancedCanadianJobScraper {
     const html = await response.text()
     const $ = cheerio.load(html)
     
-    const jobs: { title: string; company?: string; location?: string; url: string; salary?: string; date?: string; snippet?: string; source?: string; }[] = []
+    const jobs: SharedJobResult[] = []
     $('.job_seen_beacon').each((i, elem) => {
       const title = $(elem).find('h2 a span').text().trim()
       const company = $(elem).find('.companyName').text().trim()
@@ -65,6 +72,7 @@ export class EnhancedCanadianJobScraper {
       
       if (title) {
         jobs.push({
+          kind: 'indeed',
           title,
           company,
           location: loc || location,
@@ -90,12 +98,15 @@ export class EnhancedCanadianJobScraper {
       index === self.findIndex(j => j.url === job.url)
     )
     
-    return uniqueJobs.sort((a, b) => {
-      const salaryA = a.salary || '0'
-      const salaryB = b.salary || '0'
-      const scoreA = parseFloat(salaryA.replace(/[^0-9.]/g, '')) || 0
-      const scoreB = parseFloat(salaryB.replace(/[^0-9.]/g, '')) || 0
-      return scoreB - scoreA
-    })
+    return uniqueJobs
+      .sort((a, b) => {
+        const scoreA = hasSalary(a)
+          ? parseFloat(a.salary.replace(/[^\d.]/g, ''))
+          : 0;
+        const scoreB = hasSalary(b)
+          ? parseFloat(b.salary.replace(/[^\d.]/g, ''))
+          : 0;
+        return scoreB - scoreA;
+      });
   }
 }
