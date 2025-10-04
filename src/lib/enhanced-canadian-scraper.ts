@@ -3,28 +3,28 @@ import * as cheerio from 'cheerio'
 
 // ─── Shared Job Result Type ─────────────────────────────────────────────────
 export interface SharedJobResult {
-  kind: 'bank'|'indeed'|'google';   // discriminant
-  title?: string;
-  company?: string;
-  location?: string;
-  url: string;
-  salary?: string;
-  date?: string;
-  snippet?: string;
-  source?: string;
+  kind:'bank'|'indeed'|'google';   // discriminant
+  title?:string;
+  company?:string;
+  location?:string;
+  url:string;
+  salary?:string;
+  date?:string;
+  snippet?:string;
+  source?:string;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Type guard for jobs with salary
-function hasSalary(job: SharedJobResult): job is SharedJobResult & { salary: string } {
+function hasSalary(job:SharedJobResult): job is SharedJobResult & { salary:string } {
   return typeof job.salary === 'string';
 }
 
 export class EnhancedCanadianJobScraper {
   private scraper = new WebScraperService()
   
-  async scrapeJobBankDirect(keywords: string, location: string): Promise<SharedJobResult[]> {
+  async scrapeJobBankDirect(keywords:string, location:string): Promise<SharedJobResult[]> {
     const searchUrl = `https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=${encodeURIComponent(keywords)}&locationstring=${encodeURIComponent(location)}`
     const response = await fetch(searchUrl)
     const html = await response.text()
@@ -55,7 +55,7 @@ export class EnhancedCanadianJobScraper {
     return jobs.slice(0, 15)
   }
   
-  async scrapeIndeedCanadaDirect(keywords: string, location: string): Promise<SharedJobResult[]> {
+  async scrapeIndeedCanadaDirect(keywords:string, location:string): Promise<SharedJobResult[]> {
     const searchUrl = `https://ca.indeed.com/jobs?q=${encodeURIComponent(keywords)}&l=${encodeURIComponent(location)}`
     const response = await fetch(searchUrl)
     const html = await response.text()
@@ -86,7 +86,7 @@ export class EnhancedCanadianJobScraper {
     return jobs.slice(0, 15)
   }
   
-  async combineAllSources(keywords: string, location: string): Promise<SharedJobResult[]> {
+  async combineAllSources(keywords:string, location:string): Promise<SharedJobResult[]> {
     const results = await Promise.all([
       this.scrapeJobBankDirect(keywords, location),
       this.scrapeIndeedCanadaDirect(keywords, location),
