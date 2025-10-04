@@ -8,8 +8,8 @@ import { JobCard } from '@/components/job-card'
 
 // Mock job data - replace with your API fetch
 const mockJobs = [
-  { id: 1, title: 'Senior Software Engineer', company: 'Tech Corp', location: 'Toronto, ON', salary: '$120k - $160k', skills: ['React', 'Node.js', 'TypeScript'], url: '/jobs/1', logo: '/tech-corp-logo.png' },
-  { id: 2, title: 'Marketing Manager', company: 'Brand Inc', location: 'Vancouver, BC', salary: '$90k - $110k', skills: ['SEO', 'Content', 'Analytics'], url: '/jobs/2', logo: '/brand-logo.png' },
+  { id: "1", title: 'Senior Software Engineer', company: 'Tech Corp', location: 'Toronto, ON', salary: '$120k - $160k', skills: ['React', 'Node.js', 'TypeScript'], url: '/jobs/1', logo: '/tech-corp-logo.png' },
+  { id: "2", title: 'Marketing Manager', company: 'Brand Inc', location: 'Vancouver, BC', salary: '$90k - $110k', skills: ['SEO', 'Content', 'Analytics'], url: '/jobs/2', logo: '/brand-logo.png' },
   // Add more or fetch from API
 ]
 
