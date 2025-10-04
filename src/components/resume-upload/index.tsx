@@ -217,7 +217,7 @@ export function ResumeUpload({
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'
       setError(errorMessage)
       onUploadError(errorMessage)
-      toast.error(errorMessage)
+      toast({ title: "Error", description: errorMessage, variant: "destructive" })
     } finally {
       setIsUploading(false)
       setTimeout(() => setUploadProgress(0), 1000)
