@@ -1,21 +1,24 @@
 import { WebScraperService } from './web-scraper'
 import * as cheerio from 'cheerio'
 
-interface UnifiedJobResult {
-  title?: string;
-  company?: string;
-  location?: string;
-  url: string;
-  salary?: string;
-  date?: string;
-  snippet?: string;
-  source?: string;
+// ─── Shared Job Result Type ─────────────────────────────────────────────────
+export interface SharedJobResult {
+  title?: string
+  company?: string
+  location?: string
+  url: string
+  salary?: string
+  date?: string
+  snippet?: string
+  source?: string
 }
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 export class EnhancedCanadianJobScraper {
   private scraper = new WebScraperService()
   
-  async scrapeJobBankDirect(keywords: string, location: string): Promise<UnifiedJobResult[]> {
+  async scrapeJobBankDirect(keywords: string, location: string): Promise<SharedJobResult[]> {
     const searchUrl = `https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=${encodeURIComponent(keywords)}&locationstring=${encodeURIComponent(location)}`
     const response = await fetch(searchUrl)
     const html = await response.text()
@@ -45,7 +48,7 @@ export class EnhancedCanadianJobScraper {
     return jobs.slice(0, 15)
   }
   
-  async scrapeIndeedCanadaDirect(keywords: string, location: string): Promise<UnifiedJobResult[]> {
+  async scrapeIndeedCanadaDirect(keywords: string, location: string): Promise<SharedJobResult[]> {
     const searchUrl = `https://ca.indeed.com/jobs?q=${encodeURIComponent(keywords)}&l=${encodeURIComponent(location)}`
     const response = await fetch(searchUrl)
     const html = await response.text()
@@ -75,7 +78,7 @@ export class EnhancedCanadianJobScraper {
     return jobs.slice(0, 15)
   }
   
-  async combineAllSources(keywords: string, location: string): Promise<ScrapedJob[]> {
+  async combineAllSources(keywords: string, location: string): Promise<SharedJobResult[]> {
     const results = await Promise.all([
       this.scrapeJobBankDirect(keywords, location),
       this.scrapeIndeedCanadaDirect(keywords, location),
@@ -88,11 +91,11 @@ export class EnhancedCanadianJobScraper {
     )
     
     return uniqueJobs.sort((a, b) => {
-      const salaryA = a.salary || '0';
-      const salaryB = b.salary || '0';
-      const scoreA = parseFloat(salaryA.replace(/[^0-9.]/g, '')) || 0;
-      const scoreB = parseFloat(salaryB.replace(/[^0-9.]/g, '')) || 0;
-      return scoreB - scoreA;
-    });
+      const salaryA = a.salary || '0'
+      const salaryB = b.salary || '0'
+      const scoreA = parseFloat(salaryA.replace(/[^0-9.]/g, '')) || 0
+      const scoreB = parseFloat(salaryB.replace(/[^0-9.]/g, '')) || 0
+      return scoreB - scoreA
+    })
   }
 }
