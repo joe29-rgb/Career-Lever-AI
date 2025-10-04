@@ -68,8 +68,8 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
   return { text, method }
 }
 
-export const runtime = 'nodejs'
-export const dynamic = 'force-static'
+// export const runtime = 'nodejs'
+// export const dynamic = 'force-static'
 
 export async function POST(request: NextRequest) {
   try {
