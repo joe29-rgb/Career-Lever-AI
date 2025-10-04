@@ -3,7 +3,6 @@ import * as cheerio from 'cheerio'
 
 // ─── Shared Job Result Type ─────────────────────────────────────────────────
 export interface SharedJobResult {
-  kind:'bank'|'indeed'|'google';   // discriminant
   title?:string;
   company?:string;
   location?:string;
@@ -16,10 +15,6 @@ export interface SharedJobResult {
 
 // ──────────────────────────────────────────────────────────────────────────────
 
-// Type guard for jobs with salary
-function hasSalary(job:SharedJobResult): job is SharedJobResult & { salary:string } {
-  return typeof job.salary === 'string';
-}
 
 export class EnhancedCanadianJobScraper {
   private scraper = new WebScraperService()
@@ -41,7 +36,6 @@ export class EnhancedCanadianJobScraper {
       
       if (title) {
         jobs.push({
-          kind: 'bank',
           title,
           company,
           location: loc || location,
@@ -72,7 +66,6 @@ export class EnhancedCanadianJobScraper {
       
       if (title) {
         jobs.push({
-          kind: 'indeed',
           title,
           company,
           location: loc || location,
@@ -100,12 +93,8 @@ export class EnhancedCanadianJobScraper {
     
     return uniqueJobs
       .sort((a, b) => {
-        const scoreA = hasSalary(a)
-          ? parseFloat(a.salary.replace(/[^\d.]/g, ''))
-          : 0;
-        const scoreB = hasSalary(b)
-          ? parseFloat(b.salary.replace(/[^\d.]/g, ''))
-          : 0;
+        const scoreA = a.salary ? parseFloat(a.salary.replace(/[^\d.]/g, '')) || 0 : 0;
+        const scoreB = b.salary ? parseFloat(b.salary.replace(/[^\d.]/g, '')) || 0 : 0;
         return scoreB - scoreA;
       });
   }
