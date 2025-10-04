@@ -199,13 +199,13 @@ export function ResumeUpload({
         const js = await resp.json()
         if (resp.ok && js.success) {
           try { localStorage.setItem('jobs:lastSuggest', JSON.stringify(js)) } catch {}
-          toast.success(`Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`)
+          toast({ title: "Success", description: `Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`, variant: "default" })
         }
       } catch {}
 
       // Mark Autopilot ready and move wizard
       try { localStorage.setItem('cf:autopilotReady', '1'); localStorage.setItem('cf:progress', JSON.stringify({ step: 2, total: 7 })) } catch {}
-      toast.success('Resume uploaded successfully! Autopilot enabled.')
+      toast({ title: "Success", description: 'Resume uploaded successfully! Autopilot enabled.', variant: "default" })
 
       // Extract signals after upload
       if (data.extractedText && data.extractedText.length > 50) {
