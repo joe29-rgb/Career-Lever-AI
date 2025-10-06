@@ -43,13 +43,23 @@ export async function POST(request: NextRequest) {
       "I'm reaching out regarding the ${jobTitle} opening—my track record in [achievement] makes me a strong fit."
     ]
 
-    // PDF generation temporarily disabled to prevent build issues
-    // const pdfComposer = new ApplicationPDFComposer()
-    // const packageData = await pdfComposer.generateApplicationPackage(resumeText, coverText, { jobId, company, jobTitle })
-
-    // Placeholder for PDF base64 - will be implemented with proper PDF service
-    const resumeBase64 = Buffer.from(resumeText).toString('base64')
-    const coverBase64 = Buffer.from(coverText).toString('base64')
+    // Generate real PDFs using pdf-generator service
+    const { generateResumePDF } = await import('@/lib/pdf-generator')
+    
+    const resumePdfBlob = await generateResumePDF({ 
+      text: resumeText, 
+      name: `${company}_Resume` 
+    })
+    const coverPdfBlob = await generateResumePDF({ 
+      text: coverText, 
+      name: `${company}_CoverLetter` 
+    })
+    
+    // Convert blobs to base64
+    const resumeBuffer = Buffer.from(await resumePdfBlob.arrayBuffer())
+    const coverBuffer = Buffer.from(await coverPdfBlob.arrayBuffer())
+    const resumeBase64 = resumeBuffer.toString('base64')
+    const coverBase64 = coverBuffer.toString('base64')
 
     const emailData = await composeEmail({
       recipient: contacts.email,
