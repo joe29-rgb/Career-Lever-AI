@@ -47,6 +47,7 @@
         "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
         "framer-motion": "^10.18.0",
+        "ioredis": "^5.8.1",
         "isomorphic-dompurify": "^2.28.0",
         "jsonwebtoken": "^9.0.0",
         "lucide-react": "^0.294.0",

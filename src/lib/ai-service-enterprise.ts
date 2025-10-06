@@ -1,5 +1,7 @@
 // Enterprise AI Service with Circuit Breakers, Caching, and Retry Logic
 
+import { RedisCache, CacheKeys } from './redis-cache'
+
 interface AIResponse<T = any> {
   success: boolean
   data?: T
@@ -19,10 +21,15 @@ export class EnterpriseAIService {
   private static instance: EnterpriseAIService
   private circuitBreaker: Map<string, CircuitBreakerState> = new Map()
   private cache: Map<string, { data: any; expires: number }> = new Map()
+  private redisCache: RedisCache
   
   private readonly failureThreshold = 5
   private readonly recoveryTimeout = 30000 // 30 seconds
   private readonly cacheTTL = 3600000 // 1 hour
+
+  private constructor() {
+    this.redisCache = RedisCache.getInstance()
+  }
 
   static getInstance(): EnterpriseAIService {
     if (!EnterpriseAIService.instance) {
@@ -51,9 +58,9 @@ export class EnterpriseAIService {
         }
       }
 
-      // Check cache
+      // Check cache (async now with Redis)
       const cacheKey = this.generateCacheKey(params)
-      const cached = this.getFromCache(cacheKey)
+      const cached = await this.getFromCache(cacheKey)
       if (cached) {
         return {
           success: true,
@@ -67,9 +74,9 @@ export class EnterpriseAIService {
       // Make AI request with retry logic
       const result = await this.makeAIRequestWithRetry(operationKey, params)
       
-      // Cache successful result
+      // Cache successful result (async now with Redis)
       if (result.success && result.data) {
-        this.setCache(cacheKey, result.data)
+        await this.setCache(cacheKey, result.data)
       }
       
       // Reset circuit breaker on success
@@ -197,7 +204,17 @@ export class EnterpriseAIService {
     return crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex')
   }
 
-  private getFromCache(key: string): any | null {
+  private async getFromCache(key: string): Promise<any | null> {
+    // Try Redis first (distributed cache)
+    if (this.redisCache.isAvailable()) {
+      const redisKey = CacheKeys.aiResponse(key)
+      const cached = await this.redisCache.get(redisKey)
+      if (cached) {
+        return cached
+      }
+    }
+
+    // Fallback to in-memory cache
     const cached = this.cache.get(key)
     if (cached && cached.expires > Date.now()) {
       return cached.data
@@ -206,7 +223,14 @@ export class EnterpriseAIService {
     return null
   }
 
-  private setCache(key: string, data: any): void {
+  private async setCache(key: string, data: any): Promise<void> {
+    // Set in Redis (distributed cache) with 1-hour TTL
+    if (this.redisCache.isAvailable()) {
+      const redisKey = CacheKeys.aiResponse(key)
+      await this.redisCache.set(redisKey, data, 3600) // 1 hour
+    }
+
+    // Also set in memory cache as fallback
     this.cache.set(key, {
       data,
       expires: Date.now() + this.cacheTTL
@@ -299,7 +323,7 @@ Return only the optimized resume text.`
       }
 
       const cacheKey = this.generateCacheKey(params)
-      const cached = this.getFromCache(cacheKey)
+      const cached = await this.getFromCache(cacheKey)
       if (cached) {
         return {
           success: true,
@@ -332,7 +356,7 @@ Return only the cover letter text.`
       const result = await this.makeAIRequestWithRetry(operationKey, { ...params, prompt })
       
       if (result.success && result.data) {
-        this.setCache(cacheKey, result.data)
+        await this.setCache(cacheKey, result.data)
       }
       
       this.resetCircuitBreaker(operationKey)
@@ -372,7 +396,7 @@ Return only the cover letter text.`
       }
 
       const cacheKey = this.generateCacheKey(params)
-      const cached = this.getFromCache(cacheKey)
+      const cached = await this.getFromCache(cacheKey)
       if (cached) {
         return {
           success: true,
@@ -408,7 +432,7 @@ Return as JSON: { "matchScore": number, "strengths": string[], "gaps": string[],
         try {
           const parsed = JSON.parse(result.data.customizedText || '{}')
           result.data = parsed
-          this.setCache(cacheKey, parsed)
+          await this.setCache(cacheKey, parsed)
         } catch {
           result.data = {
             matchScore: 50,
@@ -455,7 +479,7 @@ Return as JSON: { "matchScore": number, "strengths": string[], "gaps": string[],
       }
 
       const cacheKey = this.generateCacheKey(params)
-      const cached = this.getFromCache(cacheKey)
+      const cached = await this.getFromCache(cacheKey)
       if (cached) {
         return {
           success: true,
