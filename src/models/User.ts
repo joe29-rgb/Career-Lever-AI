@@ -51,8 +51,12 @@ const UserSchema: Schema = new Schema({
   timestamps: true,
 });
 
-// Add indexes for better query performance (email is already indexed via unique: true)
-UserSchema.index({ createdAt: -1 });
+// Add indexes for better query performance
+// Email is already indexed via unique: true
+UserSchema.index({ createdAt: -1 }); // Sort by creation date
+UserSchema.index({ location: 1 }); // Filter by location
+UserSchema.index({ skills: 1 }); // Filter by skills (array index)
+UserSchema.index({ name: 'text', title: 'text', skills: 'text' }); // Full-text search
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 

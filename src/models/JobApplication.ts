@@ -103,10 +103,15 @@ const JobApplicationSchema = new Schema<IJobApplication>({
 })
 
 // Indexes to support common queries
-JobApplicationSchema.index({ userId: 1, createdAt: -1 })
-JobApplicationSchema.index({ userId: 1, applicationStatus: 1 })
-JobApplicationSchema.index({ companyName: 1 })
-JobApplicationSchema.index({ jobTitle: 1 })
+JobApplicationSchema.index({ userId: 1, createdAt: -1 }); // User's applications sorted by date
+JobApplicationSchema.index({ userId: 1, applicationStatus: 1 }); // Filter by user and status
+JobApplicationSchema.index({ userId: 1, updatedAt: -1 }); // Recently updated applications
+JobApplicationSchema.index({ companyName: 1 }); // Find by company
+JobApplicationSchema.index({ jobTitle: 1 }); // Find by job title
+JobApplicationSchema.index({ applicationStatus: 1, appliedDate: -1 }); // Status timeline queries
+JobApplicationSchema.index({ appliedDate: 1 }); // Sort by application date
+JobApplicationSchema.index({ userId: 1, applicationStatus: 1, createdAt: -1 }); // Compound: user's apps by status and date
+JobApplicationSchema.index({ jobTitle: 'text', companyName: 'text', jobDescription: 'text', notes: 'text' }); // Full-text search
 
 export default mongoose.models.JobApplication || mongoose.model<IJobApplication>('JobApplication', JobApplicationSchema)
 

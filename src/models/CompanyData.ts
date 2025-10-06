@@ -285,9 +285,13 @@ const CompanyDataSchema: Schema = new Schema({
 });
 
 // Add indexes for better query performance
-// Keep a single unique index; avoid duplicate definitions elsewhere
-CompanyDataSchema.index({ expiresAt: 1 });
-CompanyDataSchema.index({ cachedAt: -1 });
+// companyName is already indexed via unique: true
+CompanyDataSchema.index({ expiresAt: 1 }); // Find expired cache entries
+CompanyDataSchema.index({ cachedAt: -1 }); // Sort by cache date
+CompanyDataSchema.index({ industry: 1 }); // Filter by industry
+CompanyDataSchema.index({ industry: 1, cachedAt: -1 }); // Compound: industry + freshness
+CompanyDataSchema.index({ glassdoorRating: -1 }); // Sort by rating
+CompanyDataSchema.index({ companyName: 'text', industry: 'text', description: 'text' }); // Full-text search
 
 export default mongoose.models.CompanyData || mongoose.model<ICompanyData>('CompanyData', CompanyDataSchema);
 

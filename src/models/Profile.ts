@@ -45,6 +45,16 @@ const ProfileSchema: Schema = new Schema({
   styleProfile: { type: Schema.Types.Mixed },
 }, { timestamps: true })
 
+// Add indexes for better query performance
+// userId and userNo are already indexed via unique: true
+ProfileSchema.index({ plan: 1 }); // Filter by subscription plan
+ProfileSchema.index({ location: 1 }); // Filter by location
+ProfileSchema.index({ skills: 1 }); // Filter by skills (array index)
+ProfileSchema.index({ industries: 1 }); // Filter by target industries
+ProfileSchema.index({ seniority: 1 }); // Filter by seniority level
+ProfileSchema.index({ 'autopilotMeta.nextRunAt': 1 }); // Autopilot scheduling
+ProfileSchema.index({ plan: 1, createdAt: -1 }); // Compound: plan analytics
+
 export default mongoose.models.Profile || mongoose.model<IProfile>('Profile', ProfileSchema);
 
 

@@ -83,9 +83,12 @@ const ResumeSchema: Schema = new Schema({
 });
 
 // Add indexes for better query performance
-ResumeSchema.index({ userId: 1 });
-ResumeSchema.index({ createdAt: -1 });
-ResumeSchema.index({ userId: 1, createdAt: -1 });
+ResumeSchema.index({ userId: 1 }); // Find by user
+ResumeSchema.index({ createdAt: -1 }); // Sort by date
+ResumeSchema.index({ userId: 1, createdAt: -1 }); // Compound: user's resumes sorted by date
+ResumeSchema.index({ userId: 1, updatedAt: -1 }); // Compound: user's recently updated resumes
+ResumeSchema.index({ 'customizedVersions.jobApplicationId': 1 }); // Find customized versions
+ResumeSchema.index({ extractedText: 'text', userName: 'text', originalFileName: 'text' }); // Full-text search
 
 export default mongoose.models.Resume || mongoose.model<IResume>('Resume', ResumeSchema);
 

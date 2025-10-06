@@ -26,8 +26,14 @@ const CoverLetterSchema = new Schema<ICoverLetter>({
   applicationId: { type: Schema.Types.ObjectId, ref: 'JobApplication' },
 }, { timestamps: true })
 
-CoverLetterSchema.index({ userId: 1, createdAt: -1 })
-CoverLetterSchema.index({ userId: 1, companyName: 1 })
+// Add indexes for better query performance
+CoverLetterSchema.index({ userId: 1, createdAt: -1 }); // User's cover letters sorted by date
+CoverLetterSchema.index({ userId: 1, companyName: 1 }); // Find by user and company
+CoverLetterSchema.index({ userId: 1, jobTitle: 1 }); // Find by user and job title
+CoverLetterSchema.index({ applicationId: 1 }); // Link to job application
+CoverLetterSchema.index({ userId: 1, updatedAt: -1 }); // Recently updated cover letters
+CoverLetterSchema.index({ companyName: 1, jobTitle: 1 }); // Find by company and role
+CoverLetterSchema.index({ jobTitle: 'text', companyName: 'text', content: 'text' }); // Full-text search
 
 export default mongoose.models.CoverLetter || mongoose.model<ICoverLetter>('CoverLetter', CoverLetterSchema)
 
