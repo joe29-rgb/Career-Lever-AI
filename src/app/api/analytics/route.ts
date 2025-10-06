@@ -241,8 +241,8 @@ function calculatePerformanceMetrics(applications: any[]) {
   const monthlyGoalProgress = Math.min((monthlyApplications / 15) * 100, 100)
   const weeklyGoalProgress = Math.min((weeklyApplications / 4) * 100, 100)
 
-  const improvementAreas = []
-  const strengths = []
+  const improvementAreas: string[] = []
+  const strengths: string[] = []
 
   if (weeklyApplications < 2) {
     improvementAreas.push('Increase application volume - aim for 3-4 per week')

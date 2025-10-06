@@ -2,7 +2,7 @@ import { promises as fs } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
-import pdf2pic from 'pdf2pic'
+import * as pdf2pic from 'pdf2pic'
 
 interface PDFExtractionResult {
   text: string
@@ -63,7 +63,7 @@ export class PDFService {
 
   private async extractTextContent(buffer: Buffer): Promise<{ text: string }> {
     // Use pdf2pic for reliable extraction
-    const pdf2picInstance = new pdf2pic({
+    const pdf2picInstance = new pdf2pic.default({
       density: 200, // DPI
       saveFilename: 'page',
       savePath: tmpdir(),
