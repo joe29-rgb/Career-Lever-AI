@@ -3,13 +3,18 @@
 import { SessionProvider } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { ResumeProvider } from '@/components/resume-context'
 import { initSentry, addRequestBreadcrumb } from '@/lib/sentry'
 import toast from 'react-hot-toast'
 import { createQueryClient } from '@/lib/query-client'
+
+// Conditionally import devtools only in development
+let ReactQueryDevtools: any = null
+if (process.env.NODE_ENV === 'development') {
+  ReactQueryDevtools = require('@tanstack/react-query-devtools').ReactQueryDevtools
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => createQueryClient())
@@ -75,7 +80,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         {shouldMountResume ? <ResumeProvider>{content}</ResumeProvider> : content}
-        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+        {process.env.NODE_ENV === 'development' && ReactQueryDevtools && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </SessionProvider>
   )
