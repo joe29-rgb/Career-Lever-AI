@@ -43,113 +43,136 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Search */}
-      <section className="search-hero">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* VIBRANT Hero Search with Dribbble Colors */}
+      <section className="bg-gradient-to-r from-[#5324FD] via-[#F5001E] to-[#FCC636] px-4 py-16 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
+        {/* Animated background blobs */}
+        <div className="absolute top-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+        
         <div className="max-w-4xl mx-auto relative z-10">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2">Find Your Dream Job</h1>
-          <p className="text-white/90 text-lg mb-6">Discover opportunities that match your skills and passion</p>
-          <form onSubmit={handleSearch} className="search-input-group">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white text-center drop-shadow-lg">
+            🚀 Find Your Dream Job
+          </h1>
+          <p className="text-white/95 text-xl mb-8 text-center font-medium">
+            Discover opportunities that match your skills and passion
+          </p>
+          
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <MagnifyingGlassIcon className="search-icon" />
+              <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search jobs by title, company, or keywords..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
+                className="w-full pl-12 pr-4 py-4 rounded-2xl text-lg font-medium text-gray-900 placeholder:text-gray-400 border-0 shadow-xl focus:ring-4 focus:ring-white/50 transition-all"
               />
             </div>
-            <button type="submit" className="search-btn">
-              <MagnifyingGlassIcon className="w-5 h-5" />
-              <span className="ml-2">Search</span>
+            <button 
+              type="submit" 
+              className="bg-white text-[#5324FD] font-bold px-8 py-4 rounded-2xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 text-lg whitespace-nowrap"
+            >
+              <MagnifyingGlassIcon className="w-6 h-6" />
+              <span>Search</span>
             </button>
           </form>
         </div>
       </section>
 
-      <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto px-4 lg:px-8 py-8">
+      <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto px-4 lg:px-8 py-8 -mt-8">
         {/* Main Content: Job Grid */}
         <main className="flex-1">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {jobs.length} Jobs Found
-            </h2>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-[#5324FD] to-[#F5001E] bg-clip-text text-transparent">
+                {jobs.length} Jobs Found
+              </h2>
+              <p className="text-gray-600 mt-1">Curated opportunities just for you</p>
+            </div>
             <button 
               onClick={toggleSidebar} 
-              className="lg:hidden btn-primary px-4 py-2 rounded-xl flex items-center gap-2"
+              className="lg:hidden bg-gradient-to-r from-[#5324FD] to-[#8B5CF6] text-white font-bold px-6 py-3 rounded-2xl shadow-lg hover:shadow-2xl transition-all flex items-center gap-2"
             >
               <FunnelIcon className="w-5 h-5" />
               Filters
             </button>
           </div>
-          <div className="responsive-grid-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {jobs.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}
           </div>
         </main>
 
-        {/* Sidebar: Filters */}
+        {/* VIBRANT Sidebar: Filters */}
         <aside className={`hidden lg:block w-80 sticky top-8 self-start`}>
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Filters</h2>
-              <button 
-                onClick={() => setFilters({ location: '', salaryMin: '', salaryMax: '', remote: false })}
-                className="text-sm text-gray-500 hover:text-blue-600 font-medium"
-              >
-                Clear All
-              </button>
-            </div>
-            
-            <div className="space-y-6">
-              <div className="filter-group">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Work Type</label>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    id="remote" 
-                    checked={filters.remote} 
-                    onChange={(e) => handleFilterChange('remote', e.target.checked)}
-                    className="w-5 h-5 text-blue-600 rounded"
-                  />
-                  <label htmlFor="remote" className="text-sm font-medium text-gray-700 cursor-pointer">
-                    Remote Only
-                  </label>
+          {/* Gradient border wrapper */}
+          <div className="bg-gradient-to-br from-[#5324FD] to-[#F5001E] p-1 rounded-3xl shadow-xl">
+            <div className="bg-white rounded-[calc(1.5rem-1px)] p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-[#5324FD] to-[#F5001E] bg-clip-text text-transparent">
+                  🎯 Filters
+                </h2>
+                <button 
+                  onClick={() => setFilters({ location: '', salaryMin: '', salaryMax: '', remote: false })}
+                  className="text-sm text-[#F5001E] hover:text-[#5324FD] font-bold transition-colors"
+                >
+                  Clear All
+                </button>
+              </div>
+              
+              <div className="space-y-6">
+                {/* Work Type Filter */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-3">💼 Work Type</label>
+                  <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl hover:shadow-md transition-all cursor-pointer border-2 border-transparent hover:border-[#5324FD]/20">
+                    <input 
+                      type="checkbox" 
+                      id="remote" 
+                      checked={filters.remote} 
+                      onChange={(e) => handleFilterChange('remote', e.target.checked)}
+                      className="w-5 h-5 text-[#5324FD] rounded-lg border-2"
+                    />
+                    <label htmlFor="remote" className="text-sm font-bold text-gray-700 cursor-pointer">
+                      🏡 Remote Only
+                    </label>
+                  </div>
                 </div>
-              </div>
 
-              <div className="filter-group">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  <MapPinIcon className="w-4 h-4 inline mr-1" />
-                  Location
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Edmonton, AB"
-                  value={filters.location}
-                  onChange={(e) => handleFilterChange('location', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-              </div>
+                {/* Location Filter */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-3">
+                    <MapPinIcon className="w-5 h-5 inline mr-1 text-[#F5001E]" />
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Edmonton, AB"
+                    value={filters.location}
+                    onChange={(e) => handleFilterChange('location', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#5324FD] focus:border-[#5324FD] transition-all font-medium"
+                  />
+                </div>
 
-              <div className="filter-group">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">Salary Range</label>
-                <input
-                  type="number"
-                  placeholder="Min Salary"
-                  value={filters.salaryMin}
-                  onChange={(e) => handleFilterChange('salaryMin', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all mb-3"
-                />
-                <input
-                  type="number"
-                  placeholder="Max Salary"
-                  value={filters.salaryMax}
-                  onChange={(e) => handleFilterChange('salaryMax', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
+                {/* Salary Range Filter */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-3">💰 Salary Range</label>
+                  <input
+                    type="number"
+                    placeholder="Min Salary"
+                    value={filters.salaryMin}
+                    onChange={(e) => handleFilterChange('salaryMin', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#FCC636] focus:border-[#FCC636] transition-all mb-3 font-medium"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max Salary"
+                    value={filters.salaryMax}
+                    onChange={(e) => handleFilterChange('salaryMax', e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#FCC636] focus:border-[#FCC636] transition-all font-medium"
+                  />
+                </div>
               </div>
             </div>
           </div>

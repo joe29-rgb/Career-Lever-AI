@@ -243,83 +243,90 @@ export function ResumeUpload({
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          Resume Upload
-        </CardTitle>
-        <CardDescription>
-          Upload your resume in PDF format for AI-powered customization
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Error Alert */}
+    <Card className="w-full border-0 shadow-none">
+      <CardContent className="space-y-4 p-0">
+        {/* Error Alert - VIBRANT */}
         {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-2xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-white" />
+              </div>
+              <p className="text-red-800 font-semibold">{error}</p>
+            </div>
+          </div>
         )}
 
-        {/* Upload Area */}
+        {/* VIBRANT Upload Area */}
         {!uploadedFile ? (
           <>
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              className={`border-3 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${
                 isDragActive
-                  ? 'border-blue-400 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
+                  ? 'border-[#5324FD] bg-gradient-to-br from-blue-50 to-purple-50 scale-105'
+                  : 'border-gray-300 hover:border-[#5324FD] hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50'
               } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
             >
               <input {...getInputProps()} />
-              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-              <div className="space-y-2">
-                <p className="text-lg font-medium text-gray-900">
-                  {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
+              {/* Vibrant upload icon */}
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#5324FD] to-[#8B5CF6] rounded-3xl flex items-center justify-center shadow-lg">
+                <Upload className="h-10 w-10 text-white" />
+              </div>
+              <div className="space-y-3">
+                <p className="text-2xl font-bold text-gray-900">
+                  {isDragActive ? '📥 Drop it here!' : '📄 Upload Your Resume'}
                 </p>
-                <p className="text-sm text-gray-600">
+                <p className="text-base text-gray-600 font-medium">
                   Drag and drop your PDF file here, or click to browse
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm text-gray-500">
                   Maximum file size: {maxFileSize / (1024 * 1024)}MB
                 </p>
               </div>
             </div>
 
-            {/* Paste Text Area (available without file) */}
-            <div className="space-y-2 mt-4">
-              <label className="text-sm font-medium text-gray-700">Or paste your resume text</label>
+            {/* VIBRANT Paste Text Area */}
+            <div className="space-y-3 mt-6">
+              <label className="text-base font-bold text-gray-800 flex items-center gap-2">
+                ✍️ Or paste your resume text
+              </label>
               <textarea
-                className="w-full border rounded-md p-3 text-sm h-40"
+                className="w-full border-2 border-gray-300 rounded-2xl p-4 text-sm h-40 focus:ring-2 focus:ring-[#5324FD] focus:border-[#5324FD] transition-all font-medium resize-none"
                 placeholder="Paste your resume here if your PDF is scanned or not readable..."
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
                 disabled={isUploading}
               />
-              <div className="text-xs text-gray-500">We’ll create a resume record from your pasted text.</div>
+              <div className="text-sm text-gray-600 font-medium">✨ We'll create a resume record from your pasted text.</div>
             </div>
 
-            {/* Upload Button when using pasted text */}
+            {/* VIBRANT Upload Button when using pasted text */}
             {(pastedText.trim()) && !isUploading && !uploadedResume && (
-              <div className="mt-4 flex gap-2">
-                <Button onClick={handleUpload} className="flex-1">
-                  Upload Resume
+              <div className="mt-6 flex gap-3">
+                <Button 
+                  onClick={handleUpload} 
+                  className="flex-1 bg-gradient-to-r from-[#5324FD] to-[#8B5CF6] text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0 text-base"
+                >
+                  🚀 Upload Resume
                 </Button>
-                <Button variant="outline" onClick={clearFile}>
+                <Button 
+                  variant="outline" 
+                  onClick={clearFile}
+                  className="border-2 border-gray-300 rounded-2xl font-bold hover:border-red-500 hover:text-red-500 transition-colors py-4 px-6"
+                >
                   Cancel
                 </Button>
               </div>
             )}
 
             {isUploading && (
-              <div className="mt-4 flex gap-2">
-                <Button disabled className="flex-1">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <div className="mt-6 flex gap-3">
+                <Button disabled className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-4 rounded-2xl border-0 text-base">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Uploading...
                 </Button>
-                <Button variant="outline" disabled>
+                <Button variant="outline" disabled className="border-2 border-gray-300 rounded-2xl font-bold py-4 px-6 opacity-50">
                   Cancel
                 </Button>
               </div>
