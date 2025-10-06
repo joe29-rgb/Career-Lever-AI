@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import Resume from '@/models/Resume'
 import Profile from '@/models/Profile'
-import connectToDatabase from '@/lib/mongodb'
+import { dbService } from '@/lib/database'
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions)
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  await connectToDatabase()
+  await dbService.connect()
 
   try {
     const { keywords, location, experienceLevel, remote, salaryMin, limit = 25 } = await request.json()

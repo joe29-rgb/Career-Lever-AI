@@ -3,14 +3,14 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { WebScraperService } from '@/lib/web-scraper'
-import connectToDatabase from '@/lib/mongodb' // Default import
+import { dbService } from '@/lib/database' // Default import
 import Profile from '@/models/Profile'
 
 const webScraper = new WebScraperService()
 
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase()
+    await dbService.connect()
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

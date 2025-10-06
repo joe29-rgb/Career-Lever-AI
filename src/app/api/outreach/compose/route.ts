@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { composeEmail } from '@/lib/email-service'
 import Application from '@/models/Application' // Assume model exists or create
-import connectToDatabase from '@/lib/mongodb' // Default import
+import { dbService } from '@/lib/database' // Default import
 import { ApplicationPDFComposer } from '@/lib/pdf-composer'
 
 function blobToBase64(blob: Blob): Promise<string> {
@@ -17,7 +17,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase()
+    await dbService.connect()
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

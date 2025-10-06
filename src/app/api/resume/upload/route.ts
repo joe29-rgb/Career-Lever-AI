@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import Resume from '@/models/Resume'
-import connectToDatabase from '@/lib/mongodb'
+import { dbService } from '@/lib/database'
 import { isRateLimited } from '@/lib/rate-limit'
 import { isSameOrigin } from '@/lib/security'
 import { PDFService } from '@/lib/pdf-service'
@@ -34,7 +34,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    await connectToDatabase()
+    await dbService.connect()
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
