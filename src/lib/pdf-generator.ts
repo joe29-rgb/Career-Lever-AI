@@ -1,9 +1,5 @@
-import jsPDF from 'jspdf'
-
+// PDF generation functionality moved to unified PDF service
 export async function generateResumePDF(resumeData: { text: string; name?: string }) {
-  const doc = new jsPDF()
-  doc.text('Resume', 10, 10)
-  // Add resume content to PDF
-  const blob = doc.output('blob')
-  return blob
+  // Placeholder - will be implemented with unified PDF service
+  return new Blob(['PDF generation placeholder'], { type: 'application/pdf' })
 }

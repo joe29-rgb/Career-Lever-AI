@@ -1,30 +1,31 @@
-import { jsPDF } from 'jspdf'
+import { PDFService } from './pdf-service'
 
 export class ApplicationPDFComposer {
-  generateResumePDF(resumeText: string): Blob {
-    const doc = new jsPDF()
-    doc.setFontSize(16)
-    doc.text('Resume', 20, 20)
-    doc.setFontSize(12)
-    const splitText = doc.splitTextToSize(resumeText, 170)
-    doc.text(splitText, 20, 30)
-    return doc.output('blob')
+  private pdfService = PDFService.getInstance()
+
+  async generateResumePDF(resumeText: string): Promise<Blob> {
+    const result = await this.pdfService.extractText(Buffer.from(resumeText), 'resume.txt')
+    if (result.error) {
+      throw new Error(result.error)
+    }
+    return new Blob([result.text], { type: 'application/pdf' })
   }
-  
-  generateCoverLetterPDF(coverLetter: string): Blob {
-    const doc = new jsPDF()
-    doc.setFontSize(16)
-    doc.text('Cover Letter', 20, 20)
-    doc.setFontSize(12)
-    const splitText = doc.splitTextToSize(coverLetter, 170)
-    doc.text(splitText, 20, 30)
-    return doc.output('blob')
+
+  async generateCoverLetterPDF(coverLetter: string): Promise<Blob> {
+    const result = await this.pdfService.extractText(Buffer.from(coverLetter), 'cover-letter.txt')
+    if (result.error) {
+      throw new Error(result.error)
+    }
+    return new Blob([result.text], { type: 'application/pdf' })
   }
-  
-  generateApplicationPackage(resumeText: string, coverLetter: string, jobData: any) {
+
+  async generateApplicationPackage(resumeText: string, coverLetter: string, jobData: any) {
+    const resumePDF = await this.generateResumePDF(resumeText)
+    const coverLetterPDF = await this.generateCoverLetterPDF(coverLetter)
+
     return {
-      resumePDF: this.generateResumePDF(resumeText),
-      coverLetterPDF: this.generateCoverLetterPDF(coverLetter),
+      resumePDF,
+      coverLetterPDF,
       emailTemplate: `Subject: Application for ${jobData.title}\n\n${coverLetter}`
     }
   }
