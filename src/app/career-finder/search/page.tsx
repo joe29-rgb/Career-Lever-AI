@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { MagnifyingGlassIcon, FunnelIcon, MapPinIcon } from '@heroicons/react/24/outline'
 import { JobCard } from '@/components/job-card'
-import { useRouter } from 'next/router'
+import { useRouter } from 'next/navigation'
 
 // Mock data - replace with your API fetch (e.g., from /api/job-boards/autopilot/search)
 const mockJobs = [

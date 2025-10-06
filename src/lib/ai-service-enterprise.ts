@@ -1,3 +1,5 @@
+// Enterprise AI Service with Circuit Breakers, Caching, and Retry Logic
+
 interface AIResponse<T = any> {
   success: boolean
   data?: T
@@ -17,7 +19,7 @@ export class EnterpriseAIService {
   private static instance: EnterpriseAIService
   private circuitBreaker: Map<string, CircuitBreakerState> = new Map()
   private cache: Map<string, { data: any; expires: number }> = new Map()
-
+  
   private readonly failureThreshold = 5
   private readonly recoveryTimeout = 30000 // 30 seconds
   private readonly cacheTTL = 3600000 // 1 hour
@@ -37,7 +39,7 @@ export class EnterpriseAIService {
     options?: any
   }): Promise<AIResponse<{ customizedText: string; matchScore: number }>> {
     const operationKey = 'resume-customize'
-
+    
     try {
       // Check circuit breaker
       if (!this.isCircuitClosed(operationKey)) {
@@ -64,19 +66,21 @@ export class EnterpriseAIService {
 
       // Make AI request with retry logic
       const result = await this.makeAIRequestWithRetry(operationKey, params)
-
+      
       // Cache successful result
-      this.setCache(cacheKey, result.data)
-
+      if (result.success && result.data) {
+        this.setCache(cacheKey, result.data)
+      }
+      
       // Reset circuit breaker on success
       this.resetCircuitBreaker(operationKey)
-
+      
       return result
 
     } catch (error) {
       // Record failure
       this.recordFailure(operationKey)
-
+      
       return {
         success: false,
         error: error instanceof Error ? error.message : 'AI service error',
@@ -87,7 +91,7 @@ export class EnterpriseAIService {
   }
 
   private async makeAIRequestWithRetry(operationKey: string, params: any, maxRetries = 3): Promise<AIResponse> {
-    let lastError: Error
+    let lastError: Error | null = null
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
@@ -103,7 +107,7 @@ export class EnterpriseAIService {
 
       } catch (error) {
         lastError = error as Error
-
+        
         // Don't retry on certain errors
         if (error instanceof Error && error.message.includes('401')) {
           break
@@ -129,7 +133,7 @@ export class EnterpriseAIService {
       body: JSON.stringify({
         model: 'sonar-pro',
         messages: [
-          { role: 'system', content: 'You are an expert resume writer...' },
+          { role: 'system', content: 'You are an expert resume writer and ATS optimization specialist.' },
           { role: 'user', content: this.buildPrompt(params) }
         ],
         max_tokens: 2000,
@@ -144,7 +148,7 @@ export class EnterpriseAIService {
     const data = await response.json()
     return {
       success: true,
-      data: this.parseResponse(data),
+      data: this.parseResponse(data, params),
       cost: this.calculateCost(data.usage),
       model: 'sonar-pro'
     }
@@ -167,14 +171,14 @@ export class EnterpriseAIService {
 
   private recordFailure(key: string): void {
     const state = this.circuitBreaker.get(key) || { failures: 0, lastFailureTime: 0, state: 'closed' as const }
-
+    
     state.failures++
     state.lastFailureTime = Date.now()
-
+    
     if (state.failures >= this.failureThreshold) {
       state.state = 'open'
     }
-
+    
     this.circuitBreaker.set(key, state)
   }
 
@@ -184,7 +188,13 @@ export class EnterpriseAIService {
 
   private generateCacheKey(params: any): string {
     const crypto = require('crypto')
-    return crypto.createHash('sha256').update(JSON.stringify(params)).digest('hex')
+    const normalized = {
+      resume: params.resumeText.substring(0, 1000),
+      job: params.jobDescription.substring(0, 500),
+      title: params.jobTitle,
+      company: params.companyName
+    }
+    return crypto.createHash('sha256').update(JSON.stringify(normalized)).digest('hex')
   }
 
   private getFromCache(key: string): any | null {
@@ -204,19 +214,70 @@ export class EnterpriseAIService {
   }
 
   private buildPrompt(params: any): string {
-    return `Optimize this resume for the ${params.jobTitle} position at ${params.companyName}...`
+    return `Optimize this resume for the ${params.jobTitle} position at ${params.companyName}.
+
+Job Description:
+${params.jobDescription}
+
+Current Resume:
+${params.resumeText}
+
+Requirements:
+- Match keywords from the job description
+- Optimize for ATS systems
+- Maintain authenticity
+- Keep the same general structure
+- Quantify achievements where possible
+
+Return only the optimized resume text.`
   }
 
-  private parseResponse(data: any): any {
-    // Parse AI response and extract relevant data
+  private parseResponse(data: any, params: any): any {
+    const customizedText = data.choices[0]?.message?.content || ''
+    
+    // Calculate match score based on keyword overlap
+    const jdKeywords = this.extractKeywords(params.jobDescription)
+    const resumeKeywords = this.extractKeywords(customizedText)
+    const matchScore = this.calculateMatchScore(jdKeywords, resumeKeywords)
+    
     return {
-      customizedText: data.choices[0]?.message?.content || '',
-      matchScore: Math.floor(Math.random() * 40) + 60 // Placeholder
+      customizedText,
+      matchScore
     }
   }
 
+  private extractKeywords(text: string): Set<string> {
+    const words = text.toLowerCase()
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 3)
+    return new Set(words)
+  }
+
+  private calculateMatchScore(jdKeywords: Set<string>, resumeKeywords: Set<string>): number {
+    let matches = 0
+    for (const keyword of jdKeywords) {
+      if (resumeKeywords.has(keyword)) {
+        matches++
+      }
+    }
+    const score = (matches / Math.max(jdKeywords.size, 1)) * 100
+    return Math.min(100, Math.round(score))
+  }
+
   private calculateCost(usage: any): number {
-    // Calculate actual cost based on token usage
-    return 0.001 // Placeholder
+    // Sonar-pro pricing: ~$1 per 1M tokens
+    const totalTokens = (usage?.total_tokens || 0)
+    return (totalTokens / 1000000) * 1.0
+  }
+
+  // Clean up expired cache entries
+  public cleanup(): void {
+    const now = Date.now()
+    for (const [key, value] of this.cache.entries()) {
+      if (value.expires < now) {
+        this.cache.delete(key)
+      }
+    }
   }
 }

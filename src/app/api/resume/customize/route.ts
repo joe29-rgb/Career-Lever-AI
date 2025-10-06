@@ -10,6 +10,9 @@ import { isRateLimited } from '@/lib/rate-limit';
 import { resumeCustomizeSchema } from '@/lib/validators';
 import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs } from '@/lib/observability'
 
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const requestId = getOrCreateRequestId(request.headers as any)

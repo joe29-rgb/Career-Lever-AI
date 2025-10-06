@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { RateLimiter } from './lib/rate-limiter'
 
 // Simple PII redaction for logs and error responses
 function redactPII(value: string): string {
@@ -10,44 +11,46 @@ function redactPII(value: string): string {
   return out
 }
 
-export function middleware(request: NextRequest) {
-  const res = NextResponse.next()
-  // Security headers
-  res.headers.set('X-Frame-Options', 'SAMEORIGIN')
-  res.headers.set('X-Content-Type-Options', 'nosniff')
-  res.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  res.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)')
-  res.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload')
-  // CSP allowing needed backends
-  const csp = [
-    "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https:",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.perplexity.ai https://nominatim.openstreetmap.org https://overpass-api.de https://api.mapbox.com",
-    "frame-ancestors 'self'",
-  ].join('; ')
-  res.headers.set('Content-Security-Policy', csp)
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next()
 
-  // Attach redacted query for logs
-  const q = request.nextUrl.search
-  if (q && q.length > 1) {
-    res.headers.set('x-redacted-query', redactPII(decodeURIComponent(q)))
+  // Security headers
+  response.headers.set('X-DNS-Prefetch-Control', 'off')
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()')
+
+  // HSTS for production
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
   }
-  // Generate/forward a request id for client breadcrumbs
-  const rid = request.headers.get('x-request-id') || `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  res.headers.set('x-request-id', rid)
-  // Origin check for state-changing verbs
-  if (['POST','PUT','PATCH','DELETE'].includes(request.method)) {
-    const origin = request.headers.get('origin') || ''
-    const host = request.headers.get('host') || ''
-    const allowed = origin.includes(host) || origin === ''
-    if (!allowed) {
-      return new NextResponse(JSON.stringify({ error: 'Invalid origin' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
+
+  // CORS for API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    response.headers.set('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
+    response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    response.headers.set('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  }
+
+  // Rate limiting for API routes
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    const rateLimiter = RateLimiter.getInstance()
+    let rateLimitType: any = 'api-general'
+
+    if (request.nextUrl.pathname.includes('/ai/') || request.nextUrl.pathname.includes('/resume/customize')) {
+      rateLimitType = 'ai-requests'
+    } else if (request.nextUrl.pathname.includes('/upload')) {
+      rateLimitType = 'file-upload'
+    }
+
+    const rateLimitResult = await rateLimiter.createMiddleware(rateLimitType)(request)
+    if (rateLimitResult) {
+      return rateLimitResult
     }
   }
-  return res
+
+  return response
 }
 
 export const config = {

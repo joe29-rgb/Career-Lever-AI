@@ -29,7 +29,7 @@ export class PerplexityJobSearchService {
       `site:glassdoor.ca/Job "${keywords}" "${location}" ${remote ? 'remote' : ''} after:2024-01-01`
     ]
     
-    const allResults = []
+    const allResults: any[] = []
     
     for (const query of queries) {
       try {
@@ -209,7 +209,7 @@ export class PerplexityJobSearchService {
   
   private static extractRequirements(text: string): string[] {
     // Extract key requirements from job snippet
-    const requirements = []
+    const requirements: string[] = []
     const skillPatterns = [
       /\b(?:experience with|knowledge of|proficient in|skilled in)\s+([^.,]+)/gi,
       /\b(?:must have|requires?|seeking)\s+([^.,]+)/gi

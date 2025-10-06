@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import connectToDatabase from '@/lib/mongodb'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {

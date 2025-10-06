@@ -7,6 +7,7 @@ import { ClientInit } from '@/components/client-init'
 import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 import { TopNav } from '@/components/top-nav'
+import { ErrorBoundary } from '@/components/error-boundary'
 import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -39,15 +40,17 @@ export default function RootLayout({
         }.toString()})()}catch(e){}` }} />
         <ClientInit />
         <meta name="mobile-web-app-capable" content="yes" />
-        <Providers>
-          <a href="#main" className="skip-link">Skip to content</a>
-          <TopNav />
-          <ThemeToggle />
-          <div aria-live="polite" aria-atomic="true" className="sr-only" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-            <AppShell>{children}</AppShell>
-          </div>
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <a href="#main" className="skip-link">Skip to content</a>
+            <TopNav />
+            <ThemeToggle />
+            <div aria-live="polite" aria-atomic="true" className="sr-only" />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
+              <AppShell>{children}</AppShell>
+            </div>
+          </Providers>
+        </ErrorBoundary>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
           <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
         ) : (

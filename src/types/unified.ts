@@ -1,241 +1,225 @@
-export namespace CareerLever {
-  // Base interfaces
-  export interface BaseEntity {
-    _id: string
-    createdAt: Date
-    updatedAt: Date
-  }
+// Unified Type System for Career Lever AI
+// Single source of truth for all application types
 
-  // User system
-  export interface User extends BaseEntity {
-    email: string
-    name: string
-    image?: string
-    role: 'user' | 'admin' | 'enterprise'
-    settings: UserSettings
-  }
+export interface User {
+  _id: string
+  email: string
+  name: string
+  image?: string
+  createdAt: Date
+  updatedAt: Date
+}
 
-  export interface UserSettings {
-    notifications: NotificationSettings
-    privacy: PrivacySettings
-    ai: AISettings
-  }
+export interface Resume {
+  _id: string
+  userId: string
+  originalFileName: string
+  extractedText: string
+  customizedVersions: CustomizedResume[]
+  uploadedAt: Date
+  createdAt: Date
+  updatedAt: Date
+}
 
-  // Job data - SINGLE unified interface
-  export interface Job {
-    id: string
-    title: string
-    company: string
-    description: string
-    location?: string
-    salary?: SalaryRange
-    source: JobSource
-    url?: string
-    postedDate?: Date
-    expiryDate?: Date
-    requirements: string[]
-    benefits?: string[]
-  }
+export interface CustomizedResume {
+  _id: string
+  jobApplicationId: string
+  customizedText: string
+  jobTitle: string
+  companyName: string
+  matchScore: number
+  createdAt: Date
+}
 
-  export interface SalaryRange {
-    min?: number
-    max?: number
-    currency: string
-    period: 'hour' | 'month' | 'year'
-  }
+export interface JobApplication {
+  _id: string
+  userId: string
+  jobTitle: string
+  companyName: string
+  jobDescription: string
+  jobUrl?: string
+  location?: string
+  salary?: string
+  applicationStatus: 'saved' | 'applied' | 'screening' | 'interviewing' | 'offer' | 'rejected' | 'withdrawn'
+  appliedDate?: Date
+  notes?: string[]
+  documents?: ApplicationDocument[]
+  createdAt: Date
+  updatedAt: Date
+}
 
-  export type JobSource = 'indeed' | 'linkedin' | 'glassdoor' | 'company-direct' | 'imported'
+export interface ApplicationDocument {
+  type: 'resume' | 'cover-letter' | 'portfolio' | 'other'
+  filename: string
+  url?: string
+  generatedAt: Date
+}
 
-  // Resume system
-  export interface Resume extends BaseEntity {
-    userId: string
-    filename: string
-    extractedText: string
-    extractionMethod: ExtractionMethod
-    extractionConfidence: number
-    versions: ResumeVersion[]
-    metadata: ResumeMetadata
-  }
+// Single unified job result interface for all scraping sources
+export interface JobResult {
+  id: string
+  title: string
+  company: string
+  location?: string
+  salary?: string
+  url?: string
+  source: string
+  description?: string
+  snippet?: string
+  postedDate?: Date | string
+  requirements?: string[]
+  benefits?: string[]
+}
 
-  export interface ResumeVersion {
-    id: string
-    jobApplicationId?: string
-    customizedText: string
-    targetRole: string
-    targetCompany: string
-    matchScore: number
-    createdAt: Date
-  }
+export interface CompanyResearch {
+  _id: string
+  companyName: string
+  website?: string
+  industry?: string
+  size?: string
+  description?: string
+  culture?: string[]
+  financials?: FinancialData[]
+  news?: NewsItem[]
+  reviews?: CompanyReview[]
+  contacts?: HiringContact[]
+  lastUpdated: Date
+  expiresAt?: Date
+}
 
-  export type ExtractionMethod = 'text-extraction' | 'ocr-fallback' | 'manual-input'
+export interface FinancialData {
+  year: number
+  revenue?: string
+  growth?: string
+  funding?: string
+}
 
-  export interface ResumeMetadata {
-    contactInfo: ContactInfo
-    sections: ResumeSection[]
-    skills: string[]
-    experience: ExperienceEntry[]
-    education: EducationEntry[]
-  }
+export interface NewsItem {
+  title: string
+  url: string
+  date: Date | string
+  source: string
+  summary?: string
+}
 
-  export interface ContactInfo {
-    name: string
-    email: string
-    phone: string
-    address: string
-  }
+export interface CompanyReview {
+  rating: number
+  title: string
+  pros?: string
+  cons?: string
+  source: string
+  date?: Date | string
+}
 
-  export interface ResumeSection {
-    title: string
-    content: string
-  }
+export interface HiringContact {
+  name: string
+  title?: string
+  email?: string
+  linkedIn?: string
+  role?: string
+}
 
-  export interface ExperienceEntry {
-    title: string
-    company: string
-    location: string
-    startDate: Date
-    endDate?: Date
-    description: string
-  }
+// API Response wrapper for consistent responses
+export interface APIResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
+  metadata?: ResponseMetadata
+}
 
-  export interface EducationEntry {
-    degree: string
-    institution: string
-    location: string
-    startDate: Date
-    endDate?: Date
-    gpa?: number
-  }
+export interface ResponseMetadata {
+  requestId?: string
+  timestamp: Date
+  cached?: boolean
+  executionTime?: number
+}
 
-  export interface CultureData {
-    values: string[]
-    workStyle: string
-    benefits: string[]
-  }
+// Perplexity API types
+export interface PerplexityJobSearch {
+  query: string
+  results?: JobResult[]
+  sources?: string[]
+}
 
-  export interface FinancialData {
-    revenue: string
-    funding: string
-    growthRate: string
-  }
+export interface IntelligenceResponse {
+  company: string
+  freshness: string
+  sources: any[]
+  confidence: number
+  financials: any[]
+  culture: any[]
+  salaries: any[]
+  contacts: any[]
+  growth: any[]
+  summary: string
+  description: string
+  size: string
+  revenue: string
+  industry: string
+  founded: string
+  headquarters: string
+  psychology: string
+  marketIntelligence: string
+}
 
-  export interface NewsItem {
-    title: string
-    url: string
-    date: Date
-    summary: string
-  }
+// PDF Processing types
+export interface PDFExtractionResult {
+  text: string
+  method: 'text-extraction' | 'ocr-fallback' | 'manual-input'
+  confidence: number
+  error?: string
+}
 
-  export interface CompanyReview {
-    rating: number
-    title: string
-    content: string
-    author: string
-    date: Date
-  }
+// Session types (NextAuth)
+export interface SessionUser {
+  id: string
+  email: string
+  name?: string
+  image?: string
+}
 
-  export interface HiringContact {
-    name: string
-    title: string
-    email: string
-    department: string
-  }
+// Form validation schemas
+export interface ResumeCustomizeInput {
+  resumeId: string
+  jobDescription: string
+  jobTitle: string
+  companyName: string
+  tone?: 'professional' | 'casual' | 'enthusiastic'
+}
 
-  export interface SocialMediaData {
-    linkedin: string
-    twitter: string
-    facebook: string
-  }
+export interface CompanyResearchInput {
+  companyName: string
+  website?: string
+  includeNews?: boolean
+  includeReviews?: boolean
+}
 
-  export interface NotificationSettings {
-    email: boolean
-    push: boolean
-    sms: boolean
-  }
+// Rate limiting types
+export interface RateLimitConfig {
+  windowMs: number
+  maxRequests: number
+  skipSuccessfulRequests?: boolean
+  skipFailedRequests?: boolean
+}
 
-  export interface PrivacySettings {
-    profileVisibility: 'public' | 'private' | 'friends'
-    dataSharing: boolean
-    analytics: boolean
-  }
+export interface RateLimitEntry {
+  count: number
+  resetTime: number
+}
 
-  export interface AISettings {
-    autoSuggestions: boolean
-    matchThreshold: number
-    customizationLevel: 'basic' | 'advanced' | 'enterprise'
-  }
+// Circuit breaker types for AI service
+export interface CircuitBreakerState {
+  failures: number
+  lastFailureTime: number
+  state: 'closed' | 'open' | 'half-open'
+}
 
-  // Application tracking
-  export interface JobApplication extends BaseEntity {
-    userId: string
-    job: Job
-    status: ApplicationStatus
-    appliedDate?: Date
-    documents: ApplicationDocument[]
-    timeline: ApplicationEvent[]
-    notes: string[]
-    companyResearch?: CompanyResearch
-  }
-
-  export type ApplicationStatus =
-    | 'saved'
-    | 'applied'
-    | 'screening'
-    | 'interviewing'
-    | 'offer'
-    | 'rejected'
-    | 'withdrawn'
-
-  export interface ApplicationDocument {
-    type: 'resume' | 'cover-letter' | 'portfolio' | 'other'
-    filename: string
-    url?: string
-    generatedAt: Date
-  }
-
-  export interface ApplicationEvent {
-    type: 'status-change' | 'interview-scheduled' | 'follow-up' | 'note-added'
-    timestamp: Date
-    description: string
-    metadata?: Record<string, any>
-  }
-
-  // Company research
-  export interface CompanyResearch extends BaseEntity {
-    companyName: string
-    website?: string
-    industry: string
-    size: CompanySize
-    description: string
-    culture: CultureData
-    financials?: FinancialData
-    news: NewsItem[]
-    reviews: CompanyReview[]
-    contacts: HiringContact[]
-    socialMedia: SocialMediaData
-    lastUpdated: Date
-  }
-
-  export type CompanySize = 'startup' | 'small' | 'medium' | 'large' | 'enterprise'
-
-  // API responses
-  export interface APIResponse<T = any> {
-    success: boolean
-    data?: T
-    error?: APIError
-    metadata?: ResponseMetadata
-  }
-
-  export interface APIError {
-    code: string
-    message: string
-    details?: any
-  }
-
-  export interface ResponseMetadata {
-    requestId: string
-    timestamp: Date
-    version: string
-    cached?: boolean
-  }
+export interface AIResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  cached?: boolean
+  cost: number
+  model: string
 }

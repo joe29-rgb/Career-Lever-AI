@@ -1,12 +1,5 @@
-// User Types
-export interface User {
-  _id?: string;
-  email: string;
-  name: string;
-  image?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+// Re-export from unified types
+export * from './unified'
 
 // Resume Types
 export interface Resume {

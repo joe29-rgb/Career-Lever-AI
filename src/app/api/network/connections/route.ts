@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'all' // all, accepted, pending, suggestions
 
-    let connections = []
+    let connections: any[] = []
 
     if (type === 'suggestions') {
       // Return suggested connections (users not already connected)

@@ -1,5 +1,5 @@
 export async function scrapeRealCanadianJobs(keywords: string, location: string) {
-  const results = []
+  const results: any[] = []
   
   // Job Bank Canada scraping
   const jobBankResponse = await fetch(`https://www.jobbank.gc.ca/jobsearch/jobsearch?searchstring=${encodeURIComponent(keywords)}&locationstring=${encodeURIComponent(location)}`)

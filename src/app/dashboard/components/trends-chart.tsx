@@ -1,37 +1,19 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { useMemo } from 'react'
-import { Line } from 'react-chartjs-2'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Filler,
-} from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler)
-
+// Simple trends display without external chart library
 export default function TrendsChart() {
-  const data = useMemo(() => {
-    return {
-      labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'],
-      datasets: [
-        {
-          label: 'Applications',
-          data: [2, 4, 3, 6, 5, 7],
-          borderColor: '#2563eb',
-          backgroundColor: 'rgba(37, 99, 235, 0.12)',
-          tension: 0.4,
-          fill: true,
-          pointRadius: 0,
-        },
-      ],
-    }
-  }, [])
+  const weeklyData = [
+    { week: 'W1', applications: 2 },
+    { week: 'W2', applications: 4 },
+    { week: 'W3', applications: 3 },
+    { week: 'W4', applications: 6 },
+    { week: 'W5', applications: 5 },
+    { week: 'W6', applications: 7 },
+  ]
+
+  const maxApps = Math.max(...weeklyData.map(d => d.applications))
 
   return (
     <Card className="glass-card">
@@ -39,14 +21,25 @@ export default function TrendsChart() {
         <CardTitle>Application Trends</CardTitle>
       </CardHeader>
       <CardContent>
-        <Line
-          data={data}
-          options={{
-            responsive: true,
-            plugins: { legend: { display: false }, tooltip: { enabled: true, backgroundColor: 'rgba(0,0,0,0.9)', titleColor: '#fff', bodyColor: '#fff', padding: 12, cornerRadius: 8 } },
-            scales: { x: { display: true }, y: { display: true, ticks: { stepSize: 1 } } },
-          }}
-        />
+        <div className="space-y-3">
+          {weeklyData.map((data) => (
+            <div key={data.week} className="flex items-center gap-3">
+              <span className="text-sm font-medium w-8 text-muted-foreground">{data.week}</span>
+              <div className="flex-1 h-8 bg-secondary rounded-lg overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-500"
+                  style={{ width: `${(data.applications / maxApps) * 100}%` }}
+                />
+              </div>
+              <span className="text-sm font-semibold w-8 text-right">{data.applications}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 pt-4 border-t">
+          <p className="text-sm text-muted-foreground">
+            Total Applications: <span className="font-semibold text-foreground">{weeklyData.reduce((sum, d) => sum + d.applications, 0)}</span>
+          </p>
+        </div>
       </CardContent>
     </Card>
   )

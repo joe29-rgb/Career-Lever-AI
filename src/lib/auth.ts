@@ -6,6 +6,7 @@ import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import connectToDatabase from './mongodb';
 import User from '@/models/User';
+import { validateRedirectURL } from './auth-security';
 
 export const authOptions: NextAuthOptions = {
   // Make adapter optional so OAuth can work even if DB is temporarily unreachable
@@ -73,31 +74,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Normalize to our host and prefer dashboard as landing
-      const appBase = process.env.NEXTAUTH_URL || baseUrl
-      const base = new URL(appBase)
-      try {
-        // Internal path → join with base origin
-        if (url.startsWith('/')) {
-          // If NextAuth tries to send users to home or any auth route, land on dashboard instead
-          if (url === '/' || url === '' || url.startsWith('/auth')) {
-            return `${base.origin}/dashboard`
-          }
-          return `${base.origin}${url}`
-        }
-        const target = new URL(url)
-        // Same origin → coerce auth/home to dashboard
-        if (target.origin === base.origin) {
-          if (target.pathname === '/' || target.pathname.startsWith('/auth')) {
-            return `${base.origin}/dashboard`
-          }
-          return target.toString()
-        }
-      } catch {
-        // ignore parse errors
-      }
-      // Fallback
-      return `${base.origin}/dashboard`
+      return validateRedirectURL(url, baseUrl)
     },
     async jwt({ token, user, account }) {
       if (user) {
