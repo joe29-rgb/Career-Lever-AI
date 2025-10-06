@@ -16,10 +16,12 @@ export class RateLimiter {
   private static instance: RateLimiter
   private storage = new Map<string, RateLimitEntry>()
   private configs: Record<string, RateLimitConfig> = {
-    'api-general': { windowMs: 60 * 1000, maxRequests: 60 },
-    'ai-requests': { windowMs: 60 * 1000, maxRequests: 10 },
-    'file-upload': { windowMs: 60 * 1000, maxRequests: 5 },
-    'auth-login': { windowMs: 15 * 60 * 1000, maxRequests: 5 },
+    'api-general': { windowMs: 60 * 1000, maxRequests: 100 },
+    'ai-requests': { windowMs: 60 * 1000, maxRequests: 20 },
+    'file-upload': { windowMs: 60 * 1000, maxRequests: 20 },
+    'auth-login': { windowMs: 15 * 60 * 1000, maxRequests: 10 },
+    'resume-customize': { windowMs: 60 * 1000, maxRequests: 15 },
+    'cover-letter': { windowMs: 60 * 1000, maxRequests: 15 },
   }
 
   static getInstance(): RateLimiter {

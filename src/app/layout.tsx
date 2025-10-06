@@ -8,6 +8,7 @@ import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 import { TopNav } from '@/components/top-nav'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { logger } from '@/lib/logger'
 import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
