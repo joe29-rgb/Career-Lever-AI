@@ -2,15 +2,17 @@
 
 import { SessionProvider } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { ResumeProvider } from '@/components/resume-context'
 import { initSentry, addRequestBreadcrumb } from '@/lib/sentry'
 import toast from 'react-hot-toast'
+import { createQueryClient } from '@/lib/query-client'
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient())
+  const [queryClient] = useState(() => createQueryClient())
   const pathname = usePathname() || ''
   const DASHBOARD_PREFIXES = [
     '/dashboard',
@@ -73,6 +75,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         {shouldMountResume ? <ResumeProvider>{content}</ResumeProvider> : content}
+        {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </SessionProvider>
   )
