@@ -37,11 +37,33 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith('/api/')) {
     const rateLimiter = RateLimiter.getInstance()
     let rateLimitType: any = 'api-general'
+    const path = request.nextUrl.pathname
 
-    if (request.nextUrl.pathname.includes('/ai/') || request.nextUrl.pathname.includes('/resume/customize')) {
+    // Determine appropriate rate limit based on route
+    if (path.includes('/auth/')) {
+      rateLimitType = 'auth-login'
+    } else if (
+      path.includes('/resume/customize') ||
+      path.includes('/cover-letter/generate') ||
+      path.includes('/company/research') ||
+      path.includes('/job/analyze') ||
+      path.includes('/v2/') ||
+      path.includes('/assistants/')
+    ) {
       rateLimitType = 'ai-requests'
-    } else if (request.nextUrl.pathname.includes('/upload')) {
+    } else if (
+      path.includes('/upload') ||
+      path.includes('/resume/upload') ||
+      path.includes('/applications/') && path.includes('/attach')
+    ) {
       rateLimitType = 'file-upload'
+    } else if (
+      path.includes('/resume/customize') ||
+      path.includes('/cover-letter/generate')
+    ) {
+      rateLimitType = 'resume-customize'
+    } else if (path.includes('/cover-letter/')) {
+      rateLimitType = 'cover-letter'
     }
 
     const rateLimitResult = await rateLimiter.createMiddleware(rateLimitType)(request)
