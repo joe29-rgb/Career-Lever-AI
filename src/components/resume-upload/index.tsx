@@ -74,25 +74,24 @@ export function ResumeUpload({
 
   const extractPdfClientSide = async (file: File): Promise<string> => {
     try {
-      const pdfjs: any = await import('pdfjs-dist/legacy/build/pdf')
-      // Use CDN worker to avoid bundling worker file in Next
-      if (pdfjs?.GlobalWorkerOptions) {
-        pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+      // Server-side PDF extraction via API call
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/resume/upload', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'PDF upload failed')
       }
-      const arrayBuf = await file.arrayBuffer()
-      const loadingTask = pdfjs.getDocument({ data: arrayBuf })
-      const pdf = await loadingTask.promise
-      let text = ''
-      const clampLen = 400000
-      for (let i = 1; i <= Math.min(pdf.numPages, 20); i++) {
-        const page = await pdf.getPage(i)
-        const content = await page.getTextContent()
-        const pageText = content.items.map((it: any) => it.str).join(' ')
-        text += '\n' + pageText
-        if (text.length > clampLen) break
-      }
-      return text.trim()
-    } catch {
+
+      const result = await response.json()
+      return result.extractedText || ''
+    } catch (error) {
+      console.warn('PDF extraction failed:', error)
       return ''
     }
   }
