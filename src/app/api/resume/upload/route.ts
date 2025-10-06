@@ -5,8 +5,7 @@ import Resume from '@/models/Resume'
 import connectToDatabase from '@/lib/mongodb'
 import { isRateLimited } from '@/lib/rate-limit'
 import { isSameOrigin } from '@/lib/security'
-import pdfParse from 'pdf-parse-debugging-disabled'
-import pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
+import { PDFService } from '@/lib/pdf-service'
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -19,56 +18,19 @@ function cleanExtractedText(text: string): string {
     .trim()
 }
 
-async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string }> {
-  let text = ''
-  let method = 'server_pdf_parse'
+async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
+  const pdfService = PDFService.getInstance()
+  const result = await pdfService.extractText(buffer, 'resume.pdf')
 
-  try {
-    // Primary: pdf-parse (fast)
-    const result = await pdfParse(buffer)
-    if (result.text && result.text.trim().length > 100) {
-      text = cleanExtractedText(result.text)
-      console.log('[PDF] pdf-parse success, length:', text.length)
-      return { text, method }
-    }
-  } catch (error) {
-    console.log('[PDF] pdf-parse failed, trying pdfjs-dist:', (error as Error).message)
+  if (result.error) {
+    throw new Error(result.error)
   }
 
-  try {
-    // Fallback: pdfjs-dist (more reliable)
-    const doc = await pdfjsLib.getDocument({ data: buffer }).promise
-    let fullText = ''
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i)
-      const textContent = await page.getTextContent()
-      const pageText = textContent.items.map((item: any) => item.str || '').join(' ')
-      fullText += pageText + '\n'
-    }
-    text = cleanExtractedText(fullText)
-    if (text.length > 50) {
-      console.log('[PDF] pdfjs-dist success, length:', text.length)
-      return { text, method }
-    }
-  } catch (error) {
-    console.error('[PDF] pdfjs-dist failed:', (error as Error).message)
-    throw new Error(`PDF extraction failed: ${(error as Error).message}`)
-  }
-
-  // ASCII fallback
-  try {
-    text = buffer.toString('ascii', 0, buffer.length)
-      .replace(/[\x00-\x1F\x7F-\xFF]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-    method = 'ascii_fallback'
-    console.log('[PDF] ASCII fallback, length:', text.length)
-  } catch {}
-
-  return { text, method }
+  return { text: result.text, method: result.method, confidence: result.confidence }
 }
 
-// export const dynamic = 'force-static'
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,25 +56,29 @@ export async function POST(request: NextRequest) {
     let extractedText = ''
     let extractionMethod = ''
     let extractionError = ''
+    let extractionConfidence = 0.95
 
     if (file && file.size > 0) {
-      if (!isSameOrigin(request) || file.size > 10 * 1024 * 1024) {
-        return NextResponse.json({ error: 'Invalid file' }, { status: 400 })
+      // Validate file size and type
+      if (file.size > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: 'File too large' }, { status: 400 })
       }
 
       const buffer = Buffer.from(await file.arrayBuffer())
       const filename = file.name || 'resume.pdf'
 
       if (path.extname(filename).toLowerCase() === '.pdf') {
-        const { text, method } = await extractTextFromPDF(buffer)
+        const { text, method, confidence } = await extractTextFromPDF(buffer)
         extractedText = text
         extractionMethod = method
+        extractionConfidence = confidence || 0.95
         if (!text || text.length < 50) {
-          extractionError = 'PDF parsing failed; please paste text or upload text-based PDF'
+          extractionError = 'PDF could not be processed. Please paste your resume text instead.'
         }
       } else {
         extractedText = await file.text()
         extractionMethod = 'direct_text'
+        extractionConfidence = 1.0
       }
     } else if (pastedText) {
       extractedText = pastedText
@@ -142,6 +108,7 @@ export async function POST(request: NextRequest) {
       extractedText: extractedText.substring(0, 500) + (extractedText.length > 500 ? '...' : ''),
       extractionMethod,
       extractionError,
+      confidence: extractionConfidence,
     })
   } catch (error) {
     console.error('Upload error:', error)
