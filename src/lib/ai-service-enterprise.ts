@@ -214,6 +214,12 @@ export class EnterpriseAIService {
   }
 
   private buildPrompt(params: any): string {
+    // Use custom prompt if provided
+    if (params.prompt) {
+      return params.prompt
+    }
+
+    // Default resume customization prompt
     return `Optimize this resume for the ${params.jobTitle} position at ${params.companyName}.
 
 Job Description:
@@ -271,6 +277,237 @@ Return only the optimized resume text.`
     return (totalTokens / 1000000) * 1.0
   }
 
+  // Additional AI operations
+
+  async generateCoverLetter(params: {
+    resumeText: string
+    jobDescription: string
+    jobTitle: string
+    companyName: string
+    companyResearch?: string
+  }): Promise<AIResponse<{ coverLetter: string }>> {
+    const operationKey = 'cover-letter-generate'
+    
+    try {
+      if (!this.isCircuitClosed(operationKey)) {
+        return {
+          success: false,
+          error: 'AI service temporarily unavailable',
+          cost: 0,
+          model: 'none'
+        }
+      }
+
+      const cacheKey = this.generateCacheKey(params)
+      const cached = this.getFromCache(cacheKey)
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          cached: true,
+          cost: 0,
+          model: 'cached'
+        }
+      }
+
+      const prompt = `Write a compelling cover letter for the ${params.jobTitle} position at ${params.companyName}.
+
+Job Description:
+${params.jobDescription}
+
+Candidate Resume:
+${params.resumeText}
+
+${params.companyResearch ? `Company Research:\n${params.companyResearch}\n\n` : ''}
+
+Requirements:
+- Address specific job requirements
+- Show genuine interest in the company
+- Highlight relevant achievements
+- Professional tone
+- 300-400 words
+
+Return only the cover letter text.`
+
+      const result = await this.makeAIRequestWithRetry(operationKey, { ...params, prompt })
+      
+      if (result.success && result.data) {
+        this.setCache(cacheKey, result.data)
+      }
+      
+      this.resetCircuitBreaker(operationKey)
+      return result
+
+    } catch (error) {
+      this.recordFailure(operationKey)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'AI service error',
+        cost: 0,
+        model: 'error'
+      }
+    }
+  }
+
+  async analyzeJobFit(params: {
+    resumeText: string
+    jobDescription: string
+    jobTitle: string
+  }): Promise<AIResponse<{ 
+    matchScore: number
+    strengths: string[]
+    gaps: string[]
+    recommendations: string[]
+  }>> {
+    const operationKey = 'job-fit-analysis'
+    
+    try {
+      if (!this.isCircuitClosed(operationKey)) {
+        return {
+          success: false,
+          error: 'AI service temporarily unavailable',
+          cost: 0,
+          model: 'none'
+        }
+      }
+
+      const cacheKey = this.generateCacheKey(params)
+      const cached = this.getFromCache(cacheKey)
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          cached: true,
+          cost: 0,
+          model: 'cached'
+        }
+      }
+
+      const prompt = `Analyze the fit between this candidate and job posting.
+
+Job Title: ${params.jobTitle}
+
+Job Description:
+${params.jobDescription}
+
+Candidate Resume:
+${params.resumeText}
+
+Provide:
+1. Overall match score (0-100)
+2. Top 3 strengths (why they're a good fit)
+3. Top 3 gaps (what they're missing)
+4. Top 3 recommendations (how to improve match)
+
+Return as JSON: { "matchScore": number, "strengths": string[], "gaps": string[], "recommendations": string[] }`
+
+      const result = await this.makeAIRequestWithRetry(operationKey, { ...params, prompt })
+      
+      if (result.success && result.data) {
+        // Parse JSON response
+        try {
+          const parsed = JSON.parse(result.data.customizedText || '{}')
+          result.data = parsed
+          this.setCache(cacheKey, parsed)
+        } catch {
+          result.data = {
+            matchScore: 50,
+            strengths: ['Experience in relevant field'],
+            gaps: ['Unable to analyze - please try again'],
+            recommendations: ['Review job description carefully']
+          }
+        }
+      }
+      
+      this.resetCircuitBreaker(operationKey)
+      return result
+
+    } catch (error) {
+      this.recordFailure(operationKey)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'AI service error',
+        cost: 0,
+        model: 'error'
+      }
+    }
+  }
+
+  async generateInterviewQuestions(params: {
+    jobDescription: string
+    jobTitle: string
+    companyName: string
+  }): Promise<AIResponse<{ 
+    technicalQuestions: string[]
+    behavioralQuestions: string[]
+    companyQuestions: string[]
+  }>> {
+    const operationKey = 'interview-questions'
+    
+    try {
+      if (!this.isCircuitClosed(operationKey)) {
+        return {
+          success: false,
+          error: 'AI service temporarily unavailable',
+          cost: 0,
+          model: 'none'
+        }
+      }
+
+      const cacheKey = this.generateCacheKey(params)
+      const cached = this.getFromCache(cacheKey)
+      if (cached) {
+        return {
+          success: true,
+          data: cached,
+          cached: true,
+          cost: 0,
+          model: 'cached'
+        }
+      }
+
+      const prompt = `Generate interview questions for a ${params.jobTitle} position at ${params.companyName}.
+
+Job Description:
+${params.jobDescription}
+
+Provide:
+1. 5 technical/skills-based questions
+2. 5 behavioral (STAR method) questions
+3. 5 company-specific questions to ask
+
+Return as JSON: { "technicalQuestions": string[], "behavioralQuestions": string[], "companyQuestions": string[] }`
+
+      const result = await this.makeAIRequestWithRetry(operationKey, { ...params, prompt })
+      
+      if (result.success && result.data) {
+        try {
+          const parsed = JSON.parse(result.data.customizedText || '{}')
+          result.data = parsed
+          this.setCache(cacheKey, parsed)
+        } catch {
+          result.data = {
+            technicalQuestions: ['Tell me about your experience with the key technologies for this role'],
+            behavioralQuestions: ['Describe a time when you overcame a significant challenge'],
+            companyQuestions: ['What are the team\'s current priorities?']
+          }
+        }
+      }
+      
+      this.resetCircuitBreaker(operationKey)
+      return result
+
+    } catch (error) {
+      this.recordFailure(operationKey)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'AI service error',
+        cost: 0,
+        model: 'error'
+      }
+    }
+  }
+
   // Clean up expired cache entries
   public cleanup(): void {
     const now = Date.now()
@@ -279,5 +516,27 @@ Return only the optimized resume text.`
         this.cache.delete(key)
       }
     }
+  }
+
+  // Get statistics
+  public getStats(): {
+    cacheSize: number
+    circuitBreakerStates: Record<string, CircuitBreakerState>
+    cacheHitRate?: number
+  } {
+    const states: Record<string, CircuitBreakerState> = {}
+    for (const [key, value] of this.circuitBreaker.entries()) {
+      states[key] = value
+    }
+
+    return {
+      cacheSize: this.cache.size,
+      circuitBreakerStates: states
+    }
+  }
+
+  // Clear all caches
+  public clearCache(): void {
+    this.cache.clear()
   }
 }
