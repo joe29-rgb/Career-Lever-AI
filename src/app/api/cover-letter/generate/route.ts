@@ -169,7 +169,13 @@ export async function POST(request: NextRequest) {
     const candidatePhone = ''
     const hiringContact = ''
     const ppx = new PerplexityService()
-    const companyPayload = { ...(companyData ? (companyData as any).toObject() : {}), ...(typeof (resume as any).yearsExperience === 'number' ? { yearsExperience: (resume as any).yearsExperience } : {}) }
+    const companyPayload: any = {}
+    if (companyData) {
+      Object.assign(companyPayload, companyData)
+    }
+    if (typeof (resume as any).yearsExperience === 'number') {
+      companyPayload.yearsExperience = (resume as any).yearsExperience
+    }
     const userPrompt = buildEnhancedCoverLetterUserPrompt({
       candidateName,
       jobTitle: jobApplication.jobTitle,
