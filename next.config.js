@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    // Enable standalone output for Docker deployment
+    output: 'standalone',
+    
     i18n: {
         locales: ['en', 'fr'],
         defaultLocale: 'en',
