@@ -105,6 +105,126 @@ export const CANADIAN_JOB_BOARDS: Record<string, PublicJobBoardConfig> = {
       estimatedJobCount: '30,000+',
       updateFrequency: 'Daily'
     }
+  },
+
+  jooble: {
+    name: 'jooble',
+    displayName: 'Jooble Canada',
+    country: 'Canada',
+    accessType: 'public-api',
+    apiConfig: {
+      baseUrl: 'https://ca.jooble.org/api',
+      requiresAuth: true,
+      authType: 'api-key',
+      documentation: 'https://jooble.org/api/about'
+    },
+    scrapingConfig: {
+      baseUrl: 'https://ca.jooble.org',
+      searchUrl: 'https://ca.jooble.org/search',
+      perplexityQuery: 'site:ca.jooble.org "{keywords}" "{location}" after:2024-01-01',
+      canUsePerplexity: true
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '100,000+',
+      updateFrequency: 'Daily'
+    }
+  },
+
+  indeedca: {
+    name: 'indeedca',
+    displayName: 'Indeed Canada',
+    country: 'Canada',
+    accessType: 'scraping-allowed',
+    scrapingConfig: {
+      baseUrl: 'https://ca.indeed.com',
+      searchUrl: 'https://ca.indeed.com/jobs',
+      perplexityQuery: 'site:ca.indeed.com "{keywords}" "{location}" after:2024-01-01',
+      canUsePerplexity: true
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '500,000+',
+      updateFrequency: 'Real-time'
+    }
+  },
+
+  ziprecruiter_ca: {
+    name: 'ziprecruiter_ca',
+    displayName: 'ZipRecruiter Canada',
+    country: 'Canada',
+    accessType: 'scraping-allowed',
+    scrapingConfig: {
+      baseUrl: 'https://www.ziprecruiter.ca',
+      searchUrl: 'https://www.ziprecruiter.ca/jobs-search',
+      perplexityQuery: 'site:ziprecruiter.ca "{keywords}" "{location}" after:2024-01-01',
+      canUsePerplexity: true
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '50,000+',
+      updateFrequency: 'Daily'
+    }
+  },
+
+  monster_ca: {
+    name: 'monster_ca',
+    displayName: 'Monster Canada',
+    country: 'Canada',
+    accessType: 'scraping-allowed',
+    scrapingConfig: {
+      baseUrl: 'https://www.monster.ca',
+      searchUrl: 'https://www.monster.ca/jobs/search',
+      perplexityQuery: 'site:monster.ca "{keywords}" "{location}" after:2024-01-01',
+      canUsePerplexity: true
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '40,000+',
+      updateFrequency: 'Daily'
+    }
+  },
+
+  glassdoor_ca: {
+    name: 'glassdoor_ca',
+    displayName: 'Glassdoor Canada',
+    country: 'Canada',
+    accessType: 'scraping-allowed',
+    scrapingConfig: {
+      baseUrl: 'https://www.glassdoor.ca',
+      searchUrl: 'https://www.glassdoor.ca/Job/jobs.htm',
+      perplexityQuery: 'site:glassdoor.ca/Job "{keywords}" "{location}" after:2024-01-01',
+      canUsePerplexity: true
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '100,000+',
+      updateFrequency: 'Daily'
+    }
+  },
+
+  dice_ca: {
+    name: 'dice_ca',
+    displayName: 'Dice Canada',
+    country: 'Canada',
+    accessType: 'scraping-allowed',
+    scrapingConfig: {
+      baseUrl: 'https://www.dice.com',
+      searchUrl: 'https://www.dice.com/jobs',
+      perplexityQuery: 'site:dice.com "{keywords}" Canada after:2024-01-01',
+      canUsePerplexity: true
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '20,000+',
+      updateFrequency: 'Daily'
+    }
   }
 }
 
@@ -310,6 +430,63 @@ export const ATS_PLATFORMS: Record<string, PublicJobBoardConfig> = {
       estimatedJobCount: '50K+',
       updateFrequency: 'Real-time'
     }
+  },
+
+  recruitee: {
+    name: 'recruitee',
+    displayName: 'Recruitee ATS',
+    country: 'Global',
+    accessType: 'ats-public',
+    apiConfig: {
+      baseUrl: 'https://{company}.recruitee.com/api/offers',
+      requiresAuth: false,
+      authType: 'none',
+      documentation: 'https://developers.recruitee.com'
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '30K+',
+      updateFrequency: 'Real-time'
+    }
+  },
+
+  jooble_api: {
+    name: 'jooble_api',
+    displayName: 'Jooble API',
+    country: 'Global',
+    accessType: 'public-api',
+    apiConfig: {
+      baseUrl: 'https://jooble.org/api',
+      requiresAuth: true,
+      authType: 'api-key',
+      documentation: 'https://jooble.org/api/about'
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '5M+',
+      updateFrequency: 'Real-time'
+    }
+  },
+
+  careerjet_ca: {
+    name: 'careerjet_ca',
+    displayName: 'Careerjet Canada',
+    country: 'Canada',
+    accessType: 'public-api',
+    apiConfig: {
+      baseUrl: 'https://public-api.careerjet.ca/search',
+      requiresAuth: true,
+      authType: 'api-key',
+      documentation: 'https://www.careerjet.com/partners/api/'
+    },
+    features: {
+      canDiscoverJobs: true,
+      canApplyDirectly: false,
+      estimatedJobCount: '200K+',
+      updateFrequency: 'Real-time'
+    }
   }
 }
 
@@ -360,19 +537,28 @@ export function getOpenAPIBoards(): PublicJobBoardConfig[] {
  * (Canadian boards first, then major boards, then open APIs)
  */
 export const DISCOVERY_PRIORITY_ORDER = [
-  'jobbank',      // Canada government (highest priority)
-  'jobboom',      // Canadian bilingual
-  'workopolis',   // Canadian
-  'indeed',       // Major board (Canada)
-  'linkedin',     // Major board
-  'glassdoor',    // Major board
-  'greenhouse',   // ATS platform
-  'lever',        // ATS platform
-  'adzuna',       // Open API aggregator
-  'careerjet',    // Open API aggregator
-  'usajobs',      // Government (US)
-  'workable',     // ATS platform
-  'ashby'         // ATS platform
+  'jobbank',         // Canada government (highest priority)
+  'jobboom',         // Canadian bilingual
+  'workopolis',      // Canadian
+  'jooble',          // Canadian job aggregator
+  'indeedca',        // Indeed Canada (major board)
+  'careerjet_ca',    // Careerjet Canada
+  'ziprecruiter_ca', // ZipRecruiter Canada
+  'monster_ca',      // Monster Canada
+  'glassdoor_ca',    // Glassdoor Canada
+  'dice_ca',         // Dice Canada (tech jobs)
+  'linkedin',        // LinkedIn (global)
+  'indeed',          // Indeed (global)
+  'glassdoor',       // Glassdoor (global)
+  'greenhouse',      // ATS platform
+  'lever',           // ATS platform
+  'workable',        // ATS platform
+  'recruitee',       // ATS platform
+  'ashby',           // ATS platform
+  'adzuna',          // Open API aggregator
+  'jooble_api',      // Jooble API
+  'careerjet',       // Open API aggregator (global)
+  'usajobs'          // Government (US)
 ]
 
 /**
@@ -396,6 +582,36 @@ export const ATS_COMPANY_DIRECTORY = {
   ashby: [
     'ashby', 'descript', 'runway', 'scale', 'ramp',
     'mercury', 'lattice', 'compound', 'rippling', 'scale'
+  ],
+  recruitee: [
+    'recruitee', 'bynder', 'catawiki', 'sendcloud', 'mollie',
+    'peak', 'channable', 'trengo', 'effectory', 'piggy'
+  ]
+}
+
+/**
+ * Canadian companies using ATS platforms
+ */
+export const CANADIAN_ATS_COMPANIES = {
+  greenhouse: [
+    'shopify', 'hootsuite', 'wealthsimple', 'faire', 'thinkific',
+    'lightspeed', 'financeit', 'later', 'clickup', 'copperleaf'
+  ],
+  lever: [
+    'slack', 'wealthsimple', 'hootsuite', 'shopify', 'bench',
+    'clio', 'clearco', 'flashfood', 'league', 'properly'
+  ],
+  workable: [
+    'freshbooks', 'visier', 'unbounce', 'axonify', 'crowdriff',
+    'soapbox', 'klue', 'samdesk', 'coinsquare', 'tulip'
+  ],
+  recruitee: [
+    'paytm', 'ecobee', 'geotab', 'auvik', 'alida',
+    'miovision', 'nulogy', 'ritual', 'wave', 'koho'
+  ],
+  ashby: [
+    'faire', 'clearco', 'notion', 'part', 'properly',
+    'district', 'maple', 'borrowell', 'league', 'shakepay'
   ]
 }
 
