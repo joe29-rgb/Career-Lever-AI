@@ -177,11 +177,12 @@ export async function GET(request: NextRequest) {
     // Check authentication (optional - can be restricted to admins)
     const session = await getServerSession(authOptions)
     
-    // In production, restrict to admin users only
-    if (process.env.NODE_ENV === 'production' && (!session || session.user?.role !== 'admin')) {
+    // In production, restrict to authenticated users only
+    // TODO: Add admin role check when user roles are implemented
+    if (process.env.NODE_ENV === 'production' && !session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
+        { error: 'Unauthorized - Authentication required' },
+        { status: 401 }
       )
     }
 
@@ -228,10 +229,11 @@ export async function DELETE(request: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user?.role !== 'admin') {
+    // TODO: Add admin role check when user roles are implemented
+    if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
+        { error: 'Unauthorized - Authentication required' },
+        { status: 401 }
       )
     }
 
