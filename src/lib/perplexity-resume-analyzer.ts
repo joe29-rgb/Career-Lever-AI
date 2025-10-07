@@ -99,8 +99,7 @@ export class PerplexityResumeAnalyzer {
         systemPrompt,
         userPrompt,
         temperature: 0.2,
-        maxTokens: 3000,
-        includeMetadata: true
+        maxTokens: 3000
       })
 
       // Parse and validate response
