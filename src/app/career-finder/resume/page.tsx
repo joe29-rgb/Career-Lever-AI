@@ -71,10 +71,10 @@ export default function CareerFinderResumePage() {
           {/* Builder Card */}
           <div className="gradient-border-card hover:shadow-2xl hover:shadow-accent/20 transition-all duration-300">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--secondary)))' }}>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center gradient-accent-secondary">
                 <span className="text-2xl">✍️</span>
               </div>
-              <h3 className="text-2xl font-bold" style={{ background: 'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--secondary)))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              <h3 className="text-2xl font-bold gradient-text">
                 Resume Builder
               </h3>
             </div>
@@ -94,9 +94,8 @@ export default function CareerFinderResumePage() {
         <div className="mt-8 text-center">
           {hasResume ? (
             <Link 
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg font-bold text-white"
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg font-bold text-white gradient-success"
               href="/career-finder/search"
-              style={{ background: 'linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 30%))' }}
             >
               <span>Next: Find Jobs</span>
               <span className="text-2xl">→</span>

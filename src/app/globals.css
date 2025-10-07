@@ -151,6 +151,16 @@
     background: linear-gradient(135deg, hsl(var(--secondary) / 0.1) 0%, hsl(var(--destructive) / 0.05) 100%);
   }
   
+  /* Accent to Secondary gradient */
+  .gradient-accent-secondary {
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--secondary)));
+  }
+  
+  /* Success gradient */
+  .gradient-success {
+    background: linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 30%));
+  }
+  
   /* Modern Card */
   .modern-card {
     @apply bg-card text-card-foreground rounded-2xl border border-border p-6;
