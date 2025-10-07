@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     if (!useResumeMatching || jobs.length === 0) {
       console.log(`[JOB_SEARCH] Using standard search across 25+ boards`)
 
-      jobs = await PerplexityIntelligenceService.jobListings(
+      jobs = (await PerplexityIntelligenceService.jobListings(
         keywords,
         location,
         {
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
           limit,
           includeCanadianOnly: location.toLowerCase().includes('canada')
         }
-      )
+      )) as any[]
 
       metadata = {
         useResumeMatching: false,

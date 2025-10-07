@@ -16,7 +16,7 @@ export async function POST(
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const rl = await await isRateLimited((session.user as any).id, 'applications:attach')
+    const rl = await isRateLimited((session.user as any).id, 'applications:attach')
     if (rl) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
     await connectToDatabase()

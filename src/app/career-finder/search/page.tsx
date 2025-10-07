@@ -317,13 +317,7 @@ export default function SearchPage() {
               {jobs.map((job, index) => (
                 <JobCard 
                   key={job.id || `job-${index}`} 
-                  job={{
-                    ...job,
-                    id: job.id || `job-${index}`,
-                    skills: job.skills || [],
-                    skillMatch: job.skillMatchPercent,
-                    aiScore: job.aiScore
-                  }} 
+                  job={job as any} 
                 />
               ))}
             </div>
