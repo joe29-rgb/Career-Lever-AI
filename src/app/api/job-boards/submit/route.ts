@@ -391,18 +391,97 @@ async function submitToJobBoard({
       }
     }
 
-    // Note: In a production system, we would NOT actually submit applications
-    // as this could violate terms of service and be considered spam
-    // Instead, we'd prepare the application data and guide the user
+    // Actually submit the application
+    // Check if we have OAuth integration for API submission
+    const integration = await JobBoardIntegration.findOne({
+      userId: userId,
+      boardName: jobBoard,
+      status: 'connected'
+    })
 
+    if (integration && integration.accessToken) {
+      // Use real API submission via OAuth integration
+      try {
+        const jobBoardService = createJobBoardService(jobBoard)
+        
+        // Check if token needs refresh
+        if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
+          const tokenData = await jobBoardService.refreshToken(integration.refreshToken)
+          integration.accessToken = tokenData.access_token
+          integration.refreshToken = tokenData.refresh_token || integration.refreshToken
+          integration.tokenExpiresAt = tokenData.expires_in
+            ? new Date(Date.now() + tokenData.expires_in * 1000)
+            : undefined
+          await integration.save()
+        }
+
+        // Submit via API
+        const apiResult = await jobBoardService.applyToJob(
+          integration.accessToken,
+          jobApplication._id.toString(),
+          {
+            resumeId: resume._id.toString(),
+            coverLetter: coverLetter?.content,
+            additionalInfo: customizations
+          }
+        )
+
+        return {
+          jobBoard,
+          status: 'submitted',
+          submissionId: apiResult.id || apiResult.applicationId,
+          message: `Application successfully submitted to ${boardConfig.name} via API`,
+          method: 'api',
+          supportedFeatures: {
+            fileUpload: true,
+            coverLetter: true,
+            autoSubmit: true,
+            tracking: true
+          }
+        }
+      } catch (apiError) {
+        console.error(`[SUBMIT] API submission failed, falling back to browser automation:`, apiError)
+        // Fall through to browser automation
+      }
+    }
+
+    // Fall back to browser automation if no OAuth or API submission failed
+    if (boardConfig.automationLevel === 'full') {
+      try {
+        // Click submit button
+        await page.click(boardConfig.selectors.submitButton)
+        
+        // Wait for submission confirmation (adjust selector based on job board)
+        await page.waitForSelector('[data-test-id="success"], .success-message, .confirmation', { timeout: 10000 })
+        
+        return {
+          jobBoard,
+          status: 'submitted',
+          message: `Application successfully submitted to ${boardConfig.name} via browser automation`,
+          method: 'automation',
+          supportedFeatures: {
+            fileUpload: !!boardConfig.selectors.resumeUpload,
+            coverLetter: !!boardConfig.selectors.coverLetterField,
+            autoSubmit: true
+          }
+        }
+      } catch (submitError) {
+        console.error(`[SUBMIT] Browser automation submission failed:`, submitError)
+        // Fall through to prepared status
+      }
+    }
+
+    // If all else fails, return prepared status
     return {
       jobBoard,
       status: 'prepared',
-      message: `Application prepared for ${boardConfig.name}. User can complete submission manually.`,
+      message: `Application prepared for ${boardConfig.name}. Please complete submission manually or connect OAuth integration for automatic submission.`,
+      method: 'manual',
       supportedFeatures: {
         fileUpload: !!boardConfig.selectors.resumeUpload,
         coverLetter: !!boardConfig.selectors.coverLetterField,
-        autoSubmit: boardConfig.automationLevel === 'full'
+        autoSubmit: false,
+        requiresOAuth: true
       }
     }
 

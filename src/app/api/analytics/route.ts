@@ -4,6 +4,7 @@ import connectToDatabase from '@/lib/mongodb'
 import JobApplication from '@/models/JobApplication'
 import Resume from '@/models/Resume'
 import { authOptions } from '@/lib/auth'
+import { MarketIntelligenceService } from '@/lib/market-intelligence-service'
 export const dynamic = 'force-dynamic'
 
 interface AnalyticsData {
@@ -140,6 +141,15 @@ function calculateStatusDistribution(applications: any[]) {
   return distribution
 }
 
+function getMostCommonIndustry(applications: any[]): string | undefined {
+  const industryBreakdown = calculateIndustryBreakdown(applications)
+  if (industryBreakdown.length === 0) return undefined
+  
+  // Sort by count and return top industry
+  const sorted = industryBreakdown.sort((a, b) => b.count - a.count)
+  return sorted[0]?.industry
+}
+
 function calculateIndustryBreakdown(applications: any[]) {
   const industryData: Record<string, number> = {}
 
@@ -173,12 +183,36 @@ async function generateInsights(applications: any[], userId: string) {
   const totalResumes = resumes.length
   const customizedResumes = resumes.reduce((acc, resume) => acc + resume.customizedVersions.length, 0)
 
-  const topIndustries = [
-    { industry: 'Technology', count: 45, avgSalary: 120000 },
-    { industry: 'Finance', count: 23, avgSalary: 95000 },
-    { industry: 'Healthcare', count: 18, avgSalary: 85000 },
-    { industry: 'Consulting', count: 14, avgSalary: 105000 }
-  ]
+  // Get real market intelligence data
+  const marketIntelService = MarketIntelligenceService.getInstance()
+  
+  // Determine user's primary industry and role from their applications
+  const userIndustry = getMostCommonIndustry(applications)
+  const userRole = applications[0]?.jobTitle || 'Software Engineer' // Fallback to common role
+  
+  let topIndustries, marketTrends
+  try {
+    // Fetch real market data (with caching)
+    [topIndustries, marketTrends] = await Promise.all([
+      marketIntelService.getTopIndustries(),
+      marketIntelService.getMarketTrends(userIndustry)
+    ])
+  } catch (error) {
+    console.error('[ANALYTICS] Failed to fetch market intelligence:', error)
+    // Fallback to basic data
+    topIndustries = [
+      { industry: 'Technology', count: 0, avgSalary: 120000 },
+      { industry: 'Healthcare', count: 0, avgSalary: 85000 },
+      { industry: 'Finance', count: 0, avgSalary: 95000 }
+    ]
+    marketTrends = [
+      {
+        trend: 'Remote work adoption',
+        description: 'Remote work is now standard across industries',
+        recommendation: 'Highlight remote work experience in applications'
+      }
+    ]
+  }
 
   const applicationSuccessFactors = [
     { factor: 'Resume customization with AI', impact: 'high' as const },
@@ -186,24 +220,6 @@ async function generateInsights(applications: any[], userId: string) {
     { factor: 'Follow-up within 7 days', impact: 'medium' as const },
     { factor: 'Keyword optimization', impact: 'medium' as const },
     { factor: 'Networking connections', impact: 'low' as const }
-  ]
-
-  const marketTrends = [
-    {
-      trend: 'Remote work normalization',
-      description: '70% of tech roles now offer remote options',
-      recommendation: 'Highlight remote work experience in applications'
-    },
-    {
-      trend: 'AI skills demand surge',
-      description: 'AI and machine learning roles grew 200% in 2024',
-      recommendation: 'Consider upskilling in AI technologies'
-    },
-    {
-      trend: 'Green energy transition',
-      description: 'Clean energy jobs increased 30% year-over-year',
-      recommendation: 'Explore opportunities in sustainable industries'
-    }
   ]
 
   const personalizedTips = [

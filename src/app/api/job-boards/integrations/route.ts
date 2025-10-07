@@ -7,6 +7,57 @@ import JobBoardIntegration from '@/models/JobBoardIntegration'
 import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { isRateLimited } from '@/lib/rate-limit'
+import { createJobBoardService } from '@/lib/job-board-service'
+
+// Real sync function - runs in background
+async function syncJobBoardData(integration: any): Promise<void> {
+  try {
+    const jobBoardService = createJobBoardService(integration.boardName)
+    
+    // Check if token needs refresh
+    if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
+      if (!integration.refreshToken) {
+        throw new Error('Token expired and no refresh token available')
+      }
+      
+      const tokenData = await jobBoardService.refreshToken(integration.refreshToken)
+      integration.accessToken = tokenData.access_token
+      integration.refreshToken = tokenData.refresh_token || integration.refreshToken
+      integration.tokenExpiresAt = tokenData.expires_in
+        ? new Date(Date.now() + tokenData.expires_in * 1000)
+        : undefined
+    }
+
+    // Sync user profile
+    try {
+      const profile = await jobBoardService.getUserProfile(integration.accessToken)
+      integration.metadata = {
+        ...integration.metadata,
+        accountId: profile.id,
+        accountName: profile.name || profile.localizedFirstName + ' ' + profile.localizedLastName,
+        lastSyncedAt: new Date()
+      }
+    } catch (error) {
+      console.warn('[SYNC] Failed to sync profile:', error)
+    }
+
+    // Update sync status
+    integration.syncStatus = 'success'
+    integration.lastSyncAt = new Date()
+    await integration.save()
+    
+    console.log(`[SYNC] Successfully synced ${integration.boardName} for user ${integration.userId}`)
+  } catch (error) {
+    console.error('[SYNC] Sync failed:', error)
+    integration.syncStatus = 'error'
+    integration.metadata = {
+      ...integration.metadata,
+      lastSyncError: error instanceof Error ? error.message : String(error)
+    }
+    await integration.save()
+    throw error
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,11 +134,69 @@ export async function POST(request: NextRequest) {
 
       await integration.save()
 
-      // In a real implementation, this would initiate OAuth flow or API key setup
-      // For now, we'll simulate a successful connection
-      setTimeout(async () => {
-        await integration.updateSyncStatus('success')
-      }, 2000)
+      // Check if this board actually supports OAuth (most don't)
+      const { JOB_BOARD_CONFIGS, UnifiedJobBoardService } = await import('@/lib/unified-job-board-strategy')
+      const boardConfig = JOB_BOARD_CONFIGS[boardName]
+      
+      if (!boardConfig) {
+        await JobBoardIntegration.deleteOne({ _id: integration._id })
+        return NextResponse.json(
+          { error: `Unsupported job board: ${boardName}` },
+          { status: 400 }
+        )
+      }
+
+      // REALITY CHECK: Most major job boards don't have open APIs
+      if (boardConfig.type === 'frontend-only') {
+        await JobBoardIntegration.deleteOne({ _id: integration._id })
+        
+        const service = new UnifiedJobBoardService()
+        const applicationMethod = service.getApplicationMethod(boardName)
+        
+        return NextResponse.json({
+          success: false,
+          error: `${boardConfig.displayName} does not support direct API integration`,
+          requiresFrontendAutomation: true,
+          applicationMethod: {
+            method: applicationMethod.method,
+            instructions: applicationMethod.instructions,
+            canAutomate: applicationMethod.canAutomate
+          },
+          recommendation: boardConfig.accessMethod.frontend?.browserExtensionRequired 
+            ? 'Install the Career Lever browser extension to automate applications'
+            : 'Use the Career Lever bookmarklet for assisted applications'
+        }, { status: 400 })
+      }
+
+      // For boards that DO have open APIs (very rare)
+      if (boardConfig.type === 'open-api') {
+        // Only proceed if API is actually accessible
+        integration.status = 'connected'
+        integration.metadata = {
+          ...integration.metadata,
+          connectionType: 'open-api',
+          connectedAt: new Date()
+        }
+        await integration.save()
+
+        return NextResponse.json({
+          success: true,
+          integration: {
+            _id: integration._id,
+            boardName: integration.boardName,
+            boardDisplayName: integration.boardDisplayName,
+            status: integration.status
+          },
+          message: `Connected to ${boardConfig.displayName} successfully`
+        })
+      }
+
+      // Default: Not supported
+      await JobBoardIntegration.deleteOne({ _id: integration._id })
+      return NextResponse.json({
+        success: false,
+        error: `${boardConfig.displayName} integration not yet implemented`
+      }, { status: 400 })
 
     } else if (action === 'disconnect') {
       if (!integration) {
@@ -112,13 +221,33 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Trigger sync (in a real implementation, this would call the job board API)
-      await integration.updateSyncStatus('syncing')
+      if (integration.status !== 'connected') {
+        return NextResponse.json(
+          { error: 'Integration must be connected before syncing' },
+          { status: 400 }
+        )
+      }
 
-      // Simulate sync completion
-      setTimeout(async () => {
-        await integration.updateSyncStatus('success')
-      }, 3000)
+      // Update status to syncing
+      integration.lastSyncAt = new Date()
+      integration.syncStatus = 'syncing'
+      await integration.save()
+
+      // Perform real sync in background (don't block response)
+      syncJobBoardData(integration).catch((error) => {
+        console.error(`[JOB_BOARDS] Sync failed for ${boardName}:`, error)
+      })
+
+      return NextResponse.json({
+        success: true,
+        integration: {
+          _id: integration._id,
+          boardName: integration.boardName,
+          lastSyncAt: integration.lastSyncAt,
+          syncStatus: integration.syncStatus
+        },
+        message: 'Sync started in background'
+      })
 
     } else {
       return NextResponse.json(
