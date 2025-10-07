@@ -75,7 +75,15 @@ const nextConfig = {
     // Experimental features for performance
     experimental: {
         // Optimize package imports (tree-shaking)
-        optimizePackageImports: ['@heroicons/react', 'lucide-react'],
+        optimizePackageImports: [
+            '@heroicons/react', 
+            'lucide-react',
+            '@tanstack/react-query',
+            'react-hot-toast',
+            'recharts'
+        ],
+        // Enable modern bundling improvements
+        optimizeCss: true,
     },
     eslint: {
         ignoreDuringBuilds: true,

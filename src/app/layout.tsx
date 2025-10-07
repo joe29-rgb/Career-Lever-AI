@@ -11,6 +11,7 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { Toaster } from 'react-hot-toast'
+import { AnalyticsTracker } from '@/components/analytics-tracker'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -44,6 +45,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
           <Providers>
+            <AnalyticsTracker />
             <Toaster 
               position="top-right"
               toastOptions={{
