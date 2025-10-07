@@ -82,8 +82,8 @@ const nextConfig = {
             'react-hot-toast',
             'recharts'
         ],
-        // Enable modern bundling improvements
-        optimizeCss: true,
+        // Disable CSS optimization to avoid critters dependency issue
+        // optimizeCss: true,
     },
     eslint: {
         ignoreDuringBuilds: true,

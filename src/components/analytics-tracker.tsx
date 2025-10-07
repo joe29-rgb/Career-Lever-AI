@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { analytics } from '@/lib/analytics'
@@ -9,7 +9,7 @@ import { analytics } from '@/lib/analytics'
  * Analytics Tracker Component
  * Automatically tracks page views and user sessions
  */
-export function AnalyticsTracker() {
+function AnalyticsTrackerInner() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { data: session } = useSession()
@@ -61,5 +61,14 @@ export function AnalyticsTracker() {
   }, [])
 
   return null // This component doesn't render anything
+}
+
+// Wrap in Suspense to fix Next.js build error
+export function AnalyticsTracker() {
+  return (
+    <Suspense fallback={null}>
+      <AnalyticsTrackerInner />
+    </Suspense>
+  )
 }
 
