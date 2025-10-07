@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (await await isRateLimited(session.user.id, 'resume:upload')) {
+    if (await isRateLimited(session.user.id, 'resume:upload')) {
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
