@@ -146,7 +146,28 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Upload error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
+    
+    // Provide helpful error messages based on error type
+    let userMessage = 'Failed to process resume'
+    let helpText = 'Please try again or paste your resume text directly.'
+    
+    if (errorMessage.includes('validation')) {
+      userMessage = 'Invalid resume data'
+      helpText = 'Please ensure your resume contains valid text.'
+    } else if (errorMessage.includes('database') || errorMessage.includes('mongo')) {
+      userMessage = 'Database connection error'
+      helpText = 'Please try again in a moment.'
+    } else if (errorMessage.includes('memory') || errorMessage.includes('heap')) {
+      userMessage = 'File too complex to process'
+      helpText = 'Try a simpler PDF or paste your text instead.'
+    }
+    
+    return NextResponse.json({ 
+      error: userMessage,
+      details: helpText,
+      technical: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    }, { status: 500 })
   }
 }
 
