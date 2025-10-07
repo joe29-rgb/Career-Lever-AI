@@ -17,11 +17,11 @@ export class RateLimiter {
   private storage = new Map<string, RateLimitEntry>()
   private configs: Record<string, RateLimitConfig> = {
     'api-general': { windowMs: 60 * 1000, maxRequests: 100 },
-    'ai-requests': { windowMs: 60 * 1000, maxRequests: 20 },
-    'file-upload': { windowMs: 60 * 1000, maxRequests: 20 },
+    'ai-requests': { windowMs: 60 * 1000, maxRequests: 30 }, // Increased from 20
+    'file-upload': { windowMs: 60 * 1000, maxRequests: 50 }, // Increased from 20 to 50
     'auth-login': { windowMs: 15 * 60 * 1000, maxRequests: 10 },
-    'resume-customize': { windowMs: 60 * 1000, maxRequests: 15 },
-    'cover-letter': { windowMs: 60 * 1000, maxRequests: 15 },
+    'resume-customize': { windowMs: 60 * 1000, maxRequests: 25 }, // Increased from 15
+    'cover-letter': { windowMs: 60 * 1000, maxRequests: 25 }, // Increased from 15
   }
 
   static getInstance(): RateLimiter {
