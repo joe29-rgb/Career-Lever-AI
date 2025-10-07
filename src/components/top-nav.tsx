@@ -59,7 +59,7 @@ export function TopNav() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <nav role="navigation" aria-label="Main" className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border shadow-lg">
+    <nav role="navigation" aria-label="Main" className="sticky top-0 z-[100] bg-card/95 backdrop-blur-xl border-b border-border shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
         {/* Logo with image */}
         <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">

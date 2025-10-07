@@ -30,7 +30,7 @@ interface JobCardProps {
   job: Job;
   resumeText?: string;
   coverText?: string;
-  className?: string;  // ADD THIS LINE
+  className?: string;
 }
 
 export function JobCard({ job, resumeText, coverText, className }: JobCardProps) {
@@ -84,25 +84,32 @@ export function JobCard({ job, resumeText, coverText, className }: JobCardProps)
     }
   }
 
-  // Vibrant gradient borders (rotate through colors)
-  const gradients = [
-    'from-[#5324FD] to-[#8B5CF6]',
-    'from-[#F5001E] to-[#FB7185]',
-    'from-[#FCC636] to-[#FB923C]',
-    'from-[#10b981] to-[#059669]',
-    'from-[#3b82f6] to-[#06b6d4]',
+  // Dynamic gradient classes using CSS variables
+  const gradientStyles = [
+    'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))', // Blue to Yellow
+    'linear-gradient(135deg, hsl(var(--secondary)), hsl(var(--primary)))', // Red to Blue
+    'linear-gradient(135deg, hsl(var(--accent)), hsl(var(--warning)))', // Yellow to Orange
+    'linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 30%))', // Green
+    'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))', // Blue to Red
   ]
-  const gradientClass = gradients[parseInt(job.id) % gradients.length]
+  const gradientIndex = parseInt(job.id) % gradientStyles.length
+  const gradientStyle = gradientStyles[gradientIndex]
 
   return (
     <div className={cn("group relative", className)}>
-      {/* VIBRANT gradient border wrapper */}
-      <div className={`bg-gradient-to-br ${gradientClass} p-1 rounded-3xl shadow-lg hover:shadow-[0_20px_60px_rgba(0,0,0,0.15)] transition-all duration-300 hover:-translate-y-2`}>
-        <div className="bg-white rounded-[calc(1.5rem-1px)] p-6 h-full">
+      {/* Modern gradient border wrapper using theme colors */}
+      <div 
+        className="p-1 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+        style={{ background: gradientStyle }}
+      >
+        <div className="bg-card rounded-[calc(1.5rem-1px)] p-6 h-full">
           <Link href={job.url} className="block">
             {/* Header with colorful logo */}
             <div className="flex items-start gap-4 mb-4">
-              <div className={`w-16 h-16 bg-gradient-to-br ${gradientClass} rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg`}>
+              <div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg"
+                style={{ background: gradientStyle }}
+              >
                 {job.logo ? (
                   <img src={job.logo} alt={`${job.company} logo`} className="w-14 h-14 rounded-xl object-cover" />
                 ) : (
@@ -110,9 +117,9 @@ export function JobCard({ job, resumeText, coverText, className }: JobCardProps)
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xl font-bold text-gray-900 mb-1 line-clamp-2 group-hover:text-[#5324FD] transition-colors">{job.title}</h3>
-                <p className="text-base font-semibold text-gray-700">{job.company}</p>
-                <div className="flex items-center text-sm text-gray-500 mt-1">
+                <h3 className="text-xl font-bold text-foreground mb-1 line-clamp-2 group-hover:text-primary transition-colors">{job.title}</h3>
+                <p className="text-base font-semibold text-muted-foreground">{job.company}</p>
+                <div className="flex items-center text-sm text-muted-foreground mt-1">
                   <MapPinIcon className="w-4 h-4 mr-1 flex-shrink-0" />
                   <span className="truncate">{job.location}</span>
                 </div>
@@ -120,43 +127,42 @@ export function JobCard({ job, resumeText, coverText, className }: JobCardProps)
             </div>
 
             {/* Description */}
-            <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
               {job.description || 'Exciting opportunity in a dynamic team. Apply now to learn more!'}
             </p>
 
-            {/* VIBRANT skill badges */}
+            {/* Modern skill badges */}
             <div className="flex flex-wrap gap-2 mb-4">
               {job.skills.slice(0, 3).map((skill, idx) => {
-                const badgeColors = [
-                  'bg-blue-100 text-blue-700',
-                  'bg-red-100 text-red-700',
-                  'bg-yellow-100 text-yellow-700',
-                  'bg-green-100 text-green-700',
-                  'bg-purple-100 text-purple-700',
+                const badgeClasses = [
+                  'badge-primary',
+                  'badge-secondary',
+                  'badge-accent',
                 ]
-                const colorClass = badgeColors[idx % badgeColors.length]
+                const badgeClass = badgeClasses[idx % badgeClasses.length]
                 return (
-                  <span key={idx} className={`${colorClass} px-3 py-1 rounded-full text-xs font-bold`}>
+                  <span key={idx} className={`${badgeClass} text-xs font-bold`}>
                     {skill}
                   </span>
                 )
               })}
             </div>
 
-            {/* Salary with vibrant icon */}
+            {/* Salary with icon */}
             {job.salary && (
-              <div className={`flex items-center text-sm font-bold bg-gradient-to-r ${gradientClass} bg-clip-text text-transparent mb-4`}>
-                <CurrencyDollarIcon className="w-5 h-5 mr-1 text-gray-700" />
+              <div className="flex items-center text-sm font-bold text-primary mb-4">
+                <CurrencyDollarIcon className="w-5 h-5 mr-1" />
                 {job.salary}
               </div>
             )}
           </Link>
 
-          {/* VIBRANT Apply Button */}
+          {/* Modern Apply Button */}
           <Button 
             onClick={handleApply} 
             disabled={isApplying} 
-            className={`w-full bg-gradient-to-r ${gradientClass} text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0`}
+            className="w-full text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0"
+            style={{ background: gradientStyle }}
           >
             {isApplying ? (
               <>

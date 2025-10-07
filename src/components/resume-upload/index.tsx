@@ -26,9 +26,7 @@ export function ResumeUpload({
   onUploadSuccess,
   onUploadError,
   maxFileSize = 10 * 1024 * 1024, // 10MB
-  acceptedTypes = ['application/pdf'],
-  setKeywords,
-  setLocation
+  acceptedTypes = ['application/pdf']
 }: ResumeUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -118,9 +116,8 @@ export function ResumeUpload({
 
       console.log('Extracted signals:', data)
 
-      // Use the extracted data
-      if (setKeywords) setKeywords(data.keywords)
-      if (setLocation) setLocation(data.location)
+      // Note: Keywords and location are stored in the resume record
+      // and can be retrieved from the API response if needed
 
       return data
 
@@ -264,13 +261,13 @@ export function ResumeUpload({
               {...getRootProps()}
               className={`border-3 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${
                 isDragActive
-                  ? 'border-[#5324FD] bg-gradient-to-br from-blue-50 to-purple-50 scale-105'
-                  : 'border-gray-300 hover:border-[#5324FD] hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50'
+                  ? 'border-primary gradient-card-blue scale-105'
+                  : 'border-border hover:border-primary hover:gradient-card-blue'
               } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
             >
               <input {...getInputProps()} />
-              {/* Vibrant upload icon */}
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#5324FD] to-[#8B5CF6] rounded-3xl flex items-center justify-center shadow-lg">
+              {/* Modern upload icon */}
+              <div className="w-20 h-20 mx-auto mb-6 gradient-primary rounded-3xl flex items-center justify-center shadow-lg">
                 <Upload className="h-10 w-10 text-white" />
               </div>
               <div className="space-y-3">
@@ -292,7 +289,7 @@ export function ResumeUpload({
                 ✍️ Or paste your resume text
               </label>
               <textarea
-                className="w-full border-2 border-gray-300 rounded-2xl p-4 text-sm h-40 focus:ring-2 focus:ring-[#5324FD] focus:border-[#5324FD] transition-all font-medium resize-none"
+                className="modern-input w-full h-40 resize-none text-sm"
                 placeholder="Paste your resume here if your PDF is scanned or not readable..."
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
@@ -306,7 +303,7 @@ export function ResumeUpload({
               <div className="mt-6 flex gap-3">
                 <Button 
                   onClick={handleUpload} 
-                  className="flex-1 bg-gradient-to-r from-[#5324FD] to-[#8B5CF6] text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border-0 text-base"
+                  className="flex-1 btn-gradient py-4 text-base border-0"
                 >
                   🚀 Upload Resume
                 </Button>
