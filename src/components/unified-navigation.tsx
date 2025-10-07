@@ -71,6 +71,16 @@ const navigationItems: NavigationItem[] = [
     icon: Users,
     badge: 0
   },
+  {
+    name: 'Settings',
+    icon: Settings,
+    submenu: [
+      { name: 'Profile', href: '/settings/profile' },
+      { name: 'Preferences', href: '/settings/preferences' },
+      { name: 'Integrations', href: '/settings/integrations' },
+      { name: 'Job Boards', href: '/settings/job-boards' }
+    ]
+  },
 ]
 
 export function UnifiedNavigation() {
