@@ -20,7 +20,7 @@
   },
   "healthcheck": {
     "path": "/api/health",
-    "timeout": 300,
-    "interval": 10
+    "timeout": 600,
+    "interval": 20
   }
 }
