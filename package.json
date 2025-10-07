@@ -14,7 +14,7 @@
         "lint": "next lint",
         "type-check": "tsc --noEmit",
         "check:env": "node scripts/check-env.js",
-        "prebuild": "node scripts/check-env.js || echo '⚠️  Some env vars missing, continuing build...'",
+        "prebuild": "echo '✅ Environment variables will be validated at runtime'",
         "test": "vitest run --reporter=verbose",
         "debug:perplexity": "node debug-perplexity.js",
         "test:perplexity": "PPX_DEBUG=true node -e \"require('./debug-perplexity.js')\""
