@@ -1,4 +1,4 @@
-import pdfParse from 'pdf-parse'
+import pdfParse from 'pdf-parse-debugging-disabled'
 
 interface PDFExtractionResult {
   text: string
@@ -24,7 +24,7 @@ export class PDFService {
         throw new Error('Invalid PDF file')
       }
 
-      // Try text extraction first
+      // Try text extraction first (using pdf-parse-debugging-disabled to avoid test file issues)
       const result = await pdfParse(buffer)
       const text = this.cleanText(result.text)
 

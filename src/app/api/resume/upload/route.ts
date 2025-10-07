@@ -19,8 +19,8 @@ function cleanExtractedText(text: string): string {
 
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
   try {
-    // Use dynamic import to avoid build-time issues
-    const pdfParse = await import('pdf-parse')
+    // Use pdf-parse-debugging-disabled to avoid test fixture issues
+    const pdfParse = await import('pdf-parse-debugging-disabled')
     const data = await pdfParse.default(buffer)
     
     const cleanedText = cleanExtractedText(data.text)
