@@ -16,13 +16,13 @@ export class RateLimiter {
   private static instance: RateLimiter
   private storage = new Map<string, RateLimitEntry>()
   private configs: Record<string, RateLimitConfig> = {
-    'api-general': { windowMs: 60 * 1000, maxRequests: 200 }, // Increased for production
-    'ai-requests': { windowMs: 60 * 1000, maxRequests: 50 }, // Increased
-    'file-upload': { windowMs: 60 * 1000, maxRequests: 100 }, // Increased significantly
-    'auth-login': { windowMs: 15 * 60 * 1000, maxRequests: 50 }, // Increased from 10 to 50
-    'resume-customize': { windowMs: 60 * 1000, maxRequests: 50 }, // Increased
-    'cover-letter': { windowMs: 60 * 1000, maxRequests: 50 }, // Increased
-    'auth-session': { windowMs: 60 * 1000, maxRequests: 200 }, // New: for session checks
+    'api-general': { windowMs: 60 * 1000, maxRequests: 500 }, // High limit for general API
+    'ai-requests': { windowMs: 60 * 1000, maxRequests: 100 }, // Higher for AI
+    'file-upload': { windowMs: 60 * 1000, maxRequests: 1000 }, // VERY high for file uploads - per minute
+    'auth-login': { windowMs: 15 * 60 * 1000, maxRequests: 100 }, // Higher auth limit
+    'resume-customize': { windowMs: 60 * 1000, maxRequests: 100 }, // Higher
+    'cover-letter': { windowMs: 60 * 1000, maxRequests: 100 }, // Higher
+    'auth-session': { windowMs: 60 * 1000, maxRequests: 500 }, // Very high for session checks
   }
 
   static getInstance(): RateLimiter {

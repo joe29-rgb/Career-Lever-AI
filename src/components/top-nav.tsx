@@ -62,21 +62,14 @@ export function TopNav() {
     <nav role="navigation" aria-label="Main" className="sticky top-0 z-[100] bg-card/95 backdrop-blur-xl border-b border-border shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
         {/* Logo with image */}
-        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-          <div className="relative w-10 h-10 flex-shrink-0">
-            <Image
-              src="/images/careerlever-logo.png"
-              alt="Career Lever"
-              width={40}
-              height={40}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <span className="font-bold text-xl text-foreground hidden sm:block">
-            Career Lever
-          </span>
-        </Link>
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="relative w-10 h-10 flex-shrink-0 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">CL</span>
+              </div>
+              <span className="font-bold text-xl text-foreground hidden sm:block">
+                Career Lever
+              </span>
+            </Link>
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-2 text-sm">

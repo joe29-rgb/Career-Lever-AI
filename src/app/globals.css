@@ -89,10 +89,35 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
   }
   
   html {
     scroll-behavior: smooth;
+  }
+  
+  /* Fix z-index stacking context */
+  main {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Ensure proper layering */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  /* Fix any overlay issues */
+  [role="dialog"],
+  [role="alertdialog"] {
+    z-index: 1000;
+  }
+  
+  /* Fix dropdown/popover layering */
+  [data-radix-popper-content-wrapper] {
+    z-index: 200;
   }
 }
 
