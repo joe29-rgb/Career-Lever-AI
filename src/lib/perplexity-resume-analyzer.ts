@@ -549,7 +549,12 @@ Provide current market trends, salary outlook, and strategic recommendations for
     const isCanadian = analysis.location.country === 'Canada'
     const { experienceLevel, industries, topSkills } = analysis
     
-    const boards = []
+    const boards: Array<{
+      name: string
+      relevanceScore: number
+      reasoning: string
+      specialization: string
+    }> = []
 
     // Universal boards
     boards.push(
