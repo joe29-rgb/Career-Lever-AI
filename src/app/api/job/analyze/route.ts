@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     }
     const { jobDescription, jobTitle, companyName } = parsed.data;
 
-    const rl = isRateLimited((session.user as any).id, 'job-analyze');
-    if (rl.limited) {
+    const rl = await isRateLimited((session.user as any).id, 'job-analyze');
+    if (rl) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 

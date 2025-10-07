@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid origin' }, { status: 400 })
     }
 
-    const limiter = isRateLimited((session.user as any).id, 'network:messages:post')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    const limiter = await isRateLimited((session.user as any).id, 'network:messages:post')
+    if (limiter) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     await connectToDatabase()
 

@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const rl = isRateLimited((session.user as any).id, 'applications:list')
-    if (rl.limited) {
+    const rl = await isRateLimited((session.user as any).id, 'applications:list')
+    if (rl) {
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const rl = isRateLimited((session.user as any).id, 'applications:create')
-    if (rl.limited) {
+    const rl = await isRateLimited((session.user as any).id, 'applications:create')
+    if (rl) {
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 

@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
     }
     const { resumeId, jobDescription, jobTitle, companyName, tone, overrideResumeText, psychology, companyData, atsTarget, optimizationLevel, industryFocus, experienceLevel, keyMetrics, skillsPriority, antiAIDetection, formatStyle, lengthTarget } = parsed.data as any;
 
-    const rl = isRateLimited((session.user as any).id, 'resume-customize');
-    if (rl.limited) {
+    const rl = await isRateLimited((session.user as any).id, 'resume-customize');
+    if (rl) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 

@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const rl = isRateLimited((session.user as any).id, 'assistants:contacts')
-    if (rl.limited) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
+    const rl = await isRateLimited((session.user as any).id, 'assistants:contacts')
+    if (rl) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     await connectToDatabase()
     const { companyName, companyWebsite, roleHints = [], locationHint } = await request.json()
     if (!companyName) return NextResponse.json({ error: 'companyName required' }, { status: 400 })

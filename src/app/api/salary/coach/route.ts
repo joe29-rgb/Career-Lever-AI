@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rl = isRateLimited(session.user.id as unknown as string, 'salary:coach')
-    if (rl.limited) {
+    const rl = await await isRateLimited(session.user.id as unknown as string, 'salary:coach')
+    if (rl) {
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 

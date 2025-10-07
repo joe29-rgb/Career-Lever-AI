@@ -8,8 +8,7 @@ import { isRateLimited } from '@/lib/rate-limit'
 export async function POST(request: NextRequest) {
   try {
     const ip = request.headers.get('x-forwarded-for') || 'anon'
-    const limiter = isRateLimited(ip, 'users:signup')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    const limiter = await await isRateLimited(ip, 'users:signup'); if (limiter) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     const schema = z.object({
       name: z.string().min(2).max(100),
       email: z.string().email().max(200),
@@ -47,5 +46,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to sign up' }, { status: 500 })
   }
 }
+
 
 

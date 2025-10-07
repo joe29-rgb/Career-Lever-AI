@@ -222,8 +222,8 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase()
 
-    const limiter = isRateLimited((session.user as any).id, 'network:connections:post')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    const limiter = await isRateLimited((session.user as any).id, 'network:connections:post')
+    if (limiter) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     const schema = z.object({
       action: z.enum(['connect','accept','decline']),

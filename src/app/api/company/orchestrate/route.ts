@@ -23,8 +23,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const rl = isRateLimited((session.user as any).id, 'company:orchestrate')
-    if (rl.limited) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
+    const rl = await isRateLimited((session.user as any).id, 'company:orchestrate')
+    if (rl) return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
 
     // Inputs validated above
 

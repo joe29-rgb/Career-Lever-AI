@@ -22,8 +22,8 @@ export async function PUT(
       );
     }
 
-    const rl = isRateLimited((session.user as any).id, 'applications:update')
-    if (rl.limited) {
+    const rl = await isRateLimited((session.user as any).id, 'applications:update')
+    if (rl) {
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 

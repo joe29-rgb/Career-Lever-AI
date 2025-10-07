@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save, psychology } = body;
 
-    const rl = isRateLimited((session.user as any).id, 'cover-letter');
-    if (rl.limited) {
+    const rl = await isRateLimited((session.user as any).id, 'cover-letter');
+    if (rl) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 

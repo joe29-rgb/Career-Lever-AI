@@ -11,8 +11,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const limiter = isRateLimited((session.user as any).id, 'applications:followup:save')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    const limiter = await await isRateLimited((session.user as any).id, 'applications:followup:save')
+    if (limiter) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
 
     const schema = z.object({
       dates: z.array(z.string().min(10)).min(1),

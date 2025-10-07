@@ -1,22 +1,24 @@
 /**
- * Unified Job Search API
+ * Unified Job Search API - Enhanced with PerplexityIntelligenceService
  * 
- * Aggregates jobs from:
- * 1. Canadian public job boards (Job Bank, Jooble, Careerjet)
- * 2. Major boards via Perplexity (LinkedIn, Indeed, Glassdoor)
- * 3. ATS platforms (Greenhouse, Lever, Workable, etc.)
- * 4. Third-party aggregators (Adzuna)
+ * NOW USES: PerplexityIntelligenceService for comprehensive 25+ board coverage
  * 
- * Then uses Perplexity AI to rank and filter results
+ * Features:
+ * - 10 Canadian job boards (Job Bank, Jobboom, Workopolis, etc.)
+ * - 35+ Canadian ATS companies (Shopify, Wealthsimple, etc.)
+ * - Global boards (LinkedIn, Indeed, Glassdoor)
+ * - Resume skill matching with scoring
+ * - Smart Canadian prioritization
+ * - Built-in caching (24hr TTL)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { dbService } from '@/lib/database'
-import { PublicJobDiscoveryService } from '@/lib/public-job-discovery-service'
-import { PerplexityService } from '@/lib/perplexity-service'
+import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { isRateLimited } from '@/lib/rate-limit'
+import Resume from '@/models/Resume'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -29,8 +31,9 @@ interface JobSearchRequest {
   limit?: number
   remote?: boolean
   salaryMin?: number
-  experienceLevel?: 'entry' | 'mid' | 'senior'
-  refineWithAI?: boolean // Use Perplexity to rank results
+  experienceLevel?: 'entry' | 'mid' | 'senior' | 'executive'
+  workType?: 'remote' | 'hybrid' | 'onsite' | 'any'
+  useResumeMatching?: boolean // Use resume for skill matching
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting
-    if (isRateLimited(session.user.id, 'job-search')) {
+    if (await await isRateLimited(session.user.id, 'job-search')) {
       return NextResponse.json({ 
         error: 'Too many searches. Please wait a moment.' 
       }, { status: 429 })
@@ -54,12 +57,14 @@ export async function POST(request: NextRequest) {
       keywords, 
       location = 'Canada', 
       sources, 
-      limit = 100, 
+      limit = 50, 
       remote,
       salaryMin,
       experienceLevel,
-      refineWithAI = true
+      workType
     } = body
+
+    let useResumeMatching = body.useResumeMatching || false
 
     if (!keywords || keywords.trim().length < 2) {
       return NextResponse.json({ 
@@ -67,65 +72,119 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log(`[JOB_SEARCH] User ${session.user.id} searching: "${keywords}" in ${location}`)
+    console.log(`[JOB_SEARCH] User ${session.user.id} searching: "${keywords}" in ${location} (Resume matching: ${useResumeMatching})`)
 
-    // Step 1: Aggregate jobs from all sources
-    const discovery = new PublicJobDiscoveryService()
-    
-    const jobs = await discovery.discoverJobs({
-      keywords,
-      location,
-      boards: sources,
-      limit,
-      remote,
-      salaryMin,
-      experienceLevel
-    })
+    let result: any
+    let jobs: any[] = []
+    let metadata: any = {}
 
-    console.log(`[JOB_SEARCH] Found ${jobs.length} jobs from ${sources?.length || 'all'} sources`)
-
-    // Step 2: Optionally refine with Perplexity AI
-    let rankedJobs = jobs
-    let aiInsights = null
-
-    if (refineWithAI && jobs.length > 0) {
+    // Option 1: Resume-matched search (most powerful)
+    if (useResumeMatching) {
       try {
-        const refinement = await refineJobsWithPerplexity(jobs, keywords, location)
-        rankedJobs = refinement.rankedJobs
-        aiInsights = refinement.insights
+        // Get user's resume
+        const resumeDoc = await Resume.findOne({ userId: session.user.id })
+          .sort({ createdAt: -1 })
+          .lean()
         
-        console.log(`[JOB_SEARCH] Perplexity refined ${rankedJobs.length} top matches`)
+        const extractedText = (resumeDoc as any)?.extractedText
+        
+        if (!resumeDoc || !extractedText) {
+          return NextResponse.json({ 
+            error: 'Please upload a resume first to use resume matching' 
+          }, { status: 400 })
+        }
+
+        console.log(`[JOB_SEARCH] Using resume matching for user ${session.user.id}`)
+
+        // Use enhanced jobMarketAnalysisV2 with 25+ boards
+        result = await PerplexityIntelligenceService.jobMarketAnalysisV2(
+          location,
+          extractedText,
+          {
+            roleHint: keywords,
+            workType: workType || (remote ? 'remote' : 'any'),
+            salaryMin,
+            experienceLevel,
+            maxResults: limit,
+            boards: sources
+          }
+        )
+
+        jobs = result.data
+        metadata = {
+          ...result.metadata,
+          useResumeMatching: true,
+          skillMatchingEnabled: true
+        }
+
+        console.log(`[JOB_SEARCH] Resume matching found ${jobs.length} jobs with skill scores`)
+
       } catch (error) {
-        console.error('[JOB_SEARCH] Perplexity refinement failed:', error)
-        // Continue with unrefined results
+        console.error('[JOB_SEARCH] Resume matching failed, falling back to standard search:', error)
+        // Fall back to standard search
+        useResumeMatching = false
       }
     }
 
-    // Step 3: Save search history
+    // Option 2: Standard job listing search (25+ boards)
+    if (!useResumeMatching || jobs.length === 0) {
+      console.log(`[JOB_SEARCH] Using standard search across 25+ boards`)
+
+      jobs = await PerplexityIntelligenceService.jobListings(
+        keywords,
+        location,
+        {
+          boards: sources,
+          limit,
+          includeCanadianOnly: location.toLowerCase().includes('canada')
+        }
+      )
+
+      metadata = {
+        useResumeMatching: false,
+        searchedBoards: sources?.length || 15,
+        canadianPriority: location.toLowerCase().includes('canada')
+      }
+
+      console.log(`[JOB_SEARCH] Standard search found ${jobs.length} jobs`)
+    }
+
+    // Save search history
     try {
       const { default: SearchHistory } = await import('@/models/SearchHistory')
       await SearchHistory.create({
         userId: session.user.id,
         keywords,
         location,
-        resultsCount: rankedJobs.length,
+        resultsCount: jobs.length,
         sources: sources || ['all'],
-        timestamp: new Date()
+        aiUsed: useResumeMatching,
+        searchDate: new Date()
       })
     } catch (error) {
       console.error('[JOB_SEARCH] Failed to save search history:', error)
       // Non-critical, continue
     }
 
+    // Get recommended boards for this location
+    const recommendations = PerplexityIntelligenceService.getRecommendedBoards(location)
+
     return NextResponse.json({
       success: true,
       query: { keywords, location, sources },
       totalResults: jobs.length,
-      returnedResults: rankedJobs.length,
-      jobs: rankedJobs.slice(0, limit),
-      aiInsights,
-      sources: [...new Set(jobs.map(j => j.source))],
-      timestamp: new Date().toISOString()
+      returnedResults: jobs.length,
+      jobs: jobs.slice(0, limit),
+      metadata: {
+        ...metadata,
+        searchedAt: new Date().toISOString(),
+        cachedResults: result?.cached || false
+      },
+      recommendations: {
+        priorityBoards: recommendations.priority.slice(0, 5),
+        reasoning: recommendations.reasoning
+      },
+      sources: [...new Set(jobs.map((j: any) => j.source || 'Unknown'))]
     })
 
   } catch (error) {
@@ -138,89 +197,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Refine and rank jobs using Perplexity AI
- */
-async function refineJobsWithPerplexity(
-  jobs: any[], 
-  keywords: string, 
-  location: string
-): Promise<{ rankedJobs: any[], insights: any }> {
-  const perplexity = new PerplexityService()
-
-  // Create a concise job list for Perplexity
-  const jobSummary = jobs.slice(0, 50).map((job, i) => 
-    `${i + 1}. ${job.title} at ${job.company}, ${job.location}${job.salary ? ` - ${job.salary}` : ''}`
-  ).join('\n')
-
-  const systemPrompt = `You are an expert career coach and job matching specialist. 
-Your role is to analyze job listings and provide intelligent ranking and insights 
-based on relevance, quality, and fit for the candidate's search criteria.`
-
-  const userPrompt = `
-Analyze these ${jobs.length} job listings for a candidate searching for "${keywords}" in ${location}:
-
-${jobSummary}
-
-Provide a JSON response with:
-1. "topMatches": Array of job indices (1-based) ranked by relevance (max 10)
-2. "matchScores": Object mapping each index to a score (0-1)
-3. "insights": {
-   "marketTrends": Brief market observation,
-   "salaryRange": Estimated range if visible,
-   "recommendations": 2-3 actionable tips for this search
-}
-4. "rationale": Brief explanation for top 3 matches
-
-Return ONLY valid JSON, no markdown.
-`
-
-  try {
-    const result = await perplexity.makeRequest(systemPrompt, userPrompt, {
-      temperature: 0.3,
-      maxTokens: 1500
-    })
-
-    // Parse Perplexity response
-    const aiResponse = JSON.parse(result.content)
-
-    // Rank jobs based on AI scores
-    const rankedJobs = aiResponse.topMatches
-      .map((index: number) => ({
-        ...jobs[index - 1],
-        aiScore: aiResponse.matchScores[index],
-        aiRationale: aiResponse.rationale?.[index - 1]
-      }))
-      .filter((job: any) => job.title) // Filter out invalid indices
-
-    return {
-      rankedJobs,
-      insights: {
-        marketTrends: aiResponse.insights?.marketTrends,
-        salaryRange: aiResponse.insights?.salaryRange,
-        recommendations: aiResponse.insights?.recommendations,
-        totalAnalyzed: jobs.length,
-        topMatchesCount: rankedJobs.length
-      }
-    }
-  } catch (error) {
-    console.error('[JOB_SEARCH] Perplexity parsing failed:', error)
-    // Return jobs with simple scoring fallback
-    return {
-      rankedJobs: jobs.map(job => ({
-        ...job,
-        aiScore: 0.5,
-        aiRationale: 'AI ranking unavailable'
-      })),
-      insights: {
-        marketTrends: 'AI analysis unavailable',
-        recommendations: ['Review job descriptions carefully', 'Apply to roles matching your experience']
-      }
-    }
-  }
-}
-
-/**
- * GET endpoint for saved searches
+ * GET endpoint for search history and available job boards
  */
 export async function GET(request: NextRequest) {
   try {
@@ -231,9 +208,23 @@ export async function GET(request: NextRequest) {
 
     await dbService.connect()
 
+    const url = new URL(request.url)
+    const action = url.searchParams.get('action')
+
+    // Get available job boards
+    if (action === 'boards') {
+      const boards = PerplexityIntelligenceService.getAvailableJobBoards()
+      return NextResponse.json({
+        success: true,
+        boards,
+        totalBoards: boards.totalBoards
+      })
+    }
+
+    // Get search history (default)
     const { default: SearchHistory } = await import('@/models/SearchHistory')
     const history = await SearchHistory.find({ userId: session.user.id })
-      .sort({ timestamp: -1 })
+      .sort({ searchDate: -1 })
       .limit(20)
 
     return NextResponse.json({
@@ -242,9 +233,9 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[JOB_SEARCH] Failed to fetch search history:', error)
+    console.error('[JOB_SEARCH] Failed to fetch data:', error)
     return NextResponse.json({ 
-      error: 'Failed to fetch search history' 
+      error: 'Failed to fetch data' 
     }, { status: 500 })
   }
 }

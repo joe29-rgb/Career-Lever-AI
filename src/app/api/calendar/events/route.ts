@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const limiter = isRateLimited((session.user as any).id, 'calendar:events:get')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    const limiter = await isRateLimited((session.user as any).id, 'calendar:events:get')
+    if (limiter) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     const accessToken = await getGoogleAccessToken(request)
     if (!accessToken) return NextResponse.json({ error: 'Google not linked' }, { status: 400 })
     const resp = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=20&singleEvents=true&orderBy=startTime', {
@@ -34,8 +34,8 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    const limiter = isRateLimited((session.user as any).id, 'calendar:events:create')
-    if (limiter.limited) return NextResponse.json({ error: 'Rate limit exceeded', reset: limiter.reset }, { status: 429 })
+    const limiter = await isRateLimited((session.user as any).id, 'calendar:events:create')
+    if (limiter) return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
     const accessToken = await getGoogleAccessToken(request)
     if (!accessToken) return NextResponse.json({ error: 'Google not linked' }, { status: 400 })
     const schema = z.object({
