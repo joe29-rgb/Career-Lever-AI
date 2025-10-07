@@ -10,9 +10,16 @@
  * - AI/Automation replacement risk analysis
  * - 5-year career outlook
  * - Job search optimization strategies
+ * 
+ * Version: 2.0.0 - Integrated with centralized prompts and validation
  */
 
 import { PerplexityIntelligenceService } from './perplexity-intelligence'
+import { PERPLEXITY_PROMPTS } from './prompts/perplexity-prompts'
+import { parseAIResponse } from './utils/ai-response-parser'
+import { validateAIResponse } from './validation/schema-validator'
+import { PerplexityErrorFactory } from './errors/perplexity-error'
+import { randomUUID } from 'crypto'
 
 export interface EnhancedResumeAnalysis {
   keywords: string[]
@@ -79,6 +86,57 @@ export class PerplexityResumeAnalyzer {
    * Analyze resume using Perplexity AI for intelligent extraction
    */
   static async analyzeResume(resumeText: string): Promise<EnhancedResumeAnalysis> {
+    const requestId = randomUUID()
+    const timestamp = Date.now()
+
+    try {
+      // Use centralized prompts
+      const systemPrompt = PERPLEXITY_PROMPTS.RESUME_ANALYSIS.system
+      const userPrompt = PERPLEXITY_PROMPTS.RESUME_ANALYSIS.userTemplate(resumeText)
+
+      // Call Perplexity via intelligence service
+      const result = await PerplexityIntelligenceService.customQuery({
+        systemPrompt,
+        userPrompt,
+        temperature: 0.2,
+        maxTokens: 3000,
+        includeMetadata: true
+      })
+
+      // Parse and validate response
+      const context = {
+        requestId,
+        prompts: { system: systemPrompt, user: userPrompt.slice(0, 200) + '...' },
+        timestamp
+      }
+
+      const parsed = parseAIResponse<EnhancedResumeAnalysis>(result, {
+        stripMarkdown: true,
+        extractFirst: true,
+        throwOnError: true
+      }, context)
+
+      // Validate against schema
+      const validated = validateAIResponse<EnhancedResumeAnalysis>(
+        parsed,
+        'resume-analysis',
+        context
+      )
+
+      return validated
+    } catch (error: any) {
+      console.error('[PerplexityResumeAnalyzer] AI analysis failed:', error.message)
+
+      // Fallback to enhanced regex analysis
+      return this.enhancedFallbackAnalysis(resumeText)
+    }
+  }
+
+  /**
+   * LEGACY METHOD - Now uses centralized system
+   * @deprecated Use analyzeResume instead
+   */
+  static async analyzeLegacy(resumeText: string): Promise<EnhancedResumeAnalysis> {
     const SYSTEM_PROMPT = `You are an expert career strategist and resume analyst with deep understanding of Canadian and US job markets, industry trends, AI/automation impact, and career trajectory optimization.
 
 Analyze resumes with precision, extracting:
