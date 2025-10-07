@@ -1,6 +1,7 @@
  'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -60,9 +61,21 @@ export function TopNav() {
   return (
     <nav role="navigation" aria-label="Main" className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border shadow-lg">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-        {/* Logo with gradient */}
-        <Link href="/" className="font-bold text-xl bg-gradient-to-r from-primary via-accent to-destructive bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-          Career Lever AI
+        {/* Logo with image */}
+        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div className="relative w-10 h-10 flex-shrink-0">
+            <Image
+              src="/images/careerlever-logo.png"
+              alt="Career Lever"
+              width={40}
+              height={40}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span className="font-bold text-xl text-foreground hidden sm:block">
+            Career Lever
+          </span>
         </Link>
 
         {/* Desktop links */}
