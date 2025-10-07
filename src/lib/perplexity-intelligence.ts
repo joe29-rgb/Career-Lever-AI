@@ -385,7 +385,14 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
         temperature: 0.2, 
         maxTokens: Math.min(limit * 80, 4000) // Scale tokens with result count
       })
-      const text = (out.content || '').trim()
+      let text = (out.content || '').trim()
+      
+      // Extract JSON from response if wrapped in markdown or explanation
+      const jsonMatch = text.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        text = jsonMatch[0]
+      }
+      
       const parsed = JSON.parse(text)
       const arr = Array.isArray(parsed) ? parsed.slice(0, limit) : []
       
