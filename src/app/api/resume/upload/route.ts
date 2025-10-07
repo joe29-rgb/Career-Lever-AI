@@ -21,7 +21,18 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
   try {
     // Use pdf-parse-debugging-disabled to avoid test fixture issues
     const pdfParse = await import('pdf-parse-debugging-disabled')
-    const data = await pdfParse.default(buffer)
+    const data = await pdfParse.default(buffer, {
+      // Disable image extraction for faster processing
+      max: 0
+    })
+    
+    if (!data || !data.text) {
+      return {
+        text: '',
+        method: 'pdf-parse-failed',
+        confidence: 0
+      }
+    }
     
     const cleanedText = cleanExtractedText(data.text)
     
@@ -32,7 +43,12 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
     }
   } catch (error) {
     console.error('PDF extraction error:', error)
-    throw new Error('Failed to extract text from PDF. Please try pasting your resume text instead.')
+    // Return empty instead of throwing - let the main handler deal with it
+    return {
+      text: '',
+      method: 'pdf-parse-error',
+      confidence: 0
+    }
   }
 }
 
@@ -75,12 +91,18 @@ export async function POST(request: NextRequest) {
       const filename = file.name || 'resume.pdf'
 
       if (path.extname(filename).toLowerCase() === '.pdf') {
-        const { text, method, confidence } = await extractTextFromPDF(buffer)
-        extractedText = text
-        extractionMethod = method
-        extractionConfidence = confidence || 0.95
-        if (!text || text.length < 50) {
-          extractionError = 'PDF could not be processed. Please paste your resume text instead.'
+        try {
+          const { text, method, confidence } = await extractTextFromPDF(buffer)
+          extractedText = text
+          extractionMethod = method
+          extractionConfidence = confidence || 0.95
+          if (!text || text.length < 50) {
+            extractionError = 'PDF could not be processed. Please paste your resume text instead.'
+          }
+        } catch (pdfError) {
+          console.error('PDF processing failed completely:', pdfError)
+          extractionError = 'PDF processing failed. Please paste your resume text or try a different file format.'
+          extractionMethod = 'pdf-failed'
         }
       } else {
         extractedText = await file.text()
@@ -92,14 +114,19 @@ export async function POST(request: NextRequest) {
       extractionMethod = 'pasted_text'
     }
 
-    extractedText = cleanExtractedText(extractedText)
+    extractedText = cleanExtractedText(extractedText || '')
 
     if (!extractedText || extractedText.length < 20) {
-      return NextResponse.json({ error: 'No readable content' }, { status: 400 })
+      return NextResponse.json({ 
+        error: 'No readable content', 
+        details: extractionError || 'Could not extract text from the file. Please paste your resume text instead.',
+        extractionMethod 
+      }, { status: 400 })
     }
 
     const resume = new Resume({
       userId: session.user.id,
+      originalFileName: file?.name || 'pasted-resume.txt',
       filename: file?.name || 'pasted-resume.txt',
       extractedText,
       extractionMethod,

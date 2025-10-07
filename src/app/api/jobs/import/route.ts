@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
     const detail = await webScraper.scrapeJobDetailFromUrl(jobUrl)
     return NextResponse.json({ success: true, ...detail })
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to import job' }, { status: 500 })
+    console.error('Job import error:', e)
+    return NextResponse.json({ 
+      error: 'Failed to import job', 
+      details: e instanceof Error ? e.message : 'Unknown error' 
+    }, { status: 500 })
   }
 }
 

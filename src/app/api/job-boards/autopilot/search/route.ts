@@ -63,24 +63,27 @@ export async function POST(request: NextRequest) {
     if (!useResumeMatching || jobs.length === 0) {
       console.log(`[AUTOPILOT_SEARCH] Using standard search across 25+ boards`)
       
+      const locationStr = location || ''
+      const isCanadian = locationStr.toLowerCase().includes('canada')
+      
       jobs = (await PerplexityIntelligenceService.jobListings(
         keywords,
-        location,
+        locationStr,
         {
           boards: undefined,
           limit,
-          includeCanadianOnly: location.toLowerCase().includes('canada')
+          includeCanadianOnly: isCanadian
         }
       )) as any[]
       
       metadata = {
         useResumeMatching: false,
-        canadianPriority: location.toLowerCase().includes('canada')
+        canadianPriority: isCanadian
       }
     }
 
     // Get recommended job boards
-    const recommendations = PerplexityIntelligenceService.getRecommendedBoards(location)
+    const recommendations = PerplexityIntelligenceService.getRecommendedBoards(location || '')
     
     return NextResponse.json({
       success: true,
