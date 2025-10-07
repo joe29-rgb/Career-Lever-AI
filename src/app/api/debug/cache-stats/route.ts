@@ -69,10 +69,11 @@ export async function DELETE(request: NextRequest) {
     // Check authentication
     const session = await getServerSession(authOptions)
     
-    if (!session || session.user?.role !== 'admin') {
+    // TODO: Add admin role check when user roles are implemented
+    if (!session) {
       return NextResponse.json(
-        { error: 'Unauthorized - Admin access required' },
-        { status: 403 }
+        { error: 'Unauthorized - Authentication required' },
+        { status: 401 }
       )
     }
 
