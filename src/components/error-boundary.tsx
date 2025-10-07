@@ -1,6 +1,7 @@
 'use client'
 import React from 'react'
 import { logger, securityLogger } from '@/lib/logger'
+import { errorTracker } from '@/lib/error-tracking'
 
 interface Props {
   children: React.ReactNode
@@ -40,6 +41,18 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     const { errorId, errorCount } = this.state
+    
+    // Track error in error tracking service
+    errorTracker.trackError(error, {
+      context: 'react-error-boundary',
+      severity: 'high',
+      tags: ['ui', 'react'],
+      metadata: {
+        errorId,
+        errorCount,
+        componentStack: errorInfo.componentStack
+      }
+    })
     
     // Log error with full context
     logger.error('React Error Boundary caught error', {
