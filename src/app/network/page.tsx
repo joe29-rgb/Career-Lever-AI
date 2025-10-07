@@ -32,31 +32,31 @@ export default async function NetworkPage() {
 function NetworkSkeleton() {
   return (
     <div className="space-y-8">
-      {/* Stats Overview Skeleton */}
+      {/* Stats Overview Skeleton - Dribbble Style */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
-            <div className="w-16 h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="w-8 h-8 bg-gray-200 rounded"></div>
+          <div key={i} className="glass-card animate-pulse">
+            <div className="w-16 h-4 bg-muted rounded mb-2"></div>
+            <div className="w-8 h-8 bg-muted rounded"></div>
           </div>
         ))}
       </div>
 
-      {/* Feed Skeleton */}
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="p-6 border-b">
-          <div className="w-48 h-6 bg-gray-200 rounded mb-4"></div>
-          <div className="w-full h-12 bg-gray-200 rounded"></div>
+      {/* Feed Skeleton - Dribbble Style */}
+      <div className="modern-card">
+        <div className="p-6 border-b border-border/50">
+          <div className="w-48 h-6 bg-muted rounded mb-4"></div>
+          <div className="w-full h-12 bg-muted rounded"></div>
         </div>
-        <div className="divide-y">
+        <div className="divide-y divide-border/50">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="p-6 animate-pulse">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                <div className="w-12 h-12 bg-gradient-primary rounded-full opacity-50"></div>
                 <div className="flex-1">
-                  <div className="w-32 h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="w-full h-16 bg-gray-200 rounded mb-3"></div>
-                  <div className="w-24 h-4 bg-gray-200 rounded"></div>
+                  <div className="w-32 h-4 bg-muted rounded mb-2"></div>
+                  <div className="w-full h-16 bg-muted rounded mb-3"></div>
+                  <div className="w-24 h-4 bg-muted rounded"></div>
                 </div>
               </div>
             </div>
