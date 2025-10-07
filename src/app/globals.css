@@ -139,6 +139,31 @@
 }
 
 /* ===================================================================
+   Z-INDEX SYSTEM - COMPREHENSIVE LAYERING
+   =================================================================== */
+
+@layer utilities {
+  /* Navigation & UI Layers */
+  .z-skip-link { z-index: 9999; }
+  .z-theme-toggle { z-index: 200; }
+  .z-navigation { z-index: 100; }
+  .z-dropdown { z-index: 150; }
+  .z-sidebar { z-index: 90; }
+  
+  /* Modal & Overlay Layers */
+  .z-modal-backdrop { z-index: 1000; }
+  .z-modal { z-index: 1001; }
+  .z-tooltip { z-index: 1100; }
+  .z-popover { z-index: 200; }
+  .z-toast { z-index: 1200; }
+  
+  /* Content Layers */
+  .z-content { z-index: 1; }
+  .z-card-elevated { z-index: 10; }
+  .z-sticky { z-index: 50; }
+}
+
+/* ===================================================================
    REUSABLE GRADIENT CLASSES (No more hardcoded inline styles!)
    =================================================================== */
 
@@ -208,6 +233,33 @@
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     z-index: -1;
+  }
+  
+  /* Glass Card (for dashboard) */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6;
+    @apply shadow-lg transition-all duration-300;
+  }
+  
+  .glass-card:hover {
+    @apply border-primary/30 shadow-xl;
+    @apply -translate-y-1;
+  }
+  
+  /* Theme Toggle Fixed Position */
+  .theme-toggle-fixed {
+    @apply fixed top-4 right-4 z-theme-toggle;
+    @apply bg-card/90 backdrop-blur-xl border border-border/50;
+    @apply rounded-full p-2 shadow-lg;
+    @apply transition-all duration-200;
+    @apply hover:shadow-xl hover:scale-105;
+  }
+  
+  /* Navigation Container */
+  .nav-container {
+    @apply sticky top-0 z-navigation;
+    @apply bg-background/80 backdrop-blur-xl;
+    @apply border-b border-border/50;
   }
   
   /* Buttons */

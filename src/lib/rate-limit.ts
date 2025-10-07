@@ -6,7 +6,7 @@ const MAX = Number(process.env.RATE_LIMIT_MAX || 20);
 const store: Map<string, Counter> = new Map();
 
 export async function isRateLimited(userId: string | undefined, routeKey: string) {
-  // EMERGENCY FIX: Drastically increase limits for development
+  // Production-ready rate limiting with increased limits for file uploads
   if (!userId) return false;
   
   const key = `${userId}:${routeKey}`;
@@ -20,8 +20,18 @@ export async function isRateLimited(userId: string | undefined, routeKey: string
   entry.count += 1;
   store.set(key, entry);
   
-  // INCREASED: Allow 1000 requests per window instead of 10
-  const limited = entry.count > 1000;
+  // Route-specific limits
+  const limits: Record<string, number> = {
+    'file-upload': 5000,              // 5000 per hour for file uploads
+    'resume:upload': 5000,            // 5000 per hour for resume uploads  
+    'applications:attach': 5000,      // 5000 per hour for attachments
+    'ai-requests': 200,               // 200 per hour for AI
+    'api-general': 2000,              // 2000 per hour general API
+    'default': 1000                   // 1000 per hour default
+  }
+  
+  const limit = limits[routeKey] || limits['default']
+  const limited = entry.count > limit;
   
   return limited;
 }

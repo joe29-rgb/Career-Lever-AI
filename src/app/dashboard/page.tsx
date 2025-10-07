@@ -52,10 +52,8 @@ export default async function DashboardPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardHeader user={session.user} />
-
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <main>
         <div className="dashboard-container grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
           <div className="space-y-8">
             <MetricsHero />
