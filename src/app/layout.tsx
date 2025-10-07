@@ -10,6 +10,7 @@ import { TopNav } from '@/components/top-nav'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { logger } from '@/lib/logger'
 import Link from 'next/link'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -43,6 +44,33 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
           <Providers>
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: 'var(--card)',
+                  color: 'var(--foreground)',
+                  border: '1px solid var(--border)',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
+                },
+                success: {
+                  iconTheme: {
+                    primary: 'var(--primary)',
+                    secondary: 'white',
+                  },
+                },
+                error: {
+                  duration: 6000,
+                  iconTheme: {
+                    primary: '#ef4444',
+                    secondary: 'white',
+                  },
+                },
+              }}
+            />
             <AppShell>{children}</AppShell>
           </Providers>
         </ErrorBoundary>
