@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting
-    if (await await isRateLimited(session.user.id, 'job-search')) {
+    if (await isRateLimited(session.user.id, 'job-search')) {
       return NextResponse.json({ 
         error: 'Too many searches. Please wait a moment.' 
       }, { status: 429 })
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     if (!useResumeMatching || jobs.length === 0) {
       console.log(`[JOB_SEARCH] Using standard search across 25+ boards`)
 
-      jobs = (await PerplexityIntelligenceService.jobListings(
+      const jobsResult = await PerplexityIntelligenceService.jobListings(
         keywords,
         location,
         {
@@ -138,7 +138,10 @@ export async function POST(request: NextRequest) {
           limit,
           includeCanadianOnly: location.toLowerCase().includes('canada')
         }
-      )) as any[]
+      )
+
+      jobs = Array.isArray(jobsResult) ? jobsResult : []
+      console.log(`[JOB_SEARCH] Standard search returned type: ${typeof jobsResult}, isArray: ${Array.isArray(jobsResult)}, length: ${jobs.length}`)
 
       metadata = {
         useResumeMatching: false,
@@ -147,6 +150,9 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`[JOB_SEARCH] Standard search found ${jobs.length} jobs`)
+      if (jobs.length > 0) {
+        console.log(`[JOB_SEARCH] First job sample:`, JSON.stringify(jobs[0]).substring(0, 200))
+      }
     }
 
     // Save search history
