@@ -19,7 +19,7 @@ interface Job {
   company: string
   location: string
   salary?: string
-  skills: string[]
+  skills?: string[]
   url: string
   logo?: string
   description?: string
@@ -132,21 +132,23 @@ export function JobCard({ job, resumeText, coverText, className }: JobCardProps)
             </p>
 
             {/* Modern skill badges */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {job.skills.slice(0, 3).map((skill, idx) => {
-                const badgeClasses = [
-                  'badge-primary',
-                  'badge-secondary',
-                  'badge-accent',
-                ]
-                const badgeClass = badgeClasses[idx % badgeClasses.length]
-                return (
-                  <span key={idx} className={`${badgeClass} text-xs font-bold`}>
-                    {skill}
-                  </span>
-                )
-              })}
-            </div>
+            {job.skills && job.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {job.skills.slice(0, 3).map((skill, idx) => {
+                  const badgeClasses = [
+                    'badge-primary',
+                    'badge-secondary',
+                    'badge-accent',
+                  ]
+                  const badgeClass = badgeClasses[idx % badgeClasses.length]
+                  return (
+                    <span key={idx} className={`${badgeClass} text-xs font-bold`}>
+                      {skill}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
 
             {/* Salary with icon */}
             {job.salary && (
