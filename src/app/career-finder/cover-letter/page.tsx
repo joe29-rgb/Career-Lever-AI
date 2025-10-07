@@ -81,28 +81,29 @@ export default function CareerFinderCoverLetterPage() {
 
   return (
     <div className="mobile-container space-y-4">
-      <div className="text-sm text-gray-700">Choose one of the generated cover letters.</div>
+      <div className="text-sm text-foreground">Choose one of the generated cover letters.</div>
       {loading && <div className="text-sm">Generating letters…</div>}
       {error && <div className="text-xs text-red-600">{error}</div>}
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className={`border rounded p-3 text-sm ${selected==='A'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('A')}>
-            <div className="text-xs text-gray-500 mb-2">Option A</div>
+            <div className="text-xs text-muted-foreground mb-2">Option A</div>
             <div className="whitespace-pre-wrap">{letterA || 'No content'}</div>
           </div>
           <div className={`border rounded p-3 text-sm ${selected==='B'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('B')}>
-            <div className="text-xs text-gray-500 mb-2">Option B</div>
+            <div className="text-xs text-muted-foreground mb-2">Option B</div>
             <div className="whitespace-pre-wrap">{letterB || 'No content'}</div>
           </div>
         </div>
       )}
       <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-600">Selected: {selected}</div>
+        <div className="text-xs text-muted-foreground">Selected: {selected}</div>
         <Link className={`inline-block px-4 py-2 border rounded ${selected==='none'?'pointer-events-none opacity-50':''}`} href="/career-finder/outreach" onClick={saveSelection}>Next</Link>
       </div>
     </div>
   )
 }
+
 
 
 

@@ -105,7 +105,7 @@ export default function ReverseMarketClient() {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button disabled={loading} className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-60" onClick={onCreate}>Create Showcase</button>
+        <button disabled={loading} className="px-4 py-2 rounded bg-blue-600 text-foreground disabled:opacity-60" onClick={onCreate}>Create Showcase</button>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={mine} onChange={e=>setMine(e.target.checked)} />
           Show only my showcases
@@ -114,7 +114,7 @@ export default function ReverseMarketClient() {
       <div className="border rounded">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50">
+            <tr className="bg-background">
               <th className="text-left p-2">Headline</th>
               <th className="text-left p-2">Skills</th>
               <th className="text-left p-2">Desired Roles</th>
@@ -132,7 +132,7 @@ export default function ReverseMarketClient() {
             ))}
             {!showcases.length && (
               <tr>
-                <td className="p-4 text-gray-500" colSpan={4}>No showcases found.</td>
+                <td className="p-4 text-muted-foreground" colSpan={4}>No showcases found.</td>
               </tr>
             )}
           </tbody>
@@ -141,5 +141,6 @@ export default function ReverseMarketClient() {
     </div>
   )
 }
+
 
 

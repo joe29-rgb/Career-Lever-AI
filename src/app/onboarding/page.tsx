@@ -65,12 +65,12 @@ export default function OnboardingPage() {
       <div className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Welcome to Career Lever</h1>
-          <p className="text-sm text-gray-700">Well set you up with resume and job matches in a few steps.</p>
+          <p className="text-sm text-foreground">Well set you up with resume and job matches in a few steps.</p>
         </div>
 
         {step === 'welcome' && (
           <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
-            <div className="text-sm text-gray-700">Start by uploading a resume or build one.</div>
+            <div className="text-sm text-foreground">Start by uploading a resume or build one.</div>
             <div className="flex gap-3">
               <button className="px-4 py-2 border rounded" onClick={() => setStep('upload')}>Upload Resume</button>
               <Link className="px-4 py-2 border rounded" href="/resume-builder">Build a Resume</Link>
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
 
         {step === 'upload' && (
           <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
-            <div className="text-sm text-gray-700">Upload PDF resume. Well extract keywords and location automatically.</div>
+            <div className="text-sm text-foreground">Upload PDF resume. Well extract keywords and location automatically.</div>
             <form className="space-y-3" onSubmit={async (e) => {
               e.preventDefault(); setLoading(true); setMessage('Uploading resume…')
               const form = e.target as HTMLFormElement
@@ -94,21 +94,21 @@ export default function OnboardingPage() {
             }}>
               <input type="file" name="resume" accept="application/pdf" className="block" required />
               <button type="submit" className="px-4 py-2 border rounded">Upload</button>
-              {message && <div className="text-xs text-gray-600">{message}</div>}
+              {message && <div className="text-xs text-muted-foreground">{message}</div>}
             </form>
           </div>
         )}
 
         {step === 'autopilot' && (
           <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
-            <div className="text-sm text-gray-700">Were finding public listings that match your resume.</div>
+            <div className="text-sm text-foreground">Were finding public listings that match your resume.</div>
             <button onClick={startAutopilot} disabled={loading} className="px-4 py-2 border rounded">{loading ? 'Searching…' : 'Start Search'}</button>
             {loading && (
               <div className="mt-4">
                 <div className="h-2 w-full bg-gray-200 rounded overflow-hidden">
                   <div className="h-2 w-2/3 bg-gradient-to-r from-blue-400 to-purple-400 animate-pulse" />
                 </div>
-                <div className="text-xs text-gray-600 mt-2">{message}</div>
+                <div className="text-xs text-muted-foreground mt-2">{message}</div>
               </div>
             )}
           </div>
@@ -116,13 +116,13 @@ export default function OnboardingPage() {
 
         {step === 'review' && (
           <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
-            <div className="text-sm text-gray-700">Select a job to proceed through Analyze → Research → Customize.</div>
+            <div className="text-sm text-foreground">Select a job to proceed through Analyze → Research → Customize.</div>
             <div className="max-h-96 overflow-y-auto space-y-2">
               {jobs.map((j, idx) => (
                 <div key={idx} className={`border rounded p-3 flex items-center justify-between ${selectedIdx===idx?'border-blue-500 bg-blue-50':'border-gray-200'}`}>
                   <div className="min-w-0">
                     <div className="font-medium truncate">{j.title || 'Untitled role'}</div>
-                    <div className="text-xs text-gray-600 truncate">{[j.company, j.location, j.source].filter(Boolean).join(' • ')}</div>
+                    <div className="text-xs text-muted-foreground truncate">{[j.company, j.location, j.source].filter(Boolean).join(' • ')}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     {j.url && <a href={j.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 border rounded text-xs">Open</a>}
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
                   </div>
                 </div>
               ))}
-              {jobs.length===0 && <div className="text-xs text-gray-600">No results. Try running search again.</div>}
+              {jobs.length===0 && <div className="text-xs text-muted-foreground">No results. Try running search again.</div>}
             </div>
             <div className="flex gap-3">
               <button onClick={()=>setStep('autopilot')} className="px-3 py-2 border rounded text-sm">Run Again</button>
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
 
         {step === 'done' && (
           <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border text-center">
-            <div className="text-sm text-gray-700">Great! Lets analyze the job next.</div>
+            <div className="text-sm text-foreground">Great! Lets analyze the job next.</div>
             <Link className="px-4 py-2 border rounded" href="/create-application?step=analyze">Go to Analyze</Link>
           </div>
         )}
@@ -149,5 +149,6 @@ export default function OnboardingPage() {
     </div>
   )
 }
+
 
 

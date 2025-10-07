@@ -353,7 +353,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
       case 'career_advice': return 'bg-green-100 text-green-800'
       case 'success_story': return 'bg-purple-100 text-purple-800'
       case 'question': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -382,7 +382,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Connections</p>
+                <p className="text-sm font-medium text-muted-foreground">Connections</p>
                 <p className="text-2xl font-bold">{connections.filter(c => c.status === 'accepted').length}</p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
@@ -394,7 +394,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Network Posts</p>
+                <p className="text-sm font-medium text-muted-foreground">Network Posts</p>
                 <p className="text-2xl font-bold">{posts.length}</p>
               </div>
               <MessageCircle className="h-8 w-8 text-green-600" />
@@ -406,7 +406,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Pending Requests</p>
+                <p className="text-sm font-medium text-muted-foreground">Pending Requests</p>
                 <p className="text-2xl font-bold">{pendingRequests.length}</p>
               </div>
               <UserPlus className="h-8 w-8 text-orange-600" />
@@ -418,7 +418,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Profile Views</p>
+                <p className="text-sm font-medium text-muted-foreground">Profile Views</p>
                 <p className="text-2xl font-bold">0</p>
               </div>
               <Eye className="h-8 w-8 text-purple-600" />
@@ -461,7 +461,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                 <div className="flex-1">
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-gray-500"
+                    className="w-full justify-start text-muted-foreground"
                     onClick={() => setShowCreatePost(true)}
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -526,7 +526,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                         <h4 className="font-medium mb-2">{post.title}</h4>
                       )}
 
-                      <p className="text-gray-700 mb-3 whitespace-pre-wrap">{post.content}</p>
+                      <p className="text-foreground mb-3 whitespace-pre-wrap">{post.content}</p>
 
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
@@ -538,7 +538,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between text-sm text-gray-500">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
                         <div className="flex gap-4">
                           <button
@@ -565,7 +565,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                       {post.comments.length > 0 && (
                         <div className="mt-4 space-y-3">
                           {post.comments.slice(0, 3).map((comment, index) => (
-                            <div key={index} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div key={index} className="flex gap-3 p-3 bg-background rounded-lg">
                               <Avatar className="w-8 h-8">
                                 <AvatarFallback className="text-xs">
                                   {comment.userName[0]}
@@ -574,11 +574,11 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
                                   <span className="font-medium text-sm">{comment.userName}</span>
-                                  <span className="text-xs text-gray-500">
+                                  <span className="text-xs text-muted-foreground">
                                     {new Date(comment.createdAt).toLocaleDateString()}
                                   </span>
                                 </div>
-                                <p className="text-sm text-gray-700">{comment.content}</p>
+                                <p className="text-sm text-foreground">{comment.content}</p>
                               </div>
                             </div>
                           ))}
@@ -633,7 +633,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
               </CardHeader>
               <CardContent>
                 {pendingRequests.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No pending requests</p>
+                  <p className="text-muted-foreground text-center py-4">No pending requests</p>
                 ) : (
                   <div className="space-y-4">
                     {pendingRequests.map((request) => (
@@ -644,9 +644,9 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                         </Avatar>
                         <div className="flex-1">
                           <p className="font-medium text-sm">{request.user?.name}</p>
-                          <p className="text-xs text-gray-500">{request.user?.title}</p>
+                          <p className="text-xs text-muted-foreground">{request.user?.title}</p>
                           {request.message && (
-                            <p className="text-xs text-gray-600 mt-1">"{request.message}"</p>
+                            <p className="text-xs text-muted-foreground mt-1">"{request.message}"</p>
                           )}
                         </div>
                         <div className="flex gap-2">
@@ -691,10 +691,10 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                         </Avatar>
                         <div className="flex-1">
                           <p className="font-medium">{connection.user?.name}</p>
-                          <p className="text-sm text-gray-600">{connection.user?.title}</p>
+                          <p className="text-sm text-muted-foreground">{connection.user?.title}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <MapPin className="w-3 h-3 text-gray-400" />
-                            <span className="text-xs text-gray-500">{connection.user?.location}</span>
+                            <MapPin className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">{connection.user?.location}</span>
                           </div>
                         </div>
                         <Button size="sm" variant="outline">
@@ -729,8 +729,8 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                           <AvatarFallback>{person.name[0]}</AvatarFallback>
                         </Avatar>
                         <h3 className="font-semibold mb-1">{person.name}</h3>
-                        <p className="text-sm text-gray-600 mb-2">{person.title}</p>
-                        <div className="text-xs text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-2">{person.title}</p>
+                        <div className="text-xs text-muted-foreground mb-4">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <MapPin className="w-3 h-3" />
                             {person.location}
@@ -783,7 +783,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                     .map((connection) => (
                       <div
                         key={connection._id}
-                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer border"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-background cursor-pointer border"
                         onClick={() => {
                           if (connection.user) {
                             setSelectedConversation(connection.user.id)
@@ -798,7 +798,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{connection.user?.name || 'Unknown'}</p>
-                          <p className="text-sm text-gray-600 truncate">{connection.user?.title || 'Job Seeker'}</p>
+                          <p className="text-sm text-muted-foreground truncate">{connection.user?.title || 'Job Seeker'}</p>
                         </div>
                         {connection.user?.isOnline && (
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -837,13 +837,13 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                           <div
                             className={`max-w-xs px-4 py-2 rounded-lg ${
                               message.isFromCurrentUser
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 text-gray-900'
+                                ? 'bg-blue-500 text-foreground'
+                                : 'bg-muted text-foreground'
                             }`}
                           >
                             <p className="text-sm">{message.content}</p>
                             <p className={`text-xs mt-1 ${
-                              message.isFromCurrentUser ? 'text-blue-100' : 'text-gray-500'
+                              message.isFromCurrentUser ? 'text-blue-100' : 'text-muted-foreground'
                             }`}>
                               {new Date(message.createdAt).toLocaleTimeString()}
                             </p>
@@ -876,7 +876,7 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-muted-foreground">
                     <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
                     <p>Select a conversation to start messaging</p>
                   </div>
@@ -987,3 +987,4 @@ export function NetworkDashboard({ userId }: NetworkDashboardProps) {
     </div>
   )
 }
+

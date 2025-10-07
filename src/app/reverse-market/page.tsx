@@ -9,14 +9,15 @@ export default async function ReverseMarketPage() {
   return (
     <div className="mx-auto max-w-5xl p-6 space-y-6">
       <h1 className="text-2xl font-semibold">Reverse Market</h1>
-      <p className="text-sm text-gray-600">Create an anonymous showcase so employers can reach out with opportunities.</p>
+      <p className="text-sm text-muted-foreground">Create an anonymous showcase so employers can reach out with opportunities.</p>
       <div className="space-y-2">
         <a href="/api/openapi" className="text-xs underline">API Docs</a>
-        <div className="text-sm text-gray-700">Use the Integrations or API to post your showcase and view bids.</div>
+        <div className="text-sm text-foreground">Use the Integrations or API to post your showcase and view bids.</div>
       </div>
       <ReverseMarketClient />
     </div>
   )
 }
+
 
 

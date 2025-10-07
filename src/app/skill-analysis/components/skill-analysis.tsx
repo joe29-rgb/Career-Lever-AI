@@ -130,7 +130,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
       case 'beginner': return 'bg-green-100 text-green-800'
       case 'intermediate': return 'bg-blue-100 text-blue-800'
       case 'advanced': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -139,7 +139,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
       case 'critical': return 'text-red-600'
       case 'important': return 'text-orange-600'
       case 'nice-to-have': return 'text-green-600'
-      default: return 'text-gray-600'
+      default: return 'text-muted-foreground'
     }
   }
 
@@ -148,7 +148,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
       case 'high': return 'text-green-600'
       case 'medium': return 'text-yellow-600'
       case 'low': return 'text-red-600'
-      default: return 'text-gray-600'
+      default: return 'text-muted-foreground'
     }
   }
 
@@ -270,7 +270,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                             </div>
                             <div>
                               <p className="font-medium">{skill.skill}</p>
-                              <p className="text-sm text-gray-600">Confidence: {skill.confidence}%</p>
+                              <p className="text-sm text-muted-foreground">Confidence: {skill.confidence}%</p>
                             </div>
                           </div>
                           <Badge className={getSkillLevelColor(skill.level)}>
@@ -318,7 +318,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Job-Specific Skills</h4>
+                      <h4 className="font-medium text-foreground mb-3">Job-Specific Skills</h4>
                       <div className="space-y-2">
                         {analysisData.requiredSkills.jobSpecific.map((skill, index) => (
                           <div key={index} className="flex items-center justify-between">
@@ -332,7 +332,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                     </div>
 
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Industry Standards</h4>
+                      <h4 className="font-medium text-foreground mb-3">Industry Standards</h4>
                       <div className="space-y-2">
                         {analysisData.requiredSkills.industryStandard.map((skill, index) => (
                           <div key={index} className="flex items-center justify-between">
@@ -391,15 +391,15 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                 <CardContent>
                   <div className="space-y-4">
                     {analysisData.skillGaps.recommended.map((skill, index) => (
-                      <div key={index} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div key={index} className="border rounded-lg p-4 hover:bg-background transition-colors">
                         <div className="flex items-start gap-3">
                           <Lightbulb className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{skill.skill}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{skill.reason}</p>
+                            <h4 className="font-medium text-foreground">{skill.skill}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">{skill.reason}</p>
                             <div className="flex items-center gap-2 mt-2">
-                              <Clock className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-600">{skill.timeToLearn}</span>
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">{skill.timeToLearn}</span>
                             </div>
                           </div>
                         </div>
@@ -423,7 +423,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                       <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Target className="h-8 w-8 text-blue-600" />
                       </div>
-                      <h4 className="font-medium text-gray-900">Current Level</h4>
+                      <h4 className="font-medium text-foreground">Current Level</h4>
                       <p className="text-lg text-blue-600 font-semibold">{analysisData.careerPath.currentLevel}</p>
                     </div>
 
@@ -431,7 +431,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                       <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <TrendingUp className="h-8 w-8 text-green-600" />
                       </div>
-                      <h4 className="font-medium text-gray-900">Target Level</h4>
+                      <h4 className="font-medium text-foreground">Target Level</h4>
                       <p className="text-lg text-green-600 font-semibold">{analysisData.careerPath.targetLevel}</p>
                     </div>
 
@@ -439,7 +439,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                       <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <Award className="h-8 w-8 text-purple-600" />
                       </div>
-                      <h4 className="font-medium text-gray-900">Market Fit</h4>
+                      <h4 className="font-medium text-foreground">Market Fit</h4>
                       <p className="text-lg text-purple-600 font-semibold">{analysisData.marketInsights.jobMarketFit}%</p>
                     </div>
                   </div>
@@ -460,15 +460,15 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                           <span className="text-sm font-bold text-blue-600">{index + 1}</span>
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{step.step}</h4>
+                          <h4 className="font-medium text-foreground">{step.step}</h4>
                           <div className="flex items-center gap-4 mt-2">
                             <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-600">{step.timeline}</span>
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">{step.timeline}</span>
                             </div>
                           </div>
                           <div className="mt-2">
-                            <p className="text-sm text-gray-600 mb-2">Recommended resources:</p>
+                            <p className="text-sm text-muted-foreground mb-2">Recommended resources:</p>
                             <div className="flex flex-wrap gap-2">
                               {step.resources.map((resource, resIndex) => (
                                 <Badge key={resIndex} variant="outline">
@@ -495,13 +495,13 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                     {analysisData.careerPath.alternativePaths.map((path, index) => (
                       <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium text-gray-900">{path.role}</h4>
+                          <h4 className="font-medium text-foreground">{path.role}</h4>
                           <Badge className={path.match >= 80 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
                             {path.match}% match
                           </Badge>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 mb-2">Key skills needed:</p>
+                          <p className="text-sm text-muted-foreground mb-2">Key skills needed:</p>
                           <div className="flex flex-wrap gap-2">
                             {path.requiredSkills.map((skill, skillIndex) => (
                               <Badge key={skillIndex} variant="outline">
@@ -531,16 +531,16 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                         <div className="flex items-start gap-3">
                           <BookOpen className="h-5 w-5 text-blue-500 mt-1 flex-shrink-0" />
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.skill}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{item.resource}</p>
+                            <h4 className="font-medium text-foreground">{item.skill}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">{item.resource}</p>
                             <div className="flex items-center gap-4 mt-2">
                               <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm text-gray-600">{item.duration}</span>
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">{item.duration}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <DollarSign className="h-4 w-4 text-gray-400" />
-                                <span className="text-sm text-gray-600">{item.cost}</span>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">{item.cost}</span>
                               </div>
                             </div>
                           </div>
@@ -564,11 +564,11 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                         <div className="flex items-start gap-3">
                           <Award className="h-5 w-5 text-purple-500 mt-1 flex-shrink-0" />
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{cert.skill}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{cert.certification}</p>
+                            <h4 className="font-medium text-foreground">{cert.skill}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">{cert.certification}</p>
                             <div className="flex items-center gap-1 mt-2">
-                              <Clock className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-600">{cert.timeline}</span>
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">{cert.timeline}</span>
                             </div>
                           </div>
                         </div>
@@ -591,7 +591,7 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                         <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                           <CheckCircle className="h-4 w-4 text-green-600" />
                         </div>
-                        <span className="text-sm text-gray-700">{habit}</span>
+                        <span className="text-sm text-foreground">{habit}</span>
                       </div>
                     ))}
                   </div>
@@ -614,12 +614,12 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                     {analysisData.marketInsights.salaryImpact.map((skill, index) => (
                       <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
-                          <h4 className="font-medium text-gray-900">{skill.skill}</h4>
-                          <p className="text-sm text-gray-600">{skill.demand} demand</p>
+                          <h4 className="font-medium text-foreground">{skill.skill}</h4>
+                          <p className="text-sm text-muted-foreground">{skill.demand} demand</p>
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-semibold text-green-600">{skill.salaryBoost}</p>
-                          <p className="text-sm text-gray-600">salary boost</p>
+                          <p className="text-sm text-muted-foreground">salary boost</p>
                         </div>
                       </div>
                     ))}
@@ -640,8 +640,8 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
                         <div className="flex items-start gap-3">
                           <TrendingUp className="h-5 w-5 text-blue-500 mt-1 flex-shrink-0" />
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{skill.skill}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{skill.reason}</p>
+                            <h4 className="font-medium text-foreground">{skill.skill}</h4>
+                            <p className="text-sm text-muted-foreground mt-1">{skill.reason}</p>
                             <Badge className="mt-2 bg-green-100 text-green-800">
                               {skill.growth} growth
                             </Badge>
@@ -659,3 +659,4 @@ export function SkillAnalysis({ userId }: SkillAnalysisProps) {
     </div>
   )
 }
+

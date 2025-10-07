@@ -35,15 +35,16 @@ export default function AlertsSettingsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-gray-600">Daily job suggestions will be sent and shown in the Dashboard Action Center. A Railway cron calls /api/alerts/run.</div>
+      <div className="text-sm text-muted-foreground">Daily job suggestions will be sent and shown in the Dashboard Action Center. A Railway cron calls /api/alerts/run.</div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <input className="border rounded p-2" placeholder="Target job title (e.g., Sales Manager)" value={jobTitle} onChange={(e)=>setJobTitle(e.target.value)} />
         <input className="border rounded p-2" placeholder="Location (e.g., Edmonton, AB)" value={location} onChange={(e)=>setLocation(e.target.value)} />
       </div>
-      <button onClick={save} disabled={saving || !jobTitle} className="px-4 py-2 border rounded bg-blue-600 text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save Preferences'}</button>
+      <button onClick={save} disabled={saving || !jobTitle} className="px-4 py-2 border rounded bg-blue-600 text-foreground disabled:opacity-50">{saving ? 'Saving…' : 'Save Preferences'}</button>
       {message && <div className="text-sm">{message}</div>}
     </div>
   )
 }
+
 
 

@@ -72,9 +72,10 @@ export default function PreferencesPage() {
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={save} disabled={saving} className="px-4 py-2 border rounded bg-blue-600 text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
+        <button onClick={save} disabled={saving} className="px-4 py-2 border rounded bg-blue-600 text-foreground disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
         {message && <div className="text-sm">{message}</div>}
       </div>
     </div>
   )
 }
+

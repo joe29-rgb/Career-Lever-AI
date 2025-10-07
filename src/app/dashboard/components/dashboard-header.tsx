@@ -26,7 +26,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
   }
 
   return (
-    <header className="text-white brand-gradient">
+    <header className="text-foreground brand-gradient">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -80,4 +80,5 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
     </header>
   )
 }
+
 

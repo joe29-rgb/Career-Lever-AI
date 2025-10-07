@@ -103,8 +103,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       <Card>
         <CardContent className="p-8 text-center">
           <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Available</h3>
-          <p className="text-gray-600 mb-4">
+          <h3 className="text-lg font-medium text-foreground mb-2">No Analytics Available</h3>
+          <p className="text-muted-foreground mb-4">
             Start applying to jobs to see your analytics and insights.
           </p>
           <Button>Start Applying</Button>
@@ -119,7 +119,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       case 'interviewing': return 'bg-yellow-100 text-yellow-800'
       case 'offer': return 'bg-green-100 text-green-800'
       case 'rejected': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -128,7 +128,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       case 'high': return 'text-red-600'
       case 'medium': return 'text-yellow-600'
       case 'low': return 'text-green-600'
-      default: return 'text-gray-600'
+      default: return 'text-muted-foreground'
     }
   }
 
@@ -137,8 +137,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
       {/* Header with Refresh */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Your Career Analytics</h2>
-          <p className="text-gray-600">Data-driven insights to optimize your job search</p>
+          <h2 className="text-2xl font-bold text-foreground">Your Career Analytics</h2>
+          <p className="text-muted-foreground">Data-driven insights to optimize your job search</p>
         </div>
         <div className="flex gap-3">
           <Button
@@ -162,8 +162,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Applications</p>
-                <p className="text-3xl font-bold text-gray-900">{analytics.overview.totalApplications}</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Applications</p>
+                <p className="text-3xl font-bold text-foreground">{analytics.overview.totalApplications}</p>
                 <div className="flex items-center mt-2">
                   <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
                   <span className="text-sm text-green-600">+12% this month</span>
@@ -180,8 +180,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Response Rate</p>
-                <p className="text-3xl font-bold text-gray-900">{analytics.overview.responseRate}%</p>
+                <p className="text-sm font-medium text-muted-foreground">Response Rate</p>
+                <p className="text-3xl font-bold text-foreground">{analytics.overview.responseRate}%</p>
                 <div className="flex items-center mt-2">
                   {analytics.overview.responseRate >= 20 ? (
                     <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
@@ -204,8 +204,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Interviews</p>
-                <p className="text-3xl font-bold text-gray-900">{analytics.overview.interviewsScheduled}</p>
+                <p className="text-sm font-medium text-muted-foreground">Interviews</p>
+                <p className="text-3xl font-bold text-foreground">{analytics.overview.interviewsScheduled}</p>
                 <div className="flex items-center mt-2">
                   <Users className="h-4 w-4 text-blue-500 mr-1" />
                   <span className="text-sm text-blue-600">Scheduled</span>
@@ -222,8 +222,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Offers</p>
-                <p className="text-3xl font-bold text-gray-900">{analytics.overview.offersReceived}</p>
+                <p className="text-sm font-medium text-muted-foreground">Offers</p>
+                <p className="text-3xl font-bold text-foreground">{analytics.overview.offersReceived}</p>
                 <div className="flex items-center mt-2">
                   <Award className="h-4 w-4 text-purple-500 mr-1" />
                   <span className="text-sm text-purple-600">Received</span>
@@ -240,9 +240,9 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">AI Latency (p95)</p>
-                  <p className="text-3xl font-bold text-gray-900">{ops.p95LatencyMs}ms</p>
-                  <div className="text-sm text-gray-600">Avg {ops.avgLatencyMs}ms</div>
+                  <p className="text-sm font-medium text-muted-foreground">AI Latency (p95)</p>
+                  <p className="text-3xl font-bold text-foreground">{ops.p95LatencyMs}ms</p>
+                  <div className="text-sm text-muted-foreground">Avg {ops.avgLatencyMs}ms</div>
                 </div>
                 <div className="p-3 bg-sky-100 rounded-full">
                   <BarChart3 className="h-6 w-6 text-sky-600" />
@@ -352,14 +352,14 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
             <CardContent>
               <div className="space-y-4">
                 {analytics.insights.applicationSuccessFactors.map((factor, index) => (
-                  <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-start gap-4 p-4 bg-background rounded-lg">
                     <div className={`w-3 h-3 rounded-full mt-2 ${
                       factor.impact === 'high' ? 'bg-red-500' :
                       factor.impact === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
                     }`} />
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900">{factor.factor}</h4>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <h4 className="font-medium text-foreground">{factor.factor}</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
                         Impact: <span className={`font-medium ${getImpactColor(factor.impact)}`}>
                           {factor.impact.charAt(0).toUpperCase() + factor.impact.slice(1)}
                         </span>
@@ -384,8 +384,8 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
               <div className="space-y-4">
                 {analytics.insights.marketTrends.map((trend, index) => (
                   <div key={index} className="border rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">{trend.trend}</h4>
-                    <p className="text-sm text-gray-600 mb-3">{trend.description}</p>
+                    <h4 className="font-medium text-foreground mb-2">{trend.trend}</h4>
+                    <p className="text-sm text-muted-foreground mb-3">{trend.description}</p>
                     <div className="bg-blue-50 p-3 rounded">
                       <p className="text-sm text-blue-800">
                         <strong>Recommendation:</strong> {trend.recommendation}
@@ -413,7 +413,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                     <div className="w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-xs font-bold text-yellow-600">{index + 1}</span>
                     </div>
-                    <p className="text-sm text-gray-700">{tip}</p>
+                    <p className="text-sm text-foreground">{tip}</p>
                   </div>
                 ))}
               </div>
@@ -433,10 +433,10 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Progress</span>
-                    <span className="text-sm text-gray-600">{analytics.performance.weeklyGoalProgress}%</span>
+                    <span className="text-sm text-muted-foreground">{analytics.performance.weeklyGoalProgress}%</span>
                   </div>
                   <Progress value={analytics.performance.weeklyGoalProgress} className="w-full" />
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     Target: 4 applications per week
                   </p>
                 </div>
@@ -452,10 +452,10 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Progress</span>
-                    <span className="text-sm text-gray-600">{analytics.performance.monthlyGoalProgress}%</span>
+                    <span className="text-sm text-muted-foreground">{analytics.performance.monthlyGoalProgress}%</span>
                   </div>
                   <Progress value={analytics.performance.monthlyGoalProgress} className="w-full" />
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     Target: 15 applications per month
                   </p>
                 </div>
@@ -475,11 +475,11 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                   {analytics.performance.variantPerformance.map((row:any)=> (
                     <div key={row.variant} className="space-y-1">
                       <div className="text-sm font-medium">Variant {row.variant}</div>
-                      <div className="text-xs text-gray-600">Views</div>
+                      <div className="text-xs text-muted-foreground">Views</div>
                       <div className="w-full bg-gray-200 rounded h-2"><div className="bg-blue-600 h-2 rounded" style={{ width: `${Math.min(100, row.views)}%` }} /></div>
-                      <div className="text-xs text-gray-600 mt-1">Interviews</div>
+                      <div className="text-xs text-muted-foreground mt-1">Interviews</div>
                       <div className="w-full bg-gray-200 rounded h-2"><div className="bg-yellow-500 h-2 rounded" style={{ width: `${Math.min(100, row.interviews*10)}%` }} /></div>
-                      <div className="text-xs text-gray-600 mt-1">Offers</div>
+                      <div className="text-xs text-muted-foreground mt-1">Offers</div>
                       <div className="w-full bg-gray-200 rounded h-2"><div className="bg-green-600 h-2 rounded" style={{ width: `${Math.min(100, row.offers*20)}%` }} /></div>
                     </div>
                   ))}
@@ -567,7 +567,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                       </div>
                       <div>
                         <h4 className="font-medium">{industry.industry}</h4>
-                        <p className="text-sm text-gray-600">{industry.count} applications</p>
+                        <p className="text-sm text-muted-foreground">{industry.count} applications</p>
                       </div>
                     </div>
                     {industry.avgSalary && (
@@ -576,7 +576,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
                           <DollarSign className="h-4 w-4 text-green-600" />
                           <span className="font-medium">${industry.avgSalary.toLocaleString()}/year</span>
                         </div>
-                        <p className="text-xs text-gray-600">Avg Salary</p>
+                        <p className="text-xs text-muted-foreground">Avg Salary</p>
                       </div>
                     )}
                   </div>
@@ -635,6 +635,7 @@ function AnalyticsSkeleton() {
     </div>
   )
 }
+
 
 
 

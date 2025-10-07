@@ -236,7 +236,7 @@ export default function CoverLetterPage() {
             <Label>Resume Text</Label>
             <Textarea value={resumeText || selectedResume?.extractedText || ''} onChange={(e) => setResumeText(e.target.value)} rows={8} placeholder={selectedResume ? 'Using your uploaded resume. You can override here.' : 'Paste your resume text here'} />
             {!selectedResume && (
-              <div className="text-xs text-gray-600">Tip: upload a resume first so it’s auto-filled across the app.</div>
+              <div className="text-xs text-muted-foreground">Tip: upload a resume first so it’s auto-filled across the app.</div>
             )}
           </div>
 
@@ -290,12 +290,13 @@ export default function CoverLetterPage() {
               </div>
             </>
           ) : (
-            <div className="text-sm text-gray-600">No preview yet. Fill the form and click Generate.</div>
+            <div className="text-sm text-muted-foreground">No preview yet. Fill the form and click Generate.</div>
           )}
         </CardContent>
       </Card>
     </div>
   )
 }
+
 
 

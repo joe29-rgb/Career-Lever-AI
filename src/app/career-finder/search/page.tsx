@@ -179,10 +179,10 @@ export default function SearchPage() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
         
         <div className="max-w-4xl mx-auto relative z-10">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-white text-center drop-shadow-lg">
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-foreground text-center drop-shadow-lg">
             🚀 Find Your Dream Job
           </h1>
-          <p className="text-white/95 text-xl mb-8 text-center font-medium">
+          <p className="text-foreground/95 text-xl mb-8 text-center font-medium">
             Discover opportunities that match your skills and passion
           </p>
           
@@ -228,8 +228,8 @@ export default function SearchPage() {
                     onChange={(e) => setUseResumeMatching(e.target.checked)}
                     className="w-4 h-4 rounded accent-primary"
                   />
-                  <SparklesIcon className="w-5 h-5 text-white" />
-                  <span className="text-white font-medium text-sm">
+                  <SparklesIcon className="w-5 h-5 text-foreground" />
+                  <span className="text-foreground font-medium text-sm">
                     Use AI Resume Matching (Skill Scores)
                   </span>
                 </label>
@@ -238,7 +238,7 @@ export default function SearchPage() {
 
             {/* Error Display */}
             {error && (
-              <div className="bg-red-500/20 border border-red-500 text-white px-4 py-2 rounded-xl text-center">
+              <div className="bg-red-500/20 border border-red-500 text-foreground px-4 py-2 rounded-xl text-center">
                 {error}
               </div>
             )}
@@ -491,3 +491,4 @@ export default function SearchPage() {
     </div>
   )
 }
+

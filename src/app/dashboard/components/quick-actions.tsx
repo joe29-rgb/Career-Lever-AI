@@ -79,11 +79,11 @@ export function QuickActions() {
   return (
     <Card className="bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-gray-900">
+        <CardTitle className="flex items-center gap-2 text-foreground">
           <Plus className="h-5 w-5" />
           Quick Actions
         </CardTitle>
-        <CardDescription className="text-gray-600">
+        <CardDescription className="text-muted-foreground">
           Get started with common tasks
         </CardDescription>
       </CardHeader>
@@ -101,8 +101,8 @@ export function QuickActions() {
                 <action.icon className={`h-6 w-6 ${action.color}`} />
               </div>
               <div className="text-left">
-                <div className="font-semibold text-lg text-gray-900 dark:text-gray-100 line-clamp-1">{action.title}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+                <div className="font-semibold text-lg text-foreground dark:text-gray-100 line-clamp-1">{action.title}</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-300 mt-1 line-clamp-2">
                   {action.description}
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function QuickActions() {
 
           {/* Secondary Actions */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Tools</h3>
+            <h3 className="text-sm font-medium text-foreground mb-3">Quick Tools</h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {quickActions.filter(action => !action.primary).map((action, index) => (
                 <Button
@@ -125,8 +125,8 @@ export function QuickActions() {
                     <action.icon className={`h-5 w-5 ${action.color}`} />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-sm text-gray-900 dark:text-gray-100 leading-normal">{action.title}</div>
-                    <div className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-normal">
+                    <div className="font-semibold text-sm text-foreground dark:text-gray-100 leading-normal">{action.title}</div>
+                    <div className="text-xs text-muted-foreground dark:text-gray-300 mt-1 leading-normal">
                       {action.description}
                     </div>
                   </div>
@@ -139,3 +139,4 @@ export function QuickActions() {
     </Card>
   )
 }
+

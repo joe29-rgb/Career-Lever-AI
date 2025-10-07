@@ -147,8 +147,8 @@ function SignUpInner() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
             <Sparkles className="w-8 h-8 text-purple-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Join Career Lever AI</h1>
-          <p className="text-gray-600">Create your account and start your career transformation</p>
+          <h1 className="text-3xl font-bold text-foreground">Join Career Lever AI</h1>
+          <p className="text-muted-foreground">Create your account and start your career transformation</p>
         </div>
 
         {/* Success Alert */}
@@ -219,7 +219,7 @@ function SignUpInner() {
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="name"
                       type="text"
@@ -236,7 +236,7 @@ function SignUpInner() {
                 <div className="space-y-2">
                   <Label htmlFor="role">Your Role</Label>
                   <div className="relative">
-                    <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                       id="role"
                       type="text"
@@ -253,7 +253,7 @@ function SignUpInner() {
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
@@ -270,7 +270,7 @@ function SignUpInner() {
               <div className="space-y-2">
                 <Label htmlFor="company">Company (Optional)</Label>
                 <div className="relative">
-                  <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Building className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="company"
                     type="text"
@@ -286,7 +286,7 @@ function SignUpInner() {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
@@ -300,7 +300,7 @@ function SignUpInner() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground"
                     disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -331,7 +331,7 @@ function SignUpInner() {
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -345,7 +345,7 @@ function SignUpInner() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-muted-foreground hover:text-muted-foreground"
                     disabled={isLoading}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -388,7 +388,7 @@ function SignUpInner() {
 
         {/* Sign In Link */}
         <div className="text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link href="/auth/signin" className="text-blue-600 hover:text-blue-800 font-medium">
               Sign in here
@@ -407,4 +407,5 @@ export default function SignUpPage() {
     </Suspense>
   )
 }
+
 

@@ -76,9 +76,9 @@ export default function IntegrationsSettingsPage() {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">Job Board Integrations</h2>
-      <p className="text-sm text-gray-600">Connect and manage job board accounts. This enables syncing jobs and streamlined submissions.</p>
+      <p className="text-sm text-muted-foreground">Connect and manage job board accounts. This enables syncing jobs and streamlined submissions.</p>
       {loading ? (
-        <div className="text-sm text-gray-600">Loading…</div>
+        <div className="text-sm text-muted-foreground">Loading…</div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {boards.map(board => (
@@ -86,11 +86,11 @@ export default function IntegrationsSettingsPage() {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <div className="font-medium">{board.name}</div>
-                  <div className="text-xs text-gray-600">{board.automationLevel} automation · {board.status}</div>
+                  <div className="text-xs text-muted-foreground">{board.automationLevel} automation · {board.status}</div>
                 </div>
                 <a className="text-xs underline" href={`https://${board.id}.com`} target="_blank" rel="noreferrer">Open</a>
               </div>
-              <div className="text-xs text-gray-700 mb-2">Success {board.successRate || 0}% · {board.totalApplications || 0} applications</div>
+              <div className="text-xs text-foreground mb-2">Success {board.successRate || 0}% · {board.totalApplications || 0} applications</div>
               <div className="flex gap-2">
                 {board.status !== 'connected' ? (
                   <button onClick={() => connectToBoard(board.id)} className="px-3 py-2 border rounded text-sm flex-1">Connect</button>
@@ -107,7 +107,7 @@ export default function IntegrationsSettingsPage() {
                     <div key={idx} className="text-xs flex items-center justify-between gap-2">
                       <div className="min-w-0">
                         <div className="font-medium truncate">{j.title || 'Untitled role'}</div>
-                        <div className="text-gray-600 truncate">{[j.company, j.location].filter(Boolean).join(' • ')}</div>
+                        <div className="text-muted-foreground truncate">{[j.company, j.location].filter(Boolean).join(' • ')}</div>
                       </div>
                       {j.url && <a href={j.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 border rounded">Open</a>}
                     </div>
@@ -121,5 +121,6 @@ export default function IntegrationsSettingsPage() {
     </div>
   )
 }
+
 
 

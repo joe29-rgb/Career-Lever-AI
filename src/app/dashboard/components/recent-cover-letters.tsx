@@ -59,14 +59,14 @@ export function RecentCoverLetters() {
             ))}
           </div>
         ) : letters.length === 0 ? (
-          <div className="text-sm text-gray-600">No cover letters yet.</div>
+          <div className="text-sm text-muted-foreground">No cover letters yet.</div>
         ) : (
           <div className="space-y-3">
             {letters.map((l) => (
               <div key={l._id} className="flex items-center justify-between border rounded p-3">
                 <div className="text-sm">
                   <div className="font-medium">{l.jobTitle} @ {l.companyName}</div>
-                  <div className="text-gray-500">{new Date(l.createdAt).toLocaleString()}</div>
+                  <div className="text-muted-foreground">{new Date(l.createdAt).toLocaleString()}</div>
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" variant="outline" onClick={() => download(l.content, `${l.companyName}_${l.jobTitle}`)}>
@@ -84,5 +84,6 @@ export function RecentCoverLetters() {
     </Card>
   )
 }
+
 
 

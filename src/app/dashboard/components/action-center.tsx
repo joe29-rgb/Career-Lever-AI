@@ -80,7 +80,7 @@ export function ActionCenter() {
           </div>
         ) : (
           <>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               {stats.appliedThisWeek > 0
                 ? `Great work — ${stats.appliedThisWeek} applications this week. Keep momentum with these actions.`
                 : 'Kickstart your week with these recommended actions.'}
@@ -98,8 +98,8 @@ export function ActionCenter() {
                       <action.icon className={`h-5 w-5 ${action.color}`} />
                     </div>
                     <div className="text-left">
-                      <div className="font-medium text-gray-900 leading-normal">{action.title}</div>
-                      <div className="text-xs text-gray-600 leading-normal">{action.description}</div>
+                      <div className="font-medium text-foreground leading-normal">{action.title}</div>
+                      <div className="text-xs text-muted-foreground leading-normal">{action.description}</div>
                     </div>
                   </div>
                   <ArrowRight className="h-4 w-4" />
@@ -112,5 +112,6 @@ export function ActionCenter() {
     </Card>
   )
 }
+
 
 

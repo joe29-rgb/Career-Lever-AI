@@ -43,19 +43,19 @@ export default function CareerFinderJobPage() {
 
   return (
     <div className="mobile-container space-y-4">
-      <div className="text-sm text-gray-700">Job analysis auto-runs when you arrive on this page.</div>
+      <div className="text-sm text-foreground">Job analysis auto-runs when you arrive on this page.</div>
       {loading && <div className="text-sm">Analyzing job…</div>}
       {!loading && analysis && (
         <div className="text-sm grid grid-cols-1 md:grid-cols-2 gap-3">
           <div className="border rounded p-3">
             <div className="font-medium mb-1">Job Details</div>
-            <div><span className="text-gray-600">Title:</span> {analysis?.analysis?.jobTitle || '-'}</div>
-            <div><span className="text-gray-600">Company:</span> {analysis?.analysis?.companyName || '-'}</div>
-            {analysis?.analysis?.salaryRange && <div><span className="text-gray-600">Salary Range:</span> {analysis.analysis.salaryRange}</div>}
+            <div><span className="text-muted-foreground">Title:</span> {analysis?.analysis?.jobTitle || '-'}</div>
+            <div><span className="text-muted-foreground">Company:</span> {analysis?.analysis?.companyName || '-'}</div>
+            {analysis?.analysis?.salaryRange && <div><span className="text-muted-foreground">Salary Range:</span> {analysis.analysis.salaryRange}</div>}
           </div>
           <div className="border rounded p-3">
             <div className="font-medium mb-1">Keywords Found</div>
-            <div className="text-xs text-gray-700 break-words">{(analysis?.keywords || []).join(', ')}</div>
+            <div className="text-xs text-foreground break-words">{(analysis?.keywords || []).join(', ')}</div>
           </div>
           <div className="border rounded p-3 md:col-span-2">
             <div className="font-medium mb-1">Key Requirements</div>
@@ -103,5 +103,6 @@ export default function CareerFinderJobPage() {
     </div>
   )
 }
+
 
 

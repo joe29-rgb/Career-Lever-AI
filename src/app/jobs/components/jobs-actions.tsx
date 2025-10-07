@@ -48,7 +48,7 @@ export function JobsActions() {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
-        <button onClick={load} disabled={!selected || loading} className="px-3 py-2 bg-blue-600 text-white rounded">{loading ? 'Loading…' : 'Load Jobs'}</button>
+        <button onClick={load} disabled={!selected || loading} className="px-3 py-2 bg-blue-600 text-foreground rounded">{loading ? 'Loading…' : 'Load Jobs'}</button>
       </div>
       {jobs.length > 0 && (
         <div className="space-y-2">
@@ -56,7 +56,7 @@ export function JobsActions() {
             <div key={idx} className="p-3 border rounded flex items-center justify-between">
               <div className="min-w-0">
                 <div className="font-medium truncate">{job.title || job.name || 'Job'}</div>
-                <div className="text-sm text-gray-600 truncate">{job.company || job.companyName || ''}</div>
+                <div className="text-sm text-muted-foreground truncate">{job.company || job.companyName || ''}</div>
               </div>
               <div className="flex items-center gap-2">
                 {job.url && <a href={job.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm">View</a>}
@@ -69,5 +69,6 @@ export function JobsActions() {
     </div>
   )
 }
+
 
 

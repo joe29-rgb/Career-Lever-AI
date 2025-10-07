@@ -32,26 +32,26 @@ export function MetricsHero() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="metric-card min-h-[140px]">
-              <div className="text-caption text-gray-500">Total Applications</div>
+              <div className="text-caption text-muted-foreground">Total Applications</div>
               <div className="metric-value">{stats.totalApplications}</div>
               <div className={`metric-change ${Number(stats.appliedWeekChangePct) >= 0 ? 'positive' : 'negative'}`}>
                 {Number(stats.appliedWeekChangePct) >= 0 ? '+' : ''}{stats.appliedWeekChangePct}% vs last week
               </div>
             </div>
             <div className="metric-card min-h-[140px]">
-              <div className="text-caption text-gray-500">Applied This Week</div>
+              <div className="text-caption text-muted-foreground">Applied This Week</div>
               <div className="metric-value">{stats.appliedThisWeek}</div>
               <div className="metric-change">Keep a steady cadence</div>
             </div>
             <div className="metric-card min-h-[140px]">
-              <div className="text-caption text-gray-500">Interview Rate</div>
+              <div className="text-caption text-muted-foreground">Interview Rate</div>
               <div className="metric-value">{stats.interviewRate}%</div>
               <div className="metric-change positive">+2 pts</div>
             </div>
             <div className="metric-card min-h-[140px]">
-              <div className="text-caption text-gray-500">Avg Response Time</div>
+              <div className="text-caption text-muted-foreground">Avg Response Time</div>
               <div className="metric-value">{stats.averageResponseTime}d</div>
-              <div className="metric-change">Goal: <span className="text-gray-700">&lt; 7d</span></div>
+              <div className="metric-change">Goal: <span className="text-foreground">&lt; 7d</span></div>
             </div>
             <div className="col-span-1 sm:col-span-2 lg:col-span-4">
               <InboxStatusChips />
@@ -82,11 +82,12 @@ function InboxStatusChips() {
   }, [])
   return (
     <div className="flex items-center gap-2">
-      <span className={`px-2 py-0.5 rounded text-[10px] ${state.gmail ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>Gmail {state.gmail ? 'OK' : 'Off'}</span>
-      <span className={`px-2 py-0.5 rounded text-[10px] ${state.outlook ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>Outlook {state.outlook ? 'OK' : 'Off'}</span>
-      {state.syncing ? <span className="px-2 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">Syncing…</span> : state.last ? <span className="px-2 py-0.5 rounded text-[10px] bg-gray-100 text-gray-700">{state.last}</span> : null}
+      <span className={`px-2 py-0.5 rounded text-[10px] ${state.gmail ? 'bg-green-100 text-green-700' : 'bg-muted text-foreground'}`}>Gmail {state.gmail ? 'OK' : 'Off'}</span>
+      <span className={`px-2 py-0.5 rounded text-[10px] ${state.outlook ? 'bg-green-100 text-green-700' : 'bg-muted text-foreground'}`}>Outlook {state.outlook ? 'OK' : 'Off'}</span>
+      {state.syncing ? <span className="px-2 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700">Syncing…</span> : state.last ? <span className="px-2 py-0.5 rounded text-[10px] bg-muted text-foreground">{state.last}</span> : null}
     </div>
   )
 }
+
 
 

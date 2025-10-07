@@ -87,11 +87,11 @@ export function LocalDiscover() {
         <input className="border rounded p-2" placeholder="Job title (e.g., Sales Manager)" value={jobTitle} onChange={e=>setJobTitle(e.target.value)} />
         <input className="border rounded p-2" placeholder="Location (e.g., Edmonton, AB)" value={location} onChange={e=>setLocation(e.target.value)} />
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Radius</label>
+          <label className="text-sm text-muted-foreground">Radius</label>
           <input type="number" min={1} max={500} className="border rounded p-2 w-24" value={radiusKm} onChange={e=>setRadiusKm(parseInt(e.target.value||'25',10))} />
           <span className="text-sm">km</span>
         </div>
-        <button onClick={runSearch} disabled={loading || !jobTitle} className="border rounded p-2 bg-blue-600 text-white disabled:opacity-50">{loading ? 'Searching…' : 'Search'}</button>
+        <button onClick={runSearch} disabled={loading || !jobTitle} className="border rounded p-2 bg-blue-600 text-foreground disabled:opacity-50">{loading ? 'Searching…' : 'Search'}</button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input className="border rounded p-2" placeholder="Commute from (address/city)" value={commuteFrom} onChange={e=>setCommuteFrom(e.target.value)} />
@@ -115,13 +115,13 @@ export function LocalDiscover() {
             const scored = ranked.find(x => x.url === r.url)
             return (
             <div key={`${r.url}-${i}`} className="border rounded p-3 bg-white dark:bg-gray-900">
-              <div className="text-sm text-gray-500 mb-1">{r.source}</div>
+              <div className="text-sm text-muted-foreground mb-1">{r.source}</div>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 dark:text-blue-300 line-clamp-2">{r.title || r.url}</a>
-              {r.snippet && <div className="text-sm text-gray-700 dark:text-gray-300 mt-1 line-clamp-3">{r.snippet}</div>}
+              {r.snippet && <div className="text-sm text-foreground dark:text-gray-300 mt-1 line-clamp-3">{r.snippet}</div>}
               {(scored || commutes[r.url] != null) && (
                 <div className="mt-2 text-xs">
                   {scored && <div className="font-medium">Fit Score: {scored.score}%</div>}
-                  {commutes[r.url] != null && <div className="text-gray-600">Commute: {commutes[r.url]} mins ({commuteMode})</div>}
+                  {commutes[r.url] != null && <div className="text-muted-foreground">Commute: {commutes[r.url]} mins ({commuteMode})</div>}
                   {scored && scored.reasons && scored.reasons.length > 0 && (
                     <ul className="list-disc ml-5 mt-1">
                       {scored.reasons.slice(0,2).map((rs,idx)=>(<li key={idx}>{rs}</li>))}
@@ -140,5 +140,6 @@ export function LocalDiscover() {
     </div>
   )
 }
+
 
 

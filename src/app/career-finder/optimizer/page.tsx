@@ -77,7 +77,7 @@ export default function CareerFinderOptimizerPage() {
 
   return (
     <div className="mobile-container space-y-4">
-      <div className="text-sm text-gray-700">Choose a template, generate A/B variants by tone, and select one to continue.</div>
+      <div className="text-sm text-foreground">Choose a template, generate A/B variants by tone, and select one to continue.</div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
         {TEMPLATES.map(t => (
           <button key={t.id} className={`border rounded p-2 text-left ${template===t.id?'bg-blue-50 border-blue-500':''}`} onClick={()=>setTemplate(t.id)}>
@@ -87,11 +87,11 @@ export default function CareerFinderOptimizerPage() {
               <div className="h-1.5 bg-gray-300 mt-1 w-2/3"></div>
             </div>
             <div className="font-medium truncate">{t.name}</div>
-            <div className="text-[11px] text-gray-600 truncate">Thumbnail preview</div>
+            <div className="text-[11px] text-muted-foreground truncate">Thumbnail preview</div>
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-foreground">
         <div className="flex items-center gap-2"><input id="humanize" type="checkbox" checked={humanize} onChange={(e)=>setHumanize(e.target.checked)} /><label htmlFor="humanize">Humanize style (reduce AI patterns)</label></div>
         <div className="flex items-center gap-2"><input id="highlights" type="checkbox" checked={highlights} onChange={(e)=>setHighlights(e.target.checked)} /><label htmlFor="highlights">Live keyword highlights</label></div>
         <div>
@@ -109,22 +109,22 @@ export default function CareerFinderOptimizerPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className={`border rounded ${selected==='A'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('A')}>
-          <div className="text-xs text-gray-500 p-2">Variant A (Professional)</div>
+          <div className="text-xs text-muted-foreground p-2">Variant A (Professional)</div>
           <div className="flex items-center justify-end gap-2 px-2 pb-1">
             <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantA); setExpanded('A') }}>Expand/Edit</Button>
           </div>
-          <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-3 text-xs text-gray-600">No content</div>'} />
+          <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-3 text-xs text-muted-foreground">No content</div>'} />
         </div>
         <div className={`border rounded ${selected==='B'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('B')}>
-          <div className="text-xs text-gray-500 p-2">Variant B (Conversational)</div>
+          <div className="text-xs text-muted-foreground p-2">Variant B (Conversational)</div>
           <div className="flex items-center justify-end gap-2 px-2 pb-1">
             <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantB); setExpanded('B') }}>Expand/Edit</Button>
           </div>
-          <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-3 text-xs text-gray-600">No content</div>'} />
+          <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-3 text-xs text-muted-foreground">No content</div>'} />
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-600">Selected: {selected}</div>
+        <div className="text-xs text-muted-foreground">Selected: {selected}</div>
         <Link className={`inline-block px-4 py-2 border rounded ${selected==='none'?'pointer-events-none opacity-50':''}`} href="/career-finder/cover-letter" onClick={saveSelection}>Next</Link>
       </div>
       {loading && <div className="text-xs">Generating variants…</div>}
@@ -151,6 +151,7 @@ export default function CareerFinderOptimizerPage() {
     </div>
   )
 }
+
 
 
 

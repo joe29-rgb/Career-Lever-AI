@@ -330,7 +330,7 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
                   <div className="space-y-6">
                     {/* Salary Range Bar */}
                     <div className="space-y-2">
-                      <div className="flex justify-between text-sm text-gray-600">
+                      <div className="flex justify-between text-sm text-muted-foreground">
                         <span>Salary Range</span>
                         <span>{formatCurrency(analysis.marketData.salaryRange.min)} - {formatCurrency(analysis.marketData.salaryRange.max)}</span>
                       </div>
@@ -347,7 +347,7 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
                           }}
                         />
                       </div>
-                      <div className="flex justify-between text-xs text-gray-500">
+                      <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Min</span>
                         <span className="font-medium">Median: {formatCurrency(analysis.marketData.salaryRange.median)}</span>
                         <span>Max</span>
@@ -356,21 +356,21 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
 
                     {/* Percentiles */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-center p-3 bg-background rounded-lg">
                         <div className="text-lg font-bold text-green-600">{formatCurrency(analysis.marketData.percentiles.p25)}</div>
-                        <div className="text-sm text-gray-600">25th Percentile</div>
+                        <div className="text-sm text-muted-foreground">25th Percentile</div>
                       </div>
                       <div className="text-center p-3 bg-blue-50 rounded-lg">
                         <div className="text-lg font-bold text-blue-600">{formatCurrency(analysis.marketData.percentiles.p50)}</div>
-                        <div className="text-sm text-gray-600">50th Percentile (Median)</div>
+                        <div className="text-sm text-muted-foreground">50th Percentile (Median)</div>
                       </div>
                       <div className="text-center p-3 bg-yellow-50 rounded-lg">
                         <div className="text-lg font-bold text-yellow-600">{formatCurrency(analysis.marketData.percentiles.p75)}</div>
-                        <div className="text-sm text-gray-600">75th Percentile</div>
+                        <div className="text-sm text-muted-foreground">75th Percentile</div>
                       </div>
                       <div className="text-center p-3 bg-purple-50 rounded-lg">
                         <div className="text-lg font-bold text-purple-600">{formatCurrency(analysis.marketData.percentiles.p90)}</div>
-                        <div className="text-sm text-gray-600">90th Percentile</div>
+                        <div className="text-sm text-muted-foreground">90th Percentile</div>
                       </div>
                     </div>
                   </div>
@@ -442,12 +442,12 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
 
                     {/* Strategy Reasoning */}
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-3">Strategy Rationale</h4>
+                      <h4 className="font-medium text-foreground mb-3">Strategy Rationale</h4>
                       <ul className="space-y-2">
                         {analysis.negotiationStrategy.reasoning.map((reason, index) => (
                           <li key={index} className="flex items-start gap-2">
                             <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-gray-700">{reason}</span>
+                            <span className="text-sm text-foreground">{reason}</span>
                           </li>
                         ))}
                       </ul>
@@ -561,10 +561,10 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
 
                   {/* Strengths */}
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Your Key Strengths</h4>
+                    <h4 className="font-medium text-foreground mb-3">Your Key Strengths</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {analysis.talkingPoints.strengths.map((strength, index) => (
-                        <div key={index} className="flex items-start gap-2 p-3 bg-gray-50 rounded">
+                        <div key={index} className="flex items-start gap-2 p-3 bg-background rounded">
                           <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                           <span className="text-sm">{strength}</span>
                         </div>
@@ -588,10 +588,10 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Warning Signs</h4>
+                      <h4 className="font-medium text-foreground mb-2">Warning Signs</h4>
                       <ul className="space-y-1">
                         {analysis.redFlags.warningSigns.map((sign, index) => (
-                          <li key={index} className="text-sm text-gray-600 flex items-start gap-1">
+                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
                             <span className="text-red-500">•</span>
                             {sign}
                           </li>
@@ -600,10 +600,10 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
                     </div>
 
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Alternatives</h4>
+                      <h4 className="font-medium text-foreground mb-2">Alternatives</h4>
                       <ul className="space-y-1">
                         {analysis.redFlags.alternatives.map((alt, index) => (
-                          <li key={index} className="text-sm text-gray-600 flex items-start gap-1">
+                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
                             <span className="text-blue-500">•</span>
                             {alt}
                           </li>
@@ -612,10 +612,10 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
                     </div>
 
                     <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Walk-Away Points</h4>
+                      <h4 className="font-medium text-foreground mb-2">Walk-Away Points</h4>
                       <ul className="space-y-1">
                         {analysis.redFlags.walkAwayPoints.map((point, index) => (
-                          <li key={index} className="text-sm text-gray-600 flex items-start gap-1">
+                          <li key={index} className="text-sm text-muted-foreground flex items-start gap-1">
                             <span className="text-orange-500">•</span>
                             {point}
                           </li>
@@ -736,7 +736,7 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
                 <h4 className="font-medium mb-2">Justifications</h4>
                 <ul className="space-y-1">
                   {plan.justifications.map((j, i) => (
-                    <li key={i} className="text-sm text-gray-700 flex gap-2">
+                    <li key={i} className="text-sm text-foreground flex gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
                       {j}
                     </li>
@@ -755,9 +755,9 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
 
               <div>
                 <h4 className="font-medium mb-2">Negotiation Email</h4>
-                <div className="p-4 bg-gray-50 rounded border">
+                <div className="p-4 bg-background rounded border">
                   <div className="font-semibold mb-2">Subject: {plan.negotiationEmail.subject}</div>
-                  <pre className="whitespace-pre-wrap text-sm text-gray-800">{plan.negotiationEmail.body}</pre>
+                  <pre className="whitespace-pre-wrap text-sm text-foreground">{plan.negotiationEmail.body}</pre>
                 </div>
                 <div className="mt-3 flex gap-2">
                   <Button
@@ -783,4 +783,5 @@ export function SalaryNegotiation({ userId }: SalaryNegotiationProps) {
     </div>
   )
 }
+
 

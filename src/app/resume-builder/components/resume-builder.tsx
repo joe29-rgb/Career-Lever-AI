@@ -577,11 +577,11 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                 }`}
               >
                 <div className={`w-full h-20 bg-gradient-to-br ${template.color} rounded mb-3 flex items-center justify-center`}>
-                  <span className="text-white font-semibold">{template.name}</span>
+                  <span className="text-foreground font-semibold">{template.name}</span>
                 </div>
                 <h4 className="font-medium mb-1">{template.name}</h4>
-                <p className="text-sm text-gray-600 mb-2">{template.description}</p>
-                <p className="text-xs text-gray-500">{template.preview}</p>
+                <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
+                <p className="text-xs text-muted-foreground">{template.preview}</p>
                 {selectedTemplate === template.id && (
                   <Badge className="mt-2 bg-blue-100 text-blue-800">
                     <CheckCircle className="w-3 h-3 mr-1" />
@@ -617,7 +617,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                   placeholder="Paste the job description here to tailor your resume."
                   rows={6}
                 />
-                <p className="text-xs text-gray-500">Optional but recommended. At least 20 characters to enable AI tailoring.</p>
+                <p className="text-xs text-muted-foreground">Optional but recommended. At least 20 characters to enable AI tailoring.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                   <div>
                     <Label className="text-xs">Tone guidance</Label>
@@ -723,7 +723,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                   </div>
 
                   {resumeData.experience.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No work experience added yet.</p>
                       <Button onClick={addExperience} className="mt-4">
@@ -737,7 +737,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center gap-2">
-                                <GripVertical className="w-4 h-4 text-gray-400" />
+                                <GripVertical className="w-4 h-4 text-muted-foreground" />
                                 <span className="font-medium">Experience {index + 1}</span>
                               </div>
                               <div className="flex gap-2">
@@ -831,7 +831,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                   </div>
 
                   {resumeData.education.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No education added yet.</p>
                       <Button onClick={addEducation} className="mt-4">
@@ -1032,7 +1032,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                   </div>
 
                   {resumeData.projects.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No projects added yet.</p>
                       <Button onClick={addProject} className="mt-4">
@@ -1046,7 +1046,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center gap-2">
-                                <Code className="w-4 h-4 text-gray-400" />
+                                <Code className="w-4 h-4 text-muted-foreground" />
                                 <span className="font-medium">Project {index + 1}</span>
                               </div>
                               <Button
@@ -1183,7 +1183,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                 <div className="border rounded-lg overflow-hidden">
                   {!showDiff ? (
                     <>
-                      <div className="flex items-center justify-end p-2 gap-2 text-xs text-gray-600">
+                      <div className="flex items-center justify-end p-2 gap-2 text-xs text-muted-foreground">
                         <label className="flex items-center gap-1 cursor-pointer">
                           <input
                             type="checkbox"
@@ -1198,18 +1198,18 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2">
                       <div className="p-2 border-r">
-                        <div className="text-xs text-gray-500 mb-1">Original (extracted)</div>
+                        <div className="text-xs text-muted-foreground mb-1">Original (extracted)</div>
                         <pre className="whitespace-pre-wrap text-xs">{resumeData.personalInfo.summary ? `${resumeData.personalInfo.summary}\n\n` : ''}{/* simplified */}{/* show some sections */}</pre>
                       </div>
                       <div className="p-2">
-                        <div className="text-xs text-gray-500 mb-1">Tailored</div>
+                        <div className="text-xs text-muted-foreground mb-1">Tailored</div>
                         <pre className="whitespace-pre-wrap text-xs">{generatedResume.resumeText || ''}</pre>
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-muted-foreground">
                   <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p>Generate your resume to see the preview</p>
                 </div>
@@ -1243,7 +1243,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                   />
                 </div>
                 {completeness < 80 && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     Add more details to improve your resume's completeness score.
                   </p>
                 )}
@@ -1291,7 +1291,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                     <Download className="mr-2 h-4 w-4" />
                     Download PDF
                   </Button>
-                  <p className="text-xs text-gray-600 text-center">
+                  <p className="text-xs text-muted-foreground text-center">
                     Professional templates with ATS optimization
                   </p>
                 </div>
@@ -1334,3 +1334,4 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
     </div>
   )
 }
+

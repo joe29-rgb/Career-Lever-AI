@@ -31,8 +31,8 @@ export default function CareerFinderResumePage() {
       {/* Modern Header */}
       <div className="gradient-hero p-8 rounded-b-3xl shadow-2xl mb-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-white text-center mb-3">📄 Resume Manager</h1>
-          <p className="text-white/90 text-center text-lg">Upload or build your resume to get started!</p>
+          <h1 className="text-4xl font-bold text-foreground text-center mb-3">📄 Resume Manager</h1>
+          <p className="text-foreground/90 text-center text-lg">Upload or build your resume to get started!</p>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export default function CareerFinderResumePage() {
         <div className="mt-8 text-center">
           {hasResume ? (
             <Link 
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg font-bold text-white gradient-success"
+              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-lg font-bold text-foreground gradient-success"
               href="/career-finder/search"
             >
               <span>Next: Find Jobs</span>
@@ -113,3 +113,4 @@ export default function CareerFinderResumePage() {
     </div>
   )
 }
+

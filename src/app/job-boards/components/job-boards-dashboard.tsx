@@ -360,7 +360,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
     switch (level) {
       case 'full': return 'bg-green-100 text-green-800'
       case 'partial': return 'bg-yellow-100 text-yellow-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -368,7 +368,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
     switch (status) {
       case 'connected': return 'bg-green-100 text-green-800'
       case 'error': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      default: return 'bg-muted text-foreground'
     }
   }
 
@@ -420,7 +420,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Connected Boards</p>
+                <p className="text-sm font-medium text-muted-foreground">Connected Boards</p>
                 <p className="text-2xl font-bold">{stats.connectedBoards}/{stats.totalBoards}</p>
               </div>
               <Globe className="h-8 w-8 text-blue-600" />
@@ -432,7 +432,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Applications</p>
+                <p className="text-sm font-medium text-muted-foreground">Applications</p>
                 <p className="text-2xl font-bold">{stats.successfulApplications}/{stats.totalApplications}</p>
               </div>
               <Briefcase className="h-8 w-8 text-green-600" />
@@ -444,7 +444,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Automation Rate</p>
+                <p className="text-sm font-medium text-muted-foreground">Automation Rate</p>
                 <p className="text-2xl font-bold">{stats.automationRate}%</p>
               </div>
               <Zap className="h-8 w-8 text-purple-600" />
@@ -456,7 +456,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Success Rate</p>
+                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
                 <p className="text-2xl font-bold">
                   {stats.totalApplications > 0
                     ? Math.round((stats.successfulApplications / stats.totalApplications) * 100)
@@ -482,13 +482,13 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
         </CardHeader>
         <CardContent>
           {/* Autopilot status */}
-          <div className="mb-3 text-sm text-gray-700">
+          <div className="mb-3 text-sm text-foreground">
             <AutopilotStatus />
           </div>
           <div className="flex items-center justify-between mb-4">
             <div>
               <h4 className="font-medium">Enable Auto-Pilot</h4>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Let Career Lever AI automatically find and apply to relevant positions
               </p>
             </div>
@@ -502,7 +502,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           </div>
 
           {autoPilotEnabled && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-background rounded-lg">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="dailyLimit">Daily Application Limit</Label>
@@ -615,7 +615,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                 {autoPilotRunning ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin"/> Searching...</>) : (<><Zap className="w-4 h-4 mr-2"/>Run Autopilot Search</>)}
               </Button>
               {autoPilotResults.length > 0 && (
-                <div className="text-sm text-gray-600">Found {autoPilotResults.length} public listings</div>
+                <div className="text-sm text-muted-foreground">Found {autoPilotResults.length} public listings</div>
               )}
             </div>
           )}
@@ -628,7 +628,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                   <div key={idx} className="text-xs flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-medium truncate">{j.title || 'Untitled role'}</div>
-                      <div className="text-gray-600 truncate">{[j.company, j.location, j.source].filter(Boolean).join(' • ')}</div>
+                      <div className="text-muted-foreground truncate">{[j.company, j.location, j.source].filter(Boolean).join(' • ')}</div>
                     </div>
                     {j.url && <a href={j.url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 border rounded">Open</a>}
                   </div>
@@ -640,7 +640,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
           {/* Progress bar */}
           {autoPilotRunning || progress.percent > 0 ? (
             <div className="mt-3">
-              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                 <span>{progress.stage}</span>
                 <span>{progress.percent}%</span>
               </div>
@@ -725,7 +725,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{app.jobTitle}</p>
-                    <p className="text-xs text-gray-600 truncate">{app.company}</p>
+                    <p className="text-xs text-muted-foreground truncate">{app.company}</p>
                   </div>
                   <Badge variant={app.status === 'submitted' ? 'default' : 'outline'} className="text-xs">
                     {app.status}
@@ -743,7 +743,7 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                 <span>{Math.round(bulkSubmission.progress)}%</span>
               </div>
               <Progress value={bulkSubmission.progress} className="h-2 mb-2" />
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Submitting {bulkSubmission.selectedApplications.length} applications to {bulkSubmission.selectedBoards.length} job boards...
               </p>
             </div>
@@ -826,14 +826,14 @@ export function JobBoardsDashboard({ userId }: JobBoardsDashboardProps) {
                   }`} />
                   <div>
                     <p className="font-medium">{app.jobTitle}</p>
-                    <p className="text-sm text-gray-600">{app.company}</p>
+                    <p className="text-sm text-muted-foreground">{app.company}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <Badge variant={app.status === 'submitted' ? 'default' : 'outline'}>
                     {app.status}
                   </Badge>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {new Date(app.createdAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -872,3 +872,4 @@ function AutopilotStatus() {
     </div>
   )
 }
+

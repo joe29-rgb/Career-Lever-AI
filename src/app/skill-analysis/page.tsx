@@ -12,11 +12,11 @@ export default async function SkillAnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Skill Analysis</h1>
-          <p className="mt-2 text-lg text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Skill Analysis</h1>
+          <p className="mt-2 text-lg text-muted-foreground">
             AI-powered career planning and skill gap analysis to accelerate your professional growth
           </p>
         </div>
@@ -92,6 +92,7 @@ function SkillAnalysisSkeleton() {
     </div>
   )
 }
+
 
 
 

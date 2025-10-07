@@ -41,9 +41,9 @@ export function RecentApplications() {
       case 'rejected':
         return 'bg-red-100 text-red-800'
       case 'withdrawn':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-muted text-foreground'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-muted text-foreground'
     }
   }
 
@@ -91,9 +91,9 @@ export function RecentApplications() {
       <CardContent>
         {applications.length === 0 ? (
           <div className="text-center py-8">
-            <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No applications yet</h3>
-            <p className="text-gray-600 mb-4">
+            <Briefcase className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No applications yet</h3>
+            <p className="text-muted-foreground mb-4">
               Start your job search by uploading a resume and analyzing job descriptions.
             </p>
             <Button>Upload Resume</Button>
@@ -103,24 +103,24 @@ export function RecentApplications() {
             {applications.map((application) => (
               <div
                 key={application._id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-background transition-colors"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-semibold text-gray-900">
+                    <h4 className="font-semibold text-foreground">
                       {application.jobTitle}
                     </h4>
                     <Badge className={getStatusColor(application.applicationStatus)}>
                       {application.applicationStatus}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="text-sm text-muted-foreground mb-2">
                     {application.companyName}
                   </p>
                   {application.applicationStatus === 'saved' && (
-                    <div className="text-xs text-gray-500">Tip: Apply on the employer site, then run Inbox Sync to auto-update status.</div>
+                    <div className="text-xs text-muted-foreground">Tip: Apply on the employer site, then run Inbox Sync to auto-update status.</div>
                   )}
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {application.appliedDate
@@ -158,4 +158,5 @@ export function RecentApplications() {
     </Card>
   )
 }
+
 

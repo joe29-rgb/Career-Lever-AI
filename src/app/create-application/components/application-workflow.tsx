@@ -174,7 +174,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
         ) : (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-gray-600">Please complete the previous steps first.</p>
+              <p className="text-muted-foreground">Please complete the previous steps first.</p>
             </CardContent>
           </Card>
         )
@@ -219,7 +219,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
         <CardContent>
           <div className="space-y-4">
             <Progress value={overallProgress} className="w-full" />
-            <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>Overall Progress</span>
               <span>{Math.round(overallProgress)}%</span>
             </div>
@@ -248,8 +248,8 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
                         : isCompleted
                         ? 'bg-green-100 text-green-700 border-2 border-green-300'
                         : isAccessible
-                        ? 'hover:bg-gray-100 text-gray-600'
-                        : 'text-gray-400 cursor-not-allowed'
+                        ? 'hover:bg-muted text-muted-foreground'
+                        : 'text-muted-foreground cursor-not-allowed'
                     }`}
                   >
                     <div className={`p-2 rounded-full mb-2 ${
@@ -353,7 +353,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
                   <CheckCircle className="h-5 w-5 text-blue-600" />
                   <div>
                     <div className="text-sm font-medium">Resume Uploaded</div>
-                    <div className="text-xs text-gray-600">{workflowData.resume.originalFileName}</div>
+                    <div className="text-xs text-muted-foreground">{workflowData.resume.originalFileName}</div>
                   </div>
                 </div>
               )}
@@ -363,7 +363,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
                   <CheckCircle className="h-5 w-5 text-green-600" />
                   <div>
                     <div className="text-sm font-medium">Job Analyzed</div>
-                    <div className="text-xs text-gray-600">{workflowData.jobAnalysis.analysis.jobTitle}</div>
+                    <div className="text-xs text-muted-foreground">{workflowData.jobAnalysis.analysis.jobTitle}</div>
                   </div>
                 </div>
               )}
@@ -373,7 +373,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
                   <CheckCircle className="h-5 w-5 text-purple-600" />
                   <div>
                     <div className="text-sm font-medium">Company Researched</div>
-                    <div className="text-xs text-gray-600">{workflowData.companyData.companyName}</div>
+                    <div className="text-xs text-muted-foreground">{workflowData.companyData.companyName}</div>
                   </div>
                 </div>
               )}
@@ -383,7 +383,7 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
                   <CheckCircle className="h-5 w-5 text-orange-600" />
                   <div>
                     <div className="text-sm font-medium">Resume Customized</div>
-                    <div className="text-xs text-gray-600">{workflowData.customizedResume.matchScore}% match</div>
+                    <div className="text-xs text-muted-foreground">{workflowData.customizedResume.matchScore}% match</div>
                   </div>
                 </div>
               )}
@@ -393,19 +393,19 @@ export function ApplicationWorkflow({ userId }: ApplicationWorkflowProps) {
             {workflowData.jobAnalysis && (
               <div className="mt-4 p-4 border rounded-lg">
                 <div className="text-sm font-semibold mb-2">Job Details</div>
-                <div className="text-xs text-gray-700">{workflowData.jobAnalysis.analysis.companyName} — {workflowData.jobAnalysis.analysis.jobTitle}</div>
-                <div className="mt-2 text-xs text-gray-600">Key Requirements: {workflowData.jobAnalysis.analysis.keyRequirements.join(', ')}</div>
-                <div className="mt-1 text-xs text-gray-600">Preferred Skills: {workflowData.jobAnalysis.analysis.preferredSkills.join(', ')}</div>
+                <div className="text-xs text-foreground">{workflowData.jobAnalysis.analysis.companyName} — {workflowData.jobAnalysis.analysis.jobTitle}</div>
+                <div className="mt-2 text-xs text-muted-foreground">Key Requirements: {workflowData.jobAnalysis.analysis.keyRequirements.join(', ')}</div>
+                <div className="mt-1 text-xs text-muted-foreground">Preferred Skills: {workflowData.jobAnalysis.analysis.preferredSkills.join(', ')}</div>
               </div>
             )}
 
             {workflowData.companyData && (
               <div className="mt-4 p-4 border rounded-lg">
                 <div className="text-sm font-semibold mb-2">Company Insights</div>
-                <div className="text-xs text-gray-700">Industry: {workflowData.companyData.industry || 'N/A'}</div>
-                <div className="mt-1 text-xs text-gray-600">Culture: {(workflowData.companyData.culture || []).join(', ')}</div>
+                <div className="text-xs text-foreground">Industry: {workflowData.companyData.industry || 'N/A'}</div>
+                <div className="mt-1 text-xs text-muted-foreground">Culture: {(workflowData.companyData.culture || []).join(', ')}</div>
                 {workflowData.companyData.recentNews && workflowData.companyData.recentNews.length > 0 && (
-                  <div className="mt-2 text-xs text-gray-600">Recent News: {workflowData.companyData.recentNews.slice(0,3).map((n:any)=>n.title).join(' • ')}</div>
+                  <div className="mt-2 text-xs text-muted-foreground">Recent News: {workflowData.companyData.recentNews.slice(0,3).map((n:any)=>n.title).join(' • ')}</div>
                 )}
               </div>
             )}
@@ -518,12 +518,12 @@ function JobFinderQuick({ onSelect }: { onSelect: (job: { title?: string; compan
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {results.map((r,i)=> (
               <button key={i} onClick={()=> onSelect({ title: r.title, companyName: r.companyName, description: r.description })} className="text-left border rounded p-2 hover:shadow">
-                <div className="text-xs text-gray-500 mb-1">{r.source}</div>
+                <div className="text-xs text-muted-foreground mb-1">{r.source}</div>
                 <div className="font-medium line-clamp-1">{r.title || r.jobUrl}</div>
-                {r.companyName && <div className="text-xs text-gray-600">{r.companyName}</div>}
-                {r.description && <div className="text-xs text-gray-600 line-clamp-2 mt-1">{r.description}</div>}
+                {r.companyName && <div className="text-xs text-muted-foreground">{r.companyName}</div>}
+                {r.description && <div className="text-xs text-muted-foreground line-clamp-2 mt-1">{r.description}</div>}
                 {ranked.length > 0 && (
-                  <div className="mt-2 text-[11px] text-gray-700">
+                  <div className="mt-2 text-[11px] text-foreground">
                     {(() => { const s = ranked.find(x=>x.url === r.jobUrl); return s ? (
                       <div>
                         <div className="font-medium">Fit Score: {s.score}%</div>
@@ -544,3 +544,4 @@ function JobFinderQuick({ onSelect }: { onSelect: (job: { title?: string; compan
     </Card>
   )
 }
+
