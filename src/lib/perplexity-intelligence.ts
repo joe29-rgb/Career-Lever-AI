@@ -1,5 +1,13 @@
 import crypto from 'crypto'
 import { PerplexityService } from './perplexity-service'
+import { 
+  CANADIAN_JOB_BOARDS, 
+  MAJOR_JOB_BOARDS, 
+  OPEN_API_BOARDS,
+  ATS_PLATFORMS,
+  DISCOVERY_PRIORITY_ORDER,
+  CANADIAN_ATS_COMPANIES
+} from './public-job-boards-config'
 
 // Environment
 const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
@@ -81,7 +89,14 @@ function normalizeSkills(skills: string[]): string[] {
 }
 
 // Enhanced response wrappers (non-breaking: used by new V2 methods only)
-export type RequestMetadata = { requestId: string; timestamp: number; duration?: number; error?: string }
+export type RequestMetadata = { 
+  requestId: string
+  timestamp: number
+  duration?: number
+  error?: string
+  boardsSearched?: number
+  resultsCount?: number
+}
 export type EnhancedResponse<T> = { success: boolean; data: T; metadata: RequestMetadata; cached: boolean }
 
 export interface IntelligenceRequest {
@@ -286,41 +301,111 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
     }
   }
 
-  static async jobListings(jobTitle: string, location: string) {
-    const key = makeKey('ppx:jobs', { jobTitle, location })
+  /**
+   * Enhanced job listings search across 25+ Canadian and global job boards
+   * Integrates with public-job-boards-config.ts for comprehensive coverage
+   */
+  static async jobListings(
+    jobTitle: string, 
+    location: string,
+    options: {
+      boards?: string[] // Specific boards to search (uses DISCOVERY_PRIORITY_ORDER if not specified)
+      limit?: number
+      includeCanadianOnly?: boolean
+    } = {}
+  ) {
+    const { boards, limit = 50, includeCanadianOnly = false } = options
+    const key = makeKey('ppx:jobs', { jobTitle, location, boards, limit })
     const cached = getCache(key)
     if (cached) return cached
+
+    // Determine which boards to search
+    const targetBoards = boards || (includeCanadianOnly 
+      ? Object.keys(CANADIAN_JOB_BOARDS)
+      : DISCOVERY_PRIORITY_ORDER.slice(0, 15) // Top 15 boards
+    )
+
+    // Note: targetBoards is used in the Perplexity prompt below to guide source selection
+
     const client = createClient()
-    const SYSTEM_JOBS = `You are a Job Listings Scraper with real-time web access. Your role is to find publicly posted job openings in a user’s specified location and industry from multiple sources, including local job boards, Google Jobs, and public sections of sites like Indeed, Monster, Craigslist, and company career pages.
+    const SYSTEM_JOBS = `You are an advanced Job Listings Aggregator with real-time web access across 25+ Canadian and global job boards.
 
-CRITICAL REQUIREMENTS:
-1. Search ONLY publicly accessible listings (no login required).
-2. Target user’s location and role keywords (e.g., “Edmonton Sales Manager”).
-3. Scrape job title, company name, location, posting URL, summary, and posting date.
-4. Deduplicate identical listings across sources.
-5. Rank results by recency and relevance.
-6. Return JSON array of up to 20 listings.
+PRIORITY CANADIAN SOURCES:
+- Job Bank Canada (jobbank.gc.ca) - Government jobs
+- Jobboom (jobboom.com) - Bilingual Canadian
+- Workopolis (workopolis.com) - Canadian
+- Indeed Canada (ca.indeed.com)
+- Jooble Canada (ca.jooble.org)
+- ZipRecruiter Canada (ziprecruiter.ca)
+- Monster Canada (monster.ca)
+- Glassdoor Canada (glassdoor.ca)
+- Dice Canada (dice.com)
+- Careerjet Canada (careerjet.ca)
 
-OUTPUT JSON FORMAT:
-[
-  {
-    "title": string,
-    "company": string,
-    "location": string,
-    "url": string,
-    "summary": string,
-    "postedDate": "YYYY-MM-DD"
-  }
-]`
-    const USER_JOBS = `Find the latest public job listings for “${jobTitle}” in ${location} from sources including Google Jobs, Indeed, Monster, local job boards, and company career pages. Return up to 20 unique listings in JSON format with fields [title, company, location, url, summary, postedDate].`
+GLOBAL SOURCES:
+- LinkedIn (linkedin.com/jobs)
+- Indeed (indeed.com)
+- Glassdoor (glassdoor.com)
+- Adzuna (adzuna.com)
+
+ATS PLATFORMS (Canadian Tech Companies):
+- Greenhouse: Shopify, Hootsuite, Wealthsimple, Faire, Thinkific, Lightspeed
+- Lever: Slack, Shopify, Bench, Clio, Clearco, League
+- Workable: FreshBooks, Visier, Unbounce, Axonify
+- Recruitee: Paytm, Ecobee, Geotab, Auvik, Wave, KOHO
+- Ashby: Faire, Clearco, Maple, Borrowell, Shakepay
+
+REQUIREMENTS:
+1. Search ONLY publicly accessible listings (no login)
+2. Prioritize Canadian sources for Canadian locations
+3. Include company name, exact location, salary if visible
+4. Deduplicate across all sources
+5. Rank by: recency → Canadian source priority → relevance
+6. Return up to ${limit} listings
+
+OUTPUT JSON:
+[{
+  "title": string,
+  "company": string,
+  "location": string,
+  "url": string,
+  "summary": string (50-100 words),
+  "salary": string | null,
+  "postedDate": "YYYY-MM-DD",
+  "source": string (board name)
+}]`
+
+    const USER_JOBS = `Search for "${jobTitle}" jobs in ${location} across these prioritized sources:
+${targetBoards.slice(0, 10).join(', ')}
+
+Return ${limit} unique, recent listings in JSON format. For Canadian locations, prioritize Job Bank, Jobboom, Workopolis first.`
+
     try {
-      const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { temperature: 0.2, maxTokens: 1000 })
+      const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
+        temperature: 0.2, 
+        maxTokens: Math.min(limit * 80, 4000) // Scale tokens with result count
+      })
       const text = (out.content || '').trim()
       const parsed = JSON.parse(text)
-      const arr = Array.isArray(parsed) ? parsed.slice(0, 20) : []
-      setCache(key, arr)
-      return arr
-    } catch {
+      const arr = Array.isArray(parsed) ? parsed.slice(0, limit) : []
+      
+      // Enhance with board metadata
+      const enhanced = arr.map((job: unknown) => {
+        const jobObj = job as Record<string, unknown>
+        return {
+          ...jobObj,
+          metadata: {
+            searchedBoards: targetBoards.length,
+            canadianPriority: includeCanadianOnly,
+            extractedAt: new Date().toISOString()
+          }
+        }
+      })
+      
+      setCache(key, enhanced)
+      return enhanced
+    } catch (error) {
+      console.error('[PERPLEXITY] Job listings failed:', error)
       return []
     }
   }
@@ -393,7 +478,9 @@ OUTPUT JSON FORMAT:
         const url = typeof it.url === 'string' ? it.url : (typeof it.link === 'string' ? String(it.link) : '')
         const snippet = typeof it.snippet === 'string' ? String(it.snippet) : (typeof it.summary === 'string' ? String(it.summary) : '')
         const source = typeof it.domain === 'string' ? String(it.domain) : (typeof it.source === 'string' ? String(it.source) : '')
-        const published = (typeof (it as any).published_time === 'string' ? (it as any).published_time : (typeof (it as any).date === 'string' ? (it as any).date : undefined))
+        const publishedTime = it.published_time
+        const dateField = it.date
+        const published = (typeof publishedTime === 'string' ? publishedTime : (typeof dateField === 'string' ? dateField : undefined))
         return { title, url, snippet, source, postedDate: published }
       })
       setCache(key, mapped)
@@ -406,32 +493,110 @@ OUTPUT JSON FORMAT:
   static async jobMarketAnalysis(location: string, resumeText: string, roleHint?: string) {
     return this.jobMarketAnalysisV2(location, resumeText, { roleHint: roleHint || undefined })
   }
-  // V2: Enhanced job market analysis with options and ranking
-  static async jobMarketAnalysisV2(location: string, resumeText: string, options: { roleHint?: string; workType?: 'remote'|'hybrid'|'onsite'|'any'; salaryMin?: number; experienceLevel?: 'entry'|'mid'|'senior'|'executive'; maxResults?: number } = {}): Promise<EnhancedResponse<JobListing[]>> {
+  /**
+   * V2: Enhanced job market analysis with options and ranking
+   * Now integrated with 25+ Canadian and global job boards
+   */
+  static async jobMarketAnalysisV2(
+    location: string, 
+    resumeText: string, 
+    options: { 
+      roleHint?: string
+      workType?: 'remote'|'hybrid'|'onsite'|'any'
+      salaryMin?: number
+      experienceLevel?: 'entry'|'mid'|'senior'|'executive'
+      maxResults?: number
+      boards?: string[] // Specify which boards to prioritize
+    } = {}
+  ): Promise<EnhancedResponse<JobListing[]>> {
     const requestId = generateRequestId()
     const started = Date.now()
     const key = makeKey('ppx:jobmarket:v2', { location, resume: resumeText.slice(0,1000), options })
     const cached = getCache(key) as JobListing[] | undefined
     if (cached) return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+
+    // Determine if location is Canadian for prioritization
+    const isCanadian = /canada|canadian|toronto|vancouver|montreal|calgary|ottawa|edmonton|quebec|winnipeg|halifax/i.test(location)
+    const targetBoards = options.boards || (isCanadian 
+      ? DISCOVERY_PRIORITY_ORDER.filter(b => CANADIAN_JOB_BOARDS[b]).concat(['linkedin', 'indeed', 'glassdoor'])
+      : DISCOVERY_PRIORITY_ORDER.slice(0, 15)
+    )
+
     try {
       const out = await withRetry(async () => {
         const client = createClient()
-        const prompt = `Find ${options.maxResults || 15} relevant job opportunities in ${location} matching this profile.
+        const prompt = `Find ${options.maxResults || 20} relevant job opportunities in ${location} matching this profile.
 
-RESUME:\n${resumeText}
+RESUME:
+${resumeText}
 
-FILTERS:\n- Role: ${options.roleHint || '(infer from resume)'}\n- Work Type: ${options.workType || 'any'}\n- Experience: ${options.experienceLevel || 'any'}\n- Min Salary: ${options.salaryMin ? ('$' + options.salaryMin + '+') : 'any'}
+FILTERS:
+- Role: ${options.roleHint || '(infer from resume)'}
+- Work Type: ${options.workType || 'any'}
+- Experience: ${options.experienceLevel || 'any'}
+- Min Salary: ${options.salaryMin ? ('$' + options.salaryMin + '+') : 'any'}
 
-Return JSON array with fields: title, company, location, address, url, source, summary, postedDate, salary, skillMatchPercent, skills, workType, experienceLevel, contacts{hrEmail,hiringManagerEmail,generalEmail,phone,linkedinProfiles}, benefits, requirements.
+PRIORITY JOB BOARDS (search these first):
+${targetBoards.slice(0, 12).map((board, i) => {
+  const config = CANADIAN_JOB_BOARDS[board] || MAJOR_JOB_BOARDS[board] || OPEN_API_BOARDS[board] || ATS_PLATFORMS[board]
+  return `${i + 1}. ${config?.displayName || board} (${config?.scrapingConfig?.baseUrl || ''})`
+}).join('\n')}
 
-Prioritize Canadian public sources (Job Bank Canada, Indeed.ca, LinkedIn, Glassdoor.ca, Eluta.ca, Workopolis) and include direct emails when public.
-For each item, set source to the primary domain where the job was found.`
-        const res = await client.makeRequest(SYSTEM, prompt, { temperature: 0.15, maxTokens: 2200 })
+${isCanadian ? `
+CANADIAN ATS PLATFORMS - Check these tech companies:
+- Greenhouse: Shopify, Hootsuite, Wealthsimple, Faire, Thinkific, Lightspeed, Jobber
+- Lever: Slack, Bench, Clio, Clearco, League, ApplyBoard, Ritual
+- Workable: FreshBooks, Visier, Unbounce, Axonify, TouchBistro
+- Recruitee: Ecobee, Geotab, Auvik, Wave, KOHO, SkipTheDishes
+- Ashby: Faire, Clearco, Maple, Borrowell, Shakepay, Wealthsimple
+` : ''}
+
+REQUIREMENTS:
+1. Search ALL listed job boards above
+2. Match skills from resume to job requirements
+3. Calculate skillMatchPercent (0-100) based on overlap
+4. Include salary data when visible
+5. Deduplicate across all sources
+6. Rank by: skillMatchPercent → recency → salary
+
+OUTPUT JSON FORMAT:
+[{
+  "title": string,
+  "company": string,
+  "location": string,
+  "address": string | null,
+  "url": string,
+  "source": string (job board name),
+  "summary": string (100-150 words),
+  "postedDate": "YYYY-MM-DD",
+  "salary": string | null,
+  "skillMatchPercent": number (0-100),
+  "skills": string[],
+  "workType": "remote" | "hybrid" | "onsite",
+  "experienceLevel": "entry" | "mid" | "senior" | "executive",
+  "contacts": {
+    "hrEmail": string | null,
+    "hiringManagerEmail": string | null,
+    "generalEmail": string | null,
+    "phone": string | null,
+    "linkedinProfiles": string[]
+  },
+  "benefits": string[],
+  "requirements": string[]
+}]`
+
+        const res = await client.makeRequest(SYSTEM, prompt, { 
+          temperature: 0.15, 
+          maxTokens: Math.min((options.maxResults || 20) * 120, 4000) 
+        })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         return res
       })
+
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
-      parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 15) : []
+      parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 20) : []
+      
+      // Enhance and normalize
       parsed = parsed.map(j => ({
         ...j,
         skills: normalizeSkills(j.skills || []),
@@ -440,16 +605,47 @@ For each item, set source to the primary domain where the job was found.`
         experienceLevel: j.experienceLevel || 'mid',
         source: j.source || (typeof j.url === 'string' ? (new URL(j.url)).hostname.replace(/^www\./,'') : undefined),
         benefits: j.benefits || [],
-        requirements: j.requirements || []
+        requirements: j.requirements || [],
+        metadata: {
+          searchedBoards: targetBoards.length,
+          isCanadianSearch: isCanadian,
+          extractedAt: new Date().toISOString()
+        }
       }))
+
+      // Sort by match quality, then recency
       parsed.sort((a,b)=>{
-        if (Math.abs(a.skillMatchPercent - b.skillMatchPercent) > 5) return b.skillMatchPercent - a.skillMatchPercent
+        if (Math.abs(a.skillMatchPercent - b.skillMatchPercent) > 5) {
+          return b.skillMatchPercent - a.skillMatchPercent
+        }
         return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       })
+
       setCache(key, parsed)
-      return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
+      return { 
+        success: true, 
+        data: parsed, 
+        metadata: { 
+          requestId, 
+          timestamp: started, 
+          duration: Date.now() - started,
+          boardsSearched: targetBoards.length,
+          resultsCount: parsed.length
+        }, 
+        cached: false 
+      }
     } catch (e) {
-      return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
+      return { 
+        success: false, 
+        data: [], 
+        metadata: { 
+          requestId, 
+          timestamp: started, 
+          duration: Date.now() - started, 
+          error: (e as Error).message 
+        }, 
+        cached: false 
+      }
     }
   }
 
@@ -480,6 +676,76 @@ For each item, set source to the primary domain where the job was found.`
     }
   }
 
+  // Job Board Utilities
+  /**
+   * Get all available job boards with their configurations
+   */
+  static getAvailableJobBoards() {
+    return {
+      canadian: Object.entries(CANADIAN_JOB_BOARDS).map(([key, config]) => ({
+        id: key,
+        name: config.displayName,
+        country: config.country,
+        accessType: config.accessType,
+        canDiscoverJobs: config.features.canDiscoverJobs,
+        estimatedJobCount: config.features.estimatedJobCount
+      })),
+      global: Object.entries(MAJOR_JOB_BOARDS).map(([key, config]) => ({
+        id: key,
+        name: config.displayName,
+        country: config.country,
+        accessType: config.accessType,
+        canDiscoverJobs: config.features.canDiscoverJobs,
+        estimatedJobCount: config.features.estimatedJobCount
+      })),
+      openAPI: Object.entries(OPEN_API_BOARDS).map(([key, config]) => ({
+        id: key,
+        name: config.displayName,
+        country: config.country,
+        accessType: config.accessType,
+        canDiscoverJobs: config.features.canDiscoverJobs,
+        estimatedJobCount: config.features.estimatedJobCount
+      })),
+      ats: Object.entries(ATS_PLATFORMS).map(([key, config]) => ({
+        id: key,
+        name: config.displayName,
+        country: config.country,
+        accessType: config.accessType,
+        canDiscoverJobs: config.features.canDiscoverJobs,
+        estimatedJobCount: config.features.estimatedJobCount
+      })),
+      totalBoards: Object.keys(CANADIAN_JOB_BOARDS).length + 
+                   Object.keys(MAJOR_JOB_BOARDS).length + 
+                   Object.keys(OPEN_API_BOARDS).length + 
+                   Object.keys(ATS_PLATFORMS).length,
+      discoveryOrder: DISCOVERY_PRIORITY_ORDER,
+      canadianATSCompanies: CANADIAN_ATS_COMPANIES
+    }
+  }
+
+  /**
+   * Get recommended job boards for a specific location
+   */
+  static getRecommendedBoards(location: string) {
+    const isCanadian = /canada|canadian|toronto|vancouver|montreal|calgary|ottawa|edmonton|quebec|winnipeg|halifax/i.test(location)
+    
+    if (isCanadian) {
+      return {
+        priority: Object.keys(CANADIAN_JOB_BOARDS),
+        secondary: ['linkedin', 'indeed', 'glassdoor'],
+        atsCompanies: CANADIAN_ATS_COMPANIES,
+        reasoning: 'Canadian location detected - prioritizing Canadian job boards and local ATS platforms'
+      }
+    }
+
+    return {
+      priority: DISCOVERY_PRIORITY_ORDER.slice(0, 10),
+      secondary: Object.keys(OPEN_API_BOARDS),
+      atsCompanies: null,
+      reasoning: 'Global location - using general priority order'
+    }
+  }
+
   // Cache utilities
   static getCacheStats() {
     const stats = { totalEntries: cache.size, totalHits: 0, entriesByPrefix: {} as Record<string, number> }
@@ -502,8 +768,7 @@ For each item, set source to the primary domain where the job was found.`
   // Extract normalized keywords and location from resume (STRICT JSON)
   static async extractResumeSignals(
     resumeText: string,
-    maxKeywords: number = 50,
-    locationHint?: string
+    maxKeywords: number = 50
   ): Promise<{ keywords: string[]; location?: string; locations?: string[] }> {
     const key = makeKey('ppx:resume:signals:v3', { t: resumeText.slice(0, 3000), maxKeywords })
     const cached = getCache(key) as { keywords: string[]; location?: string; locations?: string[] } | undefined

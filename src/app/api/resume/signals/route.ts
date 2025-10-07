@@ -18,15 +18,12 @@ export async function GET(req: NextRequest) {
     if (!txt || txt.length < 30) {
       return NextResponse.json({ success: true, keywords: [], location: null, locations: [] })
     }
-    // Provide header location hint if present to guide PPX
-    const headerMatch = txt.split(/\n|\r/).slice(0, 40).join(' ').match(/([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*),\s*(AB|BC|MB|NB|NL|NS|NT|NU|ON|PE|QC|SK|YT)/)
-    const hint = headerMatch && headerMatch[0] ? headerMatch[0] : undefined
     // Debug: log resume snippet being sent
     try {
       console.log('[signals:input]', { len: txt.length, preview: txt.slice(0, 500) })
     } catch {}
     const started = Date.now()
-    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 50, hint)
+    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 50)
     const durationMs = Date.now() - started
     // Basic verification logging (best-effort, do not block)
     try {
@@ -68,8 +65,7 @@ export async function POST(request: NextRequest) {
 
     const signals = await PerplexityIntelligenceService.extractResumeSignals(
       body.resumeText,
-      body.maxKeywords || 50,
-      body.locationHint
+      body.maxKeywords || 50
     )
 
     console.log('[API] Extraction successful:', signals)
