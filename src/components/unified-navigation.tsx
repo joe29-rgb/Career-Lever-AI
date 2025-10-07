@@ -133,15 +133,15 @@ export function UnifiedNavigation() {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* LOGO WITH GRADIENT */}
+          {/* LOGO WITH GRADIENT - Fixed wrapping */}
           <Link 
             href={session ? '/dashboard' : '/'} 
-            className="flex items-center space-x-3 group"
+            className="flex items-center gap-3 group shrink-0"
           >
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 shrink-0">
               CL
             </div>
-            <span className="gradient-text font-bold text-xl hidden sm:inline">
+            <span className="gradient-text font-bold text-xl hidden sm:inline-block whitespace-nowrap">
               Career Lever AI
             </span>
           </Link>
