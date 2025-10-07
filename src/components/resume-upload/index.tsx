@@ -162,7 +162,7 @@ export function ResumeUpload({
           formData.append('clientText', clientText)
           setClientExtract(clientText)
         }
-        formData.append('resume', uploadedFile)
+        formData.append('file', uploadedFile) // API expects 'file' not 'resume'
       }
       if (pastedText.trim()) formData.append('pastedText', pastedText.trim())
 

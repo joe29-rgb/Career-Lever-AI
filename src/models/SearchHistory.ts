@@ -43,8 +43,8 @@ const SearchHistorySchema = new Schema<ISearchHistory>({
   }],
   timestamp: {
     type: Date,
-    default: Date.now,
-    index: true
+    default: Date.now
+    // index removed - compound and TTL indexes below are sufficient
   },
   metadata: {
     remote: Boolean,
