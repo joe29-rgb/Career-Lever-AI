@@ -35,13 +35,22 @@ export async function middleware(request: NextRequest) {
 
   // Rate limiting for API routes
   if (request.nextUrl.pathname.startsWith('/api/')) {
+    const path = request.nextUrl.pathname
+    
+    // Skip rate limiting for NextAuth internal endpoints
+    if (path.startsWith('/api/auth/session') || 
+        path.startsWith('/api/auth/csrf') || 
+        path.startsWith('/api/auth/_log') ||
+        path.startsWith('/api/auth/providers')) {
+      return response
+    }
+    
     const rateLimiter = RateLimiter.getInstance()
     let rateLimitType: any = 'api-general'
-    const path = request.nextUrl.pathname
 
     // Determine appropriate rate limit based on route
     if (path.includes('/auth/')) {
-      rateLimitType = 'auth-login'
+      rateLimitType = 'auth-session'
     } else if (
       path.includes('/resume/customize') ||
       path.includes('/cover-letter/generate') ||

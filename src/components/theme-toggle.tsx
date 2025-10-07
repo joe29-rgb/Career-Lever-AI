@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { ThemeManager, ThemeMode } from '@/lib/theme-manager'
 
 export function ThemeToggle() {
-  const [mode, setMode] = useState<ThemeMode>('light')
+  const [mode, setMode] = useState<ThemeMode>('dark')
 
   useEffect(() => {
     ThemeManager.init()

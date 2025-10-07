@@ -10,7 +10,8 @@ export class ThemeManager {
     try {
       const stored = this.getStoredTheme()
       const system = this.getSystemTheme()
-      const theme: ThemeMode = stored || system
+      // Default to dark theme if no preference stored
+      const theme: ThemeMode = stored || 'dark'
       this.applyTheme(theme, false)
       // listen for system changes when user hasn't stored a preference
       if (!stored && typeof window !== 'undefined' && window.matchMedia) {
