@@ -43,15 +43,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
           <Providers>
-            <a href="#main" className="skip-link">Skip to content</a>
-            <TopNav />
-            <main id="main" className="relative">
-              <ThemeToggle />
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-                <AppShell>{children}</AppShell>
-              </div>
-            </main>
-            <div aria-live="polite" aria-atomic="true" className="sr-only" />
+            <AppShell>{children}</AppShell>
           </Providers>
         </ErrorBoundary>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
