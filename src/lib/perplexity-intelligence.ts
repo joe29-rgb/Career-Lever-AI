@@ -753,6 +753,28 @@ OUTPUT JSON FORMAT:
     }
   }
 
+  /**
+   * Custom query for flexible Perplexity requests
+   * Used by enhanced resume analyzer and other advanced features
+   */
+  static async customQuery(options: {
+    systemPrompt: string
+    userPrompt: string
+    temperature?: number
+    maxTokens?: number
+  }): Promise<string> {
+    const client = createClient()
+    const response = await client.makeRequest(
+      options.systemPrompt,
+      options.userPrompt,
+      {
+        temperature: options.temperature || 0.3,
+        maxTokens: options.maxTokens || 1500
+      }
+    )
+    return response.content || ''
+  }
+
   // Cache utilities
   static getCacheStats() {
     const stats = { totalEntries: cache.size, totalHits: 0, entriesByPrefix: {} as Record<string, number> }
