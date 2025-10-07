@@ -58,18 +58,25 @@ export function TopNav() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
 
   return (
-    <nav role="navigation" aria-label="Main" className="sticky top-0 z-40 bg-white/90 dark:bg-gray-900/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-        <Link href="/" className="font-semibold text-gray-900 dark:text-white">CareerLever</Link>
+    <nav role="navigation" aria-label="Main" className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
+        {/* Logo with gradient */}
+        <Link href="/" className="font-bold text-xl bg-gradient-to-r from-primary via-accent to-destructive bg-clip-text text-transparent hover:opacity-80 transition-opacity">
+          Career Lever AI
+        </Link>
 
         {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-4 text-sm text-gray-700 dark:text-white">
+        <div className="hidden md:flex items-center gap-2 text-sm">
           {LINKS.map(link => (
             <Link
               key={link.href}
               href={link.href}
               aria-current={isActive(link.href) ? 'page' : undefined}
-              className={`hover:underline ${isActive(link.href) ? 'text-blue-600 dark:text-blue-300 font-medium' : 'text-gray-700 dark:text-white'}`}
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                isActive(link.href) 
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              }`}
             >
               {link.label}
             </Link>
@@ -77,9 +84,11 @@ export function TopNav() {
         </div>
 
         {/* Right side */}
-        <div className="ml-auto hidden md:flex items-center gap-3 text-gray-700 dark:text-white">
+        <div className="ml-auto hidden md:flex items-center gap-3">
           <ThemeToggle />
-          <div className="text-xs text-gray-500 dark:text-gray-300">AI job assistant</div>
+          <div className="text-xs text-muted-foreground px-3 py-1 rounded-full bg-muted">
+            ✨ AI Assistant
+          </div>
         </div>
 
         {/* Mobile controls */}
@@ -92,9 +101,9 @@ export function TopNav() {
             aria-expanded={open}
             onClick={() => setOpen(v => !v)}
             ref={menuButtonRef}
-            className="p-2 rounded border text-gray-700 dark:text-white border-gray-200 dark:border-gray-700"
+            className="px-4 py-2 rounded-lg font-medium bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition-all duration-200 hover:shadow-xl"
           >
-            {open ? 'Close' : 'Menu'}
+            {open ? '✕' : '☰'}
           </button>
         </div>
       </div>
@@ -102,18 +111,22 @@ export function TopNav() {
       {/* Mobile panel */}
       <div
         id="mobile-menu"
-        className={`md:hidden transition-all duration-200 overflow-hidden ${open ? 'max-h-[420px] border-t' : 'max-h-0'} bg-white/95 dark:bg-gray-900/95`}
+        className={`md:hidden transition-all duration-300 overflow-hidden ${open ? 'max-h-[500px] border-t border-border' : 'max-h-0'} bg-card`}
         role="region"
         aria-label="Mobile menu"
       >
-        <div className="px-4 py-3 grid gap-2 text-sm">
+        <div className="px-4 py-4 grid gap-2">
           {LINKS.map((link, idx) => (
             <Link
               key={link.href}
               href={link.href}
               aria-current={isActive(link.href) ? 'page' : undefined}
               ref={idx === 0 ? firstMobileLinkRef : undefined}
-              className={`block px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500/60 ${isActive(link.href) ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300' : 'text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              className={`block px-4 py-3 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                isActive(link.href) 
+                  ? 'bg-gradient-to-r from-primary to-accent text-white shadow-lg' 
+                  : 'text-foreground hover:bg-muted'
+              }`}
             >
               {link.label}
             </Link>

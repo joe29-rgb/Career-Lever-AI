@@ -5,7 +5,6 @@ import Resume from '@/models/Resume'
 import { dbService } from '@/lib/database'
 import { isRateLimited } from '@/lib/rate-limit'
 import { isSameOrigin } from '@/lib/security'
-// import { PDFService } from '@/lib/pdf-service' // Commented out - causes test file load during build
 import { promises as fs } from 'fs'
 import path from 'path'
 
@@ -19,12 +18,22 @@ function cleanExtractedText(text: string): string {
 }
 
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
-  // PDF extraction temporarily disabled to prevent build issues with test files
-  // const pdfService = PDFService.getInstance()
-  // const result = await pdfService.extractText(buffer, 'resume.pdf')
-  
-  // Placeholder - user must paste text for now
-  throw new Error('PDF processing temporarily disabled. Please paste your resume text instead.')
+  try {
+    // Use dynamic import to avoid build-time issues
+    const pdfParse = await import('pdf-parse')
+    const data = await pdfParse.default(buffer)
+    
+    const cleanedText = cleanExtractedText(data.text)
+    
+    return {
+      text: cleanedText,
+      method: 'pdf-parse',
+      confidence: cleanedText.length > 100 ? 0.9 : 0.5
+    }
+  } catch (error) {
+    console.error('PDF extraction error:', error)
+    throw new Error('Failed to extract text from PDF. Please try pasting your resume text instead.')
+  }
 }
 
 export const runtime = 'nodejs'
