@@ -376,7 +376,7 @@ export default function SearchPage() {
                     company={job.company}
                     location={job.location}
                     experience={filters.experienceLevel || 'All levels'}
-                    workType={filters.remote ? 'remote' : 'onsite'}
+                    workType={filters.workType === 'all' ? 'onsite' : filters.workType}
                     salary={job.salary || '50K'}
                     description={`AI Score: ${job.aiScore || 'N/A'}${job.skillMatchPercent ? ` | Skill Match: ${job.skillMatchPercent}%` : ''}`}
                     postedDate="Posted recently"
