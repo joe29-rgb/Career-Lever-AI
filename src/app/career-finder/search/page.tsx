@@ -419,18 +419,17 @@ export default function SearchPage() {
               {/* Work Type Filter */}
               <div>
                 <label className="block text-sm font-bold mb-3">💼 Work Type</label>
-                <div className="flex items-center gap-3 p-4 gradient-card-blue rounded-2xl hover:shadow-md transition-all cursor-pointer border-2 border-transparent hover:border-primary/20">
-                  <input 
-                    type="checkbox" 
-                    id="remote" 
-                    checked={filters.remote} 
-                    onChange={(e) => handleFilterChange('remote', e.target.checked)}
-                    className="w-5 h-5 rounded-lg border-2 accent-primary"
-                  />
-                  <label htmlFor="remote" className="text-sm font-bold cursor-pointer">
-                    🏡 Remote Only
-                  </label>
-                </div>
+                <select
+                  value={filters.workType}
+                  onChange={(e) => handleFilterChange('workType', e.target.value)}
+                  className="modern-input w-full"
+                >
+                  <option value="all">All Types</option>
+                  <option value="remote">🏡 Remote</option>
+                  <option value="hybrid">🔄 Hybrid</option>
+                  <option value="onsite">🏢 At Location</option>
+                  <option value="parttime">⏰ Part-time</option>
+                </select>
               </div>
 
               {/* Location Filter */}
@@ -507,19 +506,18 @@ export default function SearchPage() {
             
             <div className="space-y-6">
               <div className="filter-group">
-                <label className="block text-sm font-semibold mb-3">Work Type</label>
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-xl">
-                  <input 
-                    type="checkbox" 
-                    id="remote-mobile" 
-                    checked={filters.remote} 
-                    onChange={(e) => handleFilterChange('remote', e.target.checked)}
-                    className="w-5 h-5 rounded accent-primary"
-                  />
-                  <label htmlFor="remote-mobile" className="text-sm font-medium">
-                    Remote Only
-                  </label>
-                </div>
+                <label className="block text-sm font-semibold mb-3">💼 Work Type</label>
+                <select
+                  value={filters.workType}
+                  onChange={(e) => handleFilterChange('workType', e.target.value)}
+                  className="modern-input w-full"
+                >
+                  <option value="all">All Types</option>
+                  <option value="remote">🏡 Remote</option>
+                  <option value="hybrid">🔄 Hybrid</option>
+                  <option value="onsite">🏢 At Location</option>
+                  <option value="parttime">⏰ Part-time</option>
+                </select>
               </div>
 
               <div className="filter-group">
