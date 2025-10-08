@@ -407,7 +407,7 @@ export default function SearchPage() {
                 🎯 Filters
               </h2>
               <button 
-                onClick={() => setFilters({ location: '', salaryMin: '', salaryMax: '', remote: false, experienceLevel: '' })}
+                onClick={() => setFilters({ location: '', salaryMin: '', salaryMax: '', workType: 'all', experienceLevel: '' })}
                 className="text-sm text-secondary hover:text-primary font-bold transition-colors"
               >
                 Clear All
