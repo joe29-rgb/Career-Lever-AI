@@ -51,6 +51,32 @@ export default function SearchPage() {
   
   const { data: session, status } = useSession()
 
+  // ENTERPRISE FIX: Cache job results for 20 minutes
+  useEffect(() => {
+    // Try to load cached results on mount
+    try {
+      const cached = localStorage.getItem('cf:jobResults')
+      const cacheTime = localStorage.getItem('cf:jobResultsTime')
+      
+      if (cached && cacheTime) {
+        const age = Date.now() - parseInt(cacheTime)
+        const TWENTY_MINUTES = 20 * 60 * 1000
+        
+        if (age < TWENTY_MINUTES) {
+          const cachedData = JSON.parse(cached)
+          setJobs(cachedData)
+          console.log('[CACHE] Loaded', cachedData.length, 'cached jobs, age:', Math.round(age / 60000), 'minutes')
+        } else {
+          console.log('[CACHE] Expired, clearing cache')
+          localStorage.removeItem('cf:jobResults')
+          localStorage.removeItem('cf:jobResultsTime')
+        }
+      }
+    } catch (e) {
+      console.error('[CACHE] Failed to load:', e)
+    }
+  }, [])
+
   // Handler for job selection - stores job and navigates to analysis
   const handleJobSelection = async (job: JobListing) => {
     try {
@@ -149,9 +175,19 @@ export default function SearchPage() {
 
           const data = await response.json()
           if (response.ok) {
-            setJobs(data.jobs || [])
+            const jobResults = data.jobs || []
+            setJobs(jobResults)
             setMetadata(data.metadata || {})
-            console.log('[AUTOPILOT] Search completed:', data.jobs?.length, 'jobs found')
+            console.log('[AUTOPILOT] Search completed:', jobResults.length, 'jobs found')
+            
+            // ENTERPRISE FIX: Cache results for 20 minutes
+            try {
+              localStorage.setItem('cf:jobResults', JSON.stringify(jobResults))
+              localStorage.setItem('cf:jobResultsTime', Date.now().toString())
+              console.log('[CACHE] Stored', jobResults.length, 'jobs')
+            } catch (e) {
+              console.error('[CACHE] Failed to store:', e)
+            }
           }
         } catch (err) {
           console.error('[SEARCH] Error:', err)
@@ -211,8 +247,18 @@ export default function SearchPage() {
 
       console.log(`[SEARCH] Found ${data.jobs.length} jobs from ${data.sources?.length || 0} sources`)
 
-      setJobs(data.jobs || [])
+      const jobResults = data.jobs || []
+      setJobs(jobResults)
       setMetadata(data.metadata || {})
+      
+      // ENTERPRISE FIX: Cache results for 20 minutes
+      try {
+        localStorage.setItem('cf:jobResults', JSON.stringify(jobResults))
+        localStorage.setItem('cf:jobResultsTime', Date.now().toString())
+        console.log('[CACHE] Stored', jobResults.length, 'jobs')
+      } catch (e) {
+        console.error('[CACHE] Failed to store:', e)
+      }
 
       // Show board recommendations
       if (data.recommendations) {
