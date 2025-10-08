@@ -6,25 +6,44 @@ import Link from 'next/link'
 import { MagnifyingGlassIcon, FunnelIcon, MapPinIcon } from '@heroicons/react/24/outline'
 import { JobCard } from '@/components/job-card'
 
-// Mock job data - replace with your API fetch
-const mockJobs = [
-  { id: "1", title: 'Senior Software Engineer', company: 'Tech Corp', location: 'Toronto, ON', salary: '$120k - $160k', skills: ['React', 'Node.js', 'TypeScript'], url: '/jobs/1', logo: '/tech-corp-logo.png' },
-  { id: "2", title: 'Marketing Manager', company: 'Brand Inc', location: 'Vancouver, BC', salary: '$90k - $110k', skills: ['SEO', 'Content', 'Analytics'], url: '/jobs/2', logo: '/brand-logo.png' },
-  // Add more or fetch from API
-]
-
 export default function JobsPage() {
-  const [jobs, setJobs] = useState(mockJobs)
-  const [filters, setFilters] = useState({ location: '', salaryMin: '', salaryMax: '', remote: false })
+  const [jobs, setJobs] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [filters, setFilters] = useState({ location: 'Toronto, ON', salaryMin: '', salaryMax: '', remote: false })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const { data: session } = useSession()
 
+  // ENTERPRISE FIX: Fetch real jobs from API
   useEffect(() => {
-    // Fetch jobs from your API here
-    // Example: fetch('/api/jobs/recommend', { method: 'POST', body: JSON.stringify({ filters, query: searchQuery }) })
-    // .then(res => res.json()).then(setJobs)
-  }, [filters, searchQuery])
+    const fetchJobs = async () => {
+      if (!searchQuery || searchQuery.length < 2) return
+      
+      setLoading(true)
+      try {
+        const response = await fetch('/api/jobs/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            keywords: searchQuery,
+            location: filters.location || 'Toronto, ON',
+            limit: 50
+          })
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setJobs(data.jobs || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch jobs:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchJobs()
+  }, [searchQuery, filters.location])
 
   const handleFilterChange = (key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -64,11 +83,22 @@ export default function JobsPage() {
       <div className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto px-4 py-8">
         {/* Main Content: Job Grid */}
         <main className="flex-1">
-          <div className="job-grid">
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              <p className="mt-4 text-muted-foreground">Searching for jobs...</p>
+            </div>
+          ) : jobs.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Enter a search term to find jobs</p>
+            </div>
+          ) : (
+            <div className="job-grid">
+              {jobs.map((job) => (
+                <JobCard key={job.id} job={job} />
+              ))}
+            </div>
+          )}
         </main>
 
         {/* Sidebar: Filters */}

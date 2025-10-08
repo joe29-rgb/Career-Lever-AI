@@ -4,14 +4,10 @@ export const dynamic = 'force-dynamic'
 
 import { ResumeUpload } from '@/components/resume-upload'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { ResumeBuilder } from '@/app/resume-builder/components/resume-builder'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 export default function CareerFinderResumePage() {
-  const router = useRouter()
-  const [hasResume, setHasResume] = useState<boolean>(false)
   const [existingResume, setExistingResume] = useState<any>(null)
   const [loadingExisting, setLoadingExisting] = useState<boolean>(true)
   

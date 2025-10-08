@@ -18,7 +18,6 @@ import { PerplexityIntelligenceService } from './perplexity-intelligence'
 import { PERPLEXITY_PROMPTS } from './prompts/perplexity-prompts'
 import { parseAIResponse } from './utils/ai-response-parser'
 import { validateAIResponse } from './validation/schema-validator'
-import { PerplexityErrorFactory } from './errors/perplexity-error'
 import { randomUUID } from 'crypto'
 
 export interface EnhancedResumeAnalysis {
