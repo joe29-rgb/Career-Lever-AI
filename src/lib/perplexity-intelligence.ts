@@ -383,7 +383,7 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
         temperature: 0.2, 
-        maxTokens: Math.min(limit * 80, 4000) // Scale tokens with result count
+        maxTokens: Math.min(limit * 150, 8000) // INCREASED: More tokens for complete JSON
       })
       let text = (out.content || '').trim()
       
@@ -393,7 +393,30 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
         text = jsonMatch[0]
       }
       
-      const parsed = JSON.parse(text)
+      // FIX: Clean up truncated JSON
+      // If JSON ends abruptly without closing ], try to fix it
+      if (!text.endsWith(']')) {
+        console.warn('[PERPLEXITY] JSON appears truncated, attempting to fix')
+        // Find last complete object
+        const lastCompleteObj = text.lastIndexOf('}')
+        if (lastCompleteObj > 0) {
+          text = text.substring(0, lastCompleteObj + 1) + ']'
+        }
+      }
+      
+      // FIX: Remove trailing commas before ]
+      text = text.replace(/,(\s*)\]/g, '$1]')
+      
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(text)
+      } catch (parseError: unknown) {
+        console.error('[PERPLEXITY] JSON parse failed, raw text:', text.substring(0, 500))
+        console.error('[PERPLEXITY] Parse error:', parseError)
+        // Return empty array instead of crashing
+        return []
+      }
+      
       const arr = Array.isArray(parsed) ? parsed.slice(0, limit) : []
       
       // Enhance with board metadata
