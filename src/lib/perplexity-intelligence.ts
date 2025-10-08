@@ -853,7 +853,21 @@ Focus on job titles, skills, technologies, and work experience. Location should 
 
       console.log('[SIGNALS] Raw response:', response.content?.slice(0, 400))
 
-      const parsed = JSON.parse(response.content.trim())
+      // ENTERPRISE FIX: Strip markdown code blocks that Perplexity sometimes adds
+      let cleanedContent = response.content.trim()
+      
+      // Remove markdown code fences (```json ... ``` or ``` ... ```)
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+      
+      // Extract JSON array/object if wrapped in explanatory text
+      const jsonMatch = cleanedContent.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+      if (jsonMatch) {
+        cleanedContent = jsonMatch[0]
+      }
+      
+      console.log('[SIGNALS] Cleaned for parsing:', cleanedContent.slice(0, 200))
+
+      const parsed = JSON.parse(cleanedContent)
 
       const result = {
         keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, maxKeywords) : [],

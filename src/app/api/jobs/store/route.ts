@@ -26,22 +26,22 @@ export async function POST(request: NextRequest) {
     try {
       await connectToDatabase()
 
-      // Create selected job record
+      // ENTERPRISE FIX: Ensure all required fields have defaults
       const selectedJob = await SelectedJob.create({
         userId: session.user.email,
-      jobData: {
-        id: jobData.id || `job-${Date.now()}`,
-        title: jobData.title,
-        company: jobData.company,
-        location: jobData.location,
-        salary: jobData.salary,
-        description: jobData.description,
-        url: jobData.url,
-        source: jobData.source || 'search',
-        postedDate: jobData.postedDate,
-        skills: jobData.skills || [],
-        requirements: jobData.requirements || [],
-      },
+        jobData: {
+          id: jobData.id || `job-${Date.now()}`,
+          title: jobData.title || 'Untitled Position',
+          company: jobData.company || 'Company Name Unavailable',
+          location: jobData.location || 'Location Not Specified',
+          salary: jobData.salary || 'Not Disclosed',
+          description: jobData.description || jobData.summary || 'No description available for this position.',
+          url: jobData.url || '',
+          source: jobData.source || 'search',
+          postedDate: jobData.postedDate || new Date().toISOString(),
+          skills: jobData.skills || [],
+          requirements: jobData.requirements || [],
+        },
         selectedAt: new Date(),
         status: 'pending_analysis'
       })

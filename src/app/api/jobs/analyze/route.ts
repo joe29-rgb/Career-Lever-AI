@@ -47,9 +47,21 @@ export async function POST(request: NextRequest) {
 }
 
 async function analyzeJobMatch(job: any, resume: string) {
-  // Extract keywords from resume
-  const resumeLower = resume.toLowerCase()
-  const jobDescLower = job.description.toLowerCase()
+  // ENTERPRISE FIX: Validate inputs with proper defaults
+  const resumeLower = (resume || '').toLowerCase()
+  const jobDescLower = (job?.description || job?.summary || '').toLowerCase()
+  
+  // Early return if no valid data
+  if (!resumeLower || !jobDescLower) {
+    console.warn('[ANALYSIS] Insufficient data for analysis:', { hasResume: !!resume, hasJobDesc: !!(job?.description || job?.summary) })
+    return {
+      matchScore: 50,
+      matchingSkills: [],
+      missingSkills: [],
+      recommendations: ['Upload your resume for detailed matching'],
+      estimatedFit: 'fair' as const
+    }
+  }
   
   // Common tech skills to check
   const allSkills = [
