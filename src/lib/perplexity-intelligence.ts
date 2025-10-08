@@ -163,6 +163,7 @@ export interface HiringContact {
   confidence: number
   phone?: string | null
   alternativeEmails?: string[]
+  discoveryMethod?: string
 }
 
 export interface QuickSearchItem {
