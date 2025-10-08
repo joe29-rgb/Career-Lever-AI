@@ -37,6 +37,7 @@ export default function JobAnalysisPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasResume, setHasResume] = useState(false)
+  const [canProceed, setCanProceed] = useState(false) // ENTERPRISE: Prevent accidental skip
 
   useEffect(() => {
     console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
@@ -111,6 +112,12 @@ export default function JobAnalysisPage() {
       })
     } finally {
       setLoading(false)
+      
+      // ENTERPRISE FIX: Minimum 2-second display time before allowing proceed
+      setTimeout(() => {
+        setCanProceed(true)
+        console.log('🎯 [JOB_ANALYSIS] Analysis complete - user can now proceed')
+      }, 2000)
     }
   }
 
@@ -283,17 +290,36 @@ export default function JobAnalysisPage() {
       <div className="flex gap-4 mt-8">
         <button
           onClick={handleResearchCompany}
-          className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+          disabled={!canProceed}
+          className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
+            canProceed
+              ? 'bg-primary text-primary-foreground hover:opacity-90 cursor-pointer'
+              : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
+          }`}
+          title={!canProceed ? 'Please review the analysis before proceeding' : ''}
         >
-          Research Company →
+          {canProceed ? 'Research Company →' : 'Analyzing... Please wait'}
         </button>
         <button
           onClick={() => router.push(`/create-application?jobId=${job.id}`)}
-          className="flex-1 px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+          disabled={!canProceed}
+          className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
+            canProceed
+              ? 'bg-secondary text-secondary-foreground hover:opacity-90 cursor-pointer'
+              : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
+          }`}
+          title={!canProceed ? 'Please review the analysis before proceeding' : ''}
         >
           Create Application
         </button>
       </div>
+      
+      {/* User guidance */}
+      {!canProceed && analysis && (
+        <div className="mt-4 text-center text-sm text-muted-foreground animate-pulse">
+          ✨ Review your match analysis above before proceeding
+        </div>
+      )}
     </div>
   )
 }
