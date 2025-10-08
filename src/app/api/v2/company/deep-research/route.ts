@@ -84,10 +84,12 @@ export async function POST(request: NextRequest) {
       psychology: research.data.psychology,
       marketIntelligence: research.data.marketIntelligence,
       contacts: validatedContacts,
+      hiringContacts: contacts.data, // CRITICAL FIX: Add the full contact objects for frontend display
       siteContacts: { ...siteContacts, emails: allEmails, phones: allPhones },
       metadata: {
         researchSources: research.data.sources,
         contactCount: validatedContacts.length,
+        hiringContactCount: contacts.data.length,
         confidenceAverage: validatedContacts.reduce((sum, c) => sum + c.confidence, 0) / (validatedContacts.length || 1),
         extractedAt: new Date().toISOString()
       }
