@@ -9,6 +9,7 @@ import { JobStatusBar, type JobStatus } from '@/components/job-status-bar'
 import { ModernJobCard, type ModernJobCardProps } from '@/components/modern-job-card'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 interface JobListing {
   id?: string
@@ -208,6 +209,9 @@ export default function SearchPage() {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
         
         <div className="max-w-4xl mx-auto relative z-10">
+          <div className="mb-4">
+            <CareerFinderBackButton />
+          </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-4 text-foreground text-center drop-shadow-lg">
             🚀 Find Your Dream Job
           </h1>

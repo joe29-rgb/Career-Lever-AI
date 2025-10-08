@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ResumeBuilder } from '@/app/resume-builder/components/resume-builder'
+import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 export default function CareerFinderResumePage() {
   const router = useRouter()
@@ -31,6 +32,9 @@ export default function CareerFinderResumePage() {
       {/* Modern Header */}
       <div className="gradient-hero p-8 rounded-b-3xl shadow-2xl mb-8">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-4">
+            <CareerFinderBackButton />
+          </div>
           <h1 className="text-4xl font-bold text-foreground text-center mb-3">📄 Resume Manager</h1>
           <p className="text-foreground/90 text-center text-lg">Upload or build your resume to get started!</p>
         </div>
