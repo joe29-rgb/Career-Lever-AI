@@ -194,24 +194,53 @@ async function generateOptimizedResume(
   industry?: string,
   experienceLevel?: string
 ): Promise<ResumeData> {
+  // ENTERPRISE FIX: Handle null/undefined resumeData gracefully
+  if (!resumeData) {
+    console.warn('[RESUME_BUILDER] No resumeData provided, returning minimal structure')
+    return {
+      personalInfo: {
+        fullName: 'User',
+        email: '',
+        phone: '',
+        location: '',
+        summary: 'Professional Summary'
+      },
+      experience: [],
+      education: [],
+      skills: { technical: [], soft: [] },
+      projects: [],
+      template,
+      customization: {
+        fontSize: '11pt',
+        fontFamily: 'Arial',
+        colorScheme: 'professional',
+        layout: 'single-column'
+      }
+    }
+  }
+
   // Use AI to optimize and enhance resume content
   const optimizedContent = await optimizeResumeContent(resumeData, targetJob, industry, experienceLevel)
+
+  // ENTERPRISE FIX: Safely access nested properties with fallbacks
+  const personalInfo = optimizedContent?.personalInfo || resumeData?.personalInfo || {}
+  const originalInfo = resumeData?.personalInfo || {}
 
   // Structure the resume data
   const structuredResume: ResumeData = {
     personalInfo: {
-      fullName: optimizedContent.personalInfo.fullName,
-      email: resumeData.personalInfo.email,
-      phone: resumeData.personalInfo.phone,
-      location: resumeData.personalInfo.location,
-      linkedin: resumeData.personalInfo.linkedin,
-      website: resumeData.personalInfo.website,
-      summary: optimizedContent.personalInfo.summary
+      fullName: personalInfo.fullName || originalInfo.fullName || 'User',
+      email: personalInfo.email || originalInfo.email || '',
+      phone: personalInfo.phone || originalInfo.phone || '',
+      location: personalInfo.location || originalInfo.location || '',
+      linkedin: personalInfo.linkedin || originalInfo.linkedin,
+      website: personalInfo.website || originalInfo.website,
+      summary: personalInfo.summary || originalInfo.summary || ''
     },
-    experience: optimizedContent.experience,
-    education: optimizedContent.education,
-    skills: optimizedContent.skills,
-    projects: optimizedContent.projects || [],
+    experience: optimizedContent?.experience || resumeData?.experience || [],
+    education: optimizedContent?.education || resumeData?.education || [],
+    skills: optimizedContent?.skills || resumeData?.skills || { technical: [], soft: [] },
+    projects: optimizedContent?.projects || resumeData?.projects || [],
     template,
     customization: {
       fontSize: '11pt',

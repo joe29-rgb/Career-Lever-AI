@@ -31,18 +31,30 @@ export function CareerFinderProgress() {
         {steps.map((step, i) => (
           <div key={step.key} className="flex flex-col items-center min-w-[80px] relative">
             {/* Step Circle */}
-            <div 
-              className={`
-                w-12 h-12 rounded-full flex items-center justify-center text-xl
-                transition-all duration-300 shadow-lg
-                ${i <= idx 
-                  ? 'bg-gradient-to-br from-[#5424FD] to-[#8B5CF6] text-white scale-110' 
-                  : 'bg-muted text-muted-foreground scale-100'
-                }
-                ${i === idx ? 'ring-4 ring-primary/30 animate-pulse' : ''}
-              `}
-            >
-              {step.icon}
+            <div className="relative">
+              {/* Moving Loader (only on current step) */}
+              {i === idx && (
+                <div 
+                  className="absolute inset-0 w-12 h-12 rounded-full border-4 border-transparent border-t-[#5424FD] border-r-[#8B5CF6]"
+                  style={{
+                    animation: 'spin 1.5s linear infinite',
+                  }}
+                />
+              )}
+              
+              {/* Step Icon */}
+              <div 
+                className={`
+                  w-12 h-12 rounded-full flex items-center justify-center text-xl
+                  transition-all duration-300 shadow-lg relative z-10
+                  ${i <= idx 
+                    ? 'bg-gradient-to-br from-[#5424FD] to-[#8B5CF6] text-white scale-110' 
+                    : 'bg-muted text-muted-foreground scale-100'
+                  }
+                `}
+              >
+                {step.icon}
+              </div>
             </div>
             
             {/* Step Label */}
@@ -111,6 +123,10 @@ export function CareerFinderProgress() {
         @keyframes shine {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(200%); }
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>

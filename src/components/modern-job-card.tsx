@@ -78,6 +78,33 @@ export function ModernJobCard({
   const theme = colorThemes[colorTheme]
   const isYellow = colorTheme === 'yellow'
 
+  // ENTERPRISE FIX: Smart salary parsing - detect yearly vs monthly
+  const parseSalary = (salaryStr: string): { display: string; isValid: boolean } => {
+    if (!salaryStr || salaryStr === 'Not disclosed' || salaryStr === '50K' || salaryStr === '$50K') {
+      return { display: 'Not disclosed', isValid: false }
+    }
+
+    const lowerSalary = salaryStr.toLowerCase()
+
+    // Check if it explicitly mentions "per year" or "yearly" or "annual"
+    if (lowerSalary.includes('per year') || lowerSalary.includes('yearly') || lowerSalary.includes('annual') || lowerSalary.includes('/yr')) {
+      // Extract salary range or single value
+      const cleanedSalary = salaryStr.replace(/per year|yearly|annual|\/yr/gi, '').trim()
+      return { display: `${cleanedSalary}/yr`, isValid: true }
+    }
+
+    // Check if it explicitly mentions "per month" or "monthly"
+    if (lowerSalary.includes('per month') || lowerSalary.includes('monthly') || lowerSalary.includes('/mo')) {
+      const cleanedSalary = salaryStr.replace(/per month|monthly|\/mo/gi, '').trim()
+      return { display: `${cleanedSalary}/mo`, isValid: true }
+    }
+
+    // If no explicit period, assume yearly (industry standard for job postings)
+    return { display: `${salaryStr}/yr`, isValid: true }
+  }
+
+  const { display: salaryDisplay, isValid: hasSalary } = parseSalary(salary)
+
   return (
     <div className="relative w-full rounded-[25px] overflow-hidden shadow-lg transition-transform duration-300 hover:scale-[1.02]">
       {/* Main colored section */}
@@ -198,10 +225,7 @@ export function ModernJobCard({
 
           {/* Salary */}
           <div className="text-lg font-bold text-black">
-            {salary && salary !== 'Not disclosed' && salary !== '50K' && salary !== '$50K' 
-              ? `${currency}${salary}/mo` 
-              : 'Not disclosed'
-            }
+            {salaryDisplay}
           </div>
         </div>
       </div>

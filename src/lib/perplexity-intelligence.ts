@@ -724,12 +724,25 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
         return client.makeRequest(SYSTEM, prompt, { temperature: 0.1, maxTokens: 1500 })
       })
       
-      // Parse and clean Perplexity response
+      // Parse and clean Perplexity response - ENTERPRISE-GRADE JSON EXTRACTION
       let cleanedContent = out.content.trim()
+      
+      // Step 1: Remove markdown code blocks
       cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
-      const jsonMatch = cleanedContent.match(/(\[[\s\S]*\])/);
+      
+      // Step 2: Extract JSON array from any surrounding text
+      const jsonMatch = cleanedContent.match(/\[[\s\S]*?\]/);
       if (jsonMatch) {
         cleanedContent = jsonMatch[0]
+      } else {
+        // Step 3: If no array found, check for explanatory text with JSON after it
+        const afterTextMatch = cleanedContent.match(/(?:Here|I found|Below|Results?)[\s\S]*?(\[[\s\S]*?\])/i);
+        if (afterTextMatch) {
+          cleanedContent = afterTextMatch[1]
+        } else {
+          console.warn('[HIRING_CONTACTS] No JSON array found in response, returning empty array')
+          return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: 'No JSON array in response' }, cached: false }
+        }
       }
       
       let parsed = JSON.parse(cleanedContent) as HiringContact[]
