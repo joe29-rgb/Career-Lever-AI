@@ -36,6 +36,7 @@ export default function JobAnalysisPage() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasResume, setHasResume] = useState(false)
 
   useEffect(() => {
     loadAndAnalyzeJob()
@@ -64,22 +65,20 @@ export default function JobAnalysisPage() {
 
   const analyzeJob = async (jobData: JobData) => {
     try {
-      // Get user's resume from localStorage
+      // Get user's resume from localStorage (optional)
       const resume = localStorage.getItem('uploadedResume')
       
-      if (!resume) {
-        setError('Please upload your resume first')
-        setLoading(false)
-        return
-      }
+      // CHANGED: Allow browsing without resume
+      // Only show match score if resume exists
+      setHasResume(!!resume)
 
-      // Call analysis API
+      // Call analysis API (works with or without resume)
       const response = await fetch('/api/jobs/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job: jobData,
-          resume: resume
+          resume: resume || undefined // Optional resume
         })
       })
 
@@ -89,14 +88,18 @@ export default function JobAnalysisPage() {
 
       const result = await response.json()
       setAnalysis(result.analysis)
+      
+      if (!resume) {
+        console.log('📋 Browsing job without resume - match score disabled')
+      }
     } catch (err: any) {
       console.error('Analysis failed:', err)
-      // Provide fallback analysis
+      // Provide fallback analysis (without match score if no resume)
       setAnalysis({
-        matchScore: 75,
-        matchingSkills: jobData.skills?.slice(0, 5) || ['JavaScript', 'React', 'Node.js'],
-        missingSkills: ['Docker', 'Kubernetes'],
-        recommendations: [
+        matchScore: resume ? 75 : undefined,
+        matchingSkills: resume ? (jobData.skills?.slice(0, 5) || ['JavaScript', 'React', 'Node.js']) : [],
+        missingSkills: resume ? ['Docker', 'Kubernetes'] : [],
+        recommendations: resume ? [
           'Highlight your experience with similar technologies',
           'Emphasize transferable skills',
           'Show enthusiasm for learning new tools'
