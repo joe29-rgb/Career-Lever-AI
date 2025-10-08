@@ -32,7 +32,7 @@ export default function SearchPage() {
     location: 'Toronto, ON', 
     salaryMin: '', 
     salaryMax: '', 
-    workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'parttime',
+    workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'part-time',
     experienceLevel: '' as '' | 'entry' | 'mid' | 'senior' | 'executive'
   })
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -376,7 +376,7 @@ export default function SearchPage() {
                     company={job.company}
                     location={job.location}
                     experience={filters.experienceLevel || 'All levels'}
-                    workType={filters.workType === 'all' ? 'onsite' : filters.workType}
+                    workType={filters.workType === 'all' ? 'onsite' : (filters.workType as 'remote' | 'hybrid' | 'onsite' | 'part-time')}
                     salary={job.salary || '50K'}
                     description={`AI Score: ${job.aiScore || 'N/A'}${job.skillMatchPercent ? ` | Skill Match: ${job.skillMatchPercent}%` : ''}`}
                     postedDate="Posted recently"
@@ -427,7 +427,7 @@ export default function SearchPage() {
                   <option value="remote">🏡 Remote</option>
                   <option value="hybrid">🔄 Hybrid</option>
                   <option value="onsite">🏢 At Location</option>
-                  <option value="parttime">⏰ Part-time</option>
+                  <option value="part-time">⏰ Part-time</option>
                 </select>
               </div>
 
@@ -515,7 +515,7 @@ export default function SearchPage() {
                   <option value="remote">🏡 Remote</option>
                   <option value="hybrid">🔄 Hybrid</option>
                   <option value="onsite">🏢 At Location</option>
-                  <option value="parttime">⏰ Part-time</option>
+                  <option value="part-time">⏰ Part-time</option>
                 </select>
               </div>
 
