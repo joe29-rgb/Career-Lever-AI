@@ -64,14 +64,11 @@ export default function JobAnalysisPage() {
   }
 
   const analyzeJob = async (jobData: JobData) => {
-    try {
-      // Get user's resume from localStorage (optional)
-      const resume = localStorage.getItem('uploadedResume')
-      
-      // CHANGED: Allow browsing without resume
-      // Only show match score if resume exists
-      setHasResume(!!resume)
+    // Get user's resume from localStorage (optional) - MUST be outside try block for catch scope
+    const resume = localStorage.getItem('uploadedResume')
+    setHasResume(!!resume)
 
+    try {
       // Call analysis API (works with or without resume)
       const response = await fetch('/api/jobs/analyze', {
         method: 'POST',
