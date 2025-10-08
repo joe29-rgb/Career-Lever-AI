@@ -30,10 +30,41 @@ interface AnalysisResult {
   estimatedFit: 'excellent' | 'good' | 'fair' | 'poor'
 }
 
+interface CompanyResearch {
+  aiRiskAnalysis?: {
+    automationScore: number
+    futureOutlook: string
+    riskLevel: string
+    aiImpact: string
+  }
+  culture?: {
+    values: string[]
+    workEnvironment: string
+  }
+  marketIntelligence?: {
+    industryTrends: string[]
+    competitivePosition: string
+    recentNews: string[]
+  }
+  hiringContacts?: Array<{
+    name: string
+    title: string
+    email?: string | null
+    linkedinUrl?: string | null
+    confidence: number
+  }>
+  salaryIntelligence?: {
+    range: string
+    marketComparison: string
+  }
+}
+
 export default function JobAnalysisPage() {
   const router = useRouter()
   const [job, setJob] = useState<JobData | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
+  const [companyResearch, setCompanyResearch] = useState<CompanyResearch | null>(null)
+  const [loadingResearch, setLoadingResearch] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasResume, setHasResume] = useState(false)
@@ -113,11 +144,58 @@ export default function JobAnalysisPage() {
     } finally {
       setLoading(false)
       
+      // ENTERPRISE ENHANCEMENT: Auto-fetch company research in parallel
+      if (jobData.company) {
+        fetchCompanyResearch(jobData.company, jobData.title, jobData.location)
+      }
+      
       // ENTERPRISE FIX: Minimum 2-second display time before allowing proceed
       setTimeout(() => {
         setCanProceed(true)
         console.log('🎯 [JOB_ANALYSIS] Analysis complete - user can now proceed')
       }, 2000)
+    }
+  }
+
+  const fetchCompanyResearch = async (companyName: string, jobTitle: string, location: string) => {
+    setLoadingResearch(true)
+    try {
+      console.log('[COMPANY_RESEARCH] Fetching for:', companyName)
+      const response = await fetch('/api/v2/company/deep-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName,
+          position: jobTitle,
+          location
+        })
+      })
+
+      if (!response.ok) {
+        console.warn('[COMPANY_RESEARCH] API returned:', response.status)
+        return
+      }
+
+      const data = await response.json()
+      console.log('[COMPANY_RESEARCH] Received data:', data)
+      
+      if (data.success) {
+        setCompanyResearch({
+          aiRiskAnalysis: data.aiRiskAnalysis,
+          culture: data.company?.culture,
+          marketIntelligence: {
+            industryTrends: data.marketIntelligence?.industryTrends || [],
+            competitivePosition: data.marketIntelligence?.competitivePosition || '',
+            recentNews: data.marketIntelligence?.recentNews || []
+          },
+          hiringContacts: data.hiringContacts || [],
+          salaryIntelligence: data.salaryIntelligence
+        })
+      }
+    } catch (err) {
+      console.error('[COMPANY_RESEARCH] Error:', err)
+    } finally {
+      setLoadingResearch(false)
     }
   }
 
@@ -283,6 +361,144 @@ export default function JobAnalysisPage() {
               ))}
             </ul>
           </div>
+        </div>
+      )}
+
+      {/* ENTERPRISE ENHANCEMENT: Rich Company Research Display */}
+      {loadingResearch && (
+        <div className="mt-6 bg-card border border-border rounded-xl p-6 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p className="text-muted-foreground">Loading company intelligence...</p>
+          </div>
+        </div>
+      )}
+
+      {companyResearch && !loadingResearch && (
+        <div className="mt-6 space-y-6">
+          <h2 className="text-2xl font-bold text-foreground">🏢 Company Intelligence</h2>
+
+          {/* AI Risk Analysis */}
+          {companyResearch.aiRiskAnalysis && (
+            <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-3">🤖 AI & Automation Risk</h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Automation Score</p>
+                  <p className="text-2xl font-bold text-foreground">{companyResearch.aiRiskAnalysis.automationScore}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Risk Level</p>
+                  <p className={`text-lg font-bold ${
+                    companyResearch.aiRiskAnalysis.riskLevel === 'Low' ? 'text-green-500' :
+                    companyResearch.aiRiskAnalysis.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-red-500'
+                  }`}>{companyResearch.aiRiskAnalysis.riskLevel}</p>
+                </div>
+              </div>
+              <p className="text-sm text-foreground"><strong>Future Outlook:</strong> {companyResearch.aiRiskAnalysis.futureOutlook}</p>
+              <p className="text-sm text-foreground mt-2"><strong>AI Impact:</strong> {companyResearch.aiRiskAnalysis.aiImpact}</p>
+            </div>
+          )}
+
+          {/* Market Intelligence */}
+          {companyResearch.marketIntelligence && (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-3">📊 Market Intelligence</h3>
+              {companyResearch.marketIntelligence.competitivePosition && (
+                <p className="text-sm text-foreground mb-3">{companyResearch.marketIntelligence.competitivePosition}</p>
+              )}
+              {companyResearch.marketIntelligence.industryTrends.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-sm font-semibold text-muted-foreground mb-2">Industry Trends:</p>
+                  <ul className="space-y-1">
+                    {companyResearch.marketIntelligence.industryTrends.map((trend, idx) => (
+                      <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">▸</span>
+                        <span>{trend}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {companyResearch.marketIntelligence.recentNews.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-muted-foreground mb-2">Recent News:</p>
+                  <ul className="space-y-1">
+                    {companyResearch.marketIntelligence.recentNews.slice(0, 3).map((news, idx) => (
+                      <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{news}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Hiring Contacts */}
+          {companyResearch.hiringContacts && companyResearch.hiringContacts.length > 0 && (
+            <div className="bg-gradient-to-br from-green-500/10 to-teal-500/10 border border-green-500/20 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-3">👥 Hiring Contacts ({companyResearch.hiringContacts.length})</h3>
+              <div className="space-y-3">
+                {companyResearch.hiringContacts.slice(0, 5).map((contact, idx) => (
+                  <div key={idx} className="flex items-start gap-3 bg-card/50 rounded-lg p-3">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold">
+                      {contact.name.charAt(0)}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-foreground">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground">{contact.title}</p>
+                      {contact.email && (
+                        <a href={`mailto:${contact.email}`} className="text-xs text-primary hover:underline">
+                          {contact.email}
+                        </a>
+                      )}
+                      {contact.linkedinUrl && (
+                        <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline ml-2">
+                          LinkedIn
+                        </a>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {Math.round(contact.confidence * 100)}% match
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Salary Intelligence */}
+          {companyResearch.salaryIntelligence && (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-3">💰 Salary Intelligence</h3>
+              <p className="text-sm text-foreground mb-2"><strong>Expected Range:</strong> {companyResearch.salaryIntelligence.range}</p>
+              <p className="text-sm text-foreground">{companyResearch.salaryIntelligence.marketComparison}</p>
+            </div>
+          )}
+
+          {/* Company Culture */}
+          {companyResearch.culture && (
+            <div className="bg-card border border-border rounded-xl p-6">
+              <h3 className="text-lg font-bold text-foreground mb-3">🌟 Company Culture</h3>
+              {companyResearch.culture.workEnvironment && (
+                <p className="text-sm text-foreground mb-3">{companyResearch.culture.workEnvironment}</p>
+              )}
+              {companyResearch.culture.values && companyResearch.culture.values.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-muted-foreground mb-2">Core Values:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {companyResearch.culture.values.map((value, idx) => (
+                      <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                        {value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -249,10 +249,15 @@
     z-index: -1;
   }
   
+  /* Dashboard Container - Dribbble Layout */
+  .dashboard-container {
+    @apply max-w-7xl mx-auto px-6 py-8;
+  }
+
   /* Glass Card (for dashboard) */
   .glass-card {
     @apply bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6;
-    @apply shadow-lg transition-all duration-300;
+    @apply shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-primary/20;
   }
   
   .glass-card:hover {
