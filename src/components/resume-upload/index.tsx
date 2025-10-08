@@ -82,14 +82,24 @@ export function ResumeUpload({
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'PDF upload failed')
+        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+        console.error('Resume upload API error:', errorData)
+        throw new Error(errorData.error || 'PDF upload failed')
       }
 
       const result = await response.json()
-      return result.extractedText || ''
-    } catch (error) {
-      console.warn('PDF extraction failed:', error)
+      console.log('✅ Resume upload successful:', { 
+        hasResume: !!result.resume, 
+        hasExtractedText: !!result.resume?.extractedText,
+        textLength: result.resume?.extractedText?.length || 0
+      })
+      
+      // The API returns { success, resume, ... } where resume contains extractedText
+      return result.resume?.extractedText || result.extractedText || ''
+    } catch (error: unknown) {
+      console.error('❌ PDF extraction failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Upload failed: ${errorMessage}`)
       return ''
     }
   }
@@ -135,6 +145,7 @@ export function ResumeUpload({
   const handleUpload = async () => {
     if (!uploadedFile && !pastedText.trim()) {
       setError('Please upload a PDF or paste your resume text')
+      toast.error('Please upload a PDF or paste your resume text')
       return
     }
 
@@ -156,15 +167,13 @@ export function ResumeUpload({
 
       const formData = new FormData()
       if (uploadedFile) {
-        // Try client-side extraction first
-        const clientText = clientExtract || await extractPdfClientSide(uploadedFile)
-        if (clientText && clientText.length >= 50) {
-          formData.append('clientText', clientText)
-          setClientExtract(clientText)
-        }
         formData.append('file', uploadedFile) // API expects 'file' not 'resume'
+        console.log('📤 Uploading file:', uploadedFile.name, uploadedFile.size, 'bytes')
       }
-      if (pastedText.trim()) formData.append('pastedText', pastedText.trim())
+      if (pastedText.trim()) {
+        formData.append('pastedText', pastedText.trim())
+        console.log('📝 Uploading pasted text:', pastedText.length, 'chars')
+      }
 
       const response = await fetch('/api/resume/upload', {
         method: 'POST',
@@ -180,6 +189,7 @@ export function ResumeUpload({
         let details = ''
         try { 
           const errorData = await response.json()
+          console.error('❌ Upload API error:', errorData)
           message = (errorData as any).error || message 
           details = (errorData as any).details || ''
         } catch {}
@@ -187,10 +197,54 @@ export function ResumeUpload({
       }
 
       const data = await response.json()
+      console.log('✅ Upload response:', { success: data.success, hasResume: !!data.resume })
       const resume = data.resume
 
+      if (!resume || !resume._id) {
+        throw new Error('Resume not saved to database')
+      }
+
       setUploadedResume(resume)
+      toast.success('Resume uploaded successfully!')
+      
+      // CRITICAL: Call onUploadSuccess callback
       onUploadSuccess(resume)
+      
+      // AUTO-SEARCH: Extract keywords and trigger job search
+      if (resume.extractedText) {
+        console.log('🤖 Auto-triggering job search with extracted keywords...')
+        try {
+          const signalsResp = await fetch('/api/resume/signals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resumeText: resume.extractedText })
+          })
+          
+          if (signalsResp.ok) {
+            const signals = await signalsResp.json()
+            console.log('🎯 Extracted signals:', signals)
+            
+            // Store for auto-search
+            localStorage.setItem('autoSearch', JSON.stringify({
+              keywords: signals.keywords?.slice(0, 5).join(', ') || '',
+              location: signals.location || 'Edmonton, AB',
+              timestamp: Date.now()
+            }))
+            
+            toast.success('Keywords extracted! Redirecting to job search...')
+            
+            // Redirect to search page after 1 second
+            setTimeout(() => {
+              window.location.href = `/career-finder/search?auto=true&keywords=${encodeURIComponent(signals.keywords?.slice(0, 5).join(', ') || '')}&location=${encodeURIComponent(signals.location || 'Edmonton, AB')}`
+            }, 1000)
+          }
+        } catch (err) {
+          console.error('Auto-search setup failed:', err)
+          // Don't block the upload success
+        }
+      }
+
+      setUploadedResume(resume)
       // Enable Autopilot preference best-effort
       try { await fetch('/api/profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preferences: { autopilot: { useResume: true } } }) }) } catch {}
 
