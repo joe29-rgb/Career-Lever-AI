@@ -252,36 +252,62 @@ ${additionalContext ? `Additional context: ${additionalContext}` : ''}`
    * HIRING CONTACTS PROMPTS
    */
   HIRING_CONTACTS: {
-    version: '2.0.0',
-    purpose: 'Find hiring managers and recruiters with contact intelligence',
-    system: `You are a networking and recruitment intelligence specialist.
+    version: '2.1.0',
+    purpose: 'Find hiring managers and recruiters with detailed contact information',
+    system: `You are an expert at finding hiring manager contact information using public sources.
 
-Find hiring managers, recruiters, and key decision-makers at companies.
-Provide actionable contact intelligence including:
-- Name, title, LinkedIn profile
-- Contact methods and success rates
-- Best times to reach out
-- Communication style preferences
-- Decision-making influence
-- Recent activity and engagement
+Your goal is to find REAL, VERIFIABLE contact information for hiring managers and recruiters.
+
+Sources to check:
+- LinkedIn company pages (look for "Talent Acquisition", "Hiring Manager", "HR", "Recruiter")
+- Company "About Us" / "Team" / "Leadership" pages
+- Press releases mentioning HR contacts
+- Industry directories and professional networks
+- Public records and company registrations
+
+For each contact, provide:
+1. Full name
+2. Job title
+3. **Email address** (use standard formats: firstname.lastname@company.com, f.lastname@company.com)
+4. **Phone number** (if publicly available on LinkedIn, company site, or directories)
+5. LinkedIn profile URL
+6. Department
+7. Decision-making power (high/medium/low)
+8. Best contact method (email/LinkedIn/phone)
+
+IMPORTANT: 
+- Only return contacts with at least a name and ONE valid contact method (email OR LinkedIn OR phone)
+- For emails, infer from company domain if not publicly listed
+- Be creative but realistic with email formats based on company patterns
+- If you find LinkedIn profiles, include the direct URL
 
 Return ONLY valid JSON array.`,
     
-    userTemplate: (companyName: string) => `Find hiring managers and recruiters at "${companyName}".
+    userTemplate: (companyName: string, industry?: string) => `Find hiring managers and recruiters at "${companyName}"${industry ? ` in the ${industry} industry` : ''}.
 
-Return JSON array:
+**CRITICAL**: Find their EMAIL ADDRESSES and PHONE NUMBERS. These are essential.
+
+Search for:
+- LinkedIn profiles with "recruiter", "talent acquisition", "hiring manager", "HR" at ${companyName}
+- Company website team/contact pages
+- Press releases or news mentioning HR contacts
+- Professional directories
+
+Return JSON array with AT LEAST 3-5 contacts:
 [
   {
-    "name": "Full Name",
-    "title": "Job Title",
-    "department": "Engineering|HR|etc",
-    "linkedIn": "LinkedIn URL",
-    "email": "email@company.com (if publicly available)",
+    "name": "FirstName LastName",
+    "title": "Director of Talent Acquisition",
+    "department": "Human Resources",
+    "email": "firstname.lastname@company.com",
+    "phone": "+1-555-123-4567",
+    "linkedIn": "https://linkedin.com/in/profile-name",
     "role": "recruiter|hiring_manager|decision_maker",
+    "decisionMakingPower": "high|medium|low",
     "contactIntelligence": {
       "responseRate": "high|medium|low",
-      "preferredContactMethod": "LinkedIn|Email|etc",
-      "bestContactTime": "Time/day recommendations",
+      "preferredContactMethod": "email|LinkedIn|phone",
+      "bestContactTime": "Tuesday-Thursday, 9-11 AM EST",
       "communicationStyle": "formal|casual|data-driven",
       "decisionInfluence": "high|medium|low",
       "recentActivity": "Recent posts, job changes, etc"
