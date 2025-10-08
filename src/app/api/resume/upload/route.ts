@@ -18,37 +18,64 @@ function cleanExtractedText(text: string): string {
 }
 
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
+  // Try Method 1: pdf-parse-debugging-disabled
   try {
-    // Use pdf-parse-debugging-disabled to avoid test fixture issues
     const pdfParse = await import('pdf-parse-debugging-disabled')
-    const data = await pdfParse.default(buffer, {
-      // Disable image extraction for faster processing
-      max: 0
-    })
+    const data = await pdfParse.default(buffer, { max: 0 })
     
-    if (!data || !data.text) {
+    if (data && data.text && data.text.length > 50) {
+      const cleanedText = cleanExtractedText(data.text)
+      console.log('✅ PDF extracted via pdf-parse:', cleanedText.length, 'chars')
       return {
-        text: '',
-        method: 'pdf-parse-failed',
-        confidence: 0
+        text: cleanedText,
+        method: 'pdf-parse',
+        confidence: cleanedText.length > 100 ? 0.9 : 0.5
       }
     }
+  } catch (error) {
+    console.warn('pdf-parse failed, trying pdfjs-dist:', error)
+  }
+
+  // Try Method 2: pdfjs-dist fallback
+  try {
+    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
     
-    const cleanedText = cleanExtractedText(data.text)
+    const loadingTask = pdfjsLib.getDocument({
+      data: new Uint8Array(buffer),
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    })
+    
+    const pdfDocument = await loadingTask.promise
+    let fullText = ''
+    
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum)
+      const textContent = await page.getTextContent()
+      const pageText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ')
+      fullText += pageText + '\n'
+    }
+    
+    const cleanedText = cleanExtractedText(fullText.trim())
+    console.log('✅ PDF extracted via pdfjs-dist:', cleanedText.length, 'chars')
     
     return {
       text: cleanedText,
-      method: 'pdf-parse',
-      confidence: cleanedText.length > 100 ? 0.9 : 0.5
+      method: 'pdfjs-dist',
+      confidence: cleanedText.length > 100 ? 0.85 : 0.4
     }
   } catch (error) {
-    console.error('PDF extraction error:', error)
-    // Return empty instead of throwing - let the main handler deal with it
-    return {
-      text: '',
-      method: 'pdf-parse-error',
-      confidence: 0
-    }
+    console.error('pdfjs-dist also failed:', error)
+  }
+
+  // Both methods failed
+  return {
+    text: '',
+    method: 'all-methods-failed',
+    confidence: 0
   }
 }
 
@@ -96,6 +123,16 @@ export async function POST(request: NextRequest) {
           extractedText = text
           extractionMethod = method
           extractionConfidence = confidence || 0.95
+          
+          // Enhanced logging
+          console.log('🔍 PDF Processing Result:', {
+            filename,
+            method: extractionMethod,
+            textLength: extractedText?.length,
+            confidence: extractionConfidence,
+            firstWords: extractedText?.slice(0, 100)
+          })
+          
           if (!text || text.length < 50) {
             extractionError = 'PDF could not be processed. Please paste your resume text instead.'
           }
@@ -179,4 +216,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+
 
