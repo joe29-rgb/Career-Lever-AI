@@ -25,6 +25,7 @@ interface JobListing {
 }
 
 export default function SearchPage() {
+  const router = useRouter()
   const [jobs, setJobs] = useState<JobListing[]>([])
   const [filters, setFilters] = useState({ 
     location: 'Toronto, ON', 
@@ -48,7 +49,31 @@ export default function SearchPage() {
   } | null>(null)
   
   const { data: session, status } = useSession()
-  const router = useRouter()
+
+  // Handler for job selection - stores job and navigates to analysis
+  const handleJobSelection = async (job: JobListing) => {
+    try {
+      // Store in localStorage for immediate access
+      localStorage.setItem('selectedJob', JSON.stringify({
+        ...job,
+        selectedAt: Date.now()
+      }))
+      
+      // Store in database for history
+      await fetch('/api/jobs/store', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job)
+      })
+      
+      // Navigate to job analysis page
+      router.push('/career-finder/job-analysis')
+    } catch (error) {
+      console.error('Failed to store job:', error)
+      // Still navigate even if storage fails
+      router.push('/career-finder/job-analysis')
+    }
+  }
 
   // Auto-search on mount if query params exist
   useEffect(() => {
@@ -353,7 +378,7 @@ export default function SearchPage() {
                     description={`AI Score: ${job.aiScore || 'N/A'}${job.skillMatchPercent ? ` | Skill Match: ${job.skillMatchPercent}%` : ''}`}
                     postedDate="Posted recently"
                     colorTheme={colorTheme}
-                    onView={() => router.push(`/jobs/${job.id || index}`)}
+                    onView={() => handleJobSelection(job)}
                   />
                 )
               })}
