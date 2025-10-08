@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { MagnifyingGlassIcon, FunnelIcon, MapPinIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { JobCard } from '@/components/job-card'
+import { JobStatusBar, type JobStatus } from '@/components/job-status-bar'
+import { ModernJobCard, type ModernJobCardProps } from '@/components/modern-job-card'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
@@ -36,6 +38,8 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [useResumeMatching, setUseResumeMatching] = useState(false)
+  const [activeStatus, setActiveStatus] = useState<JobStatus>('discover')
+  const [useModernCards, setUseModernCards] = useState(true)
   const [metadata, setMetadata] = useState<{
     useResumeMatching?: boolean
     searchedBoards?: number
@@ -298,6 +302,23 @@ export default function SearchPage() {
             )}
           </div>
 
+          {/* Job Status Bar - Figma Design */}
+          {jobs.length > 0 && (
+            <div className="mb-8">
+              <JobStatusBar
+                activeStatus={activeStatus}
+                onStatusChange={setActiveStatus}
+                counts={{
+                  discover: jobs.length,
+                  saved: 0,
+                  applied: 0,
+                  closed: 0,
+                  discarded: 0
+                }}
+              />
+            </div>
+          )}
+
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
@@ -312,7 +333,33 @@ export default function SearchPage() {
               <h3 className="text-2xl font-bold mb-2">No jobs found</h3>
               <p className="text-muted-foreground">Try adjusting your search or filters</p>
             </div>
+          ) : useModernCards ? (
+            /* Modern Figma-Inspired Job Cards */
+            <div className="grid grid-cols-1 gap-6 max-w-md mx-auto">
+              {jobs.map((job, index) => {
+                const colorThemes: Array<'purple' | 'red' | 'yellow'> = ['purple', 'red', 'yellow']
+                const colorTheme = colorThemes[index % 3]
+                
+                return (
+                  <ModernJobCard
+                    key={job.id || `job-${index}`}
+                    id={job.id || `job-${index}`}
+                    title={job.title}
+                    company={job.company}
+                    location={job.location}
+                    experience={filters.experienceLevel || 'All levels'}
+                    workType={filters.remote ? 'remote' : 'onsite'}
+                    salary={job.salary || '50K'}
+                    description={`AI Score: ${job.aiScore || 'N/A'}${job.skillMatchPercent ? ` | Skill Match: ${job.skillMatchPercent}%` : ''}`}
+                    postedDate="Posted recently"
+                    colorTheme={colorTheme}
+                    onView={() => router.push(`/jobs/${job.id || index}`)}
+                  />
+                )
+              })}
+            </div>
           ) : (
+            /* Legacy Job Cards */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {jobs.map((job, index) => (
                 <JobCard 

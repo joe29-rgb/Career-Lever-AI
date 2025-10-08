@@ -12,7 +12,11 @@ import Link from 'next/link'
 import { Toaster } from 'react-hot-toast'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
@@ -36,7 +40,7 @@ export default function RootLayout({
   }
   return (
     <html lang="en">
-      <body className={inter.className + ' bg-background text-foreground min-h-screen'}>
+      <body className={`${inter.variable} font-sans bg-background text-foreground min-h-screen`}>
         <script dangerouslySetInnerHTML={{ __html: `try{(${function(){
           if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
         }.toString()})()}catch(e){}` }} />
