@@ -348,24 +348,24 @@ export function ResumeCustomizer({
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Auto-tone from Psychology</p>
-              <button type="button" onClick={()=>setAutoTone(v=>!v)} className={`px-3 py-2 border rounded text-sm ${autoTone ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{autoTone ? 'Enabled' : 'Disabled'}</button>
+              <button type="button" onClick={()=>setAutoTone(v=>!v)} className={`px-3 py-2 border rounded text-sm ${autoTone ? 'bg-green-500/10 border-green-500' : 'bg-card'}`}>{autoTone ? 'Enabled' : 'Disabled'}</button>
               {autoTone && (
                 <p className="text-xs text-muted-foreground">We’ll use the Analyze page’s tone if available</p>
               )}
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Humanize Style</p>
-              <button type="button" onClick={()=>setStyleHumanize(v=>!v)} className={`px-3 py-2 border rounded text-sm ${styleHumanize ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{styleHumanize ? 'Enabled' : 'Disabled'}</button>
+              <button type="button" onClick={()=>setStyleHumanize(v=>!v)} className={`px-3 py-2 border rounded text-sm ${styleHumanize ? 'bg-green-500/10 border-green-500' : 'bg-card'}`}>{styleHumanize ? 'Enabled' : 'Disabled'}</button>
               <p className="text-xs text-muted-foreground">Reduce AI detectability patterns</p>
             </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">Live Highlights</p>
-            <button type="button" onClick={()=>setLiveHighlights(v=>!v)} className={`px-3 py-2 border rounded text-sm ${liveHighlights ? 'bg-yellow-50 border-yellow-200' : 'bg-white'}`}>{liveHighlights ? 'On' : 'Off'}</button>
+            <button type="button" onClick={()=>setLiveHighlights(v=>!v)} className={`px-3 py-2 border rounded text-sm ${liveHighlights ? 'bg-yellow-500/10 border-yellow-500' : 'bg-card'}`}>{liveHighlights ? 'On' : 'Off'}</button>
             <p className="text-xs text-muted-foreground">Highlight covered keywords in the editor</p>
           </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Generate A/B Variants</p>
-              <button type="button" onClick={()=>setGenerateVariantB(v=>!v)} className={`px-3 py-2 border rounded text-sm ${generateVariantB ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>{generateVariantB ? 'A & B' : 'A only'}</button>
+              <button type="button" onClick={()=>setGenerateVariantB(v=>!v)} className={`px-3 py-2 border rounded text-sm ${generateVariantB ? 'bg-blue-500/10 border-blue-500' : 'bg-card'}`}>{generateVariantB ? 'A & B' : 'A only'}</button>
               <p className="text-xs text-muted-foreground">Two tailored variants for side-by-side comparison</p>
             </div>
           </div>
@@ -375,7 +375,7 @@ export function ResumeCustomizer({
             {!liveHighlights ? (
               <Textarea rows={6} placeholder="Paste clean resume text to override extraction (optional)" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
             ) : (
-              <div className="border rounded p-3 bg-white text-sm max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: highlighted || (overrideText || resume.extractedText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
+              <div className="border rounded p-3 bg-background text-foreground text-sm max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: highlighted || (overrideText || resume.extractedText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
             )}
             <p className="text-xs text-muted-foreground">Use this if the PDF text extraction contained gibberish. Minimum 50 characters.</p>
           </div>
@@ -503,20 +503,20 @@ export function ResumeCustomizer({
               </TabsList>
 
               <TabsContent value="preview" className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-muted rounded-lg p-4">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-medium text-gray-900">Customized Resume</h4>
+                    <h4 className="font-medium text-foreground">Customized Resume</h4>
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant={activeVariant === 'A' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('A')}>Variant A</Button>
                       <Button size="sm" variant={activeVariant === 'B' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('B')} disabled={!customizedResultB}>Variant B</Button>
                       <Badge variant="secondary">{(activeData?.matchScore ?? 0)}% Match Score</Badge>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white">
+                  <div className="text-sm text-foreground whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-background">
                     {activeData?.customizedResume?.customizedText}
                   </div>
                   {activeAuth && (
-                    <div className="mt-3 text-sm text-gray-700">
+                    <div className="mt-3 text-sm text-foreground">
                       <div className="font-medium">Authenticity Score: {activeAuth.score}/100</div>
                       {activeAuth.suggestions.length > 0 && (
                         <ul className="list-disc ml-5 mt-1">
@@ -562,7 +562,7 @@ export function ResumeCustomizer({
 
               <TabsContent value="improvements" className="space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Applied Improvements ({activeVariant})</h4>
+                  <h4 className="font-medium text-foreground">Applied Improvements ({activeVariant})</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {(activeData?.improvements || []).map((improvement: string, index: number) => (
                       <div key={index} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
@@ -576,7 +576,7 @@ export function ResumeCustomizer({
 
               <TabsContent value="suggestions" className="space-y-4">
                 <div className="space-y-3">
-                  <h4 className="font-medium text-gray-900">Additional Suggestions ({activeVariant})</h4>
+                  <h4 className="font-medium text-foreground">Additional Suggestions ({activeVariant})</h4>
                   <div className="space-y-3">
                     {(activeData?.suggestions || []).map((suggestion: string, index: number) => (
                       <div key={index} className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
@@ -610,21 +610,21 @@ export function ResumeCustomizer({
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Original Resume
                 </h4>
-                <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-red-50">
+                <div className="text-sm text-foreground whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-red-500/10">
                   {(customizedResult.originalResumeText || resume.extractedText || '').substring(0, 1000)}{(customizedResult.originalResumeText || resume.extractedText || '').length > 1000 ? '...' : ''}
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                <h4 className="font-medium text-foreground flex items-center gap-2">
                   <Wand2 className="h-4 w-4" />
                   Customized Resume (Variant {activeVariant})
                 </h4>
-                <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-green-50">
+                <div className="text-sm text-foreground whitespace-pre-wrap max-h-64 overflow-y-auto border rounded p-3 bg-green-500/10">
                   {(activeData?.customizedResume?.customizedText || '').substring(0, 1000)}{(activeData?.customizedResume?.customizedText || '').length > 1000 ? '...' : ''}
                 </div>
               </div>
