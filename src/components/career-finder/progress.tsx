@@ -3,13 +3,13 @@
 import { usePathname } from 'next/navigation'
 
 const steps = [
-  { key: 'resume', label: 'Resume' },
-  { key: 'search', label: 'Search' },
-  { key: 'job', label: 'Job Analysis' },
-  { key: 'company', label: 'Company Insights' },
-  { key: 'optimizer', label: 'Resume Optimizer' },
-  { key: 'cover-letter', label: 'Cover Letter' },
-  { key: 'outreach', label: 'Outreach' },
+  { key: 'resume', label: 'Resume', icon: '📝' },
+  { key: 'search', label: 'Search', icon: '🔍' },
+  { key: 'job', label: 'Analysis', icon: '📊' },
+  { key: 'company', label: 'Insights', icon: '🏢' },
+  { key: 'optimizer', label: 'Optimize', icon: '✨' },
+  { key: 'cover-letter', label: 'Letter', icon: '✉️' },
+  { key: 'outreach', label: 'Outreach', icon: '🚀' },
 ]
 
 export function CareerFinderProgress() {
@@ -25,18 +25,94 @@ export function CareerFinderProgress() {
   const percent = Math.round(((idx + 1) / steps.length) * 100)
 
   return (
-    <div className="w-full mb-4">
-      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-        <div className="flex gap-2">
-          {steps.map((s, i) => (
-            <div key={s.key} className={`px-2 py-1 rounded ${i <= idx ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>{s.label}</div>
-          ))}
+    <div className="w-full mb-8 px-4">
+      {/* Progress Steps */}
+      <div className="flex items-center justify-between mb-6 overflow-x-auto pb-2">
+        {steps.map((step, i) => (
+          <div key={step.key} className="flex flex-col items-center min-w-[80px] relative">
+            {/* Step Circle */}
+            <div 
+              className={`
+                w-12 h-12 rounded-full flex items-center justify-center text-xl
+                transition-all duration-300 shadow-lg
+                ${i <= idx 
+                  ? 'bg-gradient-to-br from-[#5424FD] to-[#8B5CF6] text-white scale-110' 
+                  : 'bg-muted text-muted-foreground scale-100'
+                }
+                ${i === idx ? 'ring-4 ring-primary/30 animate-pulse' : ''}
+              `}
+            >
+              {step.icon}
+            </div>
+            
+            {/* Step Label */}
+            <span 
+              className={`
+                mt-2 text-xs font-medium text-center
+                ${i <= idx ? 'text-foreground font-semibold' : 'text-muted-foreground'}
+              `}
+            >
+              {step.label}
+            </span>
+            
+            {/* Connector Line */}
+            {i < steps.length - 1 && (
+              <div 
+                className={`
+                  absolute top-6 left-[calc(50%+24px)] w-[calc(100%-48px)]
+                  h-1 rounded-full transition-all duration-500
+                  ${i < idx 
+                    ? 'bg-gradient-to-r from-[#5424FD] to-[#8B5CF6]' 
+                    : 'bg-muted'
+                  }
+                `}
+                style={{ zIndex: -1 }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Modern Progress Bar */}
+      <div className="relative">
+        {/* Progress Text */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-foreground">
+            Step {idx + 1} of {steps.length}
+          </span>
+          <span className="text-sm font-bold text-primary">
+            {percent}%
+          </span>
         </div>
-        <div>{percent}%</div>
+        
+        {/* Progress Bar Track */}
+        <div className="relative w-full h-3 bg-muted/50 rounded-full overflow-hidden shadow-inner">
+          {/* Animated Progress Fill */}
+          <div 
+            className="absolute top-0 left-0 h-full rounded-full transition-all duration-700 ease-out"
+            style={{ 
+              width: `${percent}%`,
+              background: 'linear-gradient(90deg, #5424FD 0%, #8B5CF6 50%, #A78BFA 100%)',
+              boxShadow: '0 0 12px rgba(84, 36, 253, 0.5)'
+            }}
+          >
+            {/* Shine Effect */}
+            <div 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+              style={{
+                animation: 'shine 2s infinite',
+              }}
+            />
+          </div>
+        </div>
       </div>
-      <div className="h-2 bg-gray-200 rounded">
-        <div className="h-2 bg-blue-600 rounded" style={{ width: `${percent}%` }} />
-      </div>
+
+      <style jsx>{`
+        @keyframes shine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(200%); }
+        }
+      `}</style>
     </div>
   )
 }
