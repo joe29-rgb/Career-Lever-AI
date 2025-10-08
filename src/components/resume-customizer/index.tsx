@@ -321,7 +321,7 @@ export function ResumeCustomizer({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Tone guidance</p>
+              <p className="text-sm font-medium text-muted-foreground">Tone guidance</p>
               <Select value={tone} onValueChange={(v)=>setTone(v as any)}>
                 <SelectTrigger><SelectValue placeholder="Select tone" /></SelectTrigger>
                 <SelectContent>
@@ -332,7 +332,7 @@ export function ResumeCustomizer({
               </Select>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Template</p>
+              <p className="text-sm font-medium text-muted-foreground">Template</p>
               <Select value={templateId} onValueChange={(v)=>{ setTemplateId(v); try { localStorage.setItem('resume:template', v) } catch {} }}>
                 <SelectTrigger><SelectValue placeholder="Select template" /></SelectTrigger>
                 <SelectContent>
@@ -347,37 +347,37 @@ export function ResumeCustomizer({
               </Select>
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Auto-tone from Psychology</p>
+              <p className="text-sm font-medium text-muted-foreground">Auto-tone from Psychology</p>
               <button type="button" onClick={()=>setAutoTone(v=>!v)} className={`px-3 py-2 border rounded text-sm ${autoTone ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{autoTone ? 'Enabled' : 'Disabled'}</button>
               {autoTone && (
-                <p className="text-xs text-gray-500">We’ll use the Analyze page’s tone if available</p>
+                <p className="text-xs text-muted-foreground">We’ll use the Analyze page’s tone if available</p>
               )}
             </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Humanize Style</p>
+              <p className="text-sm font-medium text-muted-foreground">Humanize Style</p>
               <button type="button" onClick={()=>setStyleHumanize(v=>!v)} className={`px-3 py-2 border rounded text-sm ${styleHumanize ? 'bg-green-50 border-green-200' : 'bg-white'}`}>{styleHumanize ? 'Enabled' : 'Disabled'}</button>
-              <p className="text-xs text-gray-500">Reduce AI detectability patterns</p>
+              <p className="text-xs text-muted-foreground">Reduce AI detectability patterns</p>
             </div>
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Live Highlights</p>
+            <p className="text-sm font-medium text-muted-foreground">Live Highlights</p>
             <button type="button" onClick={()=>setLiveHighlights(v=>!v)} className={`px-3 py-2 border rounded text-sm ${liveHighlights ? 'bg-yellow-50 border-yellow-200' : 'bg-white'}`}>{liveHighlights ? 'On' : 'Off'}</button>
-            <p className="text-xs text-gray-500">Highlight covered keywords in the editor</p>
+            <p className="text-xs text-muted-foreground">Highlight covered keywords in the editor</p>
           </div>
             <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Generate A/B Variants</p>
+              <p className="text-sm font-medium text-muted-foreground">Generate A/B Variants</p>
               <button type="button" onClick={()=>setGenerateVariantB(v=>!v)} className={`px-3 py-2 border rounded text-sm ${generateVariantB ? 'bg-blue-50 border-blue-200' : 'bg-white'}`}>{generateVariantB ? 'A & B' : 'A only'}</button>
-              <p className="text-xs text-gray-500">Two tailored variants for side-by-side comparison</p>
+              <p className="text-xs text-muted-foreground">Two tailored variants for side-by-side comparison</p>
             </div>
           </div>
 
           <div className="space-y-1">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Optional: Override Resume Text</p>
+            <p className="text-sm font-medium text-muted-foreground">Optional: Override Resume Text</p>
             {!liveHighlights ? (
               <Textarea rows={6} placeholder="Paste clean resume text to override extraction (optional)" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
             ) : (
               <div className="border rounded p-3 bg-white text-sm max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: highlighted || (overrideText || resume.extractedText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }} />
             )}
-            <p className="text-xs text-gray-500">Use this if the PDF text extraction contained gibberish. Minimum 50 characters.</p>
+            <p className="text-xs text-muted-foreground">Use this if the PDF text extraction contained gibberish. Minimum 50 characters.</p>
           </div>
           {/* Job Match Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -385,9 +385,9 @@ export function ResumeCustomizer({
               <div className="flex items-center gap-3">
                 <Target className="h-8 w-8 text-blue-600" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Target Job</p>
+                  <p className="text-sm font-medium text-muted-foreground">Target Job</p>
                   <p className="text-lg font-semibold">{jobAnalysis.analysis.jobTitle}</p>
-                  <p className="text-sm text-gray-600">{jobAnalysis.analysis.companyName}</p>
+                  <p className="text-sm text-muted-foreground">{jobAnalysis.analysis.companyName}</p>
                 </div>
               </div>
             </Card>
@@ -396,9 +396,9 @@ export function ResumeCustomizer({
               <div className="flex items-center gap-3">
                 <TrendingUp className="h-8 w-8 text-green-600" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Keywords Found</p>
+                  <p className="text-sm font-medium text-muted-foreground">Keywords Found</p>
                   <p className="text-lg font-semibold">{jobAnalysis.keywords.length}</p>
-                  <p className="text-sm text-gray-600">relevant terms</p>
+                  <p className="text-sm text-muted-foreground">relevant terms</p>
                 </div>
               </div>
             </Card>
@@ -407,9 +407,9 @@ export function ResumeCustomizer({
               <div className="flex items-center gap-3">
                 <Lightbulb className="h-8 w-8 text-purple-600" />
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Experience Level</p>
+                  <p className="text-sm font-medium text-muted-foreground">Experience Level</p>
                   <p className="text-lg font-semibold">{jobAnalysis.analysis.experienceLevel}</p>
-                  <p className="text-sm text-gray-600">required</p>
+                  <p className="text-sm text-muted-foreground">required</p>
                 </div>
               </div>
             </Card>
@@ -426,7 +426,7 @@ export function ResumeCustomizer({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Customizing resume...</span>
-                <span className="text-sm text-gray-600">{customizationProgress}%</span>
+                <span className="text-sm text-muted-foreground">{customizationProgress}%</span>
               </div>
               <Progress value={customizationProgress} className="w-full" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
@@ -527,32 +527,32 @@ export function ResumeCustomizer({
                   )}
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
+                <div className="bg-card rounded-lg p-4 border border-border">
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-gray-900">Changes Highlighted</h4>
+                    <h4 className="font-medium text-foreground">Changes Highlighted</h4>
                     <div className="flex items-center gap-2">
                       <Button size="sm" variant={activeVariant === 'A' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('A')}>Variant A</Button>
                       <Button size="sm" variant={activeVariant === 'B' ? 'secondary' : 'outline'} onClick={()=>setActiveVariant('B')} disabled={!customizedResultB}>Variant B</Button>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto border rounded p-4 bg-white" dangerouslySetInnerHTML={{ __html: activeDiff || activeData?.customizedResume?.customizedText?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '' }} />
-                  <div className="text-xs text-gray-500 mt-2">New or significantly changed text is highlighted.</div>
+                  <div className="text-sm text-foreground whitespace-pre-wrap max-h-96 overflow-y-auto border border-border rounded p-4 bg-background" dangerouslySetInnerHTML={{ __html: activeDiff || activeData?.customizedResume?.customizedText?.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || '' }} />
+                  <div className="text-xs text-muted-foreground mt-2">New or significantly changed text is highlighted.</div>
                 </div>
 
                 {activeAts && (
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-card rounded-lg p-4 border border-border">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">ATS Optimization</h4>
+                      <h4 className="font-medium text-foreground">ATS Optimization</h4>
                       <Badge variant="secondary">{activeAts.score}/100</Badge>
                     </div>
-                    <div className="text-xs text-gray-700">Missing keywords:</div>
+                    <div className="text-xs text-foreground">Missing keywords:</div>
                     <div className="mt-1 flex flex-wrap gap-2">
                       {activeAts.missingKeywords.slice(0, 20).map((k: string, i: number) => (
                         <Badge key={i} variant="outline">{k}</Badge>
                       ))}
                     </div>
                     {activeAts.suggestions?.length > 0 && (
-                      <ul className="list-disc ml-5 mt-2 text-sm text-gray-700">
+                      <ul className="list-disc ml-5 mt-2 text-sm text-foreground">
                         {activeAts.suggestions.map((s: string, i: number) => (<li key={i}>{s}</li>))}
                       </ul>
                     )}
