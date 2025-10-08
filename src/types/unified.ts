@@ -117,6 +117,14 @@ export interface HiringContact {
   email?: string
   linkedIn?: string
   role?: string
+  department?: string
+  linkedinUrl?: string
+  emailType?: 'public' | 'inferred' | 'pattern'
+  source?: string
+  confidence?: number
+  phone?: string
+  alternativeEmails?: string[]
+  discoveryMethod?: string
 }
 
 // API Response wrapper for consistent responses
