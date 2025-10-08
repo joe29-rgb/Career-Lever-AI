@@ -138,6 +138,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      resume: {
+        _id: resume._id.toString(),
+        userId: resume.userId,
+        originalFileName: resume.originalFileName,
+        filename: resume.filename,
+        extractedText: resume.extractedText,
+        extractionMethod: resume.extractionMethod,
+        uploadedAt: resume.uploadedAt
+      },
       resumeId: resume._id,
       extractedText: extractedText.substring(0, 500) + (extractedText.length > 500 ? '...' : ''),
       extractionMethod,
