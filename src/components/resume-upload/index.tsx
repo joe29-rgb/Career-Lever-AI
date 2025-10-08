@@ -191,8 +191,16 @@ export function ResumeUpload({
       console.log('✅ Upload response:', { success: data.success, hasResume: !!data.resume })
       const resume = data.resume
 
-      if (!resume || !resume._id) {
-        throw new Error('Resume not saved to database')
+      if (!resume) {
+        throw new Error('Resume upload failed - no resume data returned')
+      }
+      
+      // Store resume in localStorage for immediate use even if DB save fails
+      try {
+        localStorage.setItem('uploadedResume', JSON.stringify(resume))
+        localStorage.setItem('cf:resume', JSON.stringify(resume))
+      } catch (e) {
+        console.warn('Could not store resume in localStorage:', e)
       }
 
       setUploadedResume(resume)
@@ -318,13 +326,13 @@ export function ResumeUpload({
                 <Upload className="h-10 w-10 text-white" />
               </div>
               <div className="space-y-3">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {isDragActive ? '📥 Drop it here!' : '📄 Upload Your Resume'}
                 </p>
-                <p className="text-base text-gray-600 font-medium">
+                <p className="text-base text-muted-foreground font-medium">
                   Drag and drop your PDF file here, or click to browse
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Maximum file size: {maxFileSize / (1024 * 1024)}MB
                 </p>
               </div>
@@ -332,7 +340,7 @@ export function ResumeUpload({
 
             {/* VIBRANT Paste Text Area */}
             <div className="space-y-3 mt-6">
-              <label className="text-base font-bold text-gray-800 flex items-center gap-2">
+              <label className="text-base font-bold text-foreground flex items-center gap-2">
                 ✍️ Or paste your resume text
               </label>
               <textarea
@@ -342,7 +350,7 @@ export function ResumeUpload({
                 onChange={(e) => setPastedText(e.target.value)}
                 disabled={isUploading}
               />
-              <div className="text-sm text-gray-600 font-medium">✨ We'll create a resume record from your pasted text.</div>
+              <div className="text-sm text-muted-foreground font-medium">✨ We'll create a resume record from your pasted text.</div>
             </div>
 
             {/* VIBRANT Upload Button when using pasted text */}
@@ -383,8 +391,8 @@ export function ResumeUpload({
               <div className="flex items-center gap-3">
                 <FileText className="h-8 w-8 text-red-500" />
                 <div>
-                  <p className="font-medium text-gray-900">{uploadedFile.name}</p>
-                  <p className="text-sm text-gray-600">{formatFileSize(uploadedFile.size)}</p>
+                  <p className="font-medium text-foreground">{uploadedFile.name}</p>
+                  <p className="text-sm text-muted-foreground">{formatFileSize(uploadedFile.size)}</p>
                 </div>
               </div>
               {!isUploading && !uploadedResume && (
@@ -399,7 +407,7 @@ export function ResumeUpload({
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium">Uploading...</span>
-                  <span className="text-sm text-gray-600">{uploadProgress}%</span>
+                  <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} className="w-full" />
               </div>
@@ -407,7 +415,7 @@ export function ResumeUpload({
 
             {/* Paste Text Area */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Or paste your resume text</label>
+              <label className="text-sm font-medium text-foreground">Or paste your resume text</label>
               <textarea
                 className="w-full border rounded-md p-3 text-sm h-40"
                 placeholder="Paste your resume here if your PDF is scanned or not readable..."
@@ -415,7 +423,7 @@ export function ResumeUpload({
                 onChange={(e) => setPastedText(e.target.value)}
                 disabled={isUploading}
               />
-              <div className="text-xs text-gray-500">We’ll create a resume record from your pasted text.</div>
+              <div className="text-xs text-muted-foreground">We’ll create a resume record from your pasted text.</div>
             </div>
 
             {/* Upload Button */}
@@ -460,12 +468,12 @@ export function ResumeUpload({
 
         {/* Resume Preview */}
         {uploadedResume && (
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Resume Preview</h4>
-            <div className="text-sm text-gray-600 max-h-32 overflow-y-auto">
+          <div className="bg-card rounded-lg p-4">
+            <h4 className="font-medium text-foreground mb-2">Resume Preview</h4>
+            <div className="text-sm text-muted-foreground max-h-32 overflow-y-auto">
               {uploadedResume.extractedText.substring(0, 300)}...
             </div>
-            <div className="mt-2 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-muted-foreground">
               {uploadedResume.extractedText.split(' ').length} words extracted
             </div>
           </div>
