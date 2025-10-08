@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting
     const userId = session.user.id || session.user.email
-    if (await isRateLimited(userId)) {
+    if (await isRateLimited(userId, 'market-intelligence-trends')) {
       return NextResponse.json(
         { error: 'Rate limit exceeded. Please try again later.' },
         { status: 429 }
