@@ -23,7 +23,6 @@ export default function CareerFinderResumePage() {
           const parsed = JSON.parse(cachedResume)
           console.log('[RESUME_PAGE] Found cached resume in localStorage:', parsed?._id || parsed?.originalFileName)
           setExistingResume(parsed)
-          setHasResume(true)
           setLoadingExisting(false)
           return // Early return if we have a cached resume
         }
@@ -40,7 +39,6 @@ export default function CareerFinderResumePage() {
             const mostRecent = j.resumes[0]
             console.log('[RESUME_PAGE] Found DB resume:', mostRecent._id)
             setExistingResume(mostRecent)
-            setHasResume(true)
             // Cache it for future use
             try {
               localStorage.setItem('cf:resume', JSON.stringify(mostRecent))
@@ -109,7 +107,6 @@ export default function CareerFinderResumePage() {
               <button 
                 onClick={() => {
                   setExistingResume(null)
-                  setHasResume(false)
                   try {
                     localStorage.removeItem('cf:resume')
                     localStorage.removeItem('cf:autopilotReady')
