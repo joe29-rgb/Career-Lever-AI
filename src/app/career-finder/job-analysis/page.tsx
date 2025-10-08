@@ -23,7 +23,7 @@ interface JobData {
 }
 
 interface AnalysisResult {
-  matchScore: number
+  matchScore?: number // Optional - undefined when no resume
   matchingSkills: string[]
   missingSkills: string[]
   recommendations: string[]
