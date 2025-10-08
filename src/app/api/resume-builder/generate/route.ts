@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       tone
     } = parsed.data
 
-    // ENTERPRISE FIX: Provide comprehensive validation with helpful error messages
+    // ENTERPRISE FIX: Handle both structured data and text-only input
     if (!resumeData && !resumeTextInput) {
       return NextResponse.json(
         { 
@@ -113,18 +113,11 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // If only text provided, create minimal resume data structure
+    // If only text provided, treat it as resumeTextInput for job-targeted generation
     if (!resumeData && resumeTextInput) {
-      console.log('[RESUME_BUILDER] Creating resume data from text input')
-      // For now, return error with clear instruction
-      return NextResponse.json(
-        { 
-          error: 'Resume builder requires structured data',
-          details: 'Please use the resume builder form to create structured resume data',
-          hint: 'Upload a PDF resume first, then use the builder interface'
-        },
-        { status: 400 }
-      )
+      console.log('[RESUME_BUILDER] Text-only input received, length:', resumeTextInput.length)
+      // This is valid - the optimizer uses text input
+      // Continue to the job description check below
     }
 
     await connectToDatabase()

@@ -198,7 +198,10 @@ export function ModernJobCard({
 
           {/* Salary */}
           <div className="text-lg font-bold text-black">
-            {currency}{salary}/mo
+            {salary && salary !== 'Not disclosed' && salary !== '50K' && salary !== '$50K' 
+              ? `${currency}${salary}/mo` 
+              : 'Not disclosed'
+            }
           </div>
         </div>
       </div>

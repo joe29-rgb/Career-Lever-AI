@@ -101,8 +101,8 @@ export default function CareerFinderOptimizerPage() {
           <textarea className="w-full border rounded p-2 h-24" placeholder="Paste to override uploaded resume text for this optimization only" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
         </div>
         <div>
-          <div className="mb-1">Tone</div>
-          <select className="w-full border rounded p-2" value={tone} onChange={(e)=>setTone(e.target.value as any)}>
+          <div className="mb-1 text-foreground">Tone</div>
+          <select className="w-full border rounded p-2 bg-background text-foreground" value={tone} onChange={(e)=>setTone(e.target.value as any)}>
             <option value="professional">Professional</option>
             <option value="conversational">Conversational</option>
             <option value="technical">Technical</option>
