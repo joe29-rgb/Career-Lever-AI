@@ -157,8 +157,7 @@ export default function SearchPage() {
           location: loc,
           salaryMin: filters.salaryMin ? parseInt(filters.salaryMin) : undefined,
           experienceLevel: filters.experienceLevel || undefined,
-          remote: filters.remote,
-          workType: filters.remote ? 'remote' : 'any',
+          workType: filters.workType === 'all' ? 'any' : filters.workType,
           limit: 50,
           useResumeMatching
         })
