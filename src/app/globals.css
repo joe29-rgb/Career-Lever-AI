@@ -53,6 +53,14 @@
     --input: 217 33% 20%;
     --ring: 251 91% 56%;
     --radius: 0.75rem;
+    
+    /* Figma Design System Colors */
+    --figma-purple: 252 97% 57%; /* #5424FD */
+    --figma-red: 352 99% 49%; /* #F5001E */
+    --figma-yellow: 45 97% 60%; /* #FCC636 */
+    --figma-dark: 0 0% 17%; /* #2B2B2B */
+    --figma-darker: 0 0% 12%; /* #1F1F1F */
+    --figma-gray: 0 0% 84%; /* #D5D5D5 */
   }
   
   /* LIGHT THEME (Optional toggle) */
