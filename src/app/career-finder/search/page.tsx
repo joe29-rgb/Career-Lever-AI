@@ -32,7 +32,7 @@ export default function SearchPage() {
     location: 'Toronto, ON', 
     salaryMin: '', 
     salaryMax: '', 
-    remote: false,
+    workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'parttime',
     experienceLevel: '' as '' | 'entry' | 'mid' | 'senior' | 'executive'
   })
   const [sidebarOpen, setSidebarOpen] = useState(false)
