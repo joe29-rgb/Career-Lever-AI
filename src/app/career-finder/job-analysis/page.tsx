@@ -39,6 +39,7 @@ export default function JobAnalysisPage() {
   const [hasResume, setHasResume] = useState(false)
 
   useEffect(() => {
+    console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
     loadAndAnalyzeJob()
   }, [])
 
@@ -46,15 +47,20 @@ export default function JobAnalysisPage() {
     try {
       // Load selected job from localStorage
       const stored = localStorage.getItem('selectedJob')
+      console.log('🎯 [JOB_ANALYSIS] Retrieved from localStorage:', stored ? 'found' : 'NOT FOUND')
+      
       if (!stored) {
+        console.warn('🎯 [JOB_ANALYSIS] No job found - redirecting to search')
         router.push('/career-finder/search')
         return
       }
 
       const jobData = JSON.parse(stored)
+      console.log('🎯 [JOB_ANALYSIS] Job data:', { title: jobData.title, company: jobData.company })
       setJob(jobData)
 
       // Auto-analyze immediately
+      console.log('🎯 [JOB_ANALYSIS] Starting job analysis...')
       await analyzeJob(jobData)
     } catch (err: any) {
       console.error('Failed to load job:', err)
