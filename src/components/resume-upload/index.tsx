@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -10,8 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { Resume } from '@/types'
 import toast from 'react-hot-toast'
-import { useToast } from '@/components/ui/use-toast'
-import { Input } from '@/components/ui/input'
 
 interface ResumeUploadProps {
   onUploadSuccess: (resume: Resume) => void
@@ -25,8 +23,7 @@ interface ResumeUploadProps {
 export function ResumeUpload({
   onUploadSuccess,
   onUploadError,
-  maxFileSize = 10 * 1024 * 1024, // 10MB
-  acceptedTypes = ['application/pdf']
+  maxFileSize = 10 * 1024 * 1024 // 10MB
 }: ResumeUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -34,8 +31,6 @@ export function ResumeUpload({
   const [error, setError] = useState<string | null>(null)
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
   const [pastedText, setPastedText] = useState('')
-  const [clientExtract, setClientExtract] = useState('')
-  const { toast } = useToast()
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
@@ -133,11 +128,7 @@ export function ResumeUpload({
 
     } catch (error) {
       console.error('Signal processing failed:', error)
-      toast({
-        title: 'Extraction Failed',
-        description: 'Could not extract keywords/location. Using defaults.',
-        variant: 'destructive'
-      })
+      toast.error('Could not extract keywords/location. Using defaults.')
       throw error
     }
   }
@@ -254,16 +245,13 @@ export function ResumeUpload({
         const js = await resp.json()
         if (resp.ok && js.success) {
           try { localStorage.setItem('jobs:lastSuggest', JSON.stringify(js)) } catch {}
-          toast({
-            title: `Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`,
-            variant: 'default'
-          })
+          toast.success(`Found ${js.results?.length || 0} local jobs for ${js.titles?.join(', ')}`)
         }
       } catch {}
 
       // Mark Autopilot ready and move wizard
       try { localStorage.setItem('cf:autopilotReady', '1'); localStorage.setItem('cf:progress', JSON.stringify({ step: 2, total: 7 })) } catch {}
-      toast({ title: "Success", description: 'Resume uploaded successfully! Autopilot enabled.', variant: "default" })
+      toast.success('Resume uploaded successfully! Autopilot enabled.')
 
       // Extract signals after upload
       if (data.extractedText && data.extractedText.length > 50) {
@@ -275,7 +263,7 @@ export function ResumeUpload({
       const errorMessage = error instanceof Error ? error.message : 'Upload failed'
       setError(errorMessage)
       onUploadError(errorMessage)
-      toast({ title: "Error", description: errorMessage, variant: "destructive" })
+      toast.error(errorMessage)
     } finally {
       setIsUploading(false)
       setTimeout(() => setUploadProgress(0), 1000)
