@@ -24,6 +24,8 @@ export interface ModernJobCardProps {
   description: string
   postedDate: string
   colorTheme?: 'purple' | 'red' | 'yellow'
+  aiRiskLevel?: 'low' | 'medium' | 'high' | 'critical'
+  aiRiskScore?: number
   onView?: () => void
 }
 
@@ -73,6 +75,8 @@ export function ModernJobCard({
   description,
   postedDate,
   colorTheme = 'purple',
+  aiRiskLevel,
+  aiRiskScore,
   onView,
 }: ModernJobCardProps) {
   const theme = colorThemes[colorTheme]
@@ -185,6 +189,28 @@ export function ModernJobCard({
             <Clock className="w-4 h-4" />
             <span>{workTypeLabels[workType]}</span>
           </div>
+
+          {/* AI Risk Badge - ENTERPRISE FEATURE */}
+          {aiRiskLevel && (
+            <div
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold",
+                aiRiskLevel === 'low' && "bg-green-500/20 border-green-500/40 text-green-700 dark:text-green-300",
+                aiRiskLevel === 'medium' && "bg-yellow-500/20 border-yellow-500/40 text-yellow-700 dark:text-yellow-300",
+                aiRiskLevel === 'high' && "bg-orange-500/20 border-orange-500/40 text-orange-700 dark:text-orange-300",
+                aiRiskLevel === 'critical' && "bg-red-500/20 border-red-500/40 text-red-700 dark:text-red-300"
+              )}
+            >
+              🤖
+              <span>
+                {aiRiskLevel === 'low' && 'Safe'}
+                {aiRiskLevel === 'medium' && 'Med Risk'}
+                {aiRiskLevel === 'high' && 'High Risk'}
+                {aiRiskLevel === 'critical' && 'Critical'}
+              </span>
+              {aiRiskScore && <span className="opacity-75">({aiRiskScore}%)</span>}
+            </div>
+          )}
         </div>
 
         {/* Description */}
