@@ -40,11 +40,10 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
   try {
     const pdfjsLib = await import('pdfjs-dist')
     
-    // Load the PDF document
+    // Load the PDF document with proper TypeScript types
     const loadingTask = pdfjsLib.getDocument({
       data: buffer,
       verbosity: 0,
-      standardFontDataUrl: null,
       useSystemFonts: false,
       disableFontFace: true
     })
