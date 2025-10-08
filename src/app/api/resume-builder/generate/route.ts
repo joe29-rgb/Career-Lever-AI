@@ -101,9 +101,28 @@ export async function POST(request: NextRequest) {
       tone
     } = parsed.data
 
-    if (!resumeData) {
+    // ENTERPRISE FIX: Provide comprehensive validation with helpful error messages
+    if (!resumeData && !resumeTextInput) {
       return NextResponse.json(
-        { error: 'Resume data is required' },
+        { 
+          error: 'Resume data is required',
+          details: 'Please provide either resumeData object or resumeText string',
+          hint: 'Use the resume upload or builder to create resume data first'
+        },
+        { status: 400 }
+      )
+    }
+    
+    // If only text provided, create minimal resume data structure
+    if (!resumeData && resumeTextInput) {
+      console.log('[RESUME_BUILDER] Creating resume data from text input')
+      // For now, return error with clear instruction
+      return NextResponse.json(
+        { 
+          error: 'Resume builder requires structured data',
+          details: 'Please use the resume builder form to create structured resume data',
+          hint: 'Upload a PDF resume first, then use the builder interface'
+        },
         { status: 400 }
       )
     }
@@ -234,12 +253,24 @@ Return optimized JSON with the same structure but enhanced content.`
   try {
     const system = 'You are an expert resume writer and career counselor. Optimize resumes for maximum impact and ATS compatibility. Return strict JSON with the same structure as input.'
     const out = await ppx.makeRequest(system, prompt, { temperature: 0.4, maxTokens: 2000 })
-    const text = (out.content || '').trim()
+    let text = (out.content || '').trim()
+    
+    // ENTERPRISE FIX: Strip markdown code blocks from AI response
+    text = text.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+    
+    // Extract JSON if wrapped in explanatory text
+    const jsonMatch = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+    if (jsonMatch) {
+      text = jsonMatch[0]
+    }
+    
     if (text) {
+      console.log('[RESUME_BUILDER] Parsing optimized content:', text.slice(0, 200))
       const optimized = JSON.parse(text)
       return optimized
     }
   } catch (e) {
+    console.error('[RESUME_BUILDER] Optimization failed:', e)
     // Fall-through to return original data
   }
 
