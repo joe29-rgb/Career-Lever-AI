@@ -4,8 +4,6 @@ import { authOptions } from '@/lib/auth'
 import Resume from '@/models/Resume'
 import { dbService } from '@/lib/database'
 import { isRateLimited } from '@/lib/rate-limit'
-import { isSameOrigin } from '@/lib/security'
-import { promises as fs } from 'fs'
 import path from 'path'
 
 function cleanExtractedText(text: string): string {
