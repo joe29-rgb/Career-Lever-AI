@@ -22,11 +22,13 @@ export async function POST(request: NextRequest) {
 
     const jobData = await request.json()
 
-    await connectToDatabase()
+    // Don't fail if database storage fails - job is already in localStorage
+    try {
+      await connectToDatabase()
 
-    // Create selected job record
-    const selectedJob = await SelectedJob.create({
-      userId: session.user.email,
+      // Create selected job record
+      const selectedJob = await SelectedJob.create({
+        userId: session.user.email,
       jobData: {
         id: jobData.id || `job-${Date.now()}`,
         title: jobData.title,
@@ -40,21 +42,34 @@ export async function POST(request: NextRequest) {
         skills: jobData.skills || [],
         requirements: jobData.requirements || [],
       },
-      selectedAt: new Date(),
-      status: 'pending_analysis'
-    })
+        selectedAt: new Date(),
+        status: 'pending_analysis'
+      })
 
-    return NextResponse.json({
-      success: true,
-      jobId: selectedJob._id,
-      message: 'Job stored successfully'
-    })
+      return NextResponse.json({
+        success: true,
+        jobId: selectedJob._id,
+        message: 'Job stored successfully'
+      })
+    } catch (dbError: any) {
+      // Database storage failed but job is in localStorage, so don't block user
+      console.error('[API] Store job DB error (non-blocking):', dbError.message)
+      return NextResponse.json({
+        success: true,
+        jobId: 'local-only',
+        message: 'Job stored in browser (database unavailable)',
+        warning: 'Job history not saved to account'
+      })
+    }
   } catch (error: any) {
     console.error('[API] Store job error:', error)
-    return NextResponse.json(
-      { error: 'Failed to store job', details: error.message },
-      { status: 500 }
-    )
+    // Even if this fails, the job is in localStorage, so return success
+    return NextResponse.json({
+      success: true,
+      jobId: 'local-only',
+      message: 'Job stored locally',
+      warning: 'Could not save to account'
+    })
   }
 }
 
