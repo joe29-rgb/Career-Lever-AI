@@ -207,7 +207,12 @@ async function generateOptimizedResume(
       },
       experience: [],
       education: [],
-      skills: { technical: [], soft: [] },
+      skills: { 
+        technical: [], 
+        soft: [], 
+        languages: [], 
+        certifications: [] 
+      },
       projects: [],
       template,
       customization: {
@@ -239,7 +244,12 @@ async function generateOptimizedResume(
     },
     experience: optimizedContent?.experience || resumeData?.experience || [],
     education: optimizedContent?.education || resumeData?.education || [],
-    skills: optimizedContent?.skills || resumeData?.skills || { technical: [], soft: [] },
+    skills: optimizedContent?.skills || resumeData?.skills || { 
+      technical: [], 
+      soft: [], 
+      languages: [], 
+      certifications: [] 
+    },
     projects: optimizedContent?.projects || resumeData?.projects || [],
     template,
     customization: {
