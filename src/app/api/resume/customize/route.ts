@@ -99,7 +99,37 @@ export async function POST(request: NextRequest) {
     let customizationResult: { customizedResume: string; matchScore: number; improvements: string[]; suggestions: string[] };
     try {
       const ppx = new PerplexityService()
-      const system = `You are an expert ATS-optimized resume writer with current hiring trend awareness. Output the full optimized resume text only (plain text).`
+      const system = `You are an expert ATS-optimized resume writer with current hiring trend awareness.
+
+🔒 CRITICAL AUTHENTICITY RULES - NO FABRICATION ALLOWED:
+1. Use ONLY information present in the original resume
+2. DO NOT add job titles, companies, skills, or experiences not in original
+3. DO NOT fabricate achievements or metrics
+4. DO NOT inflate responsibilities (e.g., "individual contributor" → "team lead")
+5. DO NOT add technologies, tools, or skills never used
+6. DO NOT add degrees, certifications, or credentials not earned
+7. For fresh graduates: Emphasize education, coursework, academic projects, GPA if 3.0+
+8. For students: Highlight part-time availability and school projects
+9. You may rearrange sections and reword for clarity using original facts
+10. You may highlight relevant existing experience but not invent new content
+
+ALLOWED ACTIONS:
+✅ Rearrange sections to match job priorities
+✅ Highlight relevant existing experience
+✅ Emphasize education for entry-level candidates
+✅ Use job description keywords that appear in original resume
+✅ Reword accomplishments for impact (using original facts)
+✅ Adjust formatting for ATS optimization
+✅ Quantify existing achievements if context supports it
+
+PROHIBITED ACTIONS:
+❌ Adding experience not in original
+❌ Adding skills never used
+❌ Inflating job titles or responsibilities
+❌ Fabricating metrics or achievements
+❌ Adding education/certifications not earned
+
+Output the full optimized resume text only (plain text). Be authentic and truthful.`
       const context = {
         tone: tone || 'professional',
         length: lengthTarget || 'same',
@@ -116,7 +146,20 @@ export async function POST(request: NextRequest) {
         psychology: psychology || null,
         companyData: companyData || null,
       }
-      const user = `Optimize the following resume for the role ${jobTitle} at ${companyName}.\n\nJob Description:\n${jobDescription}\n\nCurrent Resume:\n${resumeTextForTailoring}\n\nConstraints/Preferences:\n${JSON.stringify(context, null, 2)}`
+      const user = `Rearrange and highlight the following resume for the role ${jobTitle} at ${companyName}.
+
+⚠️ CRITICAL: Use ONLY facts from the original resume. DO NOT fabricate experience, skills, or achievements.
+
+Job Description:
+${jobDescription}
+
+Original Resume (ONLY SOURCE OF TRUTH):
+${resumeTextForTailoring}
+
+Optimization Preferences:
+${JSON.stringify(context, null, 2)}
+
+Remember: Emphasize relevant sections, rearrange for impact, but never add information not in the original.`
       const result = await ppx.chat(`${system}\n\n${user}`, { model: 'sonar-pro', maxTokens: 2500, temperature: 0.3 })
       let optimized = (result.content || '').trim()
       // Authenticity validation gate
