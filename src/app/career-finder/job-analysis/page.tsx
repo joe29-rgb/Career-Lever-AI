@@ -103,7 +103,7 @@ export default function JobAnalysisPage() {
           'Highlight your experience with similar technologies',
           'Emphasize transferable skills',
           'Show enthusiasm for learning new tools'
-        ],
+        ] : [],
         estimatedFit: 'good'
       })
     } finally {
