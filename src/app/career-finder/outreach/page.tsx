@@ -2,6 +2,7 @@
 import CompanyResearch from '@/components/company-research'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 export default function CareerFinderOutreachPage() {
   const [subjects, setSubjects] = useState<string[]>([])
@@ -30,6 +31,7 @@ export default function CareerFinderOutreachPage() {
   }, [])
   return (
     <div className="mobile-container space-y-4">
+      <CareerFinderBackButton />
       <div className="text-sm text-foreground">Select a contact and use the composer to send your intro. Applications will be tracked.</div>
       <div className="text-xs text-muted-foreground">After sending your email, click below to record the application:</div>
       <Button size="sm" variant="outline" onClick={async ()=>{

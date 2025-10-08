@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 export default function CareerFinderJobPage() {
   const [analysis, setAnalysis] = useState<any | null>(null)
@@ -43,6 +44,7 @@ export default function CareerFinderJobPage() {
 
   return (
     <div className="mobile-container space-y-4">
+      <CareerFinderBackButton />
       <div className="text-sm text-foreground">Job analysis auto-runs when you arrive on this page.</div>
       {loading && <div className="text-sm">Analyzing job…</div>}
       {!loading && analysis && (

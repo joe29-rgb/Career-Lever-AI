@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 const TEMPLATES = [
   { id: 'modern', name: 'Modern' },
@@ -77,6 +78,7 @@ export default function CareerFinderOptimizerPage() {
 
   return (
     <div className="mobile-container space-y-4">
+      <CareerFinderBackButton />
       <div className="text-sm text-foreground">Choose a template, generate A/B variants by tone, and select one to continue.</div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
         {TEMPLATES.map(t => (

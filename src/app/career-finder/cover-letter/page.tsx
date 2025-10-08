@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
 export default function CareerFinderCoverLetterPage() {
   const [loading, setLoading] = useState(true)
@@ -81,6 +82,7 @@ export default function CareerFinderCoverLetterPage() {
 
   return (
     <div className="mobile-container space-y-4">
+      <CareerFinderBackButton />
       <div className="text-sm text-foreground">Choose one of the generated cover letters.</div>
       {loading && <div className="text-sm">Generating letters…</div>}
       {error && <div className="text-xs text-red-600">{error}</div>}
