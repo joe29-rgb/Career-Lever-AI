@@ -38,37 +38,71 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
 
   // Try Method 2: pdfjs-dist fallback
   try {
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.js')
+    const pdfjsLib = await import('pdfjs-dist')
     
+    // Load the PDF document
     const loadingTask = pdfjsLib.getDocument({
-      data: new Uint8Array(buffer),
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true
+      data: buffer,
+      verbosity: 0,
+      standardFontDataUrl: null,
+      useSystemFonts: false,
+      disableFontFace: true
     })
     
-    const pdfDocument = await loadingTask.promise
+    const pdfDoc = await loadingTask.promise
     let fullText = ''
     
-    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
-      const page = await pdfDocument.getPage(pageNum)
+    // Extract text from each page
+    for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+      const page = await pdfDoc.getPage(pageNum)
       const textContent = await page.getTextContent()
+      
       const pageText = textContent.items
-        .map((item: any) => item.str)
+        .map((item: any) => {
+          if ('str' in item) {
+            return item.str
+          }
+          return ''
+        })
         .join(' ')
+      
       fullText += pageText + '\n'
     }
     
     const cleanedText = cleanExtractedText(fullText.trim())
-    console.log('✅ PDF extracted via pdfjs-dist:', cleanedText.length, 'chars')
     
-    return {
-      text: cleanedText,
-      method: 'pdfjs-dist',
-      confidence: cleanedText.length > 100 ? 0.85 : 0.4
+    if (cleanedText.length > 100) {
+      console.log('✅ PDF extracted via pdfjs-dist:', cleanedText.length, 'chars')
+      return {
+        text: cleanedText,
+        method: 'pdfjs-dist',
+        confidence: 0.85
+      }
     }
   } catch (error) {
-    console.error('pdfjs-dist also failed:', error)
+    console.error('pdfjs-dist failed:', error)
+  }
+
+  // Try Method 3: ASCII extraction as last resort
+  try {
+    const asciiText = buffer
+      .toString('utf8')
+      .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    
+    if (asciiText.length > 100) {
+      const cleanedText = cleanExtractedText(asciiText)
+      console.log('✅ PDF extracted via ASCII fallback:', cleanedText.length, 'chars')
+      
+      return {
+        text: cleanedText,
+        method: 'ascii-fallback',
+        confidence: 0.6
+      }
+    }
+  } catch (error) {
+    console.error('ASCII fallback also failed:', error)
   }
 
   // Both methods failed
