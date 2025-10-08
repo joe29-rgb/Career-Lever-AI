@@ -76,35 +76,74 @@ export default function SearchPage() {
     }
   }
 
-  // Auto-search on mount if query params exist
+  // ENTERPRISE FIX: Auto-search on mount if query params exist OR autopilot is ready
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const keywords = params.get('keywords')
     const location = params.get('location')
     
-    if (keywords) {
-      setSearchQuery(keywords)
+    // Check if autopilot mode is enabled (resume uploaded)
+    const autopilotReady = localStorage.getItem('cf:autopilotReady') === '1'
+    const resumeData = localStorage.getItem('cf:resume')
+    
+    console.log('[AUTOPILOT] Check:', { autopilotReady, hasResume: !!resumeData, hasKeywords: !!keywords })
+    
+    if (keywords || autopilotReady) {
+      if (keywords) {
+        setSearchQuery(keywords)
+      }
       if (location) setFilters(prev => ({ ...prev, location }))
       
       // Perform search
       const performInitialSearch = async () => {
-        const query = keywords
+        let query = keywords
         const loc = location || filters.location
 
-        if (!query || query.trim().length < 2) return
+        // ENTERPRISE FIX: If autopilot mode, extract keywords from resume
+        if (!query && autopilotReady && resumeData) {
+          try {
+            const resume = JSON.parse(resumeData)
+            // Extract first 5 keywords from resume
+            const resumeText = resume.extractedText || ''
+            const response = await fetch('/api/resume/extract-signals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ resume: resumeText })
+            })
+            
+            if (response.ok) {
+              const signals = await response.json()
+              const topKeywords = signals.keywords?.slice(0, 5).join(', ') || ''
+              query = topKeywords
+              setSearchQuery(topKeywords)
+              setUseResumeMatching(true)
+              console.log('[AUTOPILOT] Auto-search with keywords:', topKeywords)
+            }
+          } catch (e) {
+            console.error('[AUTOPILOT] Failed to extract keywords:', e)
+          }
+        }
+
+        if (!query || query.trim().length < 2) {
+          console.log('[AUTOPILOT] No valid query, skipping search')
+          return
+        }
         if (status === 'unauthenticated') return
 
         setLoading(true)
         setError('')
         
         try {
+          console.log('[AUTOPILOT] Performing search:', { query, loc, useResumeMatching })
+          
           const response = await fetch('/api/jobs/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               keywords: query,
               location: loc,
-              limit: 50
+              limit: 50,
+              useResumeMatching: autopilotReady && useResumeMatching
             })
           })
 
@@ -112,6 +151,7 @@ export default function SearchPage() {
           if (response.ok) {
             setJobs(data.jobs || [])
             setMetadata(data.metadata || {})
+            console.log('[AUTOPILOT] Search completed:', data.jobs?.length, 'jobs found')
           }
         } catch (err) {
           console.error('[SEARCH] Error:', err)
