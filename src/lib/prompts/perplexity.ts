@@ -88,7 +88,14 @@ Best practices (2025): half-page length (≈200–350 words), compelling opening
 STRICT AUTHENTICITY:
 - Do not fabricate achievements or tools. Use only what is present in the provided resume/candidate background.
 - No citation links, no markdown, no reference brackets.
-  - Preserve the candidate's actual voice; avoid generic AI phrases (e.g., "dynamic, results-driven").
+- Preserve the candidate's actual voice; avoid generic AI phrases (e.g., "dynamic, results-driven").
+
+CRITICAL RULE - CURRENT EMPLOYMENT:
+- The candidate is APPLYING TO the company, they do NOT currently work there
+- Do NOT say "In my current role at [TARGET COMPANY]"
+- Do NOT imply the candidate already works at the target company
+- If the candidate's resume mentions the target company as a PAST employer, that's fine
+- Use phrases like: "I am excited to apply", "I am drawn to [COMPANY]", "I would bring to [COMPANY]"
 `;
 
 export function buildEnhancedCoverLetterUserPrompt(params: {
@@ -99,15 +106,22 @@ export function buildEnhancedCoverLetterUserPrompt(params: {
   jobDescription: string;
   candidateHighlights?: string;
   companyData?: any;
+  currentEmployer?: string;
 }): string {
-  const { candidateName, jobTitle, companyName, location, jobDescription, candidateHighlights, companyData } = params
+  const { candidateName, jobTitle, companyName, location, jobDescription, candidateHighlights, companyData, currentEmployer } = params
   const header = [candidateName && `CANDIDATE: ${candidateName}`, location && `LOCATION: ${location}`].filter(Boolean).join('\n')
   const companyHints = companyData ? `\nCOMPANY DATA (best-effort):\n${JSON.stringify(companyData).slice(0, 1200)}` : ''
+  const employerWarning = currentEmployer && currentEmployer !== companyName 
+    ? `\n⚠️ CURRENT EMPLOYER: ${currentEmployer} (NOT ${companyName})`
+    : currentEmployer === companyName
+    ? `\n⚠️ Candidate may currently work at ${companyName} - verify before writing`
+    : `\n⚠️ Candidate is APPLYING TO ${companyName}, does NOT work there`
+  
   return `Research ${companyName} (site, LinkedIn, recent news) and create an authentic, concise cover letter.
 
 ${header}
 POSITION: ${jobTitle}
-COMPANY: ${companyName}
+COMPANY APPLYING TO: ${companyName}${employerWarning}
 
 JOB POSTING:\n${jobDescription}
 
@@ -117,7 +131,8 @@ Requirements:
 - Three paragraphs max; conversational human voice; no generic phrases; no citation links
 - Include 1–2 specific company developments or culture signals
 - Quantified, relevant achievements drawn only from the candidate background; mirror JD terminology naturally
-- Strong closing with next-steps.
+- Strong closing with next-steps
+- CRITICAL: The candidate is APPLYING TO ${companyName}, so use phrases like "I am excited to apply for the ${jobTitle} position at ${companyName}" NOT "In my current role at ${companyName}"
 Return the final letter text only.`
 }
 
