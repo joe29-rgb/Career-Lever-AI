@@ -111,15 +111,15 @@ export default function JobAnalysisPage() {
   const handleResearchCompany = () => {
     if (!job) return
     
-    // Store company context for auto-population
-    sessionStorage.setItem('companyResearchContext', JSON.stringify({
-      name: job.company,
-      website: extractWebsite(job.url),
+    // Store in cf:selectedJob format for company page auto-population
+    localStorage.setItem('cf:selectedJob', JSON.stringify({
+      company: job.company,
+      title: job.title,
       location: job.location,
-      position: job.title
+      url: job.url
     }))
     
-    router.push('/career-finder/company-insights')
+    router.push('/career-finder/company')
   }
 
   const extractWebsite = (url: string): string => {
