@@ -679,7 +679,7 @@ OUTPUT JSON FORMAT:
     }
   }
 
-  // V2: Enhanced hiring contacts with email enrichment
+  // V2: Enhanced hiring contacts with email enrichment and discovery
   static async hiringContactsV2(companyName: string): Promise<EnhancedResponse<HiringContact[]>> {
     const requestId = generateRequestId()
     const started = Date.now()
@@ -689,19 +689,71 @@ OUTPUT JSON FORMAT:
     try {
       const out = await withRetry(async () => {
         const client = createClient()
-        const prompt = `Find verified hiring contacts at ${companyName}. Include name, title, department, linkedinUrl, email, emailType, source, confidence, phone, alternativeEmails.`
-        return client.makeRequest(SYSTEM, prompt, { temperature: 0.1, maxTokens: 1200 })
+        
+        // ENTERPRISE ENHANCEMENT: Explicit email discovery from company website and Google
+        const prompt = `Find verified hiring contacts at ${companyName} with active email discovery.
+
+CRITICAL REQUIREMENTS:
+1. **Primary Sources**: Search company website careers/about pages and LinkedIn
+2. **Email Discovery**: If LinkedIn profiles found WITHOUT emails:
+   - Search company website for "contact us", "team", "about" pages
+   - Search Google for "[name] [company] email" 
+   - Look for press releases with contact info
+   - Check company blog author pages
+3. **Email Validation**: Provide confidence score (0-1) based on source
+4. **Alternative Formats**: Generate common email patterns if no public email found
+
+OUTPUT JSON FORMAT (strictly follow):
+[{
+  "name": string,
+  "title": string (e.g. "VP of Engineering", "Talent Acquisition Manager"),
+  "department": "HR" | "Engineering" | "Product" | "Sales" | "Executive" | "Operations",
+  "linkedinUrl": string | null,
+  "email": string | null (SEARCH AGGRESSIVELY FOR THIS),
+  "emailType": "public" | "inferred" | "pattern" (public=found on web, inferred=discovered via search, pattern=common format),
+  "source": string (e.g., "LinkedIn + Company Website", "Press Release", "Company Blog"),
+  "confidence": number (0-1, where 1=verified public email, 0.7=found via search, 0.3=pattern-based),
+  "phone": string | null,
+  "alternativeEmails": string[] (additional possible formats),
+  "discoveryMethod": string (how the email was found)
+}]
+
+IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department heads. If no emails found after extensive search, still return the contact with pattern-based emails.`
+
+        return client.makeRequest(SYSTEM, prompt, { temperature: 0.1, maxTokens: 1500 })
       })
-      let parsed = JSON.parse(out.content.trim()) as HiringContact[]
+      
+      // Parse and clean Perplexity response
+      let cleanedContent = out.content.trim()
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+      const jsonMatch = cleanedContent.match(/(\[[\s\S]*\])/);
+      if (jsonMatch) {
+        cleanedContent = jsonMatch[0]
+      }
+      
+      let parsed = JSON.parse(cleanedContent) as HiringContact[]
       parsed = Array.isArray(parsed) ? parsed.slice(0,8) : []
+      
+      // Enhance each contact with inferred emails
       parsed = parsed.map(c => {
         const domain = `${companyName.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'')}.com`
         const inferred = c.name ? inferEmails(c.name, domain) : []
-        return { ...c, confidence: Math.max(0, Math.min(1, c.confidence || 0.5)), alternativeEmails: c.alternativeEmails || inferred, emailType: (c.email ? c.emailType : 'inferred') as 'public'|'inferred'|'pattern' }
+        
+        return { 
+          ...c, 
+          confidence: Math.max(0, Math.min(1, c.confidence || 0.5)), 
+          alternativeEmails: c.alternativeEmails || inferred, 
+          emailType: (c.email ? c.emailType : 'pattern') as 'public'|'inferred'|'pattern',
+          discoveryMethod: c.discoveryMethod || (c.email ? 'Direct lookup' : 'Pattern inference')
+        }
       })
+      
+      console.log(`[HIRING_CONTACTS] Found ${parsed.length} contacts for ${companyName}, ${parsed.filter(c => c.email).length} with emails`)
+      
       setCache(key, parsed)
       return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
     } catch (e) {
+      console.error('[HIRING_CONTACTS] Error:', e)
       return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
     }
   }
