@@ -77,8 +77,8 @@ export default function JobAnalysisPage() {
 
   const loadAndAnalyzeJob = async () => {
     try {
-      // Load selected job from localStorage
-      const stored = localStorage.getItem('selectedJob')
+      // CRITICAL FIX: Try multiple localStorage keys for job data
+      let stored = localStorage.getItem('cf:selectedJob') || localStorage.getItem('selectedJob')
       console.log('🎯 [JOB_ANALYSIS] Retrieved from localStorage:', stored ? 'found' : 'NOT FOUND')
       
       if (!stored) {
@@ -90,6 +90,9 @@ export default function JobAnalysisPage() {
       const jobData = JSON.parse(stored)
       console.log('🎯 [JOB_ANALYSIS] Job data:', { title: jobData.title, company: jobData.company })
       setJob(jobData)
+      
+      // CRITICAL FIX: Store in standardized cf:selectedJob format for consistency
+      localStorage.setItem('cf:selectedJob', JSON.stringify(jobData))
 
       // Auto-analyze immediately
       console.log('🎯 [JOB_ANALYSIS] Starting job analysis...')
@@ -102,8 +105,8 @@ export default function JobAnalysisPage() {
   }
 
   const analyzeJob = async (jobData: JobData) => {
-    // Get user's resume from localStorage (optional) - MUST be outside try block for catch scope
-    const resume = localStorage.getItem('uploadedResume')
+    // CRITICAL FIX: Try multiple localStorage keys for resume data
+    const resume = localStorage.getItem('cf:resume') || localStorage.getItem('uploadedResume') || localStorage.getItem('selectedResume')
     setHasResume(!!resume)
 
     try {
@@ -123,6 +126,9 @@ export default function JobAnalysisPage() {
 
       const result = await response.json()
       setAnalysis(result.analysis)
+      
+      // CRITICAL FIX: Store analysis results for next steps
+      localStorage.setItem('cf:jobAnalysis', JSON.stringify(result.analysis))
       
       if (!resume) {
         console.log('📋 Browsing job without resume - match score disabled')
@@ -180,7 +186,11 @@ export default function JobAnalysisPage() {
       console.log('[COMPANY_RESEARCH] Received data:', data)
       
       if (data.success) {
-        setCompanyResearch({
+        // CRITICAL FIX: Ensure hiringContacts is always an array (never undefined)
+        const contacts = data.contacts?.data || data.hiringContacts || data.contacts || []
+        const safeContacts = Array.isArray(contacts) ? contacts : []
+        
+        const researchData = {
           aiRiskAnalysis: data.aiRiskAnalysis,
           culture: data.company?.culture,
           marketIntelligence: {
@@ -188,9 +198,14 @@ export default function JobAnalysisPage() {
             competitivePosition: data.marketIntelligence?.competitivePosition || '',
             recentNews: data.marketIntelligence?.recentNews || []
           },
-          hiringContacts: data.hiringContacts || [],
+          hiringContacts: safeContacts,
           salaryIntelligence: data.salaryIntelligence
-        })
+        }
+        
+        setCompanyResearch(researchData)
+        
+        // CRITICAL FIX: Store company research for next steps
+        localStorage.setItem('cf:companyResearch', JSON.stringify(researchData))
       }
     } catch (err) {
       console.error('[COMPANY_RESEARCH] Error:', err)
