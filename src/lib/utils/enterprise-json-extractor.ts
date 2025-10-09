@@ -1,133 +1,252 @@
 /**
- * ENTERPRISE-GRADE JSON EXTRACTION FOR LLM RESPONSES
- * Based on Perplexity Deep Dive Analysis - Phase 1 Fix #2
+ * ENTERPRISE JSON EXTRACTOR
  * 
- * Handles all common LLM JSON response formats:
- * - Markdown code blocks (```json ... ```)
- * - Explanatory text before/after JSON
- * - Trailing commas
- * - Single quotes instead of double quotes
- * - Unquoted object keys
- * - Newlines and special characters
- * - Truncated responses
+ * 5-stage fallback pipeline for extracting JSON from AI responses
+ * Handles markdown, malformed JSON, partial responses, and edge cases
+ * 
+ * Used by: Perplexity AI responses, external APIs, any JSON parsing
  */
 
-export interface JSONExtractionResult {
+export interface ExtractionResult<T = any> {
   success: boolean
-  data: any
+  data: T | null
   error?: string
   attemptedCleanups: string[]
+  rawContent?: string
 }
 
 /**
- * Ultra-robust JSON extraction from LLM responses
- * Based on 2024 industry best practices
+ * Main extraction function with 5-stage fallback pipeline
  */
-export function extractEnterpriseJSON(rawContent: string): JSONExtractionResult {
+export function extractEnterpriseJSON<T = any>(content: string): ExtractionResult<T> {
   const attemptedCleanups: string[] = []
+  let workingContent = content.trim()
   
-  try {
-    // Attempt 1: Direct parse (optimistic)
-    try {
-      const parsed = JSON.parse(rawContent)
-      return { success: true, data: parsed, attemptedCleanups: ['direct-parse'] }
-    } catch (e) {
-      attemptedCleanups.push('direct-parse-failed')
-    }
-    
-    // Step 1: Remove markdown code blocks
-    let cleaned = rawContent.replace(/```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
-    attemptedCleanups.push('markdown-removal')
-    
-    // Step 2: Extract JSON from explanatory text using nested regex
-    const jsonMatch = cleaned.match(/(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\})*)*\}))*\}|\[[\s\S]*?\])/);
-    if (jsonMatch) {
-      cleaned = jsonMatch[0]
-      attemptedCleanups.push('regex-extraction')
-    }
-    
-    // Step 3: Aggressive cleanup of common JSON errors
-    cleaned = cleaned
-      .replace(/,(\s*[}\]])/g, '$1')              // Remove trailing commas before ] or }
-      .replace(/:\s*,/g, ': null,')               // Replace empty values with null
-      .replace(/([^\\])\\(?!["\\/bfnrtu])/g, '$1') // Remove invalid escape sequences
-      .replace(/\n/g, ' ')                        // Remove line breaks
-      .replace(/\r/g, '')                         // Remove carriage returns  
-      .replace(/\t/g, ' ')                        // Replace tabs with spaces
-      .replace(/\s{2,}/g, ' ')                    // Collapse multiple spaces
-      .replace(/,\s*([\]}])/g, '$1')              // Final cleanup of trailing commas
-    
-    attemptedCleanups.push('aggressive-cleanup')
-    
-    // Attempt 2: Parse cleaned JSON
-    try {
-      const parsed = JSON.parse(cleaned)
-      return { success: true, data: parsed, attemptedCleanups }
-    } catch (e) {
-      attemptedCleanups.push('cleaned-parse-failed')
-    }
-    
-    // Step 4: Try fixing quotes (single → double) and unquoted keys
-    let quoteFix = cleaned
-      .replace(/'/g, '"')                         // Fix single quotes
-      .replace(/(\w+):/g, '"$1":')                // Quote unquoted keys
-    
-    attemptedCleanups.push('quote-fixing')
-    
-    // Attempt 3: Parse with quote fixes
-    try {
-      const parsed = JSON.parse(quoteFix)
-      return { success: true, data: parsed, attemptedCleanups }
-    } catch (e) {
-      attemptedCleanups.push('quote-fix-parse-failed')
-    }
-    
-    // Step 5: Last resort - try to extract array specifically
-    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-    if (arrayMatch) {
-      try {
-        const parsed = JSON.parse(arrayMatch[0])
-        attemptedCleanups.push('array-extraction')
-        return { success: true, data: parsed, attemptedCleanups }
-      } catch (e) {
-        attemptedCleanups.push('array-extraction-failed')
-      }
-    }
-    
-    // All attempts failed
+  if (!workingContent) {
     return {
       success: false,
       data: null,
-      error: 'All JSON extraction attempts failed',
+      error: 'Empty content provided',
+      attemptedCleanups: ['empty-check'],
+      rawContent: content
+    }
+  }
+
+  // STAGE 1: Remove markdown code blocks
+  if (workingContent.includes('```')) {
+    workingContent = workingContent
+      .replace(/```(?:json|javascript|js)?\s*/gi, '')
+      .replace(/```\s*/g, '')
+    attemptedCleanups.push('markdown-removal')
+  }
+
+  // STAGE 2: Extract JSON array or object
+  const arrayMatch = workingContent.match(/(\[[\s\S]*\])/);
+  const objectMatch = workingContent.match(/(\{[\s\S]*\})/);
+  
+  if (arrayMatch) {
+    workingContent = arrayMatch[1]
+    attemptedCleanups.push('array-extraction')
+  } else if (objectMatch) {
+    workingContent = objectMatch[1]
+    attemptedCleanups.push('object-extraction')
+  }
+
+  // STAGE 3: Fix common JSON issues
+  workingContent = cleanupJSON(workingContent)
+  attemptedCleanups.push('json-cleanup')
+
+  // STAGE 4: Attempt JSON parsing
+  try {
+    const parsed = JSON.parse(workingContent)
+    return {
+      success: true,
+      data: parsed,
       attemptedCleanups
     }
+  } catch (parseError) {
+    attemptedCleanups.push('initial-parse-failed')
     
+    // STAGE 5: Aggressive partial extraction
+    const partialResult = extractPartialJSON<T>(workingContent, attemptedCleanups)
+    if (partialResult.success) {
+      return partialResult
+    }
+    
+    return {
+      success: false,
+      data: null,
+      error: `JSON parsing failed: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+      attemptedCleanups: [...attemptedCleanups, 'all-attempts-failed'],
+      rawContent: content.slice(0, 500) // First 500 chars for debugging
+    }
+  }
+}
+
+/**
+ * Clean up common JSON formatting issues
+ */
+function cleanupJSON(content: string): string {
+  return content
+    // Remove BOM and special characters
+    .replace(/^\uFEFF/, '')
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+    
+    // Fix trailing commas
+    .replace(/,(\s*[\]}])/g, '$1')
+    
+    // Fix unescaped quotes in strings (basic)
+    .replace(/"([^"]*)"([^",\]}]*)"([^"]*)":/g, '"$1\\"$2\\"$3":')
+    
+    // Fix missing quotes around object keys
+    .replace(/([{,]\s*)([a-zA-Z_$][a-zA-Z0-9_$]*)\s*:/g, '$1"$2":')
+    
+    // Fix single quotes to double quotes
+    .replace(/'([^']*)':/g, '"$1":')
+    
+    // Remove comments (// and /* */)
+    .replace(/\/\/.*$/gm, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    
+    // Fix NaN, Infinity, undefined
+    .replace(/:\s*NaN/g, ': null')
+    .replace(/:\s*Infinity/g, ': null')
+    .replace(/:\s*undefined/g, ': null')
+}
+
+/**
+ * Extract partial JSON by walking through character by character
+ */
+function extractPartialJSON<T>(content: string, attemptedCleanups: string[]): ExtractionResult<T> {
+  try {
+    let braceCount = 0
+    let bracketCount = 0
+    let validJson = ''
+    let inString = false
+    let escaped = false
+    let startChar = ''
+
+    for (let i = 0; i < content.length; i++) {
+      const char = content[i]
+      
+      // Handle escape sequences
+      if (escaped) {
+        escaped = false
+        validJson += char
+        continue
+      }
+      
+      if (char === '\\' && inString) {
+        escaped = true
+        validJson += char
+        continue
+      }
+      
+      // Handle string boundaries
+      if (char === '"' && !escaped) {
+        inString = !inString
+        validJson += char
+        continue
+      }
+      
+      // Only count braces/brackets outside of strings
+      if (!inString) {
+        if (char === '{') {
+          if (!startChar) startChar = '{'
+          braceCount++
+        } else if (char === '}') {
+          braceCount--
+        } else if (char === '[') {
+          if (!startChar) startChar = '['
+          bracketCount++
+        } else if (char === ']') {
+          bracketCount--
+        }
+      }
+      
+      validJson += char
+      
+      // Check if we've closed all braces/brackets
+      const isComplete = braceCount === 0 && bracketCount === 0 && validJson.trim().length > 0
+      const hasValidStart = startChar === '{' || startChar === '['
+      
+      if (isComplete && hasValidStart) {
+        try {
+          const parsed = JSON.parse(validJson.trim())
+          return {
+            success: true,
+            data: parsed,
+            attemptedCleanups: [...attemptedCleanups, 'partial-extraction-success']
+          }
+        } catch {
+          // Continue building if this chunk didn't parse
+          continue
+        }
+      }
+    }
+    
+    throw new Error('No valid complete JSON found')
   } catch (error) {
     return {
       success: false,
       data: null,
-      error: `Enterprise JSON extraction error: ${(error as Error).message}`,
-      attemptedCleanups
+      error: error instanceof Error ? error.message : 'Partial extraction failed',
+      attemptedCleanups: [...attemptedCleanups, 'partial-extraction-failed']
     }
   }
 }
 
 /**
- * Safe JSON extraction that always returns a value (never throws)
+ * Validate that extracted data is an array
  */
-export function safeExtractJSON<T = any>(rawContent: string, fallback: T): T {
-  const result = extractEnterpriseJSON(rawContent)
-  
-  if (result.success && result.data !== null) {
-    return result.data as T
+export function ensureArray<T>(data: any): T[] {
+  if (Array.isArray(data)) {
+    return data
   }
-  
-  console.warn('[ENTERPRISE_JSON] Extraction failed, using fallback:', {
-    error: result.error,
-    attempts: result.attemptedCleanups,
-    contentPreview: rawContent.slice(0, 100)
-  })
-  
-  return fallback
+  if (data && typeof data === 'object') {
+    // Check if it's an object with array-like properties
+    const keys = Object.keys(data)
+    if (keys.length > 0 && keys.every(k => /^\d+$/.test(k))) {
+      return Object.values(data)
+    }
+    // Single object - wrap in array
+    return [data]
+  }
+  return []
 }
 
+/**
+ * Validate that extracted data is an object
+ */
+export function ensureObject<T extends object>(data: any): T | null {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return data
+  }
+  if (Array.isArray(data) && data.length > 0) {
+    return data[0]
+  }
+  return null
+}
+
+/**
+ * Extract JSON with type safety and fallback
+ */
+export function extractWithFallback<T>(
+  content: string,
+  fallback: T,
+  validator?: (data: any) => data is T
+): T {
+  const result = extractEnterpriseJSON<T>(content)
+  
+  if (!result.success || !result.data) {
+    console.warn('[ENTERPRISE_JSON] Extraction failed, using fallback:', result.error)
+    return fallback
+  }
+  
+  if (validator && !validator(result.data)) {
+    console.warn('[ENTERPRISE_JSON] Validation failed, using fallback')
+    return fallback
+  }
+  
+  return result.data
+}
