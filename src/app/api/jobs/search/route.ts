@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     await dbService.connect()
 
     const body: JobSearchRequest = await request.json()
-    const { 
+    let { 
       keywords, 
       location, // CRITICAL FIX: No default - use exact value from frontend
       sources, 
