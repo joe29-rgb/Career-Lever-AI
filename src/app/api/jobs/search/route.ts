@@ -19,7 +19,6 @@ import { dbService } from '@/lib/database'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { isRateLimited } from '@/lib/rate-limit'
 import Resume from '@/models/Resume'
-import { JobEnrichmentService } from '@/lib/job-enrichment-service'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -193,21 +192,6 @@ export async function POST(request: NextRequest) {
         )
 
         jobs = result.data
-        
-        // ENTERPRISE ENRICHMENT: Fill in missing company names, salaries, AI scores
-        console.log('[JOB_SEARCH] Enriching job listings with real company data, salaries, and AI scores...')
-        try {
-          jobs = await JobEnrichmentService.enrichJobListings(jobs, extractedText)
-          console.log('[JOB_SEARCH] Enrichment complete:', {
-            totalJobs: jobs.length,
-            withCompany: jobs.filter((j: any) => j.company && j.company !== 'Undisclosed').length,
-            withSalary: jobs.filter((j: any) => j.salary && j.salary !== 'Not disclosed').length,
-            withAIScore: jobs.filter((j: any) => j.aiRiskScore).length
-          })
-        } catch (enrichErr) {
-          console.error('[JOB_SEARCH] Job enrichment failed:', enrichErr)
-          // Continue with unenriched jobs
-        }
         
         // POST-PROCESSING: Re-rank jobs by industry tenure (respects user preferences)
         if (effectivePrimaryIndustry && !disableIndustryWeighting) {
