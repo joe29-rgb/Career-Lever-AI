@@ -691,6 +691,10 @@ OUTPUT JSON FORMAT:
       const out = await withRetry(async () => {
         const client = createClient()
         
+        // PERPLEXITY AUDIT FIX: Use optimal configuration
+        const { getPerplexityConfig } = await import('./config/perplexity-configs')
+        const config = getPerplexityConfig('hiringContacts')
+        
         // ENTERPRISE ENHANCEMENT: Explicit email discovery from company website and Google
         const prompt = `Find verified hiring contacts at ${companyName} with active email discovery.
 
@@ -721,7 +725,11 @@ OUTPUT JSON FORMAT (strictly follow):
 
 IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department heads. If no emails found after extensive search, still return the contact with pattern-based emails.`
 
-        return client.makeRequest(SYSTEM, prompt, { temperature: 0.1, maxTokens: 1500 })
+        // PERPLEXITY AUDIT FIX: Use optimal token limits (1500 → 2500)
+        return client.makeRequest(SYSTEM, prompt, { 
+          temperature: config.temperature, 
+          maxTokens: config.maxTokens 
+        })
       })
       
       // Parse and clean Perplexity response - ENTERPRISE-GRADE JSON EXTRACTION
