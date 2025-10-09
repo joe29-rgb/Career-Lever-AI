@@ -159,9 +159,30 @@ export async function POST(request: NextRequest) {
         preview: { thumbnail: null, summary: null }
       })
     } else {
+      // PERPLEXITY AUDIT FIX: Handle text-only input by converting to structured data first
+      let structuredData = resumeData
+      
+      if (!structuredData && resumeTextInput && resumeTextInput.length > 100) {
+        console.log('[RESUME_BUILDER] Converting text to structured data, length:', resumeTextInput.length)
+        try {
+          structuredData = await convertTextToStructuredData(resumeTextInput)
+          console.log('[RESUME_BUILDER] Conversion successful, sections found:', Object.keys(structuredData || {}).length)
+        } catch (err) {
+          console.error('[RESUME_BUILDER] Text conversion failed:', err)
+          return NextResponse.json(
+            { 
+              error: 'Failed to process resume text',
+              details: 'Could not extract structured data from the provided text. Please try uploading your resume or provide more complete information.',
+              hint: 'Ensure your resume includes: contact info, work experience, education, and skills'
+            },
+            { status: 400 }
+          )
+        }
+      }
+      
       // Generate optimized resume content via classic flow
       const optimizedResume = await generateOptimizedResume(
-        resumeData,
+        structuredData,
         template,
         targetJob,
         industry,
@@ -344,6 +365,70 @@ async function generateResumeOutput(resume: ResumeData, template: string) {
 
 function generateResumePreview(resume: ResumeData, template: string) {
   return { thumbnail: null, summary: `${resume.personalInfo.fullName} — ${resume.experience?.[0]?.position || ''}` }
+}
+
+/**
+ * PERPLEXITY AUDIT FIX: Convert raw resume text to structured data
+ * Uses Perplexity AI to extract sections from unstructured text
+ */
+async function convertTextToStructuredData(resumeText: string): Promise<ResumeData> {
+  const { PerplexityService } = await import('@/lib/perplexity-service')
+  const { extractEnterpriseJSON } = await import('@/lib/utils/enterprise-json-extractor')
+  
+  const client = new PerplexityService()
+  
+  const prompt = `Extract structured resume data from this text:
+
+${resumeText}
+
+Return ONLY JSON (no markdown, no explanations):
+{
+  "personalInfo": {
+    "fullName": "Full Name",
+    "email": "email@example.com",
+    "phone": "phone number",
+    "location": "City, State/Province",
+    "summary": "Professional summary"
+  },
+  "experience": [{
+    "company": "Company Name",
+    "position": "Job Title",
+    "location": "Location",
+    "startDate": "YYYY-MM",
+    "endDate": "YYYY-MM or Present",
+    "current": false,
+    "description": "Role description",
+    "achievements": ["Achievement 1", "Achievement 2"],
+    "technologies": ["Tech 1", "Tech 2"]
+  }],
+  "education": [{
+    "institution": "School Name",
+    "degree": "Degree Type",
+    "field": "Field of Study",
+    "location": "Location",
+    "graduationDate": "YYYY-MM"
+  }],
+  "skills": {
+    "technical": ["Skill 1", "Skill 2"],
+    "soft": ["Skill 1", "Skill 2"],
+    "languages": [],
+    "certifications": []
+  }
+}`
+  
+  const response = await client.makeRequest(
+    'You extract structured resume data from unstructured text. Return only valid JSON.',
+    prompt,
+    { temperature: 0.2, maxTokens: 2000 }
+  )
+  
+  const extractionResult = extractEnterpriseJSON(response.content)
+  
+  if (!extractionResult.success) {
+    throw new Error(`Failed to extract structured data: ${extractionResult.error}`)
+  }
+  
+  return extractionResult.data as ResumeData
 }
 
 function mapResumeDataToContent(resume: ResumeData) {
