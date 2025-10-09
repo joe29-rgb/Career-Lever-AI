@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const body: JobSearchRequest = await request.json()
     const { 
       keywords, 
-      location = 'Canada', 
+      location, // CRITICAL FIX: No default - use exact value from frontend
       sources, 
       limit = 50, 
       remote,
@@ -63,6 +63,14 @@ export async function POST(request: NextRequest) {
       experienceLevel,
       workType
     } = body
+    
+    // CRITICAL: Validate location is provided
+    if (!location || location.trim().length < 2) {
+      return NextResponse.json({ 
+        error: 'Location is required. Please ensure your resume contains your location or enter it manually.',
+        hint: 'Add your city and province/state to your resume (e.g., "Edmonton, AB")'
+      }, { status: 400 })
+    }
 
     let useResumeMatching = body.useResumeMatching || false
 

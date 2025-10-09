@@ -745,15 +745,29 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
         }
       }
       
-      // CRITICAL FIX: Clean up common JSON syntax errors from Perplexity
+      // ENTERPRISE FIX: Ultra-aggressive JSON cleanup for malformed Perplexity responses
       cleanedContent = cleanedContent
-        .replace(/,\s*]/g, ']')       // Remove trailing commas before ]
-        .replace(/,\s*}/g, '}')       // Remove trailing commas before }
-        .replace(/:\s*,/g, ': null,') // Replace empty values with null
-        .replace(/"\s*\n\s*"/g, '", "') // Fix broken string concatenations
+        .replace(/,\s*]/g, ']')                    // Remove trailing commas before ]
+        .replace(/,\s*}/g, '}')                    // Remove trailing commas before }
+        .replace(/:\s*,/g, ': null,')              // Replace empty values with null
+        .replace(/"\s*\n\s*"/g, '", "')            // Fix broken string concatenations
+        .replace(/([^\\])\\(?!["\\/bfnrtu])/g, '$1') // Remove invalid escape sequences
+        .replace(/\n/g, ' ')                       // Remove newlines that break JSON
+        .replace(/\r/g, '')                        // Remove carriage returns
+        .replace(/\t/g, ' ')                       // Replace tabs with spaces
+        .replace(/\s{2,}/g, ' ')                   // Collapse multiple spaces
+        .replace(/,\s*([\]}])/g, '$1')             // Remove any remaining trailing commas
       
-      let parsed = JSON.parse(cleanedContent) as HiringContact[]
-      parsed = Array.isArray(parsed) ? parsed.slice(0,8) : []
+      let parsed: HiringContact[] = []
+      try {
+        parsed = JSON.parse(cleanedContent) as HiringContact[]
+        parsed = Array.isArray(parsed) ? parsed.slice(0,8) : []
+      } catch (parseError) {
+        console.error('[HIRING_CONTACTS] JSON parse failed even after cleanup:', parseError)
+        console.error('[HIRING_CONTACTS] Attempted to parse:', cleanedContent.slice(0, 500))
+        // Return empty array instead of crashing
+        return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: 'JSON parse failed after cleanup' }, cached: false }
+      }
       
       // Enhance each contact with inferred emails
       parsed = parsed.map(c => {
