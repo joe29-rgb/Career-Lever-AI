@@ -1005,7 +1005,7 @@ CRITICAL: Order industries by yearsOfExperience (LONGEST FIRST), not by recency!
         hasTransition: !!parsed.careerTransition
       })
 
-      setCache(key, parsed, 86400000) // 24 hour cache
+      setCache(key, parsed) // Uses default cache TTL
       return parsed
     } catch (error) {
       console.error('[CAREER_TIMELINE] Failed:', error)
