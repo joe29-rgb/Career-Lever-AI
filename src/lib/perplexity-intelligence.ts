@@ -181,12 +181,14 @@ export interface QuickSearchItem {
 }
 
 const SYSTEM = `You are a research analyst using real-time web tools.
+CRITICAL: Your response must be ONLY valid JSON. NO explanatory text, NO markdown, NO commentary.
 Rules:
 - Use only public sources and respect robots.txt by following links provided by Perplexity tools.
-- Always return structured JSON matching the requested schema.
+- Always return ONLY structured JSON matching the requested schema.
 - Include 5-10 source citations with titles and URLs.
 - Provide confidence scores (0-1) for each data point and overall.
 - Mark estimates or unverified signals clearly.
+- NEVER add text before or after the JSON response.
 `
 
 export class PerplexityIntelligenceService {
@@ -698,27 +700,15 @@ OUTPUT JSON FORMAT:
         const { getPerplexityConfig } = await import('./config/perplexity-configs')
         const config = getPerplexityConfig('hiringContacts')
         
-        // SIMPLIFIED PROMPT: Direct JSON request for better parsing reliability
-        const prompt = `Find hiring contacts at ${companyName}. Search company website, LinkedIn, and press releases for verified emails.
+        // ULTRA-SIMPLIFIED PROMPT: Perplexity recommendation - NO explanatory text
+        const prompt = `IMPORTANT: Return ONLY valid JSON. NO explanatory text before or after.
 
-Return ONLY a valid JSON array with this exact structure:
-[
-  {
-    "name": "John Smith",
-    "title": "HR Manager",
-    "department": "HR",
-    "linkedinUrl": "https://linkedin.com/in/johnsmith",
-    "email": "john.smith@company.com",
-    "emailType": "public",
-    "source": "Company Website",
-    "confidence": 0.9,
-    "phone": "+1-555-0123",
-    "alternativeEmails": ["j.smith@company.com"],
-    "discoveryMethod": "Found on company careers page"
-  }
-]
+Find 3-5 hiring contacts at ${companyName} (recruiters, HR, hiring managers).
 
-Focus on: Recruiters, HR managers, hiring managers, department heads. If no email found, use pattern-based guesses (firstname.lastname@domain.com).`
+JSON FORMAT (exact):
+[{"name":"Full Name","title":"Job Title","department":"HR/Engineering/etc","email":"email@company.com","emailType":"public/inferred","source":"LinkedIn/Website","confidence":0.8}]
+
+If no verified emails found, generate pattern-based guesses (firstname.lastname@domain.com). Return ONLY the JSON array, nothing else.`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits (1500 → 2500)
         return client.makeRequest(SYSTEM, prompt, { 

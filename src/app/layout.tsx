@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger'
 import Link from 'next/link'
 import { Toaster } from 'react-hot-toast'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
+import { DebugPanel } from '@/components/debug-panel'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -77,6 +78,7 @@ export default function RootLayout({
               }}
             />
             <AppShell>{children}</AppShell>
+            <DebugPanel />
           </Providers>
         </ErrorBoundary>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
