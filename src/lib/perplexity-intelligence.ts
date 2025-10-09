@@ -929,11 +929,21 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
     try {
       const client = createClient()
       
-      // ENTERPRISE PROMPT - AGGRESSIVE LOCATION EXTRACTION
-      const prompt = `CRITICAL TASK: Extract keywords and location from this resume.
+      // ENTERPRISE PROMPT - WEIGHTED KEYWORD EXTRACTION WITH TIME-BASED RELEVANCE
+      const prompt = `CRITICAL TASK: Extract weighted keywords and location from this resume.
 
 RESUME TEXT:
 ${resumeText}
+
+KEYWORD EXTRACTION WITH TIME-BASED WEIGHTING:
+1. Extract ALL relevant skills, technologies, and competencies (up to 50)
+2. WEIGHT keywords based on:
+   - Years of experience using that skill (more years = higher priority)
+   - Recency (recent roles = higher weight than old roles or education)
+   - Frequency of mention across work experience
+3. ORDER keywords by weighted relevance (most important first)
+4. Skills from work experience should be weighted HIGHER than skills from education only
+5. Calculate weight as: (years using skill / total career years) * recency_multiplier
 
 LOCATION EXTRACTION RULES:
 1. Find ANY city/province/state mentioned (email header, address, work experience)
@@ -944,11 +954,13 @@ LOCATION EXTRACTION RULES:
 
 RETURN STRICT JSON (no explanation, no markdown):
 {
-  "keywords": ["Software Development", "Sales Management", "CRM"],
-  "location": "City, PROVINCE" 
+  "keywords": ["Most Important Skill", "Second Most Important", "...", "50th skill"],
+  "location": "City, PROVINCE"
 }
 
-IMPORTANT: If NO location found after thorough search, return "location": null (do NOT guess or default)`
+IMPORTANT: 
+- Order keywords by weighted importance (years of experience + recency)
+- If NO location found after thorough search, return "location": null (do NOT guess or default)`
 
       console.log('[SIGNALS] Input length:', resumeText.length)
       console.log('[SIGNALS] First 300 chars:', resumeText.slice(0, 300))
@@ -956,7 +968,7 @@ IMPORTANT: If NO location found after thorough search, return "location": null (
       const response = await client.makeRequest(
         'You extract keywords and locations from resumes. Return only JSON.',
         prompt,
-        { temperature: 0.2, maxTokens: 800 }
+        { temperature: 0.2, maxTokens: 2000 } // CRITICAL FIX: Increased from 800 to handle 50 keywords
       )
 
       console.log('[SIGNALS] Raw response:', response.content?.slice(0, 400))
