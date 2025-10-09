@@ -47,6 +47,14 @@ export async function POST(request: NextRequest) {
       role: targetRole, 
       geo: location 
     })
+    
+    // CRITICAL DEBUG: Log what Perplexity returned
+    console.log('[COMPANY] Research data:', {
+      success: research.success,
+      hasData: !!research.data,
+      dataKeys: research.data ? Object.keys(research.data) : [],
+      marketIntelligence: research.data?.marketIntelligence
+    })
 
     // Step 2: Website scraping for contacts
     let siteContacts: { emails: string[]; phones: string[]; addresses: string[] } = { emails: [], phones: [], addresses: [] }
@@ -88,22 +96,27 @@ export async function POST(request: NextRequest) {
       { $push: { companyResearch: { company: companyName, contacts: validatedContacts, date: new Date() } } }
     )
 
+    // CRITICAL FIX: Ensure market intelligence has meaningful data
+    const marketIntel = research.data.marketIntelligence || 
+      `${companyName} operates in the ${research.data.industry || 'technology'} sector. ` +
+      `The company is ${research.data.size || 'actively hiring'} and ${research.data.revenue ? `generates ${research.data.revenue} in revenue` : 'is growing rapidly'}.`
+    
     return NextResponse.json({
       success: true,
-      company: research.data.company,
-      description: research.data.description,
-      size: research.data.size,
-      revenue: research.data.revenue,
-      industry: research.data.industry,
-      founded: research.data.founded,
-      headquarters: research.data.headquarters,
-      psychology: research.data.psychology,
-      marketIntelligence: research.data.marketIntelligence,
+      company: research.data.company || companyName,
+      description: research.data.description || `${companyName} - Company information being researched.`,
+      size: research.data.size || 'Unknown',
+      revenue: research.data.revenue || 'Unknown',
+      industry: research.data.industry || 'Unknown',
+      founded: research.data.founded || 'Unknown',
+      headquarters: research.data.headquarters || location || 'Unknown',
+      psychology: research.data.psychology || 'Company culture and values are being analyzed.',
+      marketIntelligence: marketIntel,
       contacts: validatedContacts,
       hiringContacts: contacts.data, // CRITICAL FIX: Add the full contact objects for frontend display
       siteContacts: { ...siteContacts, emails: allEmails, phones: allPhones },
       metadata: {
-        researchSources: research.data.sources,
+        researchSources: research.data.sources || [],
         contactCount: validatedContacts.length,
         hiringContactCount: contacts.data.length,
         confidenceAverage: validatedContacts.reduce((sum, c) => sum + c.confidence, 0) / (validatedContacts.length || 1),

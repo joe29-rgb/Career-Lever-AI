@@ -92,9 +92,9 @@ export default function CareerFinderOptimizerPage() {
     try {
       console.log('[OPTIMIZER] Generating variants with template:', template)
       
-      // CRITICAL FIX: Add 30-second timeout with AbortController
+      // CRITICAL FIX: Increase to 60-second timeout for slow Perplexity responses
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000)
+      const timeoutId = setTimeout(() => controller.abort(), 60000)
       
       // ✅ Use unified storage for job description
       const selectedJob = CareerFinderStorage.getJob()
@@ -141,9 +141,14 @@ export default function CareerFinderOptimizerPage() {
       
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[OPTIMIZER] Request timed out after 30 seconds')
+        console.error('[OPTIMIZER] Request timed out after 60 seconds')
+        // CRITICAL: Show user-friendly error message
+        setVariantA('<div style="padding:20px;text-align:center;color:#ef4444;">⏱️ Resume generation timed out. The AI service is taking longer than expected. Please try again or use the "Generate" button below.</div>')
+        setVariantB('<div style="padding:20px;text-align:center;color:#ef4444;">⏱️ Resume generation timed out. The AI service is taking longer than expected. Please try again or use the "Generate" button below.</div>')
       } else {
         console.error('[OPTIMIZER] Generation error:', error)
+        setVariantA(`<div style="padding:20px;text-align:center;color:#ef4444;">❌ Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}</div>`)
+        setVariantB(`<div style="padding:20px;text-align:center;color:#ef4444;">❌ Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}</div>`)
       }
     } finally {
       setLoading(false)
