@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
@@ -27,6 +27,10 @@ export default function CareerFinderOptimizerPage() {
   const [tone, setTone] = useState<'professional'|'conversational'|'technical'>('professional')
   const [expanded, setExpanded] = useState<'A'|'B'|'none'>('none')
   const [editorHtml, setEditorHtml] = useState('')
+  
+  // CRITICAL FIX: Prevent infinite loop with processing ref
+  const processingRef = useRef(false)
+  const hasGeneratedRef = useRef(false)
 
   useEffect(() => {
     (async () => {
@@ -83,23 +87,91 @@ export default function CareerFinderOptimizerPage() {
   }, [tone])
 
   const generateVariants = async () => {
+    // CRITICAL FIX: Prevent multiple simultaneous calls
+    if (processingRef.current) {
+      console.log('[OPTIMIZER] Already processing, skipping duplicate call')
+      return
+    }
+    
+    processingRef.current = true
     setLoading(true)
     setVariantA(''); setVariantB('')
+    
     try {
-      const bodyBase = { resumeText: (overrideText || resumeText).slice(0, 8000), template, jobDescription: (JSON.parse(localStorage.getItem('cf:selectedJob')||'{}')?.description || '').toString().slice(0, 8000), humanize, highlights }
+      console.log('[OPTIMIZER] Generating variants with template:', template)
+      
+      // CRITICAL FIX: Add 30-second timeout with AbortController
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+      
+      const bodyBase = { 
+        resumeText: (overrideText || resumeText).slice(0, 8000), 
+        template, 
+        jobDescription: (JSON.parse(localStorage.getItem('cf:selectedJob')||'{}')?.description || '').toString().slice(0, 8000), 
+        humanize, 
+        highlights 
+      }
+      
       const [ra, rb] = await Promise.all([
-        fetch('/api/resume-builder/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...bodyBase, tone }) }),
-        fetch('/api/resume-builder/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...bodyBase, tone: tone === 'professional' ? 'conversational' : 'professional' }) })
+        fetch('/api/resume-builder/generate', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ ...bodyBase, tone }),
+          signal: controller.signal
+        }),
+        fetch('/api/resume-builder/generate', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ ...bodyBase, tone: tone === 'professional' ? 'conversational' : 'professional' }),
+          signal: controller.signal
+        })
       ])
+      
+      clearTimeout(timeoutId)
+      
       const ja = await ra.json().catch(()=>({}))
       const jb = await rb.json().catch(()=>({}))
-      if (ra.ok && ja?.output?.html) setVariantA(ja.output.html)
-      if (rb.ok && jb?.output?.html) setVariantB(jb.output.html)
-    } catch {}
-    setLoading(false)
+      
+      if (ra.ok && ja?.output?.html) {
+        setVariantA(ja.output.html)
+        console.log('[OPTIMIZER] Variant A generated successfully')
+      }
+      if (rb.ok && jb?.output?.html) {
+        setVariantB(jb.output.html)
+        console.log('[OPTIMIZER] Variant B generated successfully')
+      }
+      
+      hasGeneratedRef.current = true
+      
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('[OPTIMIZER] Request timed out after 30 seconds')
+      } else {
+        console.error('[OPTIMIZER] Generation error:', error)
+      }
+    } finally {
+      setLoading(false)
+      processingRef.current = false
+    }
   }
 
-  useEffect(() => { if (resumeText) generateVariants() }, [resumeText, template])
+  // CRITICAL FIX: Only auto-generate once on initial load, not on every template change
+  useEffect(() => { 
+    if (resumeText && !hasGeneratedRef.current && !processingRef.current) {
+      console.log('[OPTIMIZER] Auto-generating initial variants')
+      generateVariants() 
+    }
+  }, [resumeText])
+  
+  // Manual regeneration when user changes template
+  const handleTemplateChange = (newTemplate: string) => {
+    setTemplate(newTemplate)
+    if (resumeText) {
+      console.log('[OPTIMIZER] Template changed, regenerating variants')
+      hasGeneratedRef.current = false // Allow regeneration
+      setTimeout(() => generateVariants(), 100) // Small delay to ensure state is updated
+    }
+  }
 
   const saveSelection = () => {
     try {
@@ -138,7 +210,7 @@ export default function CareerFinderOptimizerPage() {
       <div className="text-sm text-foreground">Choose a template, generate A/B variants by tone, and select one to continue.</div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
         {TEMPLATES.map(t => (
-          <button key={t.id} className={`border rounded p-2 text-left ${template===t.id?'bg-blue-50 border-blue-500':''}`} onClick={()=>setTemplate(t.id)}>
+          <button key={t.id} className={`border rounded p-2 text-left ${template===t.id?'bg-blue-50 border-blue-500':''}`} onClick={()=>handleTemplateChange(t.id)}>
             <div className="w-full h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded mb-2 overflow-hidden">
               <div className="h-3 bg-blue-500/60"></div>
               <div className="h-1.5 bg-gray-300 mt-1 w-3/4"></div>
