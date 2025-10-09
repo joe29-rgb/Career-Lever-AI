@@ -66,28 +66,38 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
   // Auto-run research on mount if requested
   useEffect(() => {
     if (autoRun && !researchResult && !isResearching) {
-      // Derive defaults from localStorage if present
-      try {
-        const c = localStorage.getItem('job:company') || ''
-        const w = localStorage.getItem('job:website') || ''
-        const t = localStorage.getItem('job:title') || ''
-        const l = localStorage.getItem('job:location') || ''
-        if (c) setCompanyName(c)
-        if (w) setWebsite(w)
-        if (t) setJobTitle(t)
-        if (l) setLocation(l)
-      } catch {}
-      // Fire and forget
-      handleResearch()
+      // FIX RACE CONDITION: Use local variables instead of state
+      const c = initialCompanyName || (typeof window !== 'undefined' ? localStorage.getItem('job:company') || '' : '')
+      const w = typeof window !== 'undefined' ? localStorage.getItem('job:website') || '' : ''
+      const t = typeof window !== 'undefined' ? localStorage.getItem('job:title') || '' : ''
+      const l = typeof window !== 'undefined' ? localStorage.getItem('job:location') || '' : ''
+      
+      console.log('[COMPANY_RESEARCH] Auto-run with:', { company: c, website: w, title: t, location: l })
+      
+      // Update state (for display)
+      if (c) setCompanyName(c)
+      if (w) setWebsite(w)
+      if (t) setJobTitle(t)
+      if (l) setLocation(l)
+      
+      // Call research with local variables (not state)
+      if (c && c.trim()) {
+        handleResearchWithData(c, w, t, l)
+      } else {
+        console.warn('[COMPANY_RESEARCH] No company name found for auto-run')
+        setError('No company name provided')
+      }
     }
-  }, [])
+  }, [autoRun, initialCompanyName])
 
-  const handleResearch = async () => {
-    if (!companyName.trim()) {
+  // New method: Research with explicit data (avoids state race condition)
+  const handleResearchWithData = async (company: string, web?: string, title?: string, loc?: string) => {
+    if (!company || !company.trim()) {
       setError('Please enter a company name')
       onError?.('Please enter a company name')
       return
     }
+    
     setIsResearching(true)
     setResearchProgress(0)
     setError(null)
@@ -101,10 +111,10 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyName: companyName.trim(),
-          website: website.trim() || undefined,
-          jobTitle: jobTitle.trim() || undefined,
-          location: location.trim() || undefined,
+          companyName: company.trim(),
+          website: web?.trim() || undefined,
+          jobTitle: title?.trim() || undefined,
+          location: loc?.trim() || undefined,
         })
       })
 
@@ -124,10 +134,11 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
       }
       setResearchResult(result)
       onResearchComplete?.(result)
+      // Save to localStorage
       try {
-        if (companyName) localStorage.setItem('job:company', companyName)
-        if (website) localStorage.setItem('job:website', website)
-        if (jobTitle) localStorage.setItem('job:title', jobTitle)
+        if (company) localStorage.setItem('job:company', company)
+        if (web) localStorage.setItem('job:website', web)
+        if (title) localStorage.setItem('job:title', title)
       } catch {}
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Research failed'
@@ -137,6 +148,16 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
       setIsResearching(false)
       setTimeout(() => setResearchProgress(0), 800)
     }
+  }
+
+  const handleResearch = async () => {
+    if (!companyName.trim()) {
+      setError('Please enter a company name')
+      onError?.('Please enter a company name')
+      return
+    }
+    // Use the new method with state variables
+    return handleResearchWithData(companyName, website, jobTitle, location)
   }
 
   const refreshResearch = async () => {

@@ -308,6 +308,23 @@ export default function JobAnalysisPage() {
         </div>
       </div>
 
+      {/* No Resume Message */}
+      {!analysis && !loading && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 mb-6">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Skills Analysis Unavailable</h4>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                Upload a resume to see detailed skills matching and personalized recommendations for this job.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Analysis Results */}
       {analysis && (
         <div className="space-y-6">
