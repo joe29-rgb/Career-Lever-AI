@@ -31,14 +31,46 @@ export default function CareerFinderOptimizerPage() {
   useEffect(() => {
     (async () => {
       try { localStorage.setItem('cf:progress', JSON.stringify({ step: 5, total: 7 })) } catch {}
+      
+      // PRIORITY 1: Check localStorage first (same pattern as resume/page.tsx)
       try {
+        const cachedResume = localStorage.getItem('cf:resume')
+        if (cachedResume) {
+          const parsed = JSON.parse(cachedResume)
+          const txt = parsed.extractedText || ''
+          if (txt.length > 100) {
+            console.log('[OPTIMIZER] Found cached resume in localStorage, length:', txt.length)
+            setResumeText(txt)
+            return // Early return if we have a cached resume
+          }
+        }
+      } catch (e) {
+        console.warn('[OPTIMIZER] Failed to load cached resume from localStorage:', e)
+      }
+      
+      // PRIORITY 2: Fetch from database if no cache
+      try {
+        console.log('[OPTIMIZER] No localStorage resume, fetching from DB...')
         const rl = await fetch('/api/resume/list')
         if (rl.ok) {
           const rj = await rl.json()
           const txt: string = rj?.resumes?.[0]?.extractedText || ''
-          setResumeText(txt)
+          if (txt.length > 100) {
+            console.log('[OPTIMIZER] Found DB resume, length:', txt.length)
+            setResumeText(txt)
+            // Cache it for future use
+            try {
+              localStorage.setItem('cf:resume', JSON.stringify(rj.resumes[0]))
+            } catch {}
+          } else {
+            console.warn('[OPTIMIZER] No resume text found in DB')
+          }
+        } else {
+          console.warn('[OPTIMIZER] DB fetch failed:', rl.status)
         }
-      } catch {}
+      } catch (e) {
+        console.error('[OPTIMIZER] Resume fetch error:', e)
+      }
     })()
   }, [])
 
@@ -79,6 +111,30 @@ export default function CareerFinderOptimizerPage() {
   return (
     <div className="mobile-container space-y-4">
       <CareerFinderBackButton />
+      
+      {/* No Resume Warning */}
+      {!resumeText && !loading && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">No Resume Found</h4>
+              <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                Please upload a resume first to generate optimized variants.
+              </p>
+              <Link 
+                href="/career-finder/resume" 
+                className="text-sm text-yellow-800 dark:text-yellow-200 underline font-medium mt-2 inline-block hover:text-yellow-900"
+              >
+                ← Go back to upload resume
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="text-sm text-foreground">Choose a template, generate A/B variants by tone, and select one to continue.</div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
         {TEMPLATES.map(t => (
