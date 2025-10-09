@@ -745,29 +745,33 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
         }
       }
       
-      // ENTERPRISE FIX: Ultra-aggressive JSON cleanup for malformed Perplexity responses
-      cleanedContent = cleanedContent
-        .replace(/,\s*]/g, ']')                    // Remove trailing commas before ]
-        .replace(/,\s*}/g, '}')                    // Remove trailing commas before }
-        .replace(/:\s*,/g, ': null,')              // Replace empty values with null
-        .replace(/"\s*\n\s*"/g, '", "')            // Fix broken string concatenations
-        .replace(/([^\\])\\(?!["\\/bfnrtu])/g, '$1') // Remove invalid escape sequences
-        .replace(/\n/g, ' ')                       // Remove newlines that break JSON
-        .replace(/\r/g, '')                        // Remove carriage returns
-        .replace(/\t/g, ' ')                       // Replace tabs with spaces
-        .replace(/\s{2,}/g, ' ')                   // Collapse multiple spaces
-        .replace(/,\s*([\]}])/g, '$1')             // Remove any remaining trailing commas
+      // PERPLEXITY AUDIT FIX: Use enterprise-grade JSON extraction
+      const { extractEnterpriseJSON } = await import('./utils/enterprise-json-extractor')
+      const extractionResult = extractEnterpriseJSON(cleanedContent)
       
-      let parsed: HiringContact[] = []
-      try {
-        parsed = JSON.parse(cleanedContent) as HiringContact[]
-        parsed = Array.isArray(parsed) ? parsed.slice(0,8) : []
-      } catch (parseError) {
-        console.error('[HIRING_CONTACTS] JSON parse failed even after cleanup:', parseError)
-        console.error('[HIRING_CONTACTS] Attempted to parse:', cleanedContent.slice(0, 500))
-        // Return empty array instead of crashing
-        return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: 'JSON parse failed after cleanup' }, cached: false }
+      if (!extractionResult.success) {
+        console.error('[HIRING_CONTACTS] Enterprise JSON extraction failed:', extractionResult.error)
+        console.error('[HIRING_CONTACTS] Attempted cleanups:', extractionResult.attemptedCleanups)
+        console.error('[HIRING_CONTACTS] Raw content preview:', out.content.slice(0, 500))
+        return { 
+          success: false, 
+          data: [], 
+          metadata: { 
+            requestId, 
+            timestamp: started, 
+            duration: Date.now() - started, 
+            error: `Enterprise JSON extraction failed: ${extractionResult.error}`,
+            attemptedCleanups: extractionResult.attemptedCleanups
+          }, 
+          cached: false 
+        }
       }
+      
+      let parsed: HiringContact[] = Array.isArray(extractionResult.data) 
+        ? extractionResult.data.slice(0, 8) 
+        : []
+      
+      console.log(`[HIRING_CONTACTS] Enterprise extraction succeeded after: ${extractionResult.attemptedCleanups.join(', ')}`)
       
       // Enhance each contact with inferred emails
       parsed = parsed.map(c => {

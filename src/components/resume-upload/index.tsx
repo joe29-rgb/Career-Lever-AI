@@ -223,13 +223,13 @@ export function ResumeUpload({
             const signals = await signalsResp.json()
             console.log('🎯 Extracted signals:', signals)
             
-            // Store for auto-search - CRITICAL: Store actual extracted location, no defaults
-            localStorage.setItem('cf:autopilotReady', '1')
-            localStorage.setItem('cf:resume', JSON.stringify(resume))
-            localStorage.setItem('cf:extractedLocation', signals.location || '')
-            localStorage.setItem('cf:extractedKeywords', signals.keywords?.slice(0, 5).join(', ') || '')
+            // PERPLEXITY FIX: Standardized localStorage keys as per audit
+            localStorage.setItem('cf:location', signals.location || '') // Standard key for location
+            localStorage.setItem('cf:keywords', signals.keywords?.slice(0, 5).join(', ') || '') // Standard key for keywords
+            localStorage.setItem('cf:resume', JSON.stringify(resume)) // Full resume object
+            localStorage.setItem('cf:autopilotReady', '1') // Autopilot flag
             
-            console.log('✅ Autopilot ready with location:', signals.location)
+            console.log('✅ [PERPLEXITY AUDIT FIX] Location stored:', signals.location)
             
             toast.success('Keywords extracted! Redirecting to job search...')
             

@@ -108,11 +108,25 @@ export default function SearchPage() {
     const keywords = params.get('keywords')
     const location = params.get('location')
     
-    // Check if autopilot mode is enabled (resume uploaded)
+    // PERPLEXITY FIX: Read standardized localStorage keys
     const autopilotReady = localStorage.getItem('cf:autopilotReady') === '1'
+    const savedLocation = localStorage.getItem('cf:location') || ''
+    const savedKeywords = localStorage.getItem('cf:keywords') || ''
     const resumeData = localStorage.getItem('cf:resume')
     
-    console.log('[AUTOPILOT] Check:', { autopilotReady, hasResume: !!resumeData, hasKeywords: !!keywords })
+    console.log('[PERPLEXITY AUDIT FIX] Autopilot check:', { 
+      autopilotReady, 
+      savedLocation, 
+      savedKeywords: savedKeywords.slice(0, 50),
+      hasResume: !!resumeData,
+      hasKeywords: !!keywords 
+    })
+    
+    // CRITICAL: Pre-populate location from localStorage if available
+    if (savedLocation && !filters.location) {
+      setFilters(prev => ({ ...prev, location: savedLocation }))
+      console.log('[PERPLEXITY AUDIT FIX] Pre-populated location:', savedLocation)
+    }
     
     if (keywords || autopilotReady) {
       if (keywords) {
