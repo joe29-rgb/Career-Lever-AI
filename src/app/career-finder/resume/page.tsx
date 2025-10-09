@@ -6,6 +6,7 @@ import { ResumeUpload } from '@/components/resume-upload'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
+import { AutopilotProgressTracker } from '@/components/autopilot-progress-tracker'
 
 export default function CareerFinderResumePage() {
   const [existingResume, setExistingResume] = useState<any>(null)
@@ -104,6 +105,9 @@ export default function CareerFinderResumePage() {
   
   return (
     <div className="min-h-screen bg-background">
+      {/* PHASE 1: Autopilot Progress Tracker */}
+      <AutopilotProgressTracker />
+      
       {/* Modern Header */}
       <div className="gradient-hero p-8 rounded-b-3xl shadow-2xl mb-8">
         <div className="max-w-4xl mx-auto">

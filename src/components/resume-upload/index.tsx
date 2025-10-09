@@ -20,6 +20,105 @@ interface ResumeUploadProps {
   setLocation?: (location: string) => void
 }
 
+// PHASE 1: Zero-Friction Automation - Background job search and company research
+const triggerAutopilotFlow = async (resume: Resume) => {
+  try {
+    console.log('[AUTOPILOT] Starting background flow...')
+    
+    // Update progress indicator
+    const updateProgress = (step: string, status: 'loading' | 'complete') => {
+      try {
+        const progress = JSON.parse(localStorage.getItem('cf:autopilotProgress') || '{}')
+        progress[step] = status
+        localStorage.setItem('cf:autopilotProgress', JSON.stringify(progress))
+      } catch {}
+    }
+    
+    updateProgress('resume', 'complete')
+    updateProgress('search', 'loading')
+    
+    // Get location and keywords from localStorage (already extracted by processResumeSignals)
+    const location = localStorage.getItem('cf:location') || 'Canada'
+    const keywords = localStorage.getItem('cf:keywords') || ''
+    
+    console.log('[AUTOPILOT] Searching with:', { location, keywords: keywords.slice(0, 50) })
+    
+    // Trigger background job search (fire and forget for speed)
+    fetch('/api/jobs/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        keywords,
+        location,
+        useResumeMatching: true,
+        limit: 50
+      })
+    }).then(async (response) => {
+      if (response.ok) {
+        const jobsData = await response.json()
+        const jobs = jobsData.data || []
+        
+        console.log('[AUTOPILOT] Found', jobs.length, 'jobs')
+        
+        // Cache results
+        localStorage.setItem('cf:jobResults', JSON.stringify(jobs))
+        localStorage.setItem('cf:jobResultsTime', Date.now().toString())
+        
+        updateProgress('search', 'complete')
+        updateProgress('research', 'loading')
+        
+        // Pre-research top 10 companies (fire and forget)
+        const topJobs = jobs.slice(0, 10)
+        let researchedCount = 0
+        
+        topJobs.forEach((job: any) => {
+          fetch('/api/v2/company/deep-research', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              companyName: job.company,
+              targetRole: job.title 
+            })
+          }).then(() => {
+            researchedCount++
+            console.log('[AUTOPILOT] Researched company', researchedCount, 'of 10:', job.company)
+            
+            if (researchedCount === topJobs.length) {
+              updateProgress('research', 'complete')
+              updateProgress('optimize', 'loading')
+              
+              // Show success notification
+              toast.success(`🚀 Autopilot complete! Found ${jobs.length} jobs and researched ${topJobs.length} companies.`)
+              
+              updateProgress('optimize', 'complete')
+            }
+          }).catch(err => {
+            console.warn('[AUTOPILOT] Company research failed for', job.company, err)
+          })
+        })
+        
+        // If no jobs to research, mark as complete
+        if (topJobs.length === 0) {
+          updateProgress('research', 'complete')
+          updateProgress('optimize', 'complete')
+        }
+      } else {
+        console.error('[AUTOPILOT] Job search failed:', response.status)
+        updateProgress('search', 'complete')
+        updateProgress('research', 'complete')
+        updateProgress('optimize', 'complete')
+      }
+    }).catch(error => {
+      console.error('[AUTOPILOT] Error:', error)
+      // Don't show error to user, just log it
+    })
+    
+  } catch (error) {
+    console.error('[AUTOPILOT] Flow error:', error)
+    // Silent fail - don't interrupt user experience
+  }
+}
+
 export function ResumeUpload({
   onUploadSuccess,
   onUploadError,
@@ -270,6 +369,11 @@ export function ResumeUpload({
       // Extract signals after upload
       if (data.extractedText && data.extractedText.length > 50) {
         await processResumeSignals(data.extractedText)
+      }
+
+      // PHASE 1: Zero-Friction Automation - Trigger full autopilot flow
+      if (data.extractedText && data.extractedText.length > 100) {
+        triggerAutopilotFlow(data)
       }
 
     } catch (error) {
