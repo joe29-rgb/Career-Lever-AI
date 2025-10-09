@@ -35,6 +35,27 @@ const triggerAutopilotFlow = async (resume: Resume) => {
     }
     
     updateProgress('resume', 'complete')
+    
+    // PHASE 1B: Extract smart profile (salary, work type, preferences)
+    try {
+      const profileResponse = await fetch('/api/resume/extract-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText: resume.extractedText })
+      })
+      
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        if (profileData.success && profileData.profile) {
+          // Cache profile for later use
+          localStorage.setItem('cf:profile', JSON.stringify(profileData.profile))
+          console.log('[AUTOPILOT] Smart profile extracted:', profileData.profile.seniority_level, profileData.profile.work_type)
+        }
+      }
+    } catch (err) {
+      console.warn('[AUTOPILOT] Profile extraction failed (non-critical):', err)
+    }
+    
     updateProgress('search', 'loading')
     
     // Get location and keywords from localStorage (already extracted by processResumeSignals)
