@@ -17,10 +17,16 @@ export interface ExtractionResult<T = any> {
 
 /**
  * Main extraction function with 5-stage fallback pipeline
+ * WITH ENHANCED DEBUG LOGGING (Perplexity recommendation)
  */
-export function extractEnterpriseJSON<T = any>(content: string): ExtractionResult<T> {
+export function extractEnterpriseJSON<T = any>(content: string, debug = false): ExtractionResult<T> {
   const attemptedCleanups: string[] = []
   let workingContent = content.trim()
+  
+  // DEBUG: Log before cleanup
+  if (debug || process.env.PERPLEXITY_DEBUG === 'true') {
+    console.log('[EXTRACT_JSON] Before cleanup:', content.slice(0, 200))
+  }
   
   if (!workingContent) {
     return {
@@ -38,6 +44,11 @@ export function extractEnterpriseJSON<T = any>(content: string): ExtractionResul
       .replace(/```(?:json|javascript|js)?\s*/gi, '')
       .replace(/```\s*/g, '')
     attemptedCleanups.push('markdown-removal')
+    
+    // DEBUG: Log after markdown removal
+    if (debug) {
+      console.log('[EXTRACT_JSON] After markdown removal:', workingContent.slice(0, 200))
+    }
   }
 
   // STAGE 2: Extract JSON array or object
@@ -47,14 +58,29 @@ export function extractEnterpriseJSON<T = any>(content: string): ExtractionResul
   if (arrayMatch) {
     workingContent = arrayMatch[1]
     attemptedCleanups.push('array-extraction')
+    
+    // DEBUG: Log matched JSON
+    if (debug) {
+      console.log('[EXTRACT_JSON] Matched JSON array:', workingContent.slice(0, 200))
+    }
   } else if (objectMatch) {
     workingContent = objectMatch[1]
     attemptedCleanups.push('object-extraction')
+    
+    // DEBUG: Log matched JSON
+    if (debug) {
+      console.log('[EXTRACT_JSON] Matched JSON object:', workingContent.slice(0, 200))
+    }
   }
 
   // STAGE 3: Fix common JSON issues
   workingContent = cleanupJSON(workingContent)
   attemptedCleanups.push('json-cleanup')
+  
+  // DEBUG: Log after regex fixes
+  if (debug) {
+    console.log('[EXTRACT_JSON] After regex fixes:', workingContent.slice(0, 200))
+  }
 
   // STAGE 4: Attempt JSON parsing
   try {
@@ -66,6 +92,15 @@ export function extractEnterpriseJSON<T = any>(content: string): ExtractionResul
     }
   } catch (parseError) {
     attemptedCleanups.push('initial-parse-failed')
+    
+    // DEBUG: Capture parse error details with context
+    if (parseError instanceof Error) {
+      const posMatch = /position\s+(\d+)/.exec(parseError.message)
+      const pos = posMatch ? parseInt(posMatch[1]) : 0
+      const context = workingContent.substring(Math.max(0, pos - 20), Math.min(workingContent.length, pos + 100))
+      
+      console.error('[JSON PARSE ERROR]', parseError.message, 'context:', JSON.stringify(context))
+    }
     
     // STAGE 5: Aggressive partial extraction
     const partialResult = extractPartialJSON<T>(workingContent, attemptedCleanups)

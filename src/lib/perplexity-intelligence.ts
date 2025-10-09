@@ -727,6 +727,14 @@ Focus on: Recruiters, HR managers, hiring managers, department heads. If no emai
         })
       })
       
+      // CRITICAL DEBUG: Log raw Perplexity output (Perplexity recommendation)
+      console.log('[PERPLEXITY RAW]', {
+        method: 'hiringContactsV2',
+        company: companyName,
+        contentLength: out.content.length,
+        contentPreview: out.content.slice(0, 300)
+      })
+      
       // Parse and clean Perplexity response - ENTERPRISE-GRADE JSON EXTRACTION
       let cleanedContent = out.content.trim()
       

@@ -28,14 +28,54 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { job, resume }: AnalysisRequest = await request.json()
+    const body = await request.json()
+    
+    // CRITICAL FIX: Input validation with 400 responses (Perplexity recommendation)
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json(
+        { error: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
+    
+    const { jobTitle, company, jobDescription, resumeText } = body
+    
+    if (!jobTitle || typeof jobTitle !== 'string') {
+      return NextResponse.json(
+        { error: 'jobTitle is required and must be a string' },
+        { status: 400 }
+      )
+    }
+    
+    if (!company || typeof company !== 'string') {
+      return NextResponse.json(
+        { error: 'company is required and must be a string' },
+        { status: 400 }
+      )
+    }
+    
+    if (!resumeText || typeof resumeText !== 'string') {
+      return NextResponse.json(
+        { error: 'resumeText is required and must be a string' },
+        { status: 400 }
+      )
+    }
+
+    // Build job object safely
+    const job = {
+      title: jobTitle,
+      company,
+      description: jobDescription || '',
+      summary: jobDescription || '',
+      skills: Array.isArray(body.skills) ? body.skills : []
+    }
 
     // Simple keyword-based analysis (can be enhanced with AI later)
-    const analysis = await analyzeJobMatch(job, resume)
+    const analysis = await analyzeJobMatch(job, resumeText)
 
     return NextResponse.json({
       success: true,
-      analysis
+      ...analysis
     })
   } catch (error: any) {
     console.error('[API] Job analysis error:', error)
@@ -70,7 +110,7 @@ async function analyzeJobMatch(job: any, resume: string) {
   console.log('[ANALYSIS] Experience weighting:', { experienceYears, educationLevel })
   
   // Common tech skills to check
-  const allSkills = [
+  const coreSkills = [
     'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java',
     'SQL', 'MongoDB', 'AWS', 'Docker', 'Kubernetes', 'Git',
     'CSS', 'HTML', 'REST', 'GraphQL', 'Redux', 'Next.js',
@@ -78,17 +118,26 @@ async function analyzeJobMatch(job: any, resume: string) {
     // Add sales/business skills
     'Sales', 'Business Development', 'Account Management', 'CRM',
     'Salesforce', 'HubSpot', 'Lead Generation', 'Negotiation',
-    'Customer Success', 'B2B', 'B2C', 'SaaS',
-    ...(job.skills || [])
+    'Customer Success', 'B2B', 'B2C', 'SaaS'
   ]
+  
+  // CRITICAL FIX: Safely merge job skills, ensuring they're all strings
+  const jobSkills = Array.isArray(job.skills) 
+    ? job.skills.filter((s: any) => typeof s === 'string' && s.trim().length > 0)
+    : []
+  
+  const allSkills = [...coreSkills, ...jobSkills]
   
   const matchingSkills: string[] = []
   const missingSkills: string[] = []
   
   for (const skill of allSkills) {
+    // CRITICAL FIX: Ensure skill is a string before calling toLowerCase
+    if (typeof skill !== 'string') continue
+    
     const skillLower = skill.toLowerCase()
     const inResume = resumeLower.includes(skillLower)
-    const inJob = jobDescLower.includes(skillLower) || job.skills?.some((s: string) => s.toLowerCase().includes(skillLower))
+    const inJob = jobDescLower.includes(skillLower) || jobSkills.some((s: string) => s.toLowerCase().includes(skillLower))
     
     if (inJob) {
       if (inResume) {
