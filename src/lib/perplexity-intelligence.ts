@@ -745,6 +745,13 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
         }
       }
       
+      // CRITICAL FIX: Clean up common JSON syntax errors from Perplexity
+      cleanedContent = cleanedContent
+        .replace(/,\s*]/g, ']')       // Remove trailing commas before ]
+        .replace(/,\s*}/g, '}')       // Remove trailing commas before }
+        .replace(/:\s*,/g, ': null,') // Replace empty values with null
+        .replace(/"\s*\n\s*"/g, '", "') // Fix broken string concatenations
+      
       let parsed = JSON.parse(cleanedContent) as HiringContact[]
       parsed = Array.isArray(parsed) ? parsed.slice(0,8) : []
       

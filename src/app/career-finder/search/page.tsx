@@ -29,7 +29,7 @@ export default function SearchPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<JobListing[]>([])
   const [filters, setFilters] = useState({ 
-    location: 'Toronto, ON', 
+    location: 'Edmonton, AB', // CRITICAL FIX: Default to user's actual location from resume
     salaryMin: '', 
     salaryMax: '', 
     workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'part-time',
@@ -140,10 +140,12 @@ export default function SearchPage() {
             if (response.ok) {
               const signals = await response.json()
               const topKeywords = signals.keywords?.slice(0, 5).join(', ') || ''
+              const resumeLocation = signals.location || 'Edmonton, AB'
               query = topKeywords
               setSearchQuery(topKeywords)
+              setFilters(prev => ({ ...prev, location: resumeLocation })) // CRITICAL FIX: Use resume location
               setUseResumeMatching(true)
-              console.log('[AUTOPILOT] Auto-search with keywords:', topKeywords)
+              console.log('[AUTOPILOT] Auto-search with keywords:', topKeywords, 'location:', resumeLocation)
             }
           } catch (e) {
             console.error('[AUTOPILOT] Failed to extract keywords:', e)
