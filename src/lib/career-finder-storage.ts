@@ -316,6 +316,42 @@ export class CareerFinderStorage {
     return null
   }
 
+  static setTemplate(template: string): void {
+    try {
+      localStorage.setItem('cf:selectedTemplate', template)
+      console.log('[STORAGE] ✅ Template saved:', template)
+    } catch (error) {
+      console.error('[STORAGE] ❌ Failed to save template:', error)
+    }
+  }
+
+  static getTemplate(): string | null {
+    try {
+      return localStorage.getItem('cf:selectedTemplate')
+    } catch (error) {
+      console.error('[STORAGE] ❌ Failed to load template:', error)
+      return null
+    }
+  }
+
+  static setTone(tone: string): void {
+    try {
+      localStorage.setItem('cf:tone', tone)
+      console.log('[STORAGE] ✅ Tone saved:', tone)
+    } catch (error) {
+      console.error('[STORAGE] ❌ Failed to save tone:', error)
+    }
+  }
+
+  static getTone(): string | null {
+    try {
+      return localStorage.getItem('cf:tone')
+    } catch (error) {
+      console.error('[STORAGE] ❌ Failed to load tone:', error)
+      return null
+    }
+  }
+
   // ============= BULK OPERATIONS =============
 
   static clearAll(): void {

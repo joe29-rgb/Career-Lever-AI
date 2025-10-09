@@ -71,11 +71,11 @@ export default function CareerFinderOptimizerPage() {
   }, [])
 
   useEffect(() => {
-    try { localStorage.setItem('cf:selectedTemplate', template) } catch {}
+    CareerFinderStorage.setTemplate(template)
   }, [template])
 
   useEffect(() => {
-    try { localStorage.setItem('cf:tone', tone) } catch {}
+    CareerFinderStorage.setTone(tone)
   }, [tone])
 
   const generateVariants = async () => {
@@ -96,10 +96,14 @@ export default function CareerFinderOptimizerPage() {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 30000)
       
+      // ✅ Use unified storage for job description
+      const selectedJob = CareerFinderStorage.getJob()
+      const jobDescription = (selectedJob?.description || selectedJob?.summary || '').toString().slice(0, 8000)
+      
       const bodyBase = { 
         resumeText: (overrideText || resumeText).slice(0, 8000), 
         template, 
-        jobDescription: (JSON.parse(localStorage.getItem('cf:selectedJob')||'{}')?.description || '').toString().slice(0, 8000), 
+        jobDescription, 
         humanize, 
         highlights 
       }
@@ -153,6 +157,7 @@ export default function CareerFinderOptimizerPage() {
       console.log('[OPTIMIZER] Auto-generating initial variants')
       generateVariants() 
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeText])
   
   // Manual regeneration when user changes template

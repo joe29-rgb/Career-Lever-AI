@@ -74,6 +74,7 @@ export default function JobAnalysisPage() {
   useEffect(() => {
     console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
     loadAndAnalyzeJob()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadAndAnalyzeJob = async () => {

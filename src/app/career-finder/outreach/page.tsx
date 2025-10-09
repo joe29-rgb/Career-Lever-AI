@@ -44,6 +44,7 @@ export default function CareerFinderOutreachPage() {
   
   useEffect(() => {
     initializeOutreach()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   
   const initializeOutreach = async () => {

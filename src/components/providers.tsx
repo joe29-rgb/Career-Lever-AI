@@ -21,7 +21,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ''
   const DASHBOARD_PREFIXES = [
     '/dashboard',
-    '/create-application',
+    '/career-finder',
     '/analytics',
     '/job-boards',
     '/network',

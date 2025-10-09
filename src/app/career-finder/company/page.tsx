@@ -4,22 +4,24 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
+import CompanyResearchService, { CompanyResearchResult } from '@/lib/company-research-service'
 
 export default function CareerFinderCompanyPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [companyData, setCompanyData] = useState<any>(null)
+  const [companyData, setCompanyData] = useState<CompanyResearchResult | null>(null)
   const [researchProgress, setResearchProgress] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
     CareerFinderStorage.setProgress(4, 7)
     initializeAndResearch()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const initializeAndResearch = async () => {
     try {
-      // ✅ CRITICAL FIX: Use unified storage
+      // ✅ Use unified storage
       const selectedJob = CareerFinderStorage.getJob()
       
       if (!selectedJob) {
@@ -30,74 +32,20 @@ export default function CareerFinderCompanyPage() {
 
       console.log('[COMPANY] ✅ Loaded job:', selectedJob.title, '@', selectedJob.company)
 
-      // ✅ CRITICAL FIX: Check for existing research first (same pattern as create-application)
-      const existingResearch = CareerFinderStorage.getCompanyResearch()
-      if (existingResearch && existingResearch.company === selectedJob.company) {
-        console.log('[COMPANY] ✅ Using cached company research')
-        setCompanyData(existingResearch)
-        setResearchProgress(100)
-        setLoading(false)
-        return
-      }
+      // ✅ Use shared company research service
+      const result = await CompanyResearchService.research({
+        company: selectedJob.company,
+        role: selectedJob.title,
+        location: selectedJob.location,
+        onProgress: setResearchProgress
+      })
 
-      // ✅ Perform new research with same API as create-application
-      await performCompanyResearch(selectedJob)
+      setCompanyData(result)
+      setLoading(false)
+      
     } catch (error: any) {
       console.error('[COMPANY] ❌ Initialization error:', error)
       setError(error.message || 'Failed to initialize company research')
-      setLoading(false)
-    }
-  }
-
-  const performCompanyResearch = async (job: any) => {
-    try {
-      setResearchProgress(25)
-      console.log('[COMPANY] 🔍 Starting research for:', job.company)
-      
-      // ✅ CRITICAL FIX: Use same API endpoint as create-application
-      const response = await fetch('/api/v2/company/deep-research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company: job.company,
-          role: job.title,
-          geo: job.location
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error(`Research failed: ${response.status}`)
-      }
-
-      setResearchProgress(75)
-      const research = await response.json()
-      
-      // ✅ CRITICAL FIX: Ensure data structure consistency (hiringContacts always array)
-      const processedResearch = {
-        ...research,
-        company: research.company || job.company,
-        description: research.description || 'Company research completed',
-        hiringContacts: Array.isArray(research.contacts) 
-          ? research.contacts 
-          : Array.isArray(research.hiringContacts)
-            ? research.hiringContacts
-            : [],
-        contacts: Array.isArray(research.contacts) ? research.contacts : []
-      }
-
-      console.log('[COMPANY] ✅ Research complete:', processedResearch.company, 
-        `(${processedResearch.hiringContacts.length} contacts)`)
-
-      setCompanyData(processedResearch)
-      setResearchProgress(100)
-      
-      // ✅ CRITICAL FIX: Store using unified storage
-      CareerFinderStorage.setCompanyResearch(processedResearch)
-      
-    } catch (error: any) {
-      console.error('[COMPANY] ❌ Research failed:', error)
-      setError(`Failed to research company: ${error.message}`)
-    } finally {
       setLoading(false)
     }
   }
@@ -106,10 +54,7 @@ export default function CareerFinderCompanyPage() {
     setError('')
     setLoading(true)
     setResearchProgress(0)
-    const job = CareerFinderStorage.getJob()
-    if (job) {
-      performCompanyResearch(job)
-    }
+    initializeAndResearch()
   }
 
   if (loading) {
