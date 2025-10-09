@@ -114,7 +114,17 @@ Return JSON:
         maxTokens: 200
       })
       
-      return result as { valid: boolean; confidence: number; reasoning: string }
+      // Type-safe parsing of result
+      if (typeof result === 'object' && result !== null && 'valid' in result) {
+        return result as { valid: boolean; confidence: number; reasoning: string }
+      }
+      
+      // Fallback if result is unexpected format
+      return {
+        valid: false,
+        confidence: 0,
+        reasoning: 'Unexpected response format from AI'
+      }
       
     } catch (error) {
       console.error('[CONTACT_ENRICHMENT] Email verification failed:', error)
@@ -206,7 +216,18 @@ Return JSON:
         maxTokens: 300
       })
       
-      return result as any
+      // Type-safe result handling
+      if (typeof result === 'object' && result !== null && 'communication_style' in result) {
+        return result as {
+          communication_style: 'direct' | 'formal' | 'casual';
+          best_contact_days: string[];
+          preferred_approach: string;
+          response_likelihood: number;
+        }
+      }
+      
+      // Fallback if unexpected format
+      return this.inferPersonalityFromTitle(title || '')
       
     } catch (error) {
       console.error('[CONTACT_ENRICHMENT] Personality analysis failed:', error)

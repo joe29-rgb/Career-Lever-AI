@@ -80,12 +80,17 @@ Return JSON:
         maxTokens: 800
       })
       
-      console.log('[PERSONALIZATION] Generated with score:', result.personalization_score)
+      // Type-safe result handling
+      if (typeof result === 'object' && result !== null && 'subject' in result && 'body' in result) {
+        console.log('[PERSONALIZATION] Generated with score:', (result as any).personalization_score)
+        return {
+          ...(result as any),
+          tone: 'value-add' as const
+        }
+      }
       
-      return {
-        ...result,
-        tone: 'value-add'
-      } as PersonalizedOutreach
+      // Fallback if unexpected format
+      throw new Error('Invalid response format from AI')
       
     } catch (error) {
       console.error('[PERSONALIZATION] Error generating outreach:', error)
@@ -226,10 +231,16 @@ Return JSON: {"subject": "...", "body": "...", "cta": "...", "personalization_sc
         maxTokens: 800
       })
       
-      return {
-        ...result,
-        tone: angle
-      } as PersonalizedOutreach
+      // Type-safe result handling
+      if (typeof result === 'object' && result !== null && 'subject' in result && 'body' in result) {
+        return {
+          ...(result as any),
+          tone: angle
+        }
+      }
+      
+      // Fallback if unexpected format
+      throw new Error('Invalid response format from AI')
       
     } catch (error) {
       console.error(`[PERSONALIZATION] Error generating ${angle} variant:`, error)
