@@ -10,7 +10,55 @@ import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 export default function CareerFinderResumePage() {
   const [existingResume, setExistingResume] = useState<any>(null)
   const [loadingExisting, setLoadingExisting] = useState<boolean>(true)
+  const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<any>(null)
+  const [analyzingResume, setAnalyzingResume] = useState<boolean>(false)
   
+  // COMPETITIVE ADVANTAGE: Comprehensive resume analysis with AI risk
+  const handleComprehensiveAnalysis = async (resumeText: string) => {
+    if (!resumeText || resumeText.length < 100) {
+      console.warn('[COMPREHENSIVE_ANALYSIS] Resume text too short:', resumeText.length)
+      return
+    }
+
+    setAnalyzingResume(true)
+    console.log('[COMPREHENSIVE_ANALYSIS] Starting analysis, text length:', resumeText.length)
+
+    try {
+      const response = await fetch('/api/resume/analyze-comprehensive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          resumeText, 
+          options: { 
+            includeAiRisk: true,
+            includeMarketData: true,
+            includeCareerPath: true
+          } 
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[COMPREHENSIVE_ANALYSIS] Success:', data)
+        setComprehensiveAnalysis(data.analysis)
+        
+        // Cache the analysis
+        try {
+          localStorage.setItem('cf:comprehensiveAnalysis', JSON.stringify(data.analysis))
+        } catch (e) {
+          console.warn('[COMPREHENSIVE_ANALYSIS] Failed to cache:', e)
+        }
+      } else {
+        const error = await response.json()
+        console.error('[COMPREHENSIVE_ANALYSIS] API error:', error)
+      }
+    } catch (error) {
+      console.error('[COMPREHENSIVE_ANALYSIS] Request failed:', error)
+    } finally {
+      setAnalyzingResume(false)
+    }
+  }
+
   // ENTERPRISE FIX: Auto-load existing resume from localStorage or DB
   useEffect(() => {
     (async () => {
@@ -106,10 +154,23 @@ export default function CareerFinderResumePage() {
               </Link>
               <button 
                 onClick={() => {
+                  if (existingResume?.extractedText) {
+                    handleComprehensiveAnalysis(existingResume.extractedText)
+                  }
+                }}
+                disabled={analyzingResume}
+                className="px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {analyzingResume ? '🔄 Analyzing...' : '🔍 AI Analysis'}
+              </button>
+              <button 
+                onClick={() => {
                   setExistingResume(null)
+                  setComprehensiveAnalysis(null)
                   try {
                     localStorage.removeItem('cf:resume')
                     localStorage.removeItem('cf:autopilotReady')
+                    localStorage.removeItem('cf:comprehensiveAnalysis')
                   } catch {}
                 }}
                 className="px-6 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors"
@@ -117,6 +178,130 @@ export default function CareerFinderResumePage() {
                 Upload New
               </button>
             </div>
+          </div>
+        )}
+
+        {/* COMPETITIVE ADVANTAGE: Display comprehensive analysis results */}
+        {comprehensiveAnalysis && (
+          <div className="gradient-border-card mb-8 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center">
+                <span className="text-2xl">🤖</span>
+              </div>
+              <h3 className="text-2xl font-bold gradient-text">AI-Powered Resume Analysis</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* AI Risk Analysis */}
+              {comprehensiveAnalysis.aiRisk && (
+                <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-xl p-6 border border-red-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">⚠️</span>
+                    <h4 className="text-lg font-bold text-foreground">AI/Automation Risk</h4>
+                  </div>
+                  <div className="text-3xl font-bold mb-2">
+                    <span className={`${
+                      comprehensiveAnalysis.aiRisk.aiReplacementRisk === 'low' ? 'text-green-500' :
+                      comprehensiveAnalysis.aiRisk.aiReplacementRisk === 'medium' ? 'text-yellow-500' : 'text-red-500'
+                    }`}>
+                      {comprehensiveAnalysis.aiRisk.aiReplacementRisk?.toUpperCase() || 'N/A'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{comprehensiveAnalysis.aiRisk.reasoning?.slice(0, 100)}...</p>
+                </div>
+              )}
+
+              {/* Career Outlook */}
+              {comprehensiveAnalysis.aiRisk && (
+                <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl p-6 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-2xl">📈</span>
+                    <h4 className="text-lg font-bold text-foreground">5-Year Outlook</h4>
+                  </div>
+                  <div className="text-3xl font-bold mb-2">
+                    <span className={`${
+                      comprehensiveAnalysis.aiRisk.fiveYearOutlook === 'thriving' ? 'text-green-500' :
+                      comprehensiveAnalysis.aiRisk.fiveYearOutlook === 'growing' ? 'text-blue-500' :
+                      comprehensiveAnalysis.aiRisk.fiveYearOutlook === 'stable' ? 'text-yellow-500' : 'text-red-500'
+                    }`}>
+                      {comprehensiveAnalysis.aiRisk.fiveYearOutlook?.toUpperCase() || 'N/A'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Career trajectory projection based on market trends</p>
+                </div>
+              )}
+            </div>
+
+            {/* Salary Intelligence */}
+            {comprehensiveAnalysis.salaryIntelligence && (
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">💰</span>
+                  <h4 className="text-lg font-bold text-foreground">Market Salary Intelligence</h4>
+                </div>
+                <div className="flex gap-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Target Range</p>
+                    <p className="text-2xl font-bold text-green-500">
+                      ${comprehensiveAnalysis.salaryIntelligence.targetRange?.min?.toLocaleString()} - 
+                      ${comprehensiveAnalysis.salaryIntelligence.targetRange?.max?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Median (P50)</p>
+                    <p className="text-xl font-bold text-foreground">
+                      ${comprehensiveAnalysis.salaryIntelligence.marketData?.percentile50?.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Career Path Intelligence */}
+            {comprehensiveAnalysis.careerPath && (
+              <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-xl p-6 border border-purple-500/20 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">🎯</span>
+                  <h4 className="text-lg font-bold text-foreground">Career Path Intelligence</h4>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Current Level</p>
+                    <p className="text-lg font-semibold text-foreground">{comprehensiveAnalysis.careerPath.currentLevel}</p>
+                  </div>
+                  {comprehensiveAnalysis.careerPath.nextPossibleRoles?.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Next Possible Roles</p>
+                      <div className="flex flex-wrap gap-2">
+                        {comprehensiveAnalysis.careerPath.nextPossibleRoles.slice(0, 3).map((role: string, i: number) => (
+                          <span key={i} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
+                            {role}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* AI Recommendations */}
+            {comprehensiveAnalysis.aiRisk?.recommendations?.length > 0 && (
+              <div className="bg-gradient-to-br from-yellow-500/10 to-amber-500/10 rounded-xl p-6 border border-yellow-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-2xl">💡</span>
+                  <h4 className="text-lg font-bold text-foreground">AI Recommendations</h4>
+                </div>
+                <ul className="space-y-2">
+                  {comprehensiveAnalysis.aiRisk.recommendations.slice(0, 3).map((rec: string, i: number) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="text-yellow-500 mt-1">•</span>
+                      <span className="text-sm text-foreground">{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
