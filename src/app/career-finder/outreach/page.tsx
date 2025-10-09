@@ -209,12 +209,46 @@ export default function CareerFinderOutreachPage() {
     toast.success(`${type} copied to clipboard!`)
   }
   
-  const handleSendEmail = (contact: EnhancedContact, email: PersonalizedEmail) => {
+  const handleSendEmail = async (contact: EnhancedContact, email: PersonalizedEmail) => {
     if (!contact.email) {
       toast.error('No email address available for this contact')
       return
     }
     
+    // Check if email service is configured
+    try {
+      const statusResponse = await fetch('/api/outreach/send')
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json()
+        
+        if (statusData.configured) {
+          // Use automated email sending
+          const sendResponse = await fetch('/api/outreach/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contact,
+              email,
+              send_immediately: true
+            })
+          })
+          
+          if (sendResponse.ok) {
+            const result = await sendResponse.json()
+            toast.success(`✉️ Email sent to ${contact.name}!`)
+            markAsSent()
+            return
+          } else {
+            const error = await sendResponse.json()
+            throw new Error(error.details || 'Failed to send email')
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[OUTREACH] Automated sending failed, falling back to mailto:', error)
+    }
+    
+    // Fallback to mailto if automated sending fails or not configured
     const mailto = `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
     window.open(mailto, '_blank')
     

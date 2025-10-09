@@ -1,0 +1,159 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { EmailAutomationService } from '@/lib/email-automation'
+import { isRateLimited } from '@/lib/rate-limit'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+/**
+ * PHASE 3C: Automated Email Sending API
+ * 
+ * Sends personalized emails to hiring contacts
+ * Rate limited, authenticated, tracks delivery
+ * 
+ * Requirements:
+ * - RESEND_API_KEY must be set in environment
+ * - User must be authenticated
+ * - Rate limit: 5 emails per hour per user
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    // Rate limiting - stricter for email sending
+    if (await isRateLimited(session.user.id, 'outreach-send')) {
+      return NextResponse.json(
+        { 
+          error: 'Rate limit exceeded. Maximum 5 emails per hour.',
+          retry_after: '60 minutes'
+        },
+        { status: 429 }
+      )
+    }
+    
+    const body = await request.json()
+    const {
+      contact,
+      email,
+      send_immediately = true,
+      scheduled_time
+    } = body
+    
+    // Validation
+    if (!contact?.email) {
+      return NextResponse.json(
+        { error: 'Contact email is required' },
+        { status: 400 }
+      )
+    }
+    
+    if (!email?.subject || !email?.body) {
+      return NextResponse.json(
+        { error: 'Email subject and body are required' },
+        { status: 400 }
+      )
+    }
+    
+    console.log('[OUTREACH_SEND] Request from user:', session.user.id)
+    console.log('[OUTREACH_SEND] Sending to:', contact.name, contact.email)
+    
+    // Send immediately or schedule
+    if (send_immediately) {
+      const result = await EmailAutomationService.sendEmailNow(contact, email)
+      
+      if (!result.success) {
+        // Check if it's a configuration error
+        if (result.error?.includes('API key not configured')) {
+          return NextResponse.json({
+            error: 'Email service not configured',
+            details: 'RESEND_API_KEY environment variable is not set. Please configure email service.',
+            contact_email: contact.email,
+            mailto_fallback: `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
+          }, { status: 503 })
+        }
+        
+        return NextResponse.json({
+          error: 'Failed to send email',
+          details: result.error
+        }, { status: 500 })
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Email sent successfully',
+        message_id: result.message_id,
+        contact: {
+          name: contact.name,
+          email: contact.email
+        },
+        sent_at: new Date().toISOString()
+      })
+      
+    } else {
+      // Schedule for later
+      const settings = EmailAutomationService.getDefaultSettings()
+      const schedule = await EmailAutomationService.scheduleOptimalOutreach(
+        [contact],
+        [email],
+        settings,
+        session.user.id
+      )
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Email scheduled',
+        scheduled_time: schedule[0]?.scheduled_time,
+        schedule_id: schedule[0]?.id
+      })
+    }
+    
+  } catch (error) {
+    console.error('[OUTREACH_SEND] Error:', error)
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * GET /api/outreach/send - Check email service status
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    const { resendProvider } = await import('@/lib/email-providers/resend-provider')
+    const status = resendProvider.getStatus()
+    
+    return NextResponse.json({
+      configured: status.configured,
+      provider: status.provider,
+      from_email: status.fromEmail,
+      ready: status.configured,
+      message: status.configured 
+        ? 'Email service is configured and ready' 
+        : 'Email service not configured. Add RESEND_API_KEY to environment.'
+    })
+    
+  } catch (error) {
+    console.error('[OUTREACH_SEND] Status check error:', error)
+    return NextResponse.json(
+      { error: 'Failed to check email service status' },
+      { status: 500 }
+    )
+  }
+}
+
