@@ -94,7 +94,7 @@ export class EmailAutomationService {
     
     // Calculate how many hours to add based on rate limiting
     const hoursToAdd = Math.floor(totalScheduled / settings.max_per_hour)
-    const sendDate = new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000)
+    let sendDate = new Date(now.getTime() + hoursToAdd * 60 * 60 * 1000)
     
     // Skip weekends if requested
     if (settings.skip_weekends) {
