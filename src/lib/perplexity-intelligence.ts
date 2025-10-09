@@ -917,6 +917,107 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
     return keys.length
   }
 
+  // ENTERPRISE FEATURE: Extract career timeline with industry tenure analysis
+  static async extractCareerTimeline(
+    resumeText: string
+  ): Promise<{
+    industries: Array<{ name: string; yearsOfExperience: number; keywords: string[]; percentage: number }>;
+    totalWorkYears: number;
+    totalEducationYears: number;
+    currentIndustry: string;
+    careerTransition?: { from: string; to: string; monthsAgo: number };
+  }> {
+    const key = makeKey('ppx:career:timeline:v1', { t: resumeText.slice(0, 3000) })
+    const cached = getCache(key) as any
+    if (cached) return cached
+
+    try {
+      const client = createClient()
+      
+      const prompt = `CAREER TIMELINE ANALYSIS - Extract industry tenure and calculate weights.
+
+RESUME TEXT:
+${resumeText}
+
+TASK: Analyze this person's career trajectory and calculate industry tenure.
+
+INSTRUCTIONS:
+1. Identify ALL industries/sectors this person has worked in (e.g., "Transportation/Logistics", "Food Service", "Sales", "Technology")
+2. For EACH industry, calculate:
+   - Total years of experience in that industry
+   - Percentage of total career time
+   - Key skills/keywords specific to that industry
+3. Identify if there's been a RECENT career transition (within last 12 months)
+4. Calculate total work years vs education years
+5. Determine current/most recent industry
+
+EXAMPLE:
+If someone drove trucks for 10 years (2010-2020), then became a cook for 6 months (2020-now):
+- Transportation: 10 years, 95% of career, keywords: ["CDL", "Logistics", "Route Planning"]
+- Food Service: 0.5 years, 5% of career, keywords: ["Food Prep", "Kitchen Safety"]
+- Career transition: from "Transportation" to "Food Service" 6 months ago
+
+RETURN STRICT JSON (no markdown, no explanation):
+{
+  "industries": [
+    {
+      "name": "Transportation/Logistics",
+      "yearsOfExperience": 10,
+      "keywords": ["CDL", "Logistics", "Route Planning", "Safety Compliance"],
+      "percentage": 95
+    },
+    {
+      "name": "Food Service",
+      "yearsOfExperience": 0.5,
+      "keywords": ["Food Prep", "Kitchen Safety", "Customer Service"],
+      "percentage": 5
+    }
+  ],
+  "totalWorkYears": 10.5,
+  "totalEducationYears": 2,
+  "currentIndustry": "Food Service",
+  "careerTransition": {
+    "from": "Transportation/Logistics",
+    "to": "Food Service",
+    "monthsAgo": 6
+  }
+}
+
+CRITICAL: Order industries by yearsOfExperience (LONGEST FIRST), not by recency!`
+
+      const response = await client.makeRequest(
+        'You analyze career timelines and calculate industry tenure. Return only JSON.',
+        prompt,
+        { temperature: 0.2, maxTokens: 2000 }
+      )
+
+      // JSON extraction
+      let cleanedContent = response.content.trim()
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+      const jsonMatch = cleanedContent.match(/(\{[\s\S]*\})/);
+      if (jsonMatch) cleanedContent = jsonMatch[0]
+
+      const parsed = JSON.parse(cleanedContent)
+      
+      console.log('[CAREER_TIMELINE] Analysis complete:', {
+        industries: parsed.industries?.length,
+        currentIndustry: parsed.currentIndustry,
+        hasTransition: !!parsed.careerTransition
+      })
+
+      setCache(key, parsed, 86400000) // 24 hour cache
+      return parsed
+    } catch (error) {
+      console.error('[CAREER_TIMELINE] Failed:', error)
+      return {
+        industries: [],
+        totalWorkYears: 0,
+        totalEducationYears: 0,
+        currentIndustry: 'Unknown'
+      }
+    }
+  }
+
   // Extract normalized keywords and location from resume (STRICT JSON)
   static async extractResumeSignals(
     resumeText: string,

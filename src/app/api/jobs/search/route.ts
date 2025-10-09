@@ -34,6 +34,8 @@ interface JobSearchRequest {
   experienceLevel?: 'entry' | 'mid' | 'senior' | 'executive'
   workType?: 'remote' | 'hybrid' | 'onsite' | 'any'
   useResumeMatching?: boolean // Use resume for skill matching
+  targetIndustry?: string // ENTERPRISE: User wants to switch industries (e.g., "Technology", "Healthcare")
+  disableIndustryWeighting?: boolean // ENTERPRISE: User wants equal weight across all industries
 }
 
 export async function POST(request: NextRequest) {
@@ -61,7 +63,9 @@ export async function POST(request: NextRequest) {
       remote,
       salaryMin,
       experienceLevel,
-      workType
+      workType,
+      targetIndustry, // ENTERPRISE: User wants to switch industries
+      disableIndustryWeighting // ENTERPRISE: Disable tenure-based weighting
     } = body
     
     // CRITICAL: Validate location is provided
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
     let jobs: any[] = []
     let metadata: any = {}
 
-    // Option 1: Resume-matched search (most powerful)
+    // Option 1: Resume-matched search with INDUSTRY WEIGHTING (most powerful)
     if (useResumeMatching) {
       try {
         // Get user's resume
@@ -102,7 +106,76 @@ export async function POST(request: NextRequest) {
           }, { status: 400 })
         }
 
-        console.log(`[JOB_SEARCH] Using resume matching for user ${session.user.id}`)
+        console.log(`[JOB_SEARCH] Using resume matching with industry weighting for user ${session.user.id}`)
+
+        // ENTERPRISE FEATURE: Analyze career timeline for industry weighting
+        let careerTimeline: any = null
+        let effectivePrimaryIndustry: any = null
+        
+        // Skip industry analysis if user explicitly disabled it
+        if (!disableIndustryWeighting) {
+          try {
+            careerTimeline = await PerplexityIntelligenceService.extractCareerTimeline(extractedText)
+            console.log('[JOB_SEARCH] Career timeline:', {
+              industries: careerTimeline.industries.map((i: any) => `${i.name} (${i.percentage}%)`).join(', '),
+              primaryIndustry: careerTimeline.industries[0]?.name,
+              hasTransition: !!careerTimeline.careerTransition,
+              userTargetIndustry: targetIndustry || 'none'
+            })
+            
+            // ENTERPRISE: User wants to switch industries
+            if (targetIndustry) {
+              // Find matching industry from resume, or create synthetic one
+              effectivePrimaryIndustry = careerTimeline.industries.find(
+                (i: any) => i.name.toLowerCase().includes(targetIndustry.toLowerCase())
+              )
+              
+              if (effectivePrimaryIndustry) {
+                console.log(`[JOB_SEARCH] User targeting industry switch TO: ${effectivePrimaryIndustry.name}`)
+              } else {
+                // User wants to switch to an entirely new industry not in their history
+                console.log(`[JOB_SEARCH] User switching to NEW industry: ${targetIndustry} (no prior experience)`)
+                effectivePrimaryIndustry = {
+                  name: targetIndustry,
+                  yearsOfExperience: 0,
+                  keywords: keywords.split(',').map((k: string) => k.trim()),
+                  percentage: 100 // Give full weight to target industry
+                }
+              }
+            } else {
+              // Default: Use longest-tenure industry
+              effectivePrimaryIndustry = careerTimeline.industries[0]
+            }
+          } catch (err) {
+            console.warn('[JOB_SEARCH] Career timeline extraction failed, using standard matching:', err)
+          }
+        } else {
+          console.log('[JOB_SEARCH] Industry weighting DISABLED by user preference')
+        }
+
+        // CRITICAL: If career timeline exists, weight job results by industry tenure
+        let industryWeightedLimit = limit
+        
+        if (effectivePrimaryIndustry) {
+          // Calculate industry-based search distribution
+          const primaryPercentage = effectivePrimaryIndustry.percentage / 100
+          
+          // EXAMPLE: If 95% of career in Transportation, show 95% transport jobs
+          // UNLESS user is switching industries, then show 100% of new industry
+          industryWeightedLimit = targetIndustry ? limit : Math.ceil(limit * primaryPercentage)
+          
+          console.log('[JOB_SEARCH] Industry weighting:', {
+            primaryIndustry: effectivePrimaryIndustry.name,
+            primaryPercentage: `${effectivePrimaryIndustry.percentage}%`,
+            adjustedLimit: industryWeightedLimit,
+            keywords: effectivePrimaryIndustry.keywords.join(', '),
+            isSwitching: !!targetIndustry
+          })
+          
+          // Boost keywords from target/primary industry
+          const industryKeywords = effectivePrimaryIndustry.keywords.slice(0, 5).join(', ')
+          keywords = `${industryKeywords}, ${keywords}`.trim()
+        }
 
         // Use enhanced jobMarketAnalysisV2 with 25+ boards
         result = await PerplexityIntelligenceService.jobMarketAnalysisV2(
@@ -119,13 +192,58 @@ export async function POST(request: NextRequest) {
         )
 
         jobs = result.data
+        
+        // POST-PROCESSING: Re-rank jobs by industry tenure (respects user preferences)
+        if (effectivePrimaryIndustry && !disableIndustryWeighting) {
+          const primaryKeywords = effectivePrimaryIndustry.keywords.map((k: string) => k.toLowerCase())
+          
+          jobs = jobs.map((job: any) => {
+            // Calculate industry match score
+            const jobTitle = (job.title || '').toLowerCase()
+            const jobDescription = (job.description || '').toLowerCase()
+            const jobCompany = (job.company || '').toLowerCase()
+            const fullText = `${jobTitle} ${jobDescription} ${jobCompany}`
+            
+            let industryMatchCount = 0
+            primaryKeywords.forEach((keyword: string) => {
+              if (fullText.includes(keyword)) industryMatchCount++
+            })
+            
+            const industryMatchScore = industryMatchCount / primaryKeywords.length
+            
+            // Boost jobs from primary/target industry
+            const originalScore = job.skillMatchScore || 0.5
+            // If user is switching industries, give HIGHER boost (up to 75%)
+            const boostMultiplier = targetIndustry ? 0.75 : 0.5
+            const boostedScore = originalScore * (1 + industryMatchScore * boostMultiplier)
+            
+            return {
+              ...job,
+              skillMatchScore: Math.min(boostedScore, 1.0), // Cap at 1.0
+              industryMatchScore,
+              primaryIndustry: effectivePrimaryIndustry.name,
+              isSwitchingIndustries: !!targetIndustry
+            }
+          }).sort((a: any, b: any) => (b.skillMatchScore || 0) - (a.skillMatchScore || 0)) // Re-sort by boosted score
+          
+          const matchedJobs = jobs.filter((j: any) => j.industryMatchScore > 0.3).length
+          console.log(`[JOB_SEARCH] Applied industry weighting boost to ${jobs.length} jobs (${matchedJobs} strong matches)`)
+        }
+        
         metadata = {
           ...result.metadata,
           useResumeMatching: true,
-          skillMatchingEnabled: true
+          skillMatchingEnabled: true,
+          industryWeighting: effectivePrimaryIndustry ? {
+            primaryIndustry: effectivePrimaryIndustry.name,
+            primaryPercentage: effectivePrimaryIndustry.percentage,
+            careerTransition: careerTimeline?.careerTransition,
+            userTargetIndustry: targetIndustry || null,
+            disabledByUser: disableIndustryWeighting || false
+          } : null
         }
 
-        console.log(`[JOB_SEARCH] Resume matching found ${jobs.length} jobs with skill scores`)
+        console.log(`[JOB_SEARCH] Resume matching found ${jobs.length} jobs with skill scores and industry weighting`)
 
       } catch (error) {
         console.error('[JOB_SEARCH] Resume matching failed, falling back to standard search:', error)
