@@ -21,5 +21,12 @@
     "restartPolicyMaxRetries": 3,
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 300
-  }
+  },
+  "cron": [
+    {
+      "name": "process-followups",
+      "schedule": "0 9,14,17 * * *",
+      "command": "curl -X POST https://career-lever-ai.railway.app/api/cron/process-followups"
+    }
+  ]
 }
