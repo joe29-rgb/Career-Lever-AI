@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
+import CareerFinderStorage from '@/lib/career-finder-storage'
 
 const TEMPLATES = [
   { id: 'modern', name: 'Modern' },
@@ -34,46 +35,37 @@ export default function CareerFinderOptimizerPage() {
 
   useEffect(() => {
     (async () => {
-      try { localStorage.setItem('cf:progress', JSON.stringify({ step: 5, total: 7 })) } catch {}
+      CareerFinderStorage.setProgress(5, 7)
       
-      // PRIORITY 1: Check localStorage first (same pattern as resume/page.tsx)
-      try {
-        const cachedResume = localStorage.getItem('cf:resume')
-        if (cachedResume) {
-          const parsed = JSON.parse(cachedResume)
-          const txt = parsed.extractedText || ''
-          if (txt.length > 100) {
-            console.log('[OPTIMIZER] Found cached resume in localStorage, length:', txt.length)
-            setResumeText(txt)
-            return // Early return if we have a cached resume
-          }
-        }
-      } catch (e) {
-        console.warn('[OPTIMIZER] Failed to load cached resume from localStorage:', e)
+      // ✅ CRITICAL FIX: Use unified storage
+      const resumeData = CareerFinderStorage.getResume()
+      
+      if (resumeData && resumeData.extractedText && resumeData.extractedText.length > 100) {
+        console.log('[OPTIMIZER] ✅ Found cached resume, length:', resumeData.extractedText.length)
+        setResumeText(resumeData.extractedText)
+        return
       }
       
-      // PRIORITY 2: Fetch from database if no cache
+      // FALLBACK: Fetch from database if no cache
       try {
-        console.log('[OPTIMIZER] No localStorage resume, fetching from DB...')
+        console.log('[OPTIMIZER] No cached resume, fetching from DB...')
         const rl = await fetch('/api/resume/list')
         if (rl.ok) {
           const rj = await rl.json()
           const txt: string = rj?.resumes?.[0]?.extractedText || ''
           if (txt.length > 100) {
-            console.log('[OPTIMIZER] Found DB resume, length:', txt.length)
+            console.log('[OPTIMIZER] ✅ Found DB resume, length:', txt.length)
             setResumeText(txt)
-            // Cache it for future use
-            try {
-              localStorage.setItem('cf:resume', JSON.stringify(rj.resumes[0]))
-            } catch {}
+            // Cache it using unified storage
+            CareerFinderStorage.setResume(rj.resumes[0])
           } else {
-            console.warn('[OPTIMIZER] No resume text found in DB')
+            console.warn('[OPTIMIZER] ❌ No resume text found in DB')
           }
         } else {
-          console.warn('[OPTIMIZER] DB fetch failed:', rl.status)
+          console.warn('[OPTIMIZER] ❌ DB fetch failed:', rl.status)
         }
       } catch (e) {
-        console.error('[OPTIMIZER] Resume fetch error:', e)
+        console.error('[OPTIMIZER] ❌ Resume fetch error:', e)
       }
     })()
   }, [])

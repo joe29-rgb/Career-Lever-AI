@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Briefcase, MapPin, DollarSign, Target, CheckCircle2, AlertCircle } from 'lucide-react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
+import CareerFinderStorage from '@/lib/career-finder-storage'
 
 interface JobData {
   id: string
@@ -77,37 +78,33 @@ export default function JobAnalysisPage() {
 
   const loadAndAnalyzeJob = async () => {
     try {
-      // CRITICAL FIX: Try multiple localStorage keys for job data
-      let stored = localStorage.getItem('cf:selectedJob') || localStorage.getItem('selectedJob')
-      console.log('🎯 [JOB_ANALYSIS] Retrieved from localStorage:', stored ? 'found' : 'NOT FOUND')
+      // ✅ CRITICAL FIX: Use unified storage
+      const jobData = CareerFinderStorage.getJob()
       
-      if (!stored) {
+      if (!jobData) {
         console.warn('🎯 [JOB_ANALYSIS] No job found - redirecting to search')
         router.push('/career-finder/search')
         return
       }
 
-      const jobData = JSON.parse(stored)
-      console.log('🎯 [JOB_ANALYSIS] Job data:', { title: jobData.title, company: jobData.company })
+      console.log('🎯 [JOB_ANALYSIS] ✅ Job loaded:', jobData.title, '@', jobData.company)
       setJob(jobData)
-      
-      // CRITICAL FIX: Store in standardized cf:selectedJob format for consistency
-      localStorage.setItem('cf:selectedJob', JSON.stringify(jobData))
 
       // Auto-analyze immediately
       console.log('🎯 [JOB_ANALYSIS] Starting job analysis...')
       await analyzeJob(jobData)
     } catch (err: any) {
-      console.error('Failed to load job:', err)
+      console.error('🎯 [JOB_ANALYSIS] ❌ Failed to load job:', err)
       setError('Failed to load job data')
       setLoading(false)
     }
   }
 
   const analyzeJob = async (jobData: JobData) => {
-    // CRITICAL FIX: Try multiple localStorage keys for resume data
-    const resume = localStorage.getItem('cf:resume') || localStorage.getItem('uploadedResume') || localStorage.getItem('selectedResume')
-    setHasResume(!!resume)
+    // ✅ CRITICAL FIX: Use unified storage for resume
+    const resumeData = CareerFinderStorage.getResume()
+    const resumeText = resumeData?.extractedText || ''
+    setHasResume(!!resumeData)
 
     try {
       // Call analysis API (works with or without resume)
@@ -116,7 +113,7 @@ export default function JobAnalysisPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job: jobData,
-          resume: resume || undefined // Optional resume
+          resume: resumeData ? { extractedText: resumeText } : undefined // Optional resume
         })
       })
 
@@ -127,20 +124,20 @@ export default function JobAnalysisPage() {
       const result = await response.json()
       setAnalysis(result.analysis)
       
-      // CRITICAL FIX: Store analysis results for next steps
-      localStorage.setItem('cf:jobAnalysis', JSON.stringify(result.analysis))
+      // ✅ CRITICAL FIX: Store analysis using unified storage
+      CareerFinderStorage.setJobAnalysis(result.analysis)
       
-      if (!resume) {
+      if (!resumeData) {
         console.log('📋 Browsing job without resume - match score disabled')
       }
     } catch (err: any) {
-      console.error('Analysis failed:', err)
+      console.error('🎯 [JOB_ANALYSIS] ❌ Analysis failed:', err)
       // Provide fallback analysis (without match score if no resume)
       setAnalysis({
-        matchScore: resume ? 75 : undefined,
-        matchingSkills: resume ? (jobData.skills?.slice(0, 5) || ['JavaScript', 'React', 'Node.js']) : [],
-        missingSkills: resume ? ['Docker', 'Kubernetes'] : [],
-        recommendations: resume ? [
+        matchScore: resumeData ? 75 : undefined,
+        matchingSkills: resumeData ? (jobData.skills?.slice(0, 5) || ['JavaScript', 'React', 'Node.js']) : [],
+        missingSkills: resumeData ? ['Docker', 'Kubernetes'] : [],
+        recommendations: resumeData ? [
           'Highlight your experience with similar technologies',
           'Emphasize transferable skills',
           'Show enthusiasm for learning new tools'
@@ -204,8 +201,11 @@ export default function JobAnalysisPage() {
         
         setCompanyResearch(researchData)
         
-        // CRITICAL FIX: Store company research for next steps
-        localStorage.setItem('cf:companyResearch', JSON.stringify(researchData))
+        // ✅ CRITICAL FIX: Store company research using unified storage
+        CareerFinderStorage.setCompanyResearch({ 
+          ...researchData,
+          company: companyName 
+        })
       }
     } catch (err) {
       console.error('[COMPANY_RESEARCH] Error:', err)
@@ -217,14 +217,7 @@ export default function JobAnalysisPage() {
   const handleResearchCompany = () => {
     if (!job) return
     
-    // Store in cf:selectedJob format for company page auto-population
-    localStorage.setItem('cf:selectedJob', JSON.stringify({
-      company: job.company,
-      title: job.title,
-      location: job.location,
-      url: job.url
-    }))
-    
+    // ✅ Use unified storage - already stored by loadAndAnalyzeJob
     router.push('/career-finder/company')
   }
 

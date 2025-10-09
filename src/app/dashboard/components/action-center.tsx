@@ -22,10 +22,10 @@ export function ActionCenter() {
 
   const actions = [
     {
-      title: 'Analyze a Job',
-      description: 'Paste a job description to extract key requirements and keywords.',
+      title: 'Find Jobs',
+      description: 'Search for jobs with AI-powered matching and analysis.',
       icon: ClipboardList,
-      href: '/create-application?step=analyze',
+      href: '/career-finder/search',
       color: 'text-green-600',
       bg: 'bg-green-100',
     },
@@ -33,15 +33,15 @@ export function ActionCenter() {
       title: 'Research a Company',
       description: 'Get culture, news, and talking points for outreach and interviews.',
       icon: Target,
-      href: '/create-application?step=research',
+      href: '/career-finder/company',
       color: 'text-orange-600',
       bg: 'bg-orange-100',
     },
     {
-      title: 'Customize Your Resume',
+      title: 'Optimize Resume',
       description: 'Tailor your resume for higher match scores and better responses.',
       icon: Sparkles,
-      href: '/create-application?step=customize',
+      href: '/career-finder/optimizer',
       color: 'text-purple-600',
       bg: 'bg-purple-100',
     },

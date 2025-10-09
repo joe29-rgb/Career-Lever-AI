@@ -50,12 +50,6 @@ const navigationItems: NavigationItem[] = [
     ]
   },
   { 
-    name: 'Applications', 
-    href: '/create-application', 
-    icon: Briefcase,
-    badge: 0
-  },
-  { 
     name: 'Resume Builder', 
     href: '/resume-builder', 
     icon: FileText 
