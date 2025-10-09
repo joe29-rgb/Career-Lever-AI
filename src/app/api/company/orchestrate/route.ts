@@ -42,7 +42,24 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid input', details: parsed.error.flatten() }, { status: 400 })
     }
-    const { companyName, jobPostingUrl, companyWebsite, linkedinCompanyUrl, roleHints, locationHint, jobTitle } = parsed.data as any
+    let { companyName, jobPostingUrl, companyWebsite, linkedinCompanyUrl, roleHints, locationHint, jobTitle } = parsed.data as any
+    
+    // CRITICAL FIX: Sanitize company name (remove noise from PDF extraction)
+    const originalCompanyName = companyName
+    companyName = companyName
+      .replace(/\s*\(.*?\)\s*/g, '') // Remove text in parentheses
+      .replace(/\s*-.*$/g, '') // Remove everything after dash
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim()
+      .split(/\s+/)
+      .slice(0, 5) // Max 5 words
+      .join(' ')
+    
+    console.log('[COMPANY_ORCHESTRATE] Sanitized:', {
+      original: originalCompanyName,
+      sanitized: companyName,
+      changed: originalCompanyName !== companyName
+    })
 
     // Redis cache: key by companyName+jobPostingUrl
     const cacheKey = `company:orchestrate:${companyName}:${jobPostingUrl || ''}`

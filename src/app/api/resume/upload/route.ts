@@ -16,26 +16,42 @@ function cleanExtractedText(text: string): string {
 }
 
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
+  console.log('[PDF_PARSE] Starting extraction, buffer size:', buffer.length, 'bytes')
+  
   // Try Method 1: pdf-parse-debugging-disabled
   try {
+    console.log('[PDF_PARSE] Attempting Method 1: pdf-parse-debugging-disabled')
     const pdfParse = await import('pdf-parse-debugging-disabled')
     const data = await pdfParse.default(buffer, { max: 0 })
     
+    console.log('[PDF_PARSE] pdf-parse result:', {
+      hasData: !!data,
+      hasText: !!data?.text,
+      textLength: data?.text?.length || 0,
+      numpages: data?.numpages
+    })
+    
     if (data && data.text && data.text.length > 50) {
       const cleanedText = cleanExtractedText(data.text)
-      console.log('✅ PDF extracted via pdf-parse:', cleanedText.length, 'chars')
+      console.log('[PDF_PARSE] ✅ Method 1 SUCCESS:', {
+        rawLength: data.text.length,
+        cleanedLength: cleanedText.length,
+        preview: cleanedText.slice(0, 200)
+      })
       return {
         text: cleanedText,
         method: 'pdf-parse',
         confidence: cleanedText.length > 100 ? 0.9 : 0.5
       }
     }
+    console.log('[PDF_PARSE] Method 1 text too short, trying fallback')
   } catch (error) {
-    console.warn('pdf-parse failed, trying pdfjs-dist:', error)
+    console.error('[PDF_PARSE] ❌ Method 1 failed:', error)
   }
 
   // Try Method 2: pdfjs-dist fallback
   try {
+    console.log('[PDF_PARSE] Attempting Method 2: pdfjs-dist')
     const pdfjsLib = await import('pdfjs-dist')
     
     // Load the PDF document with proper TypeScript types
@@ -47,6 +63,8 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
     })
     
     const pdfDoc = await loadingTask.promise
+    console.log('[PDF_PARSE] pdfjs-dist loaded document, pages:', pdfDoc.numPages)
+    
     let fullText = ''
     
     // Extract text from each page
@@ -64,33 +82,47 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
         .join(' ')
       
       fullText += pageText + '\n'
+      console.log(`[PDF_PARSE] Page ${pageNum}/${pdfDoc.numPages}: ${pageText.length} chars`)
     }
     
     const cleanedText = cleanExtractedText(fullText.trim())
+    console.log('[PDF_PARSE] Method 2 cleanup:', {
+      rawLength: fullText.length,
+      cleanedLength: cleanedText.length,
+      preview: cleanedText.slice(0, 200)
+    })
     
     if (cleanedText.length > 100) {
-      console.log('✅ PDF extracted via pdfjs-dist:', cleanedText.length, 'chars')
+      console.log('[PDF_PARSE] ✅ Method 2 SUCCESS')
       return {
         text: cleanedText,
         method: 'pdfjs-dist',
         confidence: 0.85
       }
     }
+    console.log('[PDF_PARSE] Method 2 text too short')
   } catch (error) {
-    console.error('pdfjs-dist failed:', error)
+    console.error('[PDF_PARSE] ❌ Method 2 failed:', error)
   }
 
   // Try Method 3: ASCII extraction as last resort
   try {
+    console.log('[PDF_PARSE] Attempting Method 3: ASCII fallback (DANGEROUS)')
     const asciiText = buffer
       .toString('utf8')
       .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim()
     
+    console.log('[PDF_PARSE] ASCII extraction result:', {
+      length: asciiText.length,
+      preview: asciiText.slice(0, 200)
+    })
+    
     if (asciiText.length > 100) {
       const cleanedText = cleanExtractedText(asciiText)
-      console.log('✅ PDF extracted via ASCII fallback:', cleanedText.length, 'chars')
+      console.log('[PDF_PARSE] ⚠️ Method 3 SUCCESS (ASCII fallback - LOW QUALITY):', cleanedText.length, 'chars')
+      console.warn('[PDF_PARSE] WARNING: Using ASCII fallback may corrupt company names and other data')
       
       return {
         text: cleanedText,
@@ -98,11 +130,13 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
         confidence: 0.6
       }
     }
+    console.log('[PDF_PARSE] Method 3 text too short')
   } catch (error) {
-    console.error('ASCII fallback also failed:', error)
+    console.error('[PDF_PARSE] ❌ Method 3 failed:', error)
   }
 
-  // Both methods failed
+  // All methods failed
+  console.error('[PDF_PARSE] ❌❌❌ ALL EXTRACTION METHODS FAILED')
   return {
     text: '',
     method: 'all-methods-failed',
@@ -114,23 +148,39 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
+  console.log('[RESUME_UPLOAD] ========== NEW UPLOAD REQUEST ==========')
+  
   try {
     await dbService.connect()
 
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
+      console.log('[RESUME_UPLOAD] ❌ Unauthorized')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    
+    console.log('[RESUME_UPLOAD] User:', session.user.id, session.user.email)
 
     if (await isRateLimited(session.user.id, 'resume:upload')) {
+      console.log('[RESUME_UPLOAD] ❌ Rate limited')
       return NextResponse.json({ error: 'Rate limited' }, { status: 429 })
     }
 
     const data = await request.formData()
     const file = data.get('file') as File
     const pastedText = data.get('pastedText') as string
+    
+    console.log('[RESUME_UPLOAD] Upload type:', {
+      hasFile: !!file,
+      fileSize: file?.size,
+      fileName: file?.name,
+      hasPastedText: !!pastedText,
+      pastedTextLength: pastedText?.length
+    })
 
     if (!file && !pastedText) {
+      console.log('[RESUME_UPLOAD] ❌ No file or text provided')
       return NextResponse.json({ error: 'No file or text provided' }, { status: 400 })
     }
 
@@ -203,6 +253,15 @@ export async function POST(request: NextRequest) {
     })
 
     await resume.save()
+    
+    const duration = Date.now() - startTime
+    console.log('[RESUME_UPLOAD] ✅ SUCCESS:', {
+      resumeId: resume._id.toString(),
+      textLength: extractedText.length,
+      method: extractionMethod,
+      confidence: extractionConfidence,
+      durationMs: duration
+    })
 
     return NextResponse.json({
       success: true,

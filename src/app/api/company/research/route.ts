@@ -14,8 +14,25 @@ export async function POST(req: NextRequest) {
     await connectToDatabase()
 
     const body = await req.json().catch(()=>({})) as any
-    const company = (body.company || body.companyName || '').toString().trim()
+    let company = (body.company || body.companyName || '').toString().trim()
     if (!company) return NextResponse.json({ error: 'company required' }, { status: 400 })
+    
+    // CRITICAL FIX: Sanitize company name (remove noise from PDF extraction)
+    const originalCompany = company
+    company = company
+      .replace(/\s*\(.*?\)\s*/g, '') // Remove text in parentheses
+      .replace(/\s*-.*$/g, '') // Remove everything after dash
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim()
+      .split(/\s+/)
+      .slice(0, 5) // Max 5 words
+      .join(' ')
+    
+    console.log('[COMPANY_RESEARCH] Sanitized:', {
+      original: originalCompany,
+      sanitized: company,
+      changed: originalCompany !== company
+    })
 
     const intel = await PerplexityIntelligenceService.researchCompanyV2({ company })
     const contacts = await PerplexityIntelligenceService.hiringContactsV2(company)

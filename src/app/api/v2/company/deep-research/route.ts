@@ -17,13 +17,29 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { companyName, companyWebsite, targetRole, location } = body
+    let { companyName, companyWebsite, targetRole, location } = body
 
     if (!companyName) {
       return NextResponse.json({ error: 'Missing companyName' }, { status: 400 })
     }
-
-    console.log('[COMPANY] Researching:', companyName)
+    
+    // CRITICAL FIX: Sanitize company name (remove noise from PDF extraction)
+    const originalCompanyName = companyName
+    companyName = companyName
+      .trim()
+      .replace(/\s*\(.*?\)\s*/g, '') // Remove text in parentheses like "(Project Name)"
+      .replace(/\s*-.*$/g, '') // Remove everything after dash
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim()
+      .split(/\s+/) // Split into words
+      .slice(0, 5) // Take first 5 words max
+      .join(' ') // Rejoin
+    
+    console.log('[COMPANY] Sanitized company name:', {
+      original: originalCompanyName,
+      sanitized: companyName,
+      removed: originalCompanyName !== companyName
+    })
 
     // Step 1: Basic company research via Perplexity V2
     const research = await PerplexityIntelligenceService.researchCompanyV2({ 
