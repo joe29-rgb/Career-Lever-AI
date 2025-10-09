@@ -213,28 +213,34 @@ export function ResumeUpload({
       if (resume.extractedText) {
         console.log('🤖 Auto-triggering job search with extracted keywords...')
         try {
-          const signalsResp = await fetch('/api/resume/signals', {
+          const signalsResp = await fetch('/api/resume/extract-signals', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ resumeText: resume.extractedText })
+            body: JSON.stringify({ resume: resume.extractedText }) // CRITICAL FIX: Use correct endpoint and param name
           })
           
           if (signalsResp.ok) {
             const signals = await signalsResp.json()
             console.log('🎯 Extracted signals:', signals)
             
-            // Store for auto-search
-            localStorage.setItem('autoSearch', JSON.stringify({
-              keywords: signals.keywords?.slice(0, 5).join(', ') || '',
-              location: signals.location || 'Edmonton, AB',
-              timestamp: Date.now()
-            }))
+            // Store for auto-search - CRITICAL: Store actual extracted location, no defaults
+            localStorage.setItem('cf:autopilotReady', '1')
+            localStorage.setItem('cf:resume', JSON.stringify(resume))
+            localStorage.setItem('cf:extractedLocation', signals.location || '')
+            localStorage.setItem('cf:extractedKeywords', signals.keywords?.slice(0, 5).join(', ') || '')
+            
+            console.log('✅ Autopilot ready with location:', signals.location)
             
             toast.success('Keywords extracted! Redirecting to job search...')
             
-            // Redirect to search page after 1 second
+            // Redirect to search page - CRITICAL: Only pass location if extracted
             setTimeout(() => {
-              window.location.href = `/career-finder/search?auto=true&keywords=${encodeURIComponent(signals.keywords?.slice(0, 5).join(', ') || '')}&location=${encodeURIComponent(signals.location || 'Edmonton, AB')}`
+              const keywords = signals.keywords?.slice(0, 5).join(', ') || ''
+              const location = signals.location || ''
+              const url = location 
+                ? `/career-finder/search?auto=true&keywords=${encodeURIComponent(keywords)}&location=${encodeURIComponent(location)}`
+                : `/career-finder/search?auto=true&keywords=${encodeURIComponent(keywords)}`
+              window.location.href = url
             }, 1000)
           }
         } catch (err) {

@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       keywords: signals.keywords,
-      location: signals.location || 'Toronto, ON',
+      location: signals.location || null, // CRITICAL: Never default - let frontend handle missing location
       locations: signals.locations || []
     })
 

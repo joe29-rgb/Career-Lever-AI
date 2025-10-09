@@ -902,18 +902,26 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
     try {
       const client = createClient()
       
-      // SIMPLIFIED PROMPT - No contamination
-      const prompt = `Extract keywords and location from this resume:
+      // ENTERPRISE PROMPT - AGGRESSIVE LOCATION EXTRACTION
+      const prompt = `CRITICAL TASK: Extract keywords and location from this resume.
 
+RESUME TEXT:
 ${resumeText}
 
-Return JSON:
+LOCATION EXTRACTION RULES:
+1. Find ANY city/province/state mentioned (email header, address, work experience)
+2. Look for patterns like "City, PROVINCE" or "City, STATE"
+3. Check contact information section first
+4. If multiple locations, use the FIRST one found (likely primary)
+5. Return EXACTLY as found (e.g., "Edmonton, AB" not "Edmonton, Alberta")
+
+RETURN STRICT JSON (no explanation, no markdown):
 {
-  "keywords": ["Software Development", "CRM", "Sales Management", ...],
-  "location": "Edmonton, AB"
+  "keywords": ["Software Development", "Sales Management", "CRM"],
+  "location": "City, PROVINCE" 
 }
 
-Focus on job titles, skills, technologies, and work experience. Location should be the primary work location.`
+IMPORTANT: If NO location found after thorough search, return "location": null (do NOT guess or default)`
 
       console.log('[SIGNALS] Input length:', resumeText.length)
       console.log('[SIGNALS] First 300 chars:', resumeText.slice(0, 300))
@@ -944,8 +952,8 @@ Focus on job titles, skills, technologies, and work experience. Location should 
 
       const result = {
         keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, maxKeywords) : [],
-        location: parsed.location || 'Edmonton, AB',
-        locations: [parsed.location || 'Edmonton, AB']
+        location: parsed.location || undefined, // CRITICAL: No default location ever
+        locations: parsed.location ? [parsed.location] : []
       }
 
       console.log('[SIGNALS] Final result:', result)
@@ -955,15 +963,11 @@ Focus on job titles, skills, technologies, and work experience. Location should 
 
     } catch (error) {
       console.error('[SIGNALS] Extraction failed:', error)
-      // Hard-coded fallback based on your resume
+      // CRITICAL: Return empty results, NO defaults - let user know extraction failed
       return {
-        keywords: [
-          'Software Development', 'AI-powered CRM', 'Business Development', 
-          'Sales Management', 'Commercial Lending', 'Team Leadership',
-          'JavaScript', 'API Integration', 'Project Management'
-        ],
-        location: 'Edmonton, AB',
-        locations: ['Edmonton, AB', 'Leduc, AB']
+        keywords: [],
+        location: undefined, // NEVER default location
+        locations: [] // NEVER default locations
       }
     }
   }
