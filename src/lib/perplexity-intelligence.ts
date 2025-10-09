@@ -97,6 +97,8 @@ export type RequestMetadata = {
   boardsSearched?: number
   resultsCount?: number
   attemptedCleanups?: string[]
+  contactsFound?: number
+  withEmails?: number
 }
 export type EnhancedResponse<T> = { success: boolean; data: T; metadata: RequestMetadata; cached: boolean }
 
@@ -696,35 +698,27 @@ OUTPUT JSON FORMAT:
         const { getPerplexityConfig } = await import('./config/perplexity-configs')
         const config = getPerplexityConfig('hiringContacts')
         
-        // ENTERPRISE ENHANCEMENT: Explicit email discovery from company website and Google
-        const prompt = `Find verified hiring contacts at ${companyName} with active email discovery.
+        // SIMPLIFIED PROMPT: Direct JSON request for better parsing reliability
+        const prompt = `Find hiring contacts at ${companyName}. Search company website, LinkedIn, and press releases for verified emails.
 
-CRITICAL REQUIREMENTS:
-1. **Primary Sources**: Search company website careers/about pages and LinkedIn
-2. **Email Discovery**: If LinkedIn profiles found WITHOUT emails:
-   - Search company website for "contact us", "team", "about" pages
-   - Search Google for "[name] [company] email" 
-   - Look for press releases with contact info
-   - Check company blog author pages
-3. **Email Validation**: Provide confidence score (0-1) based on source
-4. **Alternative Formats**: Generate common email patterns if no public email found
+Return ONLY a valid JSON array with this exact structure:
+[
+  {
+    "name": "John Smith",
+    "title": "HR Manager",
+    "department": "HR",
+    "linkedinUrl": "https://linkedin.com/in/johnsmith",
+    "email": "john.smith@company.com",
+    "emailType": "public",
+    "source": "Company Website",
+    "confidence": 0.9,
+    "phone": "+1-555-0123",
+    "alternativeEmails": ["j.smith@company.com"],
+    "discoveryMethod": "Found on company careers page"
+  }
+]
 
-OUTPUT JSON FORMAT (strictly follow):
-[{
-  "name": string,
-  "title": string (e.g. "VP of Engineering", "Talent Acquisition Manager"),
-  "department": "HR" | "Engineering" | "Product" | "Sales" | "Executive" | "Operations",
-  "linkedinUrl": string | null,
-  "email": string | null (SEARCH AGGRESSIVELY FOR THIS),
-  "emailType": "public" | "inferred" | "pattern" (public=found on web, inferred=discovered via search, pattern=common format),
-  "source": string (e.g., "LinkedIn + Company Website", "Press Release", "Company Blog"),
-  "confidence": number (0-1, where 1=verified public email, 0.7=found via search, 0.3=pattern-based),
-  "phone": string | null,
-  "alternativeEmails": string[] (additional possible formats),
-  "discoveryMethod": string (how the email was found)
-}]
-
-IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department heads. If no emails found after extensive search, still return the contact with pattern-based emails.`
+Focus on: Recruiters, HR managers, hiring managers, department heads. If no email found, use pattern-based guesses (firstname.lastname@domain.com).`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits (1500 → 2500)
         return client.makeRequest(SYSTEM, prompt, { 
@@ -776,11 +770,18 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
         }
       }
       
-      let parsed: HiringContact[] = Array.isArray(extractionResult.data) 
-        ? extractionResult.data.slice(0, 8) 
-        : []
+      // CRITICAL FIX: ALWAYS ensure we have an array (never undefined/null)
+      let parsed: HiringContact[] = []
       
-      console.log(`[HIRING_CONTACTS] Enterprise extraction succeeded after: ${extractionResult.attemptedCleanups.join(', ')}`)
+      if (Array.isArray(extractionResult.data)) {
+        parsed = extractionResult.data.slice(0, 8)
+      } else if (extractionResult.data && typeof extractionResult.data === 'object') {
+        // Handle case where AI returns single object instead of array
+        parsed = [extractionResult.data]
+      }
+      
+      console.log(`[HIRING_CONTACTS] ✅ Enterprise extraction succeeded after: ${extractionResult.attemptedCleanups.join(', ')}`)
+      console.log(`[HIRING_CONTACTS] ✅ Extracted ${parsed.length} contacts for ${companyName}`)
       
       // Enhance each contact with inferred emails
       parsed = parsed.map(c => {
@@ -796,10 +797,22 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
         }
       })
       
-      console.log(`[HIRING_CONTACTS] Found ${parsed.length} contacts for ${companyName}, ${parsed.filter(c => c.email).length} with emails`)
+      console.log(`[HIRING_CONTACTS] ✅ Final result: ${parsed.length} contacts, ${parsed.filter(c => c.email).length} with emails`)
       
+      // CRITICAL: Always cache the result (even if empty array)
       setCache(key, parsed)
-      return { success: true, data: parsed, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: false }
+      return { 
+        success: true, 
+        data: parsed, 
+        metadata: { 
+          requestId, 
+          timestamp: started, 
+          duration: Date.now() - started,
+          contactsFound: parsed.length,
+          withEmails: parsed.filter(c => c.email).length
+        }, 
+        cached: false 
+      }
     } catch (e) {
       console.error('[HIRING_CONTACTS] Error:', e)
       return { success: false, data: [], metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
@@ -927,8 +940,16 @@ IMPORTANT: Prioritize recruiters, HR managers, hiring managers, and department h
     currentIndustry: string;
     careerTransition?: { from: string; to: string; monthsAgo: number };
   }> {
+    type CareerTimelineResult = {
+      industries: Array<{ name: string; yearsOfExperience: number; keywords: string[]; percentage: number }>;
+      totalWorkYears: number;
+      totalEducationYears: number;
+      currentIndustry: string;
+      careerTransition?: { from: string; to: string; monthsAgo: number };
+    }
+    
     const key = makeKey('ppx:career:timeline:v1', { t: resumeText.slice(0, 3000) })
-    const cached = getCache(key) as any
+    const cached = getCache(key) as CareerTimelineResult | undefined
     if (cached) return cached
 
     try {
