@@ -12,13 +12,13 @@ import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 
 interface JobData {
-  id: string
+  id?: string
   title: string
   company: string
   location: string
   salary?: string
-  description: string
-  url: string
+  description?: string
+  url?: string
   source?: string
   skills?: string[]
 }
