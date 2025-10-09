@@ -32,18 +32,22 @@ export async function GET(request: NextRequest) {
     const pendingFollowups: any[] = []
     
     for (const sequence of sequences) {
-      for (const step of sequence.sequences) {
+      // Type assertion for mongoose document with _id
+      const sequenceId = (sequence as any)._id?.toString() || 'unknown'
+      const sequenceData = sequence as any
+      
+      for (const step of sequenceData.sequences || []) {
         if (
           step.status === 'scheduled' &&
           step.scheduled_time &&
           new Date(step.scheduled_time) <= now
         ) {
           pendingFollowups.push({
-            id: `${sequence._id}_${step.step_number}`,
-            sequence_id: sequence._id.toString(),
+            id: `${sequenceId}_${step.step_number}`,
+            sequence_id: sequenceId,
             step_number: step.step_number,
-            contact_email: sequence.contact_email,
-            contact_name: sequence.contact_name,
+            contact_email: sequenceData.contact_email,
+            contact_name: sequenceData.contact_name,
             subject: step.subject,
             body: step.body,
             scheduled_time: step.scheduled_time,
