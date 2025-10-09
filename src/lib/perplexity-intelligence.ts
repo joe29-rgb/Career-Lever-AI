@@ -96,6 +96,7 @@ export type RequestMetadata = {
   error?: string
   boardsSearched?: number
   resultsCount?: number
+  attemptedCleanups?: string[]
 }
 export type EnhancedResponse<T> = { success: boolean; data: T; metadata: RequestMetadata; cached: boolean }
 
