@@ -137,7 +137,8 @@ export default function SearchPage() {
       // Perform search
       const performInitialSearch = async () => {
         let query = keywords
-        const loc = location || filters.location
+        // CRITICAL FIX: Use savedLocation as fallback, not filters.location (state might not be updated yet)
+        const loc = location || savedLocation || filters.location
 
         // ENTERPRISE FIX: If autopilot mode, extract keywords from resume
         if (!query && autopilotReady && resumeData) {
@@ -178,17 +179,26 @@ export default function SearchPage() {
         setError('')
         
         try {
-          console.log('[AUTOPILOT] Performing search:', { query, loc, useResumeMatching })
+          // CRITICAL DEBUG: Log exactly what we're sending
+          const searchPayload = {
+            keywords: query,
+            location: loc,
+            limit: 50,
+            useResumeMatching: autopilotReady && useResumeMatching
+          }
+          console.log('[AUTOPILOT] Performing search with payload:', searchPayload)
+          console.log('[AUTOPILOT] Location debug:', {
+            urlParam: location,
+            savedInLocalStorage: savedLocation,
+            currentFilterState: filters.location,
+            finalValue: loc,
+            isEmpty: !loc || loc.length === 0
+          })
           
           const response = await fetch('/api/jobs/search', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              keywords: query,
-              location: loc,
-              limit: 50,
-              useResumeMatching: autopilotReady && useResumeMatching
-            })
+            body: JSON.stringify(searchPayload)
           })
 
           const data = await response.json()
