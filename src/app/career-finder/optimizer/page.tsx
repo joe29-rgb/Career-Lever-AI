@@ -28,6 +28,13 @@ export default function CareerFinderOptimizerPage() {
   const [tone, setTone] = useState<'professional'|'conversational'|'technical'>('professional')
   const [expanded, setExpanded] = useState<'A'|'B'|'none'>('none')
   const [editorHtml, setEditorHtml] = useState('')
+  const [personalInfo, setPersonalInfo] = useState<{
+    name?: string
+    email?: string
+    phone?: string
+    location?: string
+  }>({})
+  const [atsScore, setAtsScore] = useState<number | null>(null)
   
   // CRITICAL FIX: Prevent infinite loop with processing ref
   const processingRef = useRef(false)
@@ -43,6 +50,15 @@ export default function CareerFinderOptimizerPage() {
       if (resumeData && resumeData.extractedText && resumeData.extractedText.length > 100) {
         console.log('[OPTIMIZER] ✅ Found cached resume, length:', resumeData.extractedText.length)
         setResumeText(resumeData.extractedText)
+        
+        // Extract personal info from resume
+        const info = extractPersonalInfo(resumeData.extractedText)
+        setPersonalInfo(info)
+        
+        // Calculate ATS score
+        const score = calculateATSScore(resumeData.extractedText)
+        setAtsScore(score)
+        
         return
       }
       
@@ -181,14 +197,112 @@ export default function CareerFinderOptimizerPage() {
       if (html) localStorage.setItem('cf:selectedResumeHtml', html)
     } catch {}
   }
+  
+  // Extract personal information from resume text
+  const extractPersonalInfo = (text: string) => {
+    const emailMatch = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i)
+    const phoneMatch = text.match(/(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/i)
+    
+    // Extract location (city, state/province format)
+    const locationMatch = text.match(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2})/i)
+    
+    // Extract name (assume first line or first capitalized words before contact info)
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    let name = ''
+    for (const line of lines.slice(0, 5)) {
+      if (line.length > 5 && line.length < 50 && !line.includes('@') && !line.match(/\d{3}/) && /^[A-Z]/.test(line)) {
+        name = line
+        break
+      }
+    }
+    
+    return {
+      name,
+      email: emailMatch?.[1],
+      phone: phoneMatch?.[1],
+      location: locationMatch ? `${locationMatch[1]}, ${locationMatch[2]}` : undefined
+    }
+  }
+  
+  // Calculate ATS compatibility score (0-100)
+  const calculateATSScore = (text: string): number => {
+    let score = 60 // Base score
+    
+    // Check for contact info
+    if (text.match(/@/)) score += 5
+    if (text.match(/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/)) score += 5
+    if (text.match(/[A-Z][a-z]+,\s*[A-Z]{2}/)) score += 5
+    
+    // Check for standard sections
+    if (text.match(/experience|employment/i)) score += 5
+    if (text.match(/education/i)) score += 5
+    if (text.match(/skills/i)) score += 5
+    
+    // Check for keywords and quantifiable achievements
+    const keywords = text.match(/\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b/g) || []
+    if (keywords.length > 30) score += 5
+    
+    // Check for numbers/metrics (good for ATS)
+    const numbers = text.match(/\d+%|\$\d+|increased|decreased|improved/gi) || []
+    if (numbers.length > 3) score += 5
+    
+    return Math.min(score, 100)
+  }
 
   return (
-    <div className="mobile-container space-y-4">
+    <div className="container mx-auto px-6 py-8 max-w-7xl">
       <CareerFinderBackButton />
+      
+      {/* Personal Info Header with ATS Score */}
+      {resumeText && (personalInfo.name || personalInfo.email) && (
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-border rounded-xl p-6 mb-6">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-foreground mb-2">{personalInfo.name || 'Resume Optimizer'}</h1>
+              <div className="flex flex-wrap gap-4 text-muted-foreground">
+                {personalInfo.email && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm">{personalInfo.email}</span>
+                  </div>
+                )}
+                {personalInfo.phone && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span className="text-sm">{personalInfo.phone}</span>
+                  </div>
+                )}
+                {personalInfo.location && (
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-sm">{personalInfo.location}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            {atsScore !== null && (
+              <div className="text-right">
+                <div className="text-5xl font-bold text-primary">{atsScore}%</div>
+                <div className="text-sm text-muted-foreground mt-1">ATS Score</div>
+                <div className={`text-xs font-semibold mt-1 ${atsScore >= 80 ? 'text-green-500' : atsScore >= 60 ? 'text-yellow-500' : 'text-red-500'}`}>
+                  {atsScore >= 80 ? '✓ ATS-Optimized' : atsScore >= 60 ? '⚠ Needs Improvement' : '✗ Low Compatibility'}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* No Resume Warning */}
       {!resumeText && !loading && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 mb-6">
           <div className="flex items-start gap-3">
             <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -209,19 +323,26 @@ export default function CareerFinderOptimizerPage() {
         </div>
       )}
       
-      <div className="text-sm text-foreground">Choose a template, generate A/B variants by tone, and select one to continue.</div>
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-2 text-sm">
-        {TEMPLATES.map(t => (
-          <button key={t.id} className={`border rounded p-2 text-left ${template===t.id?'bg-blue-50 border-blue-500':''}`} onClick={()=>handleTemplateChange(t.id)}>
-            <div className="w-full h-14 bg-gradient-to-br from-gray-100 to-gray-200 rounded mb-2 overflow-hidden">
-              <div className="h-3 bg-blue-500/60"></div>
-              <div className="h-1.5 bg-gray-300 mt-1 w-3/4"></div>
-              <div className="h-1.5 bg-gray-300 mt-1 w-2/3"></div>
-            </div>
-            <div className="font-medium truncate">{t.name}</div>
-            <div className="text-[11px] text-muted-foreground truncate">Thumbnail preview</div>
-          </button>
-        ))}
+      {/* Template Selection */}
+      <div className="bg-card border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-xl font-bold text-foreground mb-2">Choose Resume Template</h2>
+        <p className="text-sm text-muted-foreground mb-4">Select a template style for your optimized resume</p>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          {TEMPLATES.map(t => (
+            <button 
+              key={t.id} 
+              className={`border border-border rounded-lg p-3 text-left hover:shadow-lg transition-all ${template===t.id?'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500':''}`} 
+              onClick={()=>handleTemplateChange(t.id)}
+            >
+              <div className="w-full h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded mb-2 overflow-hidden">
+                <div className="h-4 bg-blue-500/60"></div>
+                <div className="h-2 bg-gray-300 dark:bg-gray-600 mt-1 w-3/4 mx-1"></div>
+                <div className="h-2 bg-gray-300 dark:bg-gray-600 mt-1 w-2/3 mx-1"></div>
+              </div>
+              <div className="font-semibold truncate text-foreground">{t.name}</div>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-foreground">
         <div className="flex items-center gap-2"><input id="humanize" type="checkbox" checked={humanize} onChange={(e)=>setHumanize(e.target.checked)} /><label htmlFor="humanize">Humanize style (reduce AI patterns)</label></div>
@@ -239,28 +360,68 @@ export default function CareerFinderOptimizerPage() {
           </select>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className={`border rounded ${selected==='A'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('A')}>
-          <div className="text-xs text-muted-foreground p-2">Variant A (Professional)</div>
-          <div className="flex items-center justify-end gap-2 px-2 pb-1">
-            <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantA); setExpanded('A') }}>Expand/Edit</Button>
+      {/* Resume Variants */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div 
+          className={`bg-card border border-border rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-lg ${selected==='A'?'ring-2 ring-blue-500 shadow-xl':''}`} 
+          onClick={()=>setSelected('A')}
+        >
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10">
+            <div>
+              <h3 className="font-bold text-foreground">Variant A</h3>
+              <p className="text-xs text-muted-foreground">Professional Tone</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {selected === 'A' && (
+                <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full font-semibold">Selected</span>
+              )}
+              <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantA); setExpanded('A') }}>Edit</Button>
+            </div>
           </div>
-          <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-3 text-xs text-muted-foreground">No content</div>'} />
+          <div className="bg-white dark:bg-gray-900">
+            <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+          </div>
         </div>
-        <div className={`border rounded ${selected==='B'?'ring-2 ring-blue-500':''}`} onClick={()=>setSelected('B')}>
-          <div className="text-xs text-muted-foreground p-2">Variant B (Conversational)</div>
-          <div className="flex items-center justify-end gap-2 px-2 pb-1">
-            <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantB); setExpanded('B') }}>Expand/Edit</Button>
+        
+        <div 
+          className={`bg-card border border-border rounded-xl overflow-hidden cursor-pointer transition-all hover:shadow-lg ${selected==='B'?'ring-2 ring-blue-500 shadow-xl':''}`} 
+          onClick={()=>setSelected('B')}
+        >
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+            <div>
+              <h3 className="font-bold text-foreground">Variant B</h3>
+              <p className="text-xs text-muted-foreground">Alternative Tone</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {selected === 'B' && (
+                <span className="px-3 py-1 bg-purple-500 text-white text-xs rounded-full font-semibold">Selected</span>
+              )}
+              <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantB); setExpanded('B') }}>Edit</Button>
+            </div>
           </div>
-          <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-3 text-xs text-muted-foreground">No content</div>'} />
+          <div className="bg-white dark:bg-gray-900">
+            <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+          </div>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <div className="text-xs text-muted-foreground">Selected: {selected}</div>
-        <Link className={`inline-block px-4 py-2 border rounded ${selected==='none'?'pointer-events-none opacity-50':''}`} href="/career-finder/cover-letter" onClick={saveSelection}>Next</Link>
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between gap-4 mt-6">
+        <Button variant="outline" onClick={generateVariants} disabled={loading} className="px-6">
+          {loading ? 'Generating...' : 'Regenerate Variants'}
+        </Button>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            {selected === 'none' ? 'Select a variant to continue' : `Variant ${selected} selected`}
+          </div>
+          <Link 
+            className={`px-8 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl ${selected==='none'?'pointer-events-none opacity-50 cursor-not-allowed':''}`}
+            href="/career-finder/cover-letter" 
+            onClick={saveSelection}
+          >
+            Continue to Cover Letter →
+          </Link>
+        </div>
       </div>
-      {loading && <div className="text-xs">Generating variants…</div>}
-      <div className="text-right"><Button variant="outline" onClick={generateVariants} disabled={loading}>Regenerate</Button></div>
 
       {/* Expand/Edit Modal */}
       {expanded !== 'none' && (
