@@ -41,6 +41,31 @@ export interface StoredCompanyResearch {
   hiringContacts: any[] // Always an array
   sources?: any[]
   confidence?: number
+  // Enhanced fields for comprehensive research
+  jobAnalysis?: {
+    matchScore?: number
+    matchingSkills: string[]
+    missingSkills?: string[]
+    skillsToHighlight?: string[]
+    recommendations: string[]
+    estimatedFit?: string
+  }
+  news?: Array<{
+    title: string
+    summary: string
+    url: string
+    date?: string
+    source?: string
+  }>
+  reviews?: Array<{
+    platform: string
+    rating?: number
+    summary: string
+    url: string
+    pros?: string[]
+    cons?: string[]
+  }>
+  timestamp?: number
 }
 
 export interface StoredJobAnalysis {

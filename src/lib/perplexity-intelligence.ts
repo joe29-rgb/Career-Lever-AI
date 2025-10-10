@@ -1268,10 +1268,6 @@ IMPORTANT:
       
       const companyWebsite = params.companyWebsite || 
         `${params.companyName.toLowerCase().replace(/\s+inc\.?$|\s+ltd\.?$|\s+llc\.?$|\s+corp\.?$/i, '').replace(/\s+/g, '')}.com`
-      
-      const companyHandle = params.companyName.toLowerCase()
-        .replace(/\s+/g, '')
-        .replace(/[^a-z0-9]/g, '')
 
       const out = await withRetry(async () => {
         const client = createClient()
@@ -1417,6 +1413,322 @@ Return ONLY valid JSON.`
         data: null, 
         metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, 
         cached: false 
+      }
+    }
+  }
+
+  /**
+   * 🚀 ONE-SHOT COMPREHENSIVE RESEARCH
+   * Replaces multiple API calls with a single comprehensive prompt
+   * Returns: Job Analysis + Company Research + Hiring Contacts + News + Reviews
+   * @param params - Job and resume details
+   * @returns Complete research data for all Career Finder pages
+   */
+  static async comprehensiveJobResearch(params: {
+    jobTitle: string
+    company: string
+    jobDescription: string
+    location?: string
+    resumeText: string
+    resumeSkills?: string[]
+  }): Promise<EnhancedResponse<{
+    jobAnalysis: {
+      matchScore: number
+      matchingSkills: string[]
+      missingSkills: string[]
+      skillsToHighlight: string[]
+      recommendations: string[]
+      estimatedFit: string
+    }
+    companyIntel: {
+      company: string
+      description: string
+      size?: string
+      revenue?: string
+      industry?: string
+      founded?: string
+      headquarters?: string
+      website?: string
+      marketPosition?: string
+    }
+    companyPsychology: {
+      culture: string
+      values: string[]
+      managementStyle?: string
+      workEnvironment?: string
+    }
+    hiringContacts: Array<{
+      name: string
+      title: string
+      department?: string
+      email?: string
+      linkedinUrl?: string
+      authority: 'decision maker' | 'recruiter' | 'manager' | 'coordinator'
+      confidence: number
+    }>
+    marketIntelligence: {
+      competitivePosition?: string
+      industryTrends?: string
+      financialStability?: string
+      recentPerformance?: string
+    }
+    news: Array<{
+      title: string
+      summary: string
+      url: string
+      date?: string
+      source?: string
+      impact?: string
+    }>
+    reviews: Array<{
+      platform: string
+      rating?: number
+      summary: string
+      url: string
+      pros?: string[]
+      cons?: string[]
+    }>
+    compensation?: {
+      salaryRange?: string
+      benefits?: string
+    }
+    strategicRecommendations: {
+      applicationStrategy: string
+      contactStrategy: string
+      interviewPrep: string[]
+    }
+    sources: string[]
+    confidenceLevel: number
+  }>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    
+    try {
+      const client = createClient()
+      
+      const prompt = `
+# 🎯 COMPREHENSIVE JOB APPLICATION RESEARCH
+
+## JOB DETAILS
+- **Position:** ${params.jobTitle}
+- **Company:** ${params.company}
+- **Location:** ${params.location || 'Not specified'}
+- **Description:** ${params.jobDescription.slice(0, 1000)}
+
+## CANDIDATE RESUME SKILLS
+${params.resumeSkills ? params.resumeSkills.slice(0, 20).join(', ') : 'Extract from description below'}
+
+## RESUME TEXT (First 2000 chars)
+${params.resumeText.slice(0, 2000)}
+
+---
+
+# YOUR MISSION
+Conduct a **comprehensive research report** covering ALL of the following sections. This is a ONE-TIME research call, so be thorough and detailed. Include clickable URLs wherever possible.
+
+## OUTPUT FORMAT (Valid JSON ONLY)
+\`\`\`json
+{
+  "jobAnalysis": {
+    "matchScore": 85,
+    "matchingSkills": ["skill1", "skill2"],
+    "missingSkills": ["skill3", "skill4"],
+    "skillsToHighlight": ["top skill to emphasize"],
+    "recommendations": ["specific action 1", "specific action 2"],
+    "estimatedFit": "Excellent | Good | Moderate | Poor"
+  },
+  "companyIntel": {
+    "company": "${params.company}",
+    "description": "detailed company overview (minimum 200 chars)",
+    "size": "employee count or range",
+    "revenue": "annual revenue if public",
+    "industry": "primary industry",
+    "founded": "year",
+    "headquarters": "city, state/country",
+    "website": "https://company.com",
+    "marketPosition": "market leader | challenger | niche player"
+  },
+  "companyPsychology": {
+    "culture": "detailed culture description based on reviews and public info",
+    "values": ["value1", "value2", "value3"],
+    "managementStyle": "hierarchical | flat | hybrid",
+    "workEnvironment": "remote-friendly | hybrid | office-centric"
+  },
+  "hiringContacts": [
+    {
+      "name": "Real Person Name",
+      "title": "Talent Acquisition Manager",
+      "department": "Human Resources",
+      "email": "real.email@company.com",
+      "linkedinUrl": "https://linkedin.com/in/person",
+      "authority": "decision maker",
+      "confidence": 0.9
+    }
+  ],
+  "marketIntelligence": {
+    "competitivePosition": "how company compares to competitors",
+    "industryTrends": "relevant industry trends affecting this role",
+    "financialStability": "financial health assessment",
+    "recentPerformance": "last 12 months highlights"
+  },
+  "news": [
+    {
+      "title": "Recent news headline",
+      "summary": "Brief summary of the article",
+      "url": "https://newsource.com/article",
+      "date": "2024-01-15",
+      "source": "TechCrunch",
+      "impact": "positive | neutral | negative for employment"
+    }
+  ],
+  "reviews": [
+    {
+      "platform": "Glassdoor",
+      "rating": 4.2,
+      "summary": "Overall employee sentiment summary",
+      "url": "https://glassdoor.com/company-reviews",
+      "pros": ["pro1", "pro2"],
+      "cons": ["con1", "con2"]
+    }
+  ],
+  "compensation": {
+    "salaryRange": "$XX,000 - $YY,000 for ${params.jobTitle}",
+    "benefits": "typical benefits package"
+  },
+  "strategicRecommendations": {
+    "applicationStrategy": "specific advice on how to apply",
+    "contactStrategy": "who to contact first and how",
+    "interviewPrep": ["prepare for X", "research Y", "practice Z"]
+  },
+  "sources": [
+    "https://source1.com",
+    "https://source2.com",
+    "https://source3.com"
+  ],
+  "confidenceLevel": 0.85
+}
+\`\`\`
+
+## CRITICAL REQUIREMENTS
+1. **Job Analysis**: Compare resume skills to job requirements, calculate match score
+2. **Company Intel**: Search company website, LinkedIn, Crunchbase, Wikipedia for REAL data
+3. **Hiring Contacts**: Find REAL people on LinkedIn, company website, job boards
+   - Minimum 2-3 contacts if company has 10+ employees
+   - Include verified LinkedIn URLs and emails where possible
+   - DO NOT return fake/placeholder names
+4. **News**: Find 2-5 recent news articles about the company (with clickable URLs)
+5. **Reviews**: Search Glassdoor, Indeed, Comparably for employee reviews (with clickable URLs)
+6. **Market Intelligence**: Research industry trends, competitive landscape
+7. **Strategic Recommendations**: Provide actionable, company-specific advice
+
+## IMPORTANT
+- Return ONLY valid JSON (no markdown, no explanations)
+- All URLs must be real and clickable
+- If data not found after searching, use "Not available" but ALWAYS try multiple sources first
+- Focus on actionable intelligence, not generic advice
+`
+
+      const out = await withRetry(async () => {
+        return client.makeRequest(
+          'You are an elite corporate intelligence analyst providing comprehensive job application research. Return detailed JSON with all requested fields.',
+          prompt,
+          { temperature: 0.2, maxTokens: 8000, model: 'sonar-pro' }
+        )
+      })
+
+      console.log('[COMPREHENSIVE_RESEARCH] Raw response length:', out.content.length)
+
+      // Parse response
+      let cleanedContent = out.content.trim()
+      
+      // Remove markdown code blocks
+      cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+      
+      // Extract JSON object
+      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanedContent = jsonMatch[0]
+      }
+
+      const parsed = JSON.parse(cleanedContent)
+
+      // Ensure all required fields exist with defaults
+      const data = {
+        jobAnalysis: parsed.jobAnalysis || {
+          matchScore: 0,
+          matchingSkills: [],
+          missingSkills: [],
+          skillsToHighlight: [],
+          recommendations: [],
+          estimatedFit: 'Unknown'
+        },
+        companyIntel: parsed.companyIntel || {
+          company: params.company,
+          description: 'No description available',
+          size: 'Unknown',
+          industry: 'Unknown'
+        },
+        companyPsychology: parsed.companyPsychology || {
+          culture: 'No information available',
+          values: []
+        },
+        hiringContacts: Array.isArray(parsed.hiringContacts) ? parsed.hiringContacts : [],
+        marketIntelligence: parsed.marketIntelligence || {},
+        news: Array.isArray(parsed.news) ? parsed.news : [],
+        reviews: Array.isArray(parsed.reviews) ? parsed.reviews : [],
+        compensation: parsed.compensation || {},
+        strategicRecommendations: parsed.strategicRecommendations || {
+          applicationStrategy: 'Apply through company website',
+          contactStrategy: 'Reach out to HR via LinkedIn',
+          interviewPrep: []
+        },
+        sources: Array.isArray(parsed.sources) ? parsed.sources : [],
+        confidenceLevel: parsed.confidenceLevel || 0.5
+      }
+
+      console.log('[COMPREHENSIVE_RESEARCH] ✅ Research complete:', {
+        matchScore: data.jobAnalysis.matchScore,
+        contacts: data.hiringContacts.length,
+        news: data.news.length,
+        reviews: data.reviews.length,
+        confidence: data.confidenceLevel
+      })
+
+      return {
+        success: true,
+        data,
+        metadata: {
+          requestId,
+          timestamp: started,
+          duration: Date.now() - started
+        },
+        cached: false
+      }
+    } catch (error) {
+      console.error('[COMPREHENSIVE_RESEARCH] Error:', error)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return {
+        success: false,
+        data: null as unknown as {
+          jobAnalysis: any
+          companyIntel: any
+          companyPsychology: any
+          hiringContacts: any[]
+          marketIntelligence: any
+          news: any[]
+          reviews: any[]
+          compensation: any
+          strategicRecommendations: any
+          sources: string[]
+          confidenceLevel: number
+        },
+        metadata: {
+          requestId,
+          timestamp: started,
+          duration: Date.now() - started,
+          error: (error as Error).message
+        },
+        cached: false
       }
     }
   }

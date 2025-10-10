@@ -121,31 +121,55 @@ export default function JobAnalysisPage() {
     setHasResume(!!resumeData)
 
     try {
-      // CRITICAL FIX: Send data in format API expects
-      const response = await fetch('/api/jobs/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobTitle: jobData.title,
-          company: jobData.company,
-          jobDescription: jobData.description || jobData.summary || '',
-          resumeText: resumeText || '',
-          skills: Array.isArray(jobData.skills) ? jobData.skills : []
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Analysis failed')
-      }
-
-      const result = await response.json()
-      console.log('🎯 [JOB_ANALYSIS] Received analysis:', { hasMatchScore: !!result.matchScore, matchingSkills: result.matchingSkills?.length, recommendations: result.recommendations?.length })
-      // CRITICAL FIX: API returns data directly, not nested under "analysis"
-      setAnalysis(result)
+      // 🚀 OPTIMIZATION: Check for cached comprehensive research first
+      const cachedResearch = CareerFinderStorage.getCompanyResearch()
       
-      // ✅ CRITICAL FIX: Store analysis using unified storage
-      CareerFinderStorage.setJobAnalysis(result)
+      if (cachedResearch && cachedResearch.jobAnalysis) {
+        console.log('🎯 [JOB_ANALYSIS] ✅ Using cached comprehensive research (cost savings!):', {
+          matchScore: cachedResearch.jobAnalysis.matchScore,
+          matchingSkills: cachedResearch.jobAnalysis.matchingSkills?.length,
+          age: Date.now() - (cachedResearch.timestamp || 0)
+        })
+        
+        // Use cached analysis
+        setAnalysis(cachedResearch.jobAnalysis)
+        CareerFinderStorage.setJobAnalysis(cachedResearch.jobAnalysis)
+        
+        // Also set company research
+        setCompanyResearch(cachedResearch as any)
+        setLoadingResearch(false)
+        
+        console.log('🎯 [JOB_ANALYSIS] ✅ All data loaded from cache - NO API CALLS NEEDED!')
+      } else {
+        // Fallback to individual API call if cache miss
+        console.log('🎯 [JOB_ANALYSIS] ⚠️ No cached research, calling individual API...')
+        
+        // CRITICAL FIX: Send data in format API expects
+        const response = await fetch('/api/jobs/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobTitle: jobData.title,
+            company: jobData.company,
+            jobDescription: jobData.description || jobData.summary || '',
+            resumeText: resumeText || '',
+            skills: Array.isArray(jobData.skills) ? jobData.skills : []
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Analysis failed')
+        }
+
+        const result = await response.json()
+        console.log('🎯 [JOB_ANALYSIS] Received analysis:', { hasMatchScore: !!result.matchScore, matchingSkills: result.matchingSkills?.length, recommendations: result.recommendations?.length })
+        // CRITICAL FIX: API returns data directly, not nested under "analysis"
+        setAnalysis(result)
+        
+        // ✅ CRITICAL FIX: Store analysis using unified storage
+        CareerFinderStorage.setJobAnalysis(result)
+      }
       
       if (!resumeData) {
         console.log('📋 Browsing job without resume - match score disabled')
@@ -179,6 +203,23 @@ export default function JobAnalysisPage() {
   }
 
   const fetchCompanyResearch = async (companyName: string, jobTitle: string, location: string) => {
+    // 🚀 OPTIMIZATION: Check if we already have cached comprehensive research
+    const cachedResearch = CareerFinderStorage.getCompanyResearch()
+    
+    if (cachedResearch && cachedResearch.timestamp) {
+      const age = Date.now() - cachedResearch.timestamp
+      const FIVE_MINUTES = 5 * 60 * 1000
+      
+      if (age < FIVE_MINUTES) {
+        console.log('[COMPANY_RESEARCH] ✅ Using cached data (age:', Math.round(age / 1000), 'seconds) - NO API CALL!')
+        setCompanyResearch(cachedResearch as any)
+        setLoadingResearch(false)
+        return
+      } else {
+        console.log('[COMPANY_RESEARCH] ⚠️ Cache expired, refetching...')
+      }
+    }
+    
     setLoadingResearch(true)
     try {
       console.log('[COMPANY_RESEARCH] Fetching for:', companyName)
@@ -580,6 +621,119 @@ export default function JobAnalysisPage() {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* 📰 Recent News with Clickable Links */}
+      {companyResearch?.news && companyResearch.news.length > 0 && (
+        <div className="mt-6 bg-card border border-border rounded-xl p-6">
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            📰 Recent News
+            <span className="text-sm font-normal text-muted-foreground">({companyResearch.news.length} articles)</span>
+          </h3>
+          <div className="space-y-4">
+            {companyResearch.news.map((article, idx) => (
+              <div key={idx} className="pb-4 border-b border-border last:border-0 last:pb-0">
+                <a 
+                  href={article.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                        {article.title}
+                        <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </h4>
+                      {article.summary && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{article.summary}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        {article.source && <span className="font-medium">{article.source}</span>}
+                        {article.date && <span>{article.date}</span>}
+                        {article.impact && (
+                          <span className={`px-2 py-0.5 rounded-full ${
+                            article.impact === 'positive' ? 'bg-green-500/20 text-green-600' :
+                            article.impact === 'negative' ? 'bg-red-500/20 text-red-600' :
+                            'bg-gray-500/20 text-gray-600'
+                          }`}>
+                            {article.impact}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ⭐ Employee Reviews with Clickable Links */}
+      {companyResearch?.reviews && companyResearch.reviews.length > 0 && (
+        <div className="mt-6 bg-card border border-border rounded-xl p-6">
+          <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+            ⭐ Employee Reviews
+            <span className="text-sm font-normal text-muted-foreground">({companyResearch.reviews.length} platforms)</span>
+          </h3>
+          <div className="space-y-4">
+            {companyResearch.reviews.map((review, idx) => (
+              <div key={idx} className="pb-4 border-b border-border last:border-0 last:pb-0">
+                <a 
+                  href={review.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="group"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
+                      {review.platform}
+                      <ExternalLink className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </h4>
+                    {review.rating && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-lg font-bold text-foreground">{review.rating}</span>
+                        <span className="text-yellow-500">★</span>
+                      </div>
+                    )}
+                  </div>
+                  {review.summary && (
+                    <p className="text-sm text-muted-foreground mb-3">{review.summary}</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    {review.pros && review.pros.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-green-600 mb-1">👍 Pros</p>
+                        <ul className="space-y-1">
+                          {review.pros.map((pro, i) => (
+                            <li key={i} className="text-xs text-foreground flex items-start gap-1">
+                              <span className="text-green-500 mt-0.5">•</span>
+                              <span>{pro}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {review.cons && review.cons.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold text-red-600 mb-1">👎 Cons</p>
+                        <ul className="space-y-1">
+                          {review.cons.map((con, i) => (
+                            <li key={i} className="text-xs text-foreground flex items-start gap-1">
+                              <span className="text-red-500 mt-0.5">•</span>
+                              <span>{con}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

@@ -11,6 +11,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import { normalizeSalary, getSalaryDisplayString } from '@/lib/utils/salary-normalizer'
+import CareerFinderStorage from '@/lib/career-finder-storage'
 
 interface JobListing {
   id?: string
@@ -99,6 +100,63 @@ export default function SearchPage() {
       // 🔒 CRITICAL: Clear autopilot flag to prevent re-triggering search on redirect
       localStorage.removeItem('cf:autopilotReady')
       console.log('[SEARCH] 🚫 Cleared autopilot flag to prevent redirect loop')
+      
+      // 🚀 ONE-SHOT COMPREHENSIVE RESEARCH: Call it NOW to reduce costs
+      console.log('[SEARCH] 🔬 Starting comprehensive research...')
+      try {
+        // Get resume from localStorage
+        const resume = CareerFinderStorage.getResume()
+        if (resume && resume.extractedText) {
+          // Call comprehensive research endpoint
+          const researchResponse = await fetch('/api/v2/career-finder/comprehensive-research', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jobTitle: job.title,
+              company: job.company,
+              jobDescription: job.description || job.summary || '',
+              location: job.location,
+              resumeText: resume.extractedText,
+              resumeSkills: resume.personalInfo?.skills || []
+            })
+          })
+          
+          if (researchResponse.ok) {
+            const research = await researchResponse.json()
+            if (research.success && research.data) {
+              console.log('[SEARCH] ✅ Comprehensive research complete:', {
+                matchScore: research.data.jobAnalysis.matchScore,
+                contacts: research.data.hiringContacts.length,
+                news: research.data.news.length,
+                reviews: research.data.reviews.length
+              })
+              
+              // Store comprehensive research with timestamp
+              const comprehensiveData = {
+                ...research.data.companyIntel,
+                psychology: research.data.companyPsychology.culture,
+                values: research.data.companyPsychology.values,
+                marketIntelligence: research.data.marketIntelligence,
+                hiringContacts: research.data.hiringContacts,
+                news: research.data.news,
+                reviews: research.data.reviews,
+                sources: research.data.sources,
+                confidence: research.data.confidenceLevel,
+                timestamp: Date.now(),
+                // Also embed job analysis
+                jobAnalysis: research.data.jobAnalysis
+              }
+              
+              CareerFinderStorage.setCompanyResearch(comprehensiveData)
+              console.log('[SEARCH] 💾 Cached comprehensive research for instant page loads')
+            }
+          } else {
+            console.warn('[SEARCH] ⚠️ Comprehensive research failed, pages will fall back to individual calls')
+          }
+        }
+      } catch (researchError) {
+        console.warn('[SEARCH] ⚠️ Comprehensive research error (non-blocking):', researchError)
+      }
       
       // Store in database for history (don't wait for this)
       fetch('/api/jobs/store', {
