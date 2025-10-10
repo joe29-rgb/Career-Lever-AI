@@ -141,8 +141,8 @@ export async function POST(request: NextRequest) {
         }
         return `You are an expert resume writer for modern, ATS-optimized resumes.\n\nTEMPLATE: Modern\nTARGET: ${jt} at ${cn}\nTONE: ${toneStr}\n\nFORMATTING: Clean, scannable, quantified achievements, standard headings.\nKEYWORDS: ${keywordsList.join(', ')}\nSTRUCTURE: Summary; Core Competencies; Experience; Education; Technical Skills; Achievements.\n\nSTRICT OUTPUT: Return ONLY an HTML fragment using classes: .section, .section-header, .job-entry, .job-title, .company-info, .job-description. No markdown; no wrapper HTML.`
       })()
-      const system = basePrompt
-      const user = `Original resume (plain text):\n${resumeText}\n\nTarget job description:\n${jobDescription}\n\nReturn FINAL HTML fragment only (no markdown, no wrapper tags). Use ATS-safe professional formatting and the specified classes.`
+      const system = basePrompt + `\n\n🚨 CRITICAL RULES:\n1. NEVER fabricate job descriptions, achievements, or responsibilities\n2. NEVER add details not explicitly stated in the original resume\n3. ONLY reformat existing content to highlight relevant experience\n4. ONLY reorder sections to emphasize skills matching the job description\n5. Use exact wording from original resume for all accomplishments\n6. You may only: rearrange bullet points, emphasize matching keywords, improve formatting`
+      const user = `Original resume (plain text):\n${resumeText}\n\nTarget job description:\n${jobDescription}\n\nRETURN: HTML fragment with EXACT content from original resume, reformatted to emphasize relevant experience. DO NOT invent new achievements or responsibilities.`
       const out = await ppx.makeRequest(system, user, { maxTokens: 3000, temperature: 0.35 })
       const fragment = (out.content || '').trim()
       const tailoredHtml = wrapHtmlFragmentWithTemplateCss(fragment, tpl)
