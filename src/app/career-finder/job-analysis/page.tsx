@@ -43,7 +43,7 @@ interface CompanyResearch {
     values: string[]
     workEnvironment: string
   }
-  marketIntelligence?: {
+  marketIntelligence?: string | {
     industryTrends: string[]
     competitivePosition: string
     recentNews: string[]
@@ -196,11 +196,7 @@ export default function JobAnalysisPage() {
         const researchData = {
           aiRiskAnalysis: data.aiRiskAnalysis,
           culture: data.company?.culture,
-          marketIntelligence: {
-            industryTrends: data.marketIntelligence?.industryTrends || [],
-            competitivePosition: data.marketIntelligence?.competitivePosition || '',
-            recentNews: data.marketIntelligence?.recentNews || []
-          },
+          marketIntelligence: data.marketIntelligence || 'No market intelligence available',
           hiringContacts: safeContacts,
           salaryIntelligence: data.salaryIntelligence
         }
@@ -463,34 +459,40 @@ export default function JobAnalysisPage() {
           {companyResearch.marketIntelligence && (
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground mb-3">📊 Market Intelligence</h3>
-              {companyResearch.marketIntelligence.competitivePosition && (
-                <p className="text-sm text-foreground mb-3">{companyResearch.marketIntelligence.competitivePosition}</p>
-              )}
-              {companyResearch.marketIntelligence.industryTrends.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-sm font-semibold text-muted-foreground mb-2">Industry Trends:</p>
-                  <ul className="space-y-1">
-                    {companyResearch.marketIntelligence.industryTrends.map((trend, idx) => (
-                      <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">▸</span>
-                        <span>{trend}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {companyResearch.marketIntelligence.recentNews.length > 0 && (
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground mb-2">Recent News:</p>
-                  <ul className="space-y-1">
-                    {companyResearch.marketIntelligence.recentNews.slice(0, 3).map((news, idx) => (
-                      <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{news}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              {typeof companyResearch.marketIntelligence === 'string' ? (
+                <p className="text-sm text-foreground leading-relaxed">{companyResearch.marketIntelligence}</p>
+              ) : (
+                <>
+                  {companyResearch.marketIntelligence.competitivePosition && (
+                    <p className="text-sm text-foreground mb-3">{companyResearch.marketIntelligence.competitivePosition}</p>
+                  )}
+                  {companyResearch.marketIntelligence.industryTrends?.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-muted-foreground mb-2">Industry Trends:</p>
+                      <ul className="space-y-1">
+                        {companyResearch.marketIntelligence.industryTrends.map((trend, idx) => (
+                          <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                            <span className="text-primary mt-1">▸</span>
+                            <span>{trend}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {companyResearch.marketIntelligence.recentNews?.length > 0 && (
+                    <div>
+                      <p className="text-sm font-semibold text-muted-foreground mb-2">Recent News:</p>
+                      <ul className="space-y-1">
+                        {companyResearch.marketIntelligence.recentNews.slice(0, 3).map((news, idx) => (
+                          <li key={idx} className="text-sm text-foreground flex items-start gap-2">
+                            <span className="text-primary mt-1">•</span>
+                            <span>{news}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
