@@ -202,6 +202,124 @@ export default function CareerFinderCompanyPage() {
                 </ul>
               </div>
             )}
+
+            {/* Recent News */}
+            {companyData.recentNews && companyData.recentNews.length > 0 && (
+              <div className="bg-card rounded-xl shadow-lg border border-border p-6 card-hover-lift">
+                <h3 className="text-xl font-bold text-red-600 mb-4">📰 Recent News</h3>
+                <div className="space-y-3">
+                  {companyData.recentNews.map((news: any, index: number) => (
+                    <div key={index} className="border-l-4 border-red-500 pl-3">
+                      <a href={news.url} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground hover:text-blue-600">
+                        {news.title}
+                      </a>
+                      <p className="text-xs text-muted-foreground mt-1">{news.date}</p>
+                      {news.summary && (
+                        <p className="text-sm text-muted-foreground mt-1">{news.summary}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Glassdoor Rating */}
+            {companyData.glassdoorRating && companyData.glassdoorRating.overallRating && (
+              <div className="bg-card rounded-xl shadow-lg border border-border p-6 card-hover-lift">
+                <h3 className="text-xl font-bold text-emerald-600 mb-4">⭐ Glassdoor Ratings</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground">Overall Rating</span>
+                    <span className="text-2xl font-bold text-emerald-600">{companyData.glassdoorRating.overallRating}/5</span>
+                  </div>
+                  {companyData.glassdoorRating.ceoApproval && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground">CEO Approval</span>
+                      <span className="font-semibold text-foreground">{companyData.glassdoorRating.ceoApproval}%</span>
+                    </div>
+                  )}
+                  {companyData.glassdoorRating.recommendToFriend && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground">Recommend to Friend</span>
+                      <span className="font-semibold text-foreground">{companyData.glassdoorRating.recommendToFriend}%</span>
+                    </div>
+                  )}
+                  {companyData.glassdoorRating.reviewCount && (
+                    <p className="text-xs text-muted-foreground mt-2">Based on {companyData.glassdoorRating.reviewCount} reviews</p>
+                  )}
+                  {companyData.glassdoorRating.url && (
+                    <a href={companyData.glassdoorRating.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">
+                      View on Glassdoor →
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Stock Profile */}
+            {companyData.stockProfile && companyData.stockProfile.isPublic && (
+              <div className="bg-card rounded-xl shadow-lg border border-border p-6 card-hover-lift">
+                <h3 className="text-xl font-bold text-indigo-600 mb-4">📈 Stock Profile</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-foreground">Ticker</span>
+                    <span className="font-bold text-indigo-600">{companyData.stockProfile.ticker}</span>
+                  </div>
+                  {companyData.stockProfile.exchange && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground">Exchange</span>
+                      <span className="font-semibold text-foreground">{companyData.stockProfile.exchange}</span>
+                    </div>
+                  )}
+                  {companyData.stockProfile.currentPrice && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground">Current Price</span>
+                      <span className="font-semibold text-foreground">{companyData.stockProfile.currentPrice}</span>
+                    </div>
+                  )}
+                  {companyData.stockProfile.marketCap && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-foreground">Market Cap</span>
+                      <span className="font-semibold text-foreground">{companyData.stockProfile.marketCap}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Social Media Links */}
+            {companyData.socialMedia && Object.values(companyData.socialMedia).some(v => v) && (
+              <div className="bg-card rounded-xl shadow-lg border border-border p-6 card-hover-lift">
+                <h3 className="text-xl font-bold text-pink-600 mb-4">🔗 Social Media</h3>
+                <div className="flex flex-wrap gap-3">
+                  {companyData.socialMedia.linkedin && (
+                    <a href={companyData.socialMedia.linkedin} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                      LinkedIn
+                    </a>
+                  )}
+                  {companyData.socialMedia.twitter && (
+                    <a href={companyData.socialMedia.twitter} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors">
+                      Twitter
+                    </a>
+                  )}
+                  {companyData.socialMedia.facebook && (
+                    <a href={companyData.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                      Facebook
+                    </a>
+                  )}
+                  {companyData.socialMedia.instagram && (
+                    <a href={companyData.socialMedia.instagram} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors">
+                      Instagram
+                    </a>
+                  )}
+                  {companyData.socialMedia.youtube && (
+                    <a href={companyData.socialMedia.youtube} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                      YouTube
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Continue Button */}

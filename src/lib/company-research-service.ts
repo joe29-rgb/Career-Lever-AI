@@ -31,6 +31,29 @@ export interface CompanyResearchResult {
   confidence?: number
   aiRiskAnalysis?: any
   salaryIntelligence?: any
+  // CRITICAL: New comprehensive intelligence fields
+  recentNews?: Array<{ title: string; date: string; url: string; summary: string }>
+  socialMedia?: {
+    linkedin?: string
+    twitter?: string
+    facebook?: string
+    instagram?: string
+    youtube?: string
+  }
+  glassdoorRating?: {
+    overallRating?: number
+    ceoApproval?: number
+    recommendToFriend?: number
+    reviewCount?: number
+    url?: string
+  }
+  stockProfile?: {
+    ticker?: string
+    exchange?: string
+    currentPrice?: string
+    marketCap?: string
+    isPublic?: boolean
+  }
 }
 
 export class CompanyResearchService {
