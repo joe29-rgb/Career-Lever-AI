@@ -760,24 +760,34 @@ OUTPUT JSON FORMAT:
         const { getPerplexityConfig } = await import('./config/perplexity-configs')
         const config = getPerplexityConfig('hiringContacts')
         
-        // CRITICAL: Force Perplexity to search LinkedIn specifically
-        const prompt = `CRITICAL: Search LinkedIn ONLY for real hiring contacts at ${companyName}. Return ONLY valid JSON, NO explanatory text.
+        // CRITICAL: Multi-source search using Perplexity's sonar-pro research capabilities
+        const prompt = `URGENT: Find REAL hiring contacts at ${companyName} using multiple sources. Return ONLY valid JSON, NO explanatory text.
 
-SEARCH REQUIREMENTS:
-1. Use site:linkedin.com/in/ to find REAL profiles
-2. Look for: "recruiter ${companyName}", "talent acquisition ${companyName}", "HR manager ${companyName}", "hiring manager ${companyName}"
-3. Extract REAL names from LinkedIn profiles
-4. Find verified email patterns from company website or LinkedIn
+SEARCH STRATEGY (use ALL sources):
+1. LinkedIn profiles: site:linkedin.com/in/ "${companyName}" (recruiter OR "talent acquisition" OR "HR manager" OR "hiring manager")
+2. Company website: site:${companyName.toLowerCase().replace(/\s+/g, '')}.com (careers OR jobs OR contact OR "human resources")
+3. Company careers page: "${companyName}" careers team contact email
+4. Job board postings: site:indeed.com OR site:glassdoor.com "${companyName}" recruiter contact
+5. Press releases/news: "${companyName}" hiring manager OR recruiter name
 
-JSON FORMAT (return empty array [] if no REAL contacts found):
-[{"name":"John Smith","title":"Senior Recruiter","department":"Talent Acquisition","email":"john.smith@company.com","linkedinUrl":"https://linkedin.com/in/john-smith","emailType":"verified","source":"LinkedIn","confidence":0.9}]
+CRITICAL REQUIREMENTS:
+- Extract REAL names from actual profiles/pages (e.g., "Sarah Johnson", "Michael Chen")
+- Find verified email addresses or construct from pattern found on company website
+- Include LinkedIn profile URLs when found
+- If company website shows "firstname.lastname@company.com" pattern, use it with REAL names found
+- DO NOT return fake placeholders like "Pattern Guess" or generic "firstname.lastname"
+- If NO real contacts found after searching all sources, return empty array []
 
-DO NOT return generic placeholders like "firstname.lastname". ONLY return REAL names from actual LinkedIn profiles. If you can't find real people, return an empty array []`
+JSON FORMAT:
+[{"name":"Sarah Johnson","title":"Senior Recruiter","department":"Talent Acquisition","email":"sarah.johnson@company.com","linkedinUrl":"https://linkedin.com/in/sarah-johnson-xyz","emailType":"verified","source":"LinkedIn + Company Website","confidence":0.95}]
 
-        // PERPLEXITY AUDIT FIX: Use optimal token limits (1500 → 2500)
+Return ONLY the JSON array. If you can't find ANY real people after searching ALL sources, return: []`
+
+        // PERPLEXITY AUDIT FIX: Use optimal token limits + sonar-pro for research
         return client.makeRequest(SYSTEM, prompt, { 
           temperature: config.temperature, 
-          maxTokens: config.maxTokens 
+          maxTokens: config.maxTokens,
+          model: 'sonar-pro' // Use research model for multi-source search
         })
       })
       
