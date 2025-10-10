@@ -1234,4 +1234,190 @@ IMPORTANT:
       }
     }
   }
+
+  /**
+   * ENHANCED AGGRESSIVE COMPANY RESEARCH
+   * Uses comprehensive prompt to gather hiring contacts, automation threats, and deep intelligence
+   */
+  static async enhancedCompanyResearch(params: {
+    companyName: string
+    jobTitle?: string
+    location?: string
+    industry?: string
+    companyWebsite?: string
+  }): Promise<EnhancedResponse<any>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const key = makeKey('ppx:enhanced:research', params)
+    const cached = getCache(key)
+    
+    if (cached) {
+      return { 
+        success: true, 
+        data: cached, 
+        metadata: { requestId, timestamp: started, duration: Date.now() - started }, 
+        cached: true 
+      }
+    }
+
+    try {
+      // Generate company slug and handle for searches
+      const companySlug = params.companyName.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
+      
+      const companyWebsite = params.companyWebsite || 
+        `${params.companyName.toLowerCase().replace(/\s+inc\.?$|\s+ltd\.?$|\s+llc\.?$|\s+corp\.?$/i, '').replace(/\s+/g, '')}.com`
+      
+      const companyHandle = params.companyName.toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[^a-z0-9]/g, '')
+
+      const out = await withRetry(async () => {
+        const client = createClient()
+        const prompt = `COMPREHENSIVE RESEARCH TASK: Search for contacts, emails, website, and complete intelligence for ${params.companyName}${params.jobTitle ? ` (role: ${params.jobTitle})` : ''}${params.location ? ` in ${params.location}` : ''}.
+
+**MANDATORY SEARCH SOURCES:**
+- Use Google search extensively
+- Search LinkedIn company page: site:linkedin.com/company/${companySlug}
+- Search LinkedIn employees: site:linkedin.com "${params.companyName}" CEO OR president OR manager OR recruiter OR HR
+- Search all social media platforms (Twitter, Facebook, Instagram, YouTube)
+- Search company website thoroughly: site:${companyWebsite}
+- Search business directories (BBB, Yellow Pages, ZoomInfo, Glassdoor)
+- Search news sources and press releases
+- Search "${params.companyName}" headquarters address phone email
+- Search "${params.companyName}" site:glassdoor.com for reviews
+
+**RETURN DETAILED JSON:**
+{
+  "companyIntelligence": {
+    "name": "${params.companyName}",
+    "industry": "specific industry",
+    "founded": "year",
+    "headquarters": "full address",
+    "employeeCount": "employee range",
+    "revenue": "annual revenue",
+    "website": "official website",
+    "description": "detailed overview (NOT 'No description available')",
+    "marketPosition": "industry ranking",
+    "financialStability": "assessment",
+    "recentPerformance": "last 12 months highlights"
+  },
+  "hiringContactIntelligence": {
+    "officialChannels": {
+      "careersPage": "URL",
+      "jobsEmail": "email",
+      "hrEmail": "email",
+      "phone": "phone number",
+      "address": "mailing address"
+    },
+    "keyContacts": [
+      {
+        "name": "Full Name",
+        "title": "Job Title",
+        "department": "Department",
+        "linkedinUrl": "LinkedIn URL",
+        "email": "email if available",
+        "authority": "decision maker | recruiter | manager",
+        "contactMethod": "recommended approach"
+      }
+    ],
+    "emailFormat": "first.last@company.com pattern",
+    "socialMedia": {
+      "linkedin": "company page URL",
+      "twitter": "handle and URL",
+      "facebook": "page URL",
+      "instagram": "handle and URL"
+    }
+  },
+  "companyPsychology": {
+    "culture": "detailed culture description",
+    "values": ["core values in practice"],
+    "managementStyle": "leadership approach",
+    "workEnvironment": "description"
+  },
+  "reviewAnalysis": {
+    "glassdoor": {
+      "rating": 0,
+      "reviewCount": 0,
+      "ceoApproval": "percentage",
+      "recommendToFriend": "percentage",
+      "pros": ["top positives"],
+      "cons": ["top concerns"]
+    },
+    "employeeSentiment": "overall sentiment"
+  },
+  "aiAutomationThreat": {
+    "roleRisk": "LOW | MODERATE | HIGH",
+    "automationProbability": "percentage",
+    "timeframe": "years",
+    "companyAIAdoption": "current AI usage",
+    "futureOutlook": "5-year projection",
+    "recommendations": ["skill development suggestions"]
+  },
+  "recentNews": [
+    {
+      "headline": "news headline",
+      "date": "YYYY-MM-DD",
+      "source": "publication",
+      "url": "article URL",
+      "impact": "employment impact"
+    }
+  ],
+  "compensation": {
+    "salaryRange": "range for ${params.jobTitle || 'typical roles'}",
+    "benefits": "benefits package description"
+  },
+  "redFlags": ["concerning patterns if any"],
+  "strategicRecommendations": {
+    "applicationStrategy": "how to apply",
+    "contactStrategy": "who to contact first",
+    "interviewPrep": "company-specific tips"
+  },
+  "sources": ["list of sources"],
+  "confidenceLevel": 0.95
+}
+
+**CRITICAL:** 
+- Find REAL contact information (names, emails, LinkedIn profiles)
+- Minimum 3 contacts if company has 10+ employees
+- DO NOT return "Unknown" or "No description available" - search until you find data
+- Include specific salary information if available
+- Assess AI/automation threat for ${params.jobTitle || 'the role'}
+- Provide actionable contact strategies
+
+Return ONLY valid JSON.`
+
+        return client.makeRequest(
+          'You are an elite corporate intelligence analyst. Conduct comprehensive research and return detailed JSON with hiring contacts and strategic intelligence.',
+          prompt,
+          { temperature: 0.1, maxTokens: 6000, model: 'sonar-pro' }
+        )
+      })
+
+      const parsed = JSON.parse(out.content.trim())
+      
+      console.log(`[ENHANCED_RESEARCH] Complete intelligence for ${params.companyName}`)
+      console.log(`[CONTACTS] Found ${parsed.hiringContactIntelligence?.keyContacts?.length || 0} key contacts`)
+      console.log(`[AI_THREAT] Risk: ${parsed.aiAutomationThreat?.roleRisk || 'N/A'}`)
+      console.log(`[CULTURE] Rating: ${parsed.reviewAnalysis?.glassdoor?.rating || 'N/A'}`)
+      
+      setCache(key, parsed)
+      
+      return { 
+        success: true, 
+        data: parsed, 
+        metadata: { requestId, timestamp: started, duration: Date.now() - started }, 
+        cached: false 
+      }
+    } catch (e) {
+      console.error('[ENHANCED_RESEARCH] Failed:', e)
+      return { 
+        success: false, 
+        data: null, 
+        metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, 
+        cached: false 
+      }
+    }
+  }
 }

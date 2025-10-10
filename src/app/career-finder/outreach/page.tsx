@@ -1,526 +1,491 @@
-"use client"
+'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
-import { Loader2, CheckCircle, Mail, Copy, ExternalLink, AlertCircle } from 'lucide-react'
-import toast from 'react-hot-toast'
+import CareerFinderStorage from '@/lib/career-finder-storage'
+import { Mail, Phone, Linkedin, ExternalLink, Building2, User, Briefcase, Copy, Check } from 'lucide-react'
 
-interface EnhancedContact {
+interface HiringContact {
   name: string
   title: string
-  email?: string
+  department?: string
   linkedinUrl?: string
-  verified_email: boolean
-  email_confidence: number
-  decision_maker_score: number
-  personality_insights: {
-    communication_style: string
-    response_likelihood: number
-  }
+  email?: string
+  phone?: string
+  authority?: string
+  contactMethod?: string
 }
 
-interface PersonalizedEmail {
-  subject: string
-  body: string
-  cta: string
-  personalization_score: number
-  variant_id?: string
-  tone: string
+interface EnhancedResearch {
+  companyIntelligence: {
+    name: string
+    industry?: string
+    website?: string
+  }
+  hiringContactIntelligence: {
+    officialChannels?: {
+      careersPage?: string
+      jobsEmail?: string
+      hrEmail?: string
+      phone?: string
+    }
+    keyContacts?: HiringContact[]
+    emailFormat?: string
+    socialMedia?: {
+      linkedin?: string
+      twitter?: string
+      facebook?: string
+    }
+  }
+  strategicRecommendations?: {
+    contactStrategy?: string
+    applicationStrategy?: string
+  }
 }
 
 export default function CareerFinderOutreachPage() {
   const [loading, setLoading] = useState(true)
-  const [enriching, setEnriching] = useState(false)
-  const [personalizing, setPersonalizing] = useState(false)
-  
-  const [job, setJob] = useState<any>(null)
-  const [contacts, setContacts] = useState<EnhancedContact[]>([])
-  const [personalizedEmails, setPersonalizedEmails] = useState<PersonalizedEmail[]>([])
-  const [selectedContact, setSelectedContact] = useState<EnhancedContact | null>(null)
-  const [selectedEmail, setSelectedEmail] = useState<PersonalizedEmail | null>(null)
-  
+  const [error, setError] = useState('')
+  const [jobData, setJobData] = useState<any>(null)
+  const [companyData, setCompanyData] = useState<EnhancedResearch | null>(null)
+  const [selectedContact, setSelectedContact] = useState<HiringContact | null>(null)
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBody, setEmailBody] = useState('')
+  const [copiedField, setCopiedField] = useState<string | null>(null)
+  const router = useRouter()
+
   useEffect(() => {
-    initializeOutreach()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    CareerFinderStorage.setProgress(7, 7)
+    loadDataAndGenerateEmail()
   }, [])
-  
-  const initializeOutreach = async () => {
+
+  const loadDataAndGenerateEmail = async () => {
     try {
-      localStorage.setItem('cf:progress', JSON.stringify({ step: 7, total: 7 }))
-      
-      // Load selected job
-      const jobData = localStorage.getItem('cf:selectedJob')
-      if (!jobData) {
-        toast.error('No job selected. Please go back and select a job.')
+      // Load job data
+      const job = CareerFinderStorage.getJob()
+      if (!job) {
+        setError('No job selected')
         setLoading(false)
         return
       }
-      
-      const selectedJob = JSON.parse(jobData)
-      setJob(selectedJob)
-      
-      console.log('[OUTREACH] Loaded job:', selectedJob.company)
-      
-      // Load company research with contacts
-      await loadAndEnrichContacts(selectedJob)
-      
-    } catch (error) {
-      console.error('[OUTREACH] Initialization error:', error)
-      toast.error('Failed to load outreach data')
-    } finally {
+      setJobData(job)
+
+      // Load resume
+      const resume = CareerFinderStorage.getResume()
+      const resumeText = resume?.extractedText || ''
+
+      // Load job analysis for match insights
+      const analysis = CareerFinderStorage.getJobAnalysis()
+
+      // Fetch enhanced company research
+      console.log('[OUTREACH] Fetching enhanced research for:', job.company)
+      const response = await fetch('/api/v2/company/enhanced-research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: job.company,
+          jobTitle: job.title,
+          location: job.location
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setCompanyData(result.data)
+        console.log('[OUTREACH] Enhanced research loaded:', {
+          contacts: result.data.hiringContactIntelligence?.keyContacts?.length || 0
+        })
+
+        // Auto-select first contact if available
+        const contacts = result.data.hiringContactIntelligence?.keyContacts || []
+        if (contacts.length > 0) {
+          selectContact(contacts[0], job, analysis, resumeText)
+        } else {
+          // Use official email if no contacts found
+          const officialEmail = result.data.hiringContactIntelligence?.officialChannels?.jobsEmail || 
+                               result.data.hiringContactIntelligence?.officialChannels?.hrEmail
+          if (officialEmail) {
+            generateEmailForOfficial(officialEmail, job, analysis, resumeText)
+          }
+        }
+      } else {
+        console.warn('[OUTREACH] Enhanced research failed, using basic contact')
+      }
+
+      setLoading(false)
+    } catch (err) {
+      console.error('[OUTREACH] Error:', err)
+      setError('Failed to load outreach data')
       setLoading(false)
     }
   }
-  
-  const loadAndEnrichContacts = async (selectedJob: any) => {
-    setEnriching(true)
-    
-    try {
-      // Fetch company research with hiring contacts
-      const response = await fetch('/api/v2/company/deep-research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyName: selectedJob.company,
-          targetRole: selectedJob.title
-        })
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to load company research')
-      }
-      
-      const data = await response.json()
-      const hiringContacts = data.contacts?.data || []
-      
-      console.log('[OUTREACH] Found', hiringContacts.length, 'contacts')
-      
-      if (hiringContacts.length === 0) {
-        toast.error('No hiring contacts found. Try searching LinkedIn manually.')
-        return
-      }
-      
-      // PHASE 2A: Enrich contacts with verification and personality
-      const companyDomain = selectedJob.url ? 
-        new URL(selectedJob.url).hostname.replace('www.', '') : 
-        `${selectedJob.company.toLowerCase().replace(/\s+/g, '')}.com`
-      
-      const enrichedContacts = hiringContacts.map((contact: any) => ({
-        ...contact,
-        verified_email: contact.confidence > 70,
-        email_confidence: contact.confidence || 60,
-        decision_maker_score: calculateDecisionScore(contact.title),
-        personality_insights: {
-          communication_style: inferStyle(contact.title),
-          response_likelihood: contact.confidence || 50
-        }
-      }))
-      
-      // Sort by decision maker score
-      enrichedContacts.sort((a: any, b: any) => b.decision_maker_score - a.decision_maker_score)
-      
-      setContacts(enrichedContacts)
-      
-      // Auto-select first contact
-      if (enrichedContacts.length > 0) {
-        setSelectedContact(enrichedContacts[0])
-        await generatePersonalizedEmails(enrichedContacts[0], selectedJob)
-      }
-      
-      toast.success(`Found ${enrichedContacts.length} hiring contacts!`)
-      
-    } catch (error) {
-      console.error('[OUTREACH] Contact loading error:', error)
-      toast.error('Failed to load contacts')
-    } finally {
-      setEnriching(false)
-    }
-  }
-  
-  const generatePersonalizedEmails = async (contact: EnhancedContact, selectedJob: any) => {
-    setPersonalizing(true)
-    
-    try {
-      // Load resume for personalization
-      const resumeData = localStorage.getItem('cf:resume')
-      if (!resumeData) {
-        toast.error('Resume not found. Using generic template.')
-        return
-      }
-      
-      const resume = JSON.parse(resumeData)
-      const resumeText = resume.extractedText || ''
-      
-      console.log('[OUTREACH] Generating personalized emails...')
-      
-      // PHASE 2B: Generate 3 AI-powered variants
-      // For now, generate basic personalized versions (full AI integration in next step)
-      const variants: PersonalizedEmail[] = [
-        {
-          subject: `${selectedJob.title} - ${contact.name}`,
-          body: `Hi ${contact.name.split(' ')[0]},\n\nI noticed ${selectedJob.company}'s opening for ${selectedJob.title}. With my background in [your key skill], I believe I could add immediate value to your team.\n\nWould you be open to a brief conversation about the role?\n\nBest regards`,
-          cta: 'Brief conversation',
-          personalization_score: 65,
-          variant_id: 'A',
-          tone: 'professional'
-        },
-        {
-          subject: `Quick question about ${selectedJob.title} at ${selectedJob.company}`,
-          body: `Hi ${contact.name.split(' ')[0]},\n\nI came across the ${selectedJob.title} position and I'm excited about the opportunity. My experience with [your expertise] aligns well with ${selectedJob.company}'s goals.\n\nCould we schedule a 15-minute call to discuss?\n\nThank you`,
-          cta: '15-minute call',
-          personalization_score: 70,
-          variant_id: 'B',
-          tone: 'direct'
-        },
-        {
-          subject: `${selectedJob.company} ${selectedJob.title} - Value I Can Add`,
-          body: `Hello ${contact.name.split(' ')[0]},\n\nI'm reaching out about the ${selectedJob.title} role. Based on my research of ${selectedJob.company}, I see an opportunity where my skills in [your strength] could contribute to your team's success.\n\nI'd welcome the chance to discuss this further.\n\nBest`,
-          cta: 'Further discussion',
-          personalization_score: 75,
-          variant_id: 'C',
-          tone: 'value-focused'
-        }
-      ]
-      
-      setPersonalizedEmails(variants)
-      setSelectedEmail(variants[0])
-      
-      toast.success('Generated 3 personalized email variants!')
-      
-    } catch (error) {
-      console.error('[OUTREACH] Personalization error:', error)
-      toast.error('Failed to generate personalized emails')
-    } finally {
-      setPersonalizing(false)
-    }
-  }
-  
-  const handleContactSelect = async (contact: EnhancedContact) => {
+
+  const selectContact = (contact: HiringContact, job: any, analysis: any, resumeText: string) => {
     setSelectedContact(contact)
-    if (job) {
-      await generatePersonalizedEmails(contact, job)
-    }
-  }
-  
-  const handleCopy = (text: string, type: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success(`${type} copied to clipboard!`)
-  }
-  
-  const handleSendEmail = async (contact: EnhancedContact, email: PersonalizedEmail) => {
-    if (!contact.email) {
-      toast.error('No email address available for this contact')
-      return
-    }
     
-    // Check if email service is configured
-    try {
-      const statusResponse = await fetch('/api/outreach/send')
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json()
-        
-        if (statusData.configured) {
-          // Use automated email sending
-          const sendResponse = await fetch('/api/outreach/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contact,
-              email,
-              send_immediately: true
-            })
-          })
-          
-          if (sendResponse.ok) {
-            const result = await sendResponse.json()
-            toast.success(`✉️ Email sent to ${contact.name}!`)
-            markAsSent()
-            return
-          } else {
-            const error = await sendResponse.json()
-            throw new Error(error.details || 'Failed to send email')
-          }
-        }
+    // Generate personalized email
+    const subject = `Application for ${job.title} - ${extractName(resumeText) || 'Experienced Professional'}`
+    setEmailSubject(subject)
+
+    const matchScore = analysis?.matchScore || 0
+    const skills = analysis?.matchingSkills || []
+    const name = extractName(resumeText) || ''
+
+    const body = `Dear ${contact.name || 'Hiring Manager'},
+
+I am writing to express my strong interest in the ${job.title} position at ${job.company}. ${contact.title ? `As ${contact.title}, I` : 'I'} believe you would be the right person to discuss how my qualifications align with your team's needs.
+
+KEY QUALIFICATIONS:
+${skills.slice(0, 5).map((skill: string) => `• ${skill}`).join('\n')}
+
+${matchScore >= 80 ? `My background shows a ${matchScore}% alignment with your requirements, particularly in ${skills[0] || 'the core competencies'} needed for this role.` : ''}
+
+I have attached my resume and cover letter for your review. I would welcome the opportunity to discuss how I can contribute to ${job.company}'s success.
+
+Thank you for your consideration. I look forward to speaking with you.
+
+Best regards,
+${name}
+
+---
+Resume and cover letter attached
+${contact.linkedinUrl ? `LinkedIn: Let's connect at ${contact.linkedinUrl}` : ''}`
+
+    setEmailBody(body)
+  }
+
+  const generateEmailForOfficial = (email: string, job: any, analysis: any, resumeText: string) => {
+    const subject = `Application for ${job.title} Position`
+    setEmailSubject(subject)
+
+    const matchScore = analysis?.matchScore || 0
+    const skills = analysis?.matchingSkills || []
+    const name = extractName(resumeText) || ''
+
+    const body = `Dear Hiring Team,
+
+I am writing to apply for the ${job.title} position at ${job.company}.
+
+KEY QUALIFICATIONS:
+${skills.slice(0, 5).map((skill: string) => `• ${skill}`).join('\n')}
+
+${matchScore >= 80 ? `My professional background demonstrates a strong ${matchScore}% alignment with the role requirements.` : ''}
+
+Please find my resume and cover letter attached for your consideration.
+
+Thank you for your time and consideration.
+
+Best regards,
+${name}`
+
+    setEmailBody(body)
+  }
+
+  const extractName = (resumeText: string): string => {
+    const lines = resumeText.split('\n').map(l => l.trim()).filter(Boolean)
+    for (const line of lines.slice(0, 5)) {
+      if (line.length > 5 && line.length < 50 && !line.includes('@') && !line.match(/\d{3}/) && /^[A-Z]/.test(line)) {
+        return line
       }
-    } catch (error) {
-      console.warn('[OUTREACH] Automated sending failed, falling back to mailto:', error)
     }
-    
-    // Fallback to mailto if automated sending fails or not configured
-    const mailto = `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
-    window.open(mailto, '_blank')
-    
-    toast.success('Email composer opened!')
-    
-    // Mark as sent
-    markAsSent()
+    return ''
   }
-  
-  const markAsSent = async () => {
-    try {
-      if (!job) return
-      
-      await fetch('/api/applications/mark-sent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          jobTitle: job.title,
-          companyName: job.company,
-          jobDescription: job.description || '',
-          jobUrl: job.url
-        })
-      })
-      
-      // Create inbox labels
-      await fetch('/api/inbox/label/create', { method: 'POST' }).catch(() => {})
-      await fetch('/api/inbox/outlook/category/create', { method: 'POST' }).catch(() => {})
-      
-      toast.success('Application tracked!')
-    } catch (error) {
-      console.error('[OUTREACH] Mark sent error:', error)
-    }
+
+  const copyToClipboard = (text: string, field: string) => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
   }
-  
-  // Helper functions
-  const calculateDecisionScore = (title: string): number => {
-    const titleLower = title.toLowerCase()
-    if (/ceo|cto|cfo|vp|chief|president/.test(titleLower)) return 95
-    if (/director/.test(titleLower)) return 85
-    if (/recruiter|talent|hr manager|hiring/.test(titleLower)) return 90
-    if (/manager|lead|head/.test(titleLower)) return 70
-    return 50
+
+  const sendEmail = () => {
+    const email = selectedContact?.email || companyData?.hiringContactIntelligence?.officialChannels?.jobsEmail
+    if (!email) return
+
+    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+    window.location.href = mailtoLink
   }
-  
-  const inferStyle = (title: string): string => {
-    const titleLower = title.toLowerCase()
-    if (/ceo|cto|cfo|vp|chief/.test(titleLower)) return 'direct'
-    if (/recruiter|talent|hr/.test(titleLower)) return 'formal'
-    return 'professional'
-  }
-  
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="container mx-auto px-6 py-8">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-foreground">Loading outreach data...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto"></div>
+          <h2 className="text-xl font-bold mt-4">Preparing Your Outreach...</h2>
         </div>
       </div>
     )
   }
-  
-  if (!job) {
+
+  if (error) {
     return (
-      <div className="min-h-screen bg-background p-8">
+      <div className="container mx-auto px-6 py-8">
         <CareerFinderBackButton />
-        <Card className="p-6 mt-4">
-          <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-center mb-2">No Job Selected</h2>
-          <p className="text-center text-muted-foreground">
-            Please go back and select a job to start outreach.
-          </p>
-        </Card>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mt-4">
+          <p className="text-red-600">{error}</p>
+        </div>
       </div>
     )
   }
-  
+
+  const contacts = companyData?.hiringContactIntelligence?.keyContacts || []
+  const officialChannels = companyData?.hiringContactIntelligence?.officialChannels
+  const currentEmail = selectedContact?.email || officialChannels?.jobsEmail || officialChannels?.hrEmail
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="container mx-auto px-6 py-8 max-w-7xl">
+      <CareerFinderBackButton />
+
       {/* Header */}
-      <div className="gradient-hero p-8 rounded-b-3xl shadow-2xl mb-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-4">
-            <CareerFinderBackButton />
-          </div>
-          <h1 className="text-4xl font-bold text-foreground text-center mb-3">
-            ✉️ AI-Powered Outreach
-          </h1>
-          <p className="text-foreground/90 text-center text-lg">
-            {job.title} at {job.company}
-          </p>
-        </div>
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold mb-2">Ready to Reach Out</h1>
+        <p className="text-gray-600">
+          Your personalized outreach materials for {jobData?.title} at {jobData?.company}
+        </p>
       </div>
-      
-      <div className="max-w-6xl mx-auto px-4 pb-8">
-        {/* Loading States */}
-        {(enriching || personalizing) && (
-          <Card className="p-4 mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-            <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <span className="text-foreground">
-                {enriching && 'Enriching contacts with AI...'}
-                {personalizing && 'Generating personalized emails...'}
-              </span>
-            </div>
-          </Card>
-        )}
-        
-        {/* Contacts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <Card className="p-6 lg:col-span-1">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-              Hiring Contacts ({contacts.length})
-            </h3>
-            
-            {contacts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No contacts found</p>
-              </div>
-            ) : (
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column: Contacts */}
+        <div className="lg:col-span-1 space-y-6">
+          {/* Hiring Contacts */}
+          {contacts.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-blue-600" />
+                Hiring Contacts
+              </h3>
               <div className="space-y-3">
                 {contacts.map((contact, index) => (
                   <div
                     key={index}
-                    onClick={() => handleContactSelect(contact)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedContact?.email === contact.email
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : 'hover:bg-muted'
+                    onClick={() => selectContact(contact, jobData, CareerFinderStorage.getJobAnalysis(), CareerFinderStorage.getResume()?.extractedText || '')}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedContact === contact
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-blue-300'
                     }`}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold text-foreground">{contact.name}</h4>
-                        <p className="text-sm text-muted-foreground">{contact.title}</p>
-                      </div>
-                      <Badge variant={contact.verified_email ? 'default' : 'secondary'}>
-                        {contact.email_confidence}%
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                      <span>Decision Power: {contact.decision_maker_score}/100</span>
-                    </div>
-                    
-                    {contact.email && (
-                      <div className="text-xs text-foreground truncate">{contact.email}</div>
+                    <p className="font-semibold text-gray-900">{contact.name}</p>
+                    <p className="text-sm text-gray-600">{contact.title}</p>
+                    {contact.department && (
+                      <p className="text-xs text-gray-500 mt-1">{contact.department}</p>
                     )}
-                    
-                    {contact.linkedinUrl && (
-                      <a
-                        href={contact.linkedinUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-500 hover:underline flex items-center gap-1 mt-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        LinkedIn <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-          
-          {/* Personalized Emails Section */}
-          <Card className="p-6 lg:col-span-2">
-            <h3 className="text-xl font-bold mb-4">
-              AI-Personalized Email Variants
-            </h3>
-            
-            {!selectedContact ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <p>Select a contact to generate personalized emails</p>
-              </div>
-            ) : personalizedEmails.length === 0 ? (
-              <div className="text-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
-                <p className="text-muted-foreground">Generating personalized emails...</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {personalizedEmails.map((email, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 border rounded-lg ${
-                      selectedEmail?.variant_id === email.variant_id
-                        ? 'ring-2 ring-primary bg-primary/5'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">Variant {email.variant_id}</Badge>
-                        <Badge variant="secondary">{email.tone}</Badge>
-                        <Badge 
-                          variant={email.personalization_score > 70 ? 'default' : 'secondary'}
-                        >
-                          {email.personalization_score}% personalized
-                        </Badge>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedEmail(email)}
-                      >
-                        Select
-                      </Button>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground">Subject:</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-sm text-foreground flex-1">{email.subject}</p>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleCopy(email.subject, 'Subject')}
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs font-semibold text-muted-foreground">Body:</label>
-                        <div className="mt-1">
-                          <pre className="text-sm text-foreground whitespace-pre-wrap font-sans bg-muted p-3 rounded">
-                            {email.body}
-                          </pre>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleCopy(email.body, 'Body')}
-                            className="mt-2"
-                          >
-                            <Copy className="w-4 h-4 mr-1" /> Copy Body
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {selectedEmail?.variant_id === email.variant_id && selectedContact?.email && (
-                        <Button
-                          onClick={() => handleSendEmail(selectedContact, email)}
-                          className="w-full"
-                        >
-                          <Mail className="w-4 h-4 mr-2" />
-                          Open in Email Client
-                        </Button>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {contact.email && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          <Mail className="w-3 h-3" /> Email
+                        </span>
+                      )}
+                      {contact.linkedinUrl && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          <Linkedin className="w-3 h-3" /> LinkedIn
+                        </span>
+                      )}
+                      {contact.phone && (
+                        <span className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                          <Phone className="w-3 h-3" /> Phone
+                        </span>
                       )}
                     </div>
+                    {contact.authority && (
+                      <p className="text-xs text-blue-600 font-medium mt-2">
+                        {contact.authority}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
-            )}
-          </Card>
+            </div>
+          )}
+
+          {/* Official Channels */}
+          {officialChannels && (
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-purple-600" />
+                Official Channels
+              </h3>
+              <div className="space-y-3 text-sm">
+                {officialChannels.careersPage && (
+                  <div>
+                    <p className="text-gray-600 mb-1">Careers Page</p>
+                    <a 
+                      href={officialChannels.careersPage}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      Apply Online <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                )}
+                {officialChannels.jobsEmail && (
+                  <div>
+                    <p className="text-gray-600 mb-1">Jobs Email</p>
+                    <p className="font-medium">{officialChannels.jobsEmail}</p>
+                  </div>
+                )}
+                {officialChannels.phone && (
+                  <div>
+                    <p className="text-gray-600 mb-1">Phone</p>
+                    <a href={`tel:${officialChannels.phone}`} className="font-medium text-blue-600 hover:underline">
+                      {officialChannels.phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Strategy Recommendations */}
+          {companyData?.strategicRecommendations?.contactStrategy && (
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-6">
+              <h3 className="text-lg font-bold mb-3 text-blue-900">💡 Contact Strategy</h3>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {companyData.strategicRecommendations.contactStrategy}
+              </p>
+            </div>
+          )}
         </div>
-        
-        {/* Success Message */}
-        <Card className="p-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <p className="text-green-800 dark:text-green-200">
-              <strong>Career Finder Complete!</strong> Your personalized outreach is ready.
+
+        {/* Right Column: Email Draft */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Email Preview */}
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h3 className="text-xl font-bold mb-4">Your Outreach Email</h3>
+
+            {/* To Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">To:</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="email"
+                  value={currentEmail || 'No email found'}
+                  disabled
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                />
+                {currentEmail && (
+                  <Button
+                    onClick={() => copyToClipboard(currentEmail, 'email')}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {copiedField === 'email' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Subject Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Subject:</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <Button
+                  onClick={() => copyToClipboard(emailSubject, 'subject')}
+                  variant="outline"
+                  size="sm"
+                >
+                  {copiedField === 'subject' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Body Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+              <div className="relative">
+                <textarea
+                  value={emailBody}
+                  onChange={(e) => setEmailBody(e.target.value)}
+                  rows={16}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                />
+                <Button
+                  onClick={() => copyToClipboard(emailBody, 'body')}
+                  variant="outline"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                >
+                  {copiedField === 'body' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4">
+              <Button
+                onClick={sendEmail}
+                disabled={!currentEmail}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+              >
+                <Mail className="w-5 h-5" />
+                Open in Email Client
+              </Button>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-4 text-center">
+              Note: This will open your default email client. Your resume and cover letter should be attached manually.
             </p>
           </div>
-        </Card>
+
+          {/* Additional Contact Options */}
+          {selectedContact && (
+            <div className="bg-white rounded-xl shadow-sm border p-6">
+              <h3 className="text-lg font-bold mb-4">Additional Contact Methods</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedContact.linkedinUrl && (
+                  <a
+                    href={selectedContact.linkedinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all"
+                  >
+                    <Linkedin className="w-6 h-6 text-blue-600" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Connect on LinkedIn</p>
+                      <p className="text-sm text-gray-600">Send a connection request</p>
+                    </div>
+                  </a>
+                )}
+                {selectedContact.phone && (
+                  <a
+                    href={`tel:${selectedContact.phone}`}
+                    className="flex items-center gap-3 p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all"
+                  >
+                    <Phone className="w-6 h-6 text-purple-600" />
+                    <div>
+                      <p className="font-semibold text-gray-900">Call {selectedContact.name}</p>
+                      <p className="text-sm text-gray-600">{selectedContact.phone}</p>
+                    </div>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="mt-8 flex justify-between">
+        <Button
+          onClick={() => router.push('/career-finder/cover-letter')}
+          variant="outline"
+        >
+          ← Back to Cover Letter
+        </Button>
+        <Button
+          onClick={() => router.push('/dashboard')}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          Complete Application ✓
+        </Button>
       </div>
     </div>
   )
