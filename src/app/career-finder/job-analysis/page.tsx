@@ -28,7 +28,7 @@ interface JobData {
 interface AnalysisResult {
   matchScore?: number // Optional - undefined when no resume
   matchingSkills: string[]
-  missingSkills: string[]
+  missingSkills?: string[] // Optional - may not be present in all responses
   recommendations: string[]
   estimatedFit: 'excellent' | 'good' | 'fair' | 'poor'
 }
@@ -446,7 +446,7 @@ export default function JobAnalysisPage() {
           </div>
 
           {/* Missing Skills */}
-          {analysis.missingSkills.length > 0 && (
+          {analysis.missingSkills && analysis.missingSkills.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-6 h-6 text-yellow-500" />
