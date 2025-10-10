@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Briefcase, MapPin, DollarSign, Target, CheckCircle2, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Briefcase, MapPin, DollarSign, Target, CheckCircle2, AlertCircle, FileText, ExternalLink } from 'lucide-react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 
@@ -108,25 +108,30 @@ export default function JobAnalysisPage() {
     setHasResume(!!resumeData)
 
     try {
-      // Call analysis API (works with or without resume)
+      // CRITICAL FIX: Send data in format API expects
       const response = await fetch('/api/jobs/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          job: jobData,
-          resume: resumeData ? { extractedText: resumeText } : undefined // Optional resume
+          jobTitle: jobData.title,
+          company: jobData.company,
+          jobDescription: jobData.description || jobData.summary || '',
+          resumeText: resumeText || '',
+          skills: Array.isArray(jobData.skills) ? jobData.skills : []
         })
       })
 
       if (!response.ok) {
-        throw new Error('Analysis failed')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Analysis failed')
       }
 
       const result = await response.json()
-      setAnalysis(result.analysis)
+      // CRITICAL FIX: API returns data directly, not nested under "analysis"
+      setAnalysis(result)
       
       // ✅ CRITICAL FIX: Store analysis using unified storage
-      CareerFinderStorage.setJobAnalysis(result.analysis)
+      CareerFinderStorage.setJobAnalysis(result)
       
       if (!resumeData) {
         console.log('📋 Browsing job without resume - match score disabled')
@@ -316,6 +321,34 @@ export default function JobAnalysisPage() {
           )}
         </div>
       </div>
+
+      {/* Full Job Description - Like Indeed */}
+      {(job.description || job.summary) && (
+        <div className="bg-card border border-border rounded-xl p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="w-6 h-6 text-primary" />
+            <h2 className="text-xl font-bold text-foreground">Job Description</h2>
+          </div>
+          <div className="prose prose-sm max-w-none text-foreground">
+            <div className="whitespace-pre-wrap leading-relaxed">
+              {job.description || job.summary}
+            </div>
+          </div>
+          {job.url && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <a
+                href={job.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-primary hover:underline"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View Original Job Posting
+              </a>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* No Resume Message */}
       {!analysis && !loading && (
