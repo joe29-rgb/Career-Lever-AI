@@ -53,10 +53,12 @@ export default function CareerFinderOptimizerPage() {
         
         // Extract personal info from resume
         const info = extractPersonalInfo(resumeData.extractedText)
+        console.log('[OPTIMIZER] 📋 Extracted personal info:', info)
         setPersonalInfo(info)
         
         // Calculate ATS score
         const score = calculateATSScore(resumeData.extractedText)
+        console.log('[OPTIMIZER] 📊 ATS Score:', score)
         setAtsScore(score)
         
         return
@@ -254,7 +256,7 @@ export default function CareerFinderOptimizerPage() {
       <CareerFinderBackButton />
       
       {/* Personal Info Header with ATS Score */}
-      {resumeText && (personalInfo.name || personalInfo.email) && (
+      {resumeText && (
         <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-border rounded-xl p-6 mb-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
