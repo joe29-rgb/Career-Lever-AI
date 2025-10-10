@@ -151,11 +151,46 @@ export default function CareerFinderCompanyPage() {
             {companyData.marketIntelligence && (
               <div className="bg-card rounded-xl shadow-lg border border-border p-6 card-hover-lift">
                 <h3 className="text-xl font-bold text-blue-600 mb-4">📊 Market Intelligence</h3>
-                <p className="text-foreground leading-relaxed">
-                  {typeof companyData.marketIntelligence === 'string' 
-                    ? companyData.marketIntelligence 
-                    : JSON.stringify(companyData.marketIntelligence, null, 2)}
-                </p>
+                <div className="text-foreground leading-relaxed space-y-3">
+                  {typeof companyData.marketIntelligence === 'string' ? (
+                    <p className="whitespace-pre-wrap">{companyData.marketIntelligence}</p>
+                  ) : (
+                    <>
+                      {companyData.marketIntelligence.competitivePosition && (
+                        <div>
+                          <h4 className="font-semibold text-primary mb-2">Market Position</h4>
+                          <p className="text-sm">{companyData.marketIntelligence.competitivePosition}</p>
+                        </div>
+                      )}
+                      {companyData.marketIntelligence.industryTrends?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-primary mb-2">Industry Trends</h4>
+                          <ul className="space-y-1">
+                            {companyData.marketIntelligence.industryTrends.map((trend: string, idx: number) => (
+                              <li key={idx} className="text-sm flex items-start gap-2">
+                                <span className="text-blue-500 mt-1">▸</span>
+                                <span>{trend}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {companyData.marketIntelligence.recentNews?.length > 0 && (
+                        <div>
+                          <h4 className="font-semibold text-primary mb-2">Recent Developments</h4>
+                          <ul className="space-y-1">
+                            {companyData.marketIntelligence.recentNews.slice(0, 3).map((news: string, idx: number) => (
+                              <li key={idx} className="text-sm flex items-start gap-2">
+                                <span className="text-blue-500 mt-1">•</span>
+                                <span>{news}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
 

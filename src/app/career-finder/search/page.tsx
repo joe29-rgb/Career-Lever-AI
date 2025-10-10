@@ -120,7 +120,7 @@ export default function SearchPage() {
       savedLocation, 
       savedKeywords: savedKeywords.slice(0, 50),
       hasResume: !!resumeData,
-      hasKeywords: !!keywords 
+      hasKeywords: !!savedKeywords // FIX: Check savedKeywords from localStorage, not state
     })
     
     // CRITICAL: Pre-populate location from localStorage if available

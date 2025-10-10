@@ -259,7 +259,11 @@ CRITICAL: Return a detailed JSON object with ALL of the following fields:
 1. Recent company news (announcements, product launches, partnerships)
 2. Social media presence (LinkedIn, Twitter, Facebook, Instagram, YouTube profiles)
 3. Glassdoor reviews and ratings (employee satisfaction, CEO approval, recommendation percentage)
-4. Stock information (if publicly traded: ticker symbol, exchange, current price, market cap)
+4. **Stock information** (if publicly traded):
+   - For Canadian companies: Check TSX (Toronto Stock Exchange) and TSX-V (Venture)
+   - For US companies: Check NYSE, NASDAQ
+   - Include: ticker symbol, exchange, current price, market cap, 52-week range
+   - Search: site:tmx.com OR site:tsx.com OR site:nasdaq.com OR site:nyse.com "${input.company}" stock ticker
 5. Company financials and growth metrics
 6. Culture and employee insights`
         const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 2000, model: 'sonar-pro' })
@@ -424,10 +428,11 @@ ATS PLATFORMS (Canadian Tech Companies):
 REQUIREMENTS:
 1. Search ONLY publicly accessible listings (no login)
 2. Prioritize Canadian sources for Canadian locations
-3. Include company name, exact location, salary if visible
-4. Deduplicate across all sources
-5. Rank by: recency → Canadian source priority → relevance
-6. Return up to ${limit} listings
+3. **CRITICAL**: Extract salary from job posting (look for "$XX,XXX", "$XX-$XX/hour", "$XXK-$XXK", "salary range", "compensation")
+4. If salary not explicitly stated, look for "competitive salary", "market rate", or industry standard estimates
+5. Deduplicate across all sources
+6. Rank by: recency → Canadian source priority → relevance
+7. Return up to ${limit} listings with salary data whenever available
 
 OUTPUT JSON:
 [{
