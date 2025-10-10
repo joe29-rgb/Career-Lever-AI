@@ -18,6 +18,7 @@ interface JobData {
   location: string
   salary?: string
   description?: string
+  summary?: string
   url?: string
   source?: string
   skills?: string[]
