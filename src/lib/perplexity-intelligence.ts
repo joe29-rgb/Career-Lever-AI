@@ -227,46 +227,54 @@ export class PerplexityIntelligenceService {
     try {
       const out = await withRetry(async () => {
         const client = createClient()
-        const user = `Research comprehensive intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
+        const user = `COMPREHENSIVE RESEARCH TASK: Search for contacts, emails, website, and complete intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
 
-CRITICAL: Return a detailed JSON object with ALL of the following fields:
+**MANDATORY SEARCH SOURCES:**
+- Use Google search extensively
+- Search LinkedIn company page AND individual employee profiles
+- Search all social media platforms (Twitter, Facebook, Instagram, YouTube)
+- Search company website thoroughly
+- Search business directories (BBB, Yellow Pages, ZoomInfo, etc.)
+- Search news sources and press releases
+- Search Glassdoor for reviews and salaries
+- Search stock exchanges if publicly traded
+
+**RETURN DETAILED JSON with ALL fields below:**
 {
-  "company": string,
-  "description": string (company overview),
-  "size": string (employee count),
-  "revenue": string (annual revenue estimate),
-  "industry": string,
-  "founded": string (year or date),
-  "headquarters": string (location),
-  "psychology": string (company culture and values),
-  "marketIntelligence": string (market position, trends, competitive landscape),
-  "freshness": string (ISO datetime),
-  "sources": [{"title": string, "url": string}] (up to 12 sources),
+  "company": string (full legal name),
+  "description": string (detailed company overview - NOT "No description available"),
+  "size": string (employee count with source),
+  "revenue": string (annual revenue estimate with source),
+  "industry": string (specific industry classification),
+  "founded": string (year or date with source),
+  "headquarters": string (full address with city, province/state, postal code),
+  "psychology": string (company culture, values, workplace environment - from Glassdoor/employee reviews),
+  "marketIntelligence": string (market position, competitive landscape, growth trends - detailed analysis),
+  "freshness": string (ISO datetime of research),
+  "sources": [{"title": string, "url": string}] (minimum 8 sources, up to 20),
   "confidence": number (0 to 1),
-  "financials": [{"metric": string, "value": string, "confidence": number, "source": string}] (revenue, funding, valuation),
-  "culture": [{"point": string, "confidence": number, "source": string}] (work environment insights),
+  "financials": [{"metric": string, "value": string, "confidence": number, "source": string}],
+  "culture": [{"point": string, "confidence": number, "source": string}] (from Glassdoor/reviews),
   "salaries": [{"title": string, "range": string, "currency": string, "geo": string, "source": string, "confidence": number}],
-  "contacts": [{"name": string, "title": string, "url": string, "source": string, "confidence": number}],
-  "growth": [{"signal": string, "source": string, "confidence": number}] (expansion, hiring trends, market share),
-  "summary": string,
-  "recentNews": [{"title": string, "date": string, "url": string, "summary": string}] (last 3 months),
-  "socialMedia": {"linkedin": string, "twitter": string, "facebook": string, "instagram": string, "youtube": string} (social media URLs),
+  "contacts": [{"name": string, "title": string, "url": string, "source": string, "confidence": number}] (executives, managers, recruiters from LinkedIn),
+  "growth": [{"signal": string, "source": string, "confidence": number}],
+  "summary": string (comprehensive 2-3 paragraph summary),
+  "recentNews": [{"title": string, "date": string, "url": string, "summary": string}] (last 6 months),
+  "socialMedia": {"linkedin": string, "twitter": string, "facebook": string, "instagram": string, "youtube": string},
   "glassdoorRating": {"overallRating": number, "ceoApproval": number, "recommendToFriend": number, "reviewCount": number, "url": string},
-  "stockProfile": {"ticker": string, "exchange": string, "currentPrice": string, "marketCap": string, "isPublic": boolean} (if publicly traded)
+  "stockProfile": {"ticker": string, "exchange": string, "currentPrice": string, "marketCap": string, "isPublic": boolean}
 }
 
-**Search for:**
-1. Recent company news (announcements, product launches, partnerships)
-2. Social media presence (LinkedIn, Twitter, Facebook, Instagram, YouTube profiles)
-3. Glassdoor reviews and ratings (employee satisfaction, CEO approval, recommendation percentage)
-4. **Stock information** (if publicly traded):
-   - For Canadian companies: Check TSX (Toronto Stock Exchange) and TSX-V (Venture)
-   - For US companies: Check NYSE, NASDAQ
-   - Include: ticker symbol, exchange, current price, market cap, 52-week range
-   - Search: site:tmx.com OR site:tsx.com OR site:nasdaq.com OR site:nyse.com "${input.company}" stock ticker
-5. Company financials and growth metrics
-6. Culture and employee insights`
-        const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 2000, model: 'sonar-pro' })
+**CRITICAL REQUIREMENTS:**
+1. Search company website for About page, Contact page, Leadership/Team page
+2. Search "site:linkedin.com/company/${input.company}" for official company page
+3. Search "site:linkedin.com ${input.company} CEO OR president OR manager" for executive contacts
+4. Search "${input.company} headquarters address phone email"
+5. Search "${input.company} site:glassdoor.com" for reviews and culture insights
+6. Search "${input.company} revenue employees industry" for business intelligence
+7. DO NOT return "Unknown", "No description available", or "No data" - search multiple sources until you find information
+8. Include REAL contact information (names, titles, LinkedIn URLs) - minimum 3 contacts if company has >10 employees`
+        const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 3000, model: 'sonar-pro' })
         if (!res.content?.trim()) throw new Error('Empty response')
         return res
       })
