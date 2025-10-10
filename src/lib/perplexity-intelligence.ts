@@ -760,15 +760,19 @@ OUTPUT JSON FORMAT:
         const { getPerplexityConfig } = await import('./config/perplexity-configs')
         const config = getPerplexityConfig('hiringContacts')
         
-        // ULTRA-SIMPLIFIED PROMPT: Perplexity recommendation - NO explanatory text
-        const prompt = `IMPORTANT: Return ONLY valid JSON. NO explanatory text before or after.
+        // CRITICAL: Force Perplexity to search LinkedIn specifically
+        const prompt = `CRITICAL: Search LinkedIn ONLY for real hiring contacts at ${companyName}. Return ONLY valid JSON, NO explanatory text.
 
-Find 3-5 hiring contacts at ${companyName} (recruiters, HR, hiring managers).
+SEARCH REQUIREMENTS:
+1. Use site:linkedin.com/in/ to find REAL profiles
+2. Look for: "recruiter ${companyName}", "talent acquisition ${companyName}", "HR manager ${companyName}", "hiring manager ${companyName}"
+3. Extract REAL names from LinkedIn profiles
+4. Find verified email patterns from company website or LinkedIn
 
-JSON FORMAT (exact):
-[{"name":"Full Name","title":"Job Title","department":"HR/Engineering/etc","email":"email@company.com","emailType":"public/inferred","source":"LinkedIn/Website","confidence":0.8}]
+JSON FORMAT (return empty array [] if no REAL contacts found):
+[{"name":"John Smith","title":"Senior Recruiter","department":"Talent Acquisition","email":"john.smith@company.com","linkedinUrl":"https://linkedin.com/in/john-smith","emailType":"verified","source":"LinkedIn","confidence":0.9}]
 
-If no verified emails found, generate pattern-based guesses (firstname.lastname@domain.com). Return ONLY the JSON array, nothing else.`
+DO NOT return generic placeholders like "firstname.lastname". ONLY return REAL names from actual LinkedIn profiles. If you can't find real people, return an empty array []`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits (1500 → 2500)
         return client.makeRequest(SYSTEM, prompt, { 
