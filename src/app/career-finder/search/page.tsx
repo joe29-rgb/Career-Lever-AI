@@ -39,7 +39,8 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [useResumeMatching, setUseResumeMatching] = useState(false)
+  // CRITICAL FIX: Always use AI matching for better results
+  const [useResumeMatching, setUseResumeMatching] = useState(true)
   const [activeStatus, setActiveStatus] = useState<JobStatus>('discover')
   const [useModernCards, setUseModernCards] = useState(true)
   const [metadata, setMetadata] = useState<{
@@ -364,21 +365,16 @@ export default function SearchPage() {
               </button>
             </div>
             
-            {/* Resume Matching Toggle */}
+            {/* AI Matching Always Active Indicator */}
             {session && (
               <div className="flex items-center gap-3 justify-center">
-                <label className="flex items-center gap-2 cursor-pointer bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-white/30 transition-all">
-                  <input
-                    type="checkbox"
-                    checked={useResumeMatching}
-                    onChange={(e) => setUseResumeMatching(e.target.checked)}
-                    className="w-4 h-4 rounded accent-primary"
-                  />
-                  <SparklesIcon className="w-5 h-5 text-foreground" />
-                  <span className="text-foreground font-medium text-sm">
-                    Use AI Resume Matching (Skill Scores)
+                <div className="flex items-center gap-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-sm px-6 py-3 rounded-full border border-blue-500/30">
+                  <SparklesIcon className="w-5 h-5 text-blue-400 animate-pulse" />
+                  <span className="text-foreground font-semibold text-sm">
+                    ✨ AI Resume Matching Active
                   </span>
-                </label>
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
               </div>
             )}
 
