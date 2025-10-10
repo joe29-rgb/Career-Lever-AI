@@ -638,10 +638,12 @@ FILTERS:
 - Experience: ${options.experienceLevel || 'any'}
 - Min Salary: ${options.salaryMin ? ('$' + options.salaryMin + '+') : 'any'}
 
-PRIORITY JOB BOARDS (search these first):
+PRIORITY JOB BOARDS (use site: search for each):
 ${targetBoards.slice(0, 12).map((board, i) => {
   const config = CANADIAN_JOB_BOARDS[board] || MAJOR_JOB_BOARDS[board] || OPEN_API_BOARDS[board] || ATS_PLATFORMS[board]
-  return `${i + 1}. ${config?.displayName || board} (${config?.scrapingConfig?.baseUrl || ''})`
+  const baseUrl = config?.scrapingConfig?.baseUrl || ''
+  const domain = baseUrl ? baseUrl.replace(/https?:\/\//, '').replace(/\/$/, '') : board
+  return `${i + 1}. site:${domain} "${options.roleHint || 'jobs'}" "${location}"`
 }).join('\n')}
 
 ${isCanadian ? `
@@ -654,12 +656,15 @@ CANADIAN ATS PLATFORMS - Check these tech companies:
 ` : ''}
 
 REQUIREMENTS:
-1. Search ALL listed job boards above
-2. Match skills from resume to job requirements
-3. Calculate skillMatchPercent (0-100) based on overlap
-4. Include salary data when visible
-5. Deduplicate across all sources
-6. Rank by: skillMatchPercent → recency → salary
+1. **CRITICAL**: Use your real-time web search to find ACTUAL job postings on these boards
+2. Search queries like: "site:jobbank.gc.ca ${options.roleHint || 'jobs'} ${location}"
+3. For each board, extract: title, company, location, salary (if shown), URL, posted date
+4. Match skills from resume to job requirements
+5. Calculate skillMatchPercent (0-100) based on overlap
+6. Include salary data when visible (look for "$XX,XXX", "$XX-$XX/hour", "salary range")
+7. Deduplicate across all sources
+8. Rank by: skillMatchPercent → recency → salary
+9. **MUST return AT LEAST 10-15 real job postings with actual URLs**
 
 OUTPUT JSON FORMAT:
 [{
@@ -689,14 +694,23 @@ OUTPUT JSON FORMAT:
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.15, 
-          maxTokens: Math.min((options.maxResults || 20) * 120, 4000),
+          maxTokens: Math.min((options.maxResults || 20) * 150, 6000), // INCREASED: More tokens for comprehensive search
           model: 'sonar-pro' // Use research model for job analysis
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
+        
+        // DEBUG: Log raw response
+        console.log('[JOB_MARKET_V2] Raw response length:', res.content.length)
+        console.log('[JOB_MARKET_V2] First 500 chars:', res.content.slice(0, 500))
+        
         return res
       })
 
+      // DEBUG: Log content before parsing
+      console.log('[JOB_MARKET_V2] Parsing JSON, content length:', out.content.length)
+      
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
+      console.log('[JOB_MARKET_V2] Parsed jobs:', parsed.length)
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 20) : []
       
       // Enhance and normalize
