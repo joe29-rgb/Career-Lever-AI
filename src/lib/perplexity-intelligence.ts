@@ -262,7 +262,7 @@ CRITICAL: Return a detailed JSON object with ALL of the following fields:
 4. Stock information (if publicly traded: ticker symbol, exchange, current price, market cap)
 5. Company financials and growth metrics
 6. Culture and employee insights`
-        const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 2000 })
+        const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 2000, model: 'sonar-pro' })
         if (!res.content?.trim()) throw new Error('Empty response')
         return res
       })
@@ -313,7 +313,7 @@ CRITICAL: Return a detailed JSON object with ALL of the following fields:
     const user = `Research current intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
 Return a JSON object with: company, freshness (ISO datetime), sources[{title,url}], confidence (0..1), financials[{metric,value,confidence,source}], culture[{point,confidence,source}], salaries[{title,range,currency,geo,source,confidence}], contacts[{name,title,url,source,confidence}], growth[{signal,source,confidence}], summary.`
     try {
-      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400 })
+      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400, model: 'sonar-pro' })
       const text = (out.content || '').trim()
       let parsed: IntelligenceResponse
       try { parsed = JSON.parse(text) as IntelligenceResponse } catch { throw new Error('Failed to parse intelligence JSON') }
@@ -357,7 +357,7 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
     const client = createClient()
     const user = `Find current salary ranges for ${role}${company ? ` at ${company}` : ''}${geo ? ` in ${geo}` : ''}. Return JSON: items[{title,range,currency,geo,source,confidence}], summary, freshness`;
     try {
-      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 900 })
+      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 900, model: 'sonar-pro' })
       const text = (out.content || '').trim()
       const parsed = JSON.parse(text)
       setCache(key, parsed)
@@ -449,7 +449,8 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
         temperature: 0.2, 
-        maxTokens: Math.min(limit * 150, 8000) // INCREASED: More tokens for complete JSON
+        maxTokens: Math.min(limit * 150, 8000), // INCREASED: More tokens for complete JSON
+        model: 'sonar-pro' // Use research model for job search
       })
       let text = (out.content || '').trim()
       
@@ -534,7 +535,7 @@ OUTPUT JSON FORMAT:
 ]`
     const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
     try {
-      const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000 })
+      const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000, model: 'sonar-pro' })
       const text = (out.content || '').trim()
       const parsed = JSON.parse(text)
       const arr = Array.isArray(parsed) ? parsed.slice(0, 5) : []
@@ -683,7 +684,8 @@ OUTPUT JSON FORMAT:
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.15, 
-          maxTokens: Math.min((options.maxResults || 20) * 120, 4000) 
+          maxTokens: Math.min((options.maxResults || 20) * 120, 4000),
+          model: 'sonar-pro' // Use research model for job analysis
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         return res
@@ -977,7 +979,8 @@ Return ONLY the JSON array. If you can't find ANY real people after searching AL
       options.userPrompt,
       {
         temperature: options.temperature || 0.3,
-        maxTokens: options.maxTokens || 1500
+        maxTokens: options.maxTokens || 1500,
+        model: 'sonar-pro' // Use research model for custom queries
       }
     )
     return response.content || ''
@@ -1081,7 +1084,7 @@ CRITICAL: Order industries by yearsOfExperience (LONGEST FIRST), not by recency!
       const response = await client.makeRequest(
         'You analyze career timelines and calculate industry tenure. Return only JSON.',
         prompt,
-        { temperature: 0.2, maxTokens: 2000 }
+        { temperature: 0.2, maxTokens: 2000, model: 'sonar-pro' }
       )
 
       // JSON extraction
@@ -1162,7 +1165,7 @@ IMPORTANT:
       const response = await client.makeRequest(
         'You extract keywords and locations from resumes. Return only JSON.',
         prompt,
-        { temperature: 0.2, maxTokens: 2000 } // CRITICAL FIX: Increased from 800 to handle 50 keywords
+        { temperature: 0.2, maxTokens: 2000, model: 'sonar-pro' } // CRITICAL FIX: Increased from 800 to handle 50 keywords
       )
 
       console.log('[SIGNALS] Raw response:', response.content?.slice(0, 400))
