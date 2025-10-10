@@ -153,7 +153,7 @@ export default function SearchPage() {
       const performInitialSearch = async () => {
         let query = keywords
         // CRITICAL FIX: Use savedLocation as fallback, not filters.location (state might not be updated yet)
-        const loc = location || savedLocation || filters.location
+        let loc = location || savedLocation || filters.location
 
         // ENTERPRISE FIX: If autopilot mode, extract keywords from resume
         if (!query && autopilotReady && resumeData) {
@@ -174,6 +174,8 @@ export default function SearchPage() {
               query = topKeywords
               setSearchQuery(topKeywords)
               if (resumeLocation) {
+                // CRITICAL FIX: Update loc directly for the search payload
+                loc = resumeLocation
                 setFilters(prev => ({ ...prev, location: resumeLocation }))
               }
               setUseResumeMatching(true)
