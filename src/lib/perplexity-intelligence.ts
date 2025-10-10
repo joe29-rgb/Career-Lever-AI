@@ -614,8 +614,12 @@ OUTPUT JSON FORMAT:
     const requestId = generateRequestId()
     const started = Date.now()
     const key = makeKey('ppx:jobmarket:v2', { location, resume: resumeText.slice(0,1000), options })
-    const cached = getCache(key) as JobListing[] | undefined
-    if (cached) return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+    
+    // DISABLED CACHE FOR TESTING - RE-ENABLE AFTER FIXING
+    // const cached = getCache(key) as JobListing[] | undefined
+    // if (cached) return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+    
+    console.log('[JOB_MARKET_V2] 🚨 CACHE DISABLED - Making fresh Perplexity request')
 
     // Determine if location is Canadian for prioritization
     const isCanadian = /canada|canadian|toronto|vancouver|montreal|calgary|ottawa|edmonton|quebec|winnipeg|halifax/i.test(location)
@@ -738,7 +742,10 @@ OUTPUT JSON FORMAT:
         return new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
       })
 
-      setCache(key, parsed)
+      // DISABLED CACHE FOR TESTING - RE-ENABLE AFTER FIXING
+      // setCache(key, parsed)
+      console.log('[JOB_MARKET_V2] 🚨 NOT caching results (cache disabled for testing)')
+      
       return { 
         success: true, 
         data: parsed, 
