@@ -128,6 +128,7 @@ export default function JobAnalysisPage() {
       }
 
       const result = await response.json()
+      console.log('🎯 [JOB_ANALYSIS] Received analysis:', { hasMatchScore: !!result.matchScore, matchingSkills: result.matchingSkills?.length, recommendations: result.recommendations?.length })
       // CRITICAL FIX: API returns data directly, not nested under "analysis"
       setAnalysis(result)
       
@@ -152,18 +153,16 @@ export default function JobAnalysisPage() {
         estimatedFit: 'good'
       })
     } finally {
+      console.log('🎯 [JOB_ANALYSIS] Setting loading to FALSE')
       setLoading(false)
+      setCanProceed(true)
       
       // ENTERPRISE ENHANCEMENT: Auto-fetch company research in parallel
       if (jobData.company) {
         fetchCompanyResearch(jobData.company, jobData.title, jobData.location)
       }
       
-      // ENTERPRISE FIX: Minimum 2-second display time before allowing proceed
-      setTimeout(() => {
-        setCanProceed(true)
-        console.log('🎯 [JOB_ANALYSIS] Analysis complete - user can now proceed')
-      }, 2000)
+      console.log('🎯 [JOB_ANALYSIS] Analysis complete - user can now proceed')
     }
   }
 
