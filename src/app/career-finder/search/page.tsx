@@ -82,11 +82,15 @@ export default function SearchPage() {
   // Handler for job selection - stores job and navigates to analysis
   const handleJobSelection = async (job: JobListing) => {
     try {
-      // Store in localStorage for immediate access
-      localStorage.setItem('selectedJob', JSON.stringify({
+      // Store in localStorage with correct key
+      const jobData = {
         ...job,
         selectedAt: Date.now()
-      }))
+      }
+      localStorage.setItem('cf:selectedJob', JSON.stringify(jobData)) // FIXED: Use cf: prefix
+      localStorage.setItem('selectedJob', JSON.stringify(jobData)) // Legacy key for compatibility
+      
+      console.log('[SEARCH] 💾 Saved job to localStorage:', job.title, '@', job.company)
       
       // Store in database for history
       await fetch('/api/jobs/store', {
