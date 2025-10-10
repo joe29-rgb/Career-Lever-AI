@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { MagnifyingGlassIcon, FunnelIcon, MapPinIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { JobCard } from '@/components/job-card'
 import { JobStatusBar, type JobStatus } from '@/components/job-status-bar'
-import { ModernJobCard, type ModernJobCardProps } from '@/components/modern-job-card'
+import { ModernJobCard } from '@/components/modern-job-card'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
@@ -43,7 +43,7 @@ export default function SearchPage() {
   // CRITICAL FIX: Always use AI matching for better results
   const [useResumeMatching, setUseResumeMatching] = useState(true)
   const [activeStatus, setActiveStatus] = useState<JobStatus>('discover')
-  const [useModernCards, setUseModernCards] = useState(true)
+  const [useModernCards] = useState(true) // Always use modern cards
   const [metadata, setMetadata] = useState<{
     useResumeMatching?: boolean
     searchedBoards?: number
@@ -87,19 +87,28 @@ export default function SearchPage() {
         ...job,
         selectedAt: Date.now()
       }
-      localStorage.setItem('cf:selectedJob', JSON.stringify(jobData)) // FIXED: Use cf: prefix
-      localStorage.setItem('selectedJob', JSON.stringify(jobData)) // Legacy key for compatibility
       
+      // CRITICAL: Save to localStorage FIRST before navigation
+      localStorage.setItem('cf:selectedJob', JSON.stringify(jobData))
       console.log('[SEARCH] 💾 Saved job to localStorage:', job.title, '@', job.company)
       
-      // Store in database for history
-      await fetch('/api/jobs/store', {
+      // VERIFY it was saved
+      const verify = localStorage.getItem('cf:selectedJob')
+      console.log('[SEARCH] ✅ Verification - job in storage:', verify ? 'YES' : 'NO')
+      
+      // 🔒 CRITICAL: Clear autopilot flag to prevent re-triggering search on redirect
+      localStorage.removeItem('cf:autopilotReady')
+      console.log('[SEARCH] 🚫 Cleared autopilot flag to prevent redirect loop')
+      
+      // Store in database for history (don't wait for this)
+      fetch('/api/jobs/store', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(job)
-      })
+      }).catch(err => console.error('[SEARCH] Failed to store in DB:', err))
       
       // Navigate to job analysis page
+      console.log('[SEARCH] 🚀 Navigating to job-analysis...')
       router.push('/career-finder/job-analysis')
     } catch (error) {
       console.error('Failed to store job:', error)
@@ -520,7 +529,7 @@ export default function SearchPage() {
                 return (
                   <JobCard 
                     key={job.id || `job-${index}`} 
-                    job={{...job, salary: salaryDisplay} as any} 
+                    job={{...job, id: job.id || `job-${index}`, url: job.url || '#', salary: salaryDisplay}} 
                   />
                 )
               })}

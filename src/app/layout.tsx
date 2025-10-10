@@ -49,36 +49,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
           <Providers>
-            <AnalyticsTracker />
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: 'var(--card)',
-                  color: 'var(--foreground)',
-                  border: '1px solid var(--border)',
-                  padding: '16px',
-                  borderRadius: '12px',
-                  boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-                },
-                success: {
-                  iconTheme: {
-                    primary: 'var(--primary)',
-                    secondary: 'white',
-                  },
-                },
-                error: {
-                  duration: 6000,
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: 'white',
-                  },
-                },
-              }}
-            />
             <AppShell>{children}</AppShell>
-            <DebugPanel />
           </Providers>
         </ErrorBoundary>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (

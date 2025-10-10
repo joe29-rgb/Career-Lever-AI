@@ -72,21 +72,32 @@ export default function JobAnalysisPage() {
   const [error, setError] = useState<string | null>(null)
   const [hasResume, setHasResume] = useState(false)
   const [canProceed, setCanProceed] = useState(false) // ENTERPRISE: Prevent accidental skip
+  const [hasRedirected, setHasRedirected] = useState(false) // 🔒 Prevent infinite redirect loop
 
   useEffect(() => {
-    console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
-    loadAndAnalyzeJob()
+    // 🔒 CRITICAL: Only run once on mount, prevent redirect loop
+    if (!hasRedirected) {
+      console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
+      loadAndAnalyzeJob()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadAndAnalyzeJob = async () => {
     try {
+      // DEBUG: Check what's in localStorage
+      const rawJob = localStorage.getItem('cf:selectedJob')
+      console.log('🎯 [JOB_ANALYSIS] Raw localStorage check:', rawJob ? `Found (${rawJob.length} chars)` : 'NOT FOUND')
+      
       // ✅ CRITICAL FIX: Use unified storage
       const jobData = CareerFinderStorage.getJob()
       
       if (!jobData) {
-        console.warn('🎯 [JOB_ANALYSIS] No job found - redirecting to search')
-        router.push('/career-finder/search')
+        console.error('🎯 [JOB_ANALYSIS] ❌ No job found - redirecting to search')
+        console.error('🎯 [JOB_ANALYSIS] localStorage keys:', Object.keys(localStorage))
+        setHasRedirected(true) // 🔒 Mark as redirected to prevent loop
+        setLoading(false)
+        setTimeout(() => router.push('/career-finder/search'), 100) // Small delay to ensure state is set
         return
       }
 
@@ -254,17 +265,25 @@ export default function JobAnalysisPage() {
   }
 
   if (error || !job) {
+    // 🔒 CRITICAL: Show error screen without redirecting (prevents loop)
     return (
       <div className="container mx-auto px-6 py-8">
         <CareerFinderBackButton />
-        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-6 text-center max-w-md mx-auto">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-          <p className="text-foreground">{error || 'Job not found'}</p>
+          <h2 className="text-xl font-bold text-foreground mb-2">Job Not Found</h2>
+          <p className="text-muted-foreground mb-6">
+            {error || 'The job you selected couldn\'t be loaded. Please select a job from the search results.'}
+          </p>
           <button
-            onClick={() => router.push('/career-finder/search')}
-            className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+            onClick={() => {
+              // Clear any cached data that might be stale
+              CareerFinderStorage.clearJob()
+              router.push('/career-finder/search')
+            }}
+            className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity"
           >
-            Back to Search
+            Back to Job Search
           </button>
         </div>
       </div>
