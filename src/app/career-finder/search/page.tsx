@@ -10,6 +10,7 @@ import { ModernJobCard, type ModernJobCardProps } from '@/components/modern-job-
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
+import { normalizeSalary, getSalaryDisplayString } from '@/lib/utils/salary-normalizer'
 
 interface JobListing {
   id?: string
@@ -478,6 +479,12 @@ export default function SearchPage() {
                 const colorThemes: Array<'purple' | 'red' | 'yellow'> = ['purple', 'red', 'yellow']
                 const colorTheme = colorThemes[index % 3]
                 
+                // Normalize salary for consistent display
+                const normalizedSalary = normalizeSalary(job.salary)
+                const salaryDisplay = normalizedSalary 
+                  ? getSalaryDisplayString(normalizedSalary) 
+                  : 'Salary not disclosed'
+                
                 return (
                   <ModernJobCard
                     key={job.id || `job-${index}`}
@@ -487,7 +494,7 @@ export default function SearchPage() {
                     location={job.location}
                     experience={filters.experienceLevel || 'All levels'}
                     workType={filters.workType === 'all' ? 'onsite' : (filters.workType as 'remote' | 'hybrid' | 'onsite' | 'part-time')}
-                    salary={job.salary || '50K'}
+                    salary={salaryDisplay}
                     description={`AI Score: ${job.aiScore || 'N/A'}${job.skillMatchPercent ? ` | Skill Match: ${job.skillMatchPercent}%` : ''}`}
                     postedDate="Posted recently"
                     colorTheme={colorTheme}
@@ -499,12 +506,20 @@ export default function SearchPage() {
           ) : (
             /* Legacy Job Cards */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {jobs.map((job, index) => (
-                <JobCard 
-                  key={job.id || `job-${index}`} 
-                  job={job as any} 
-                />
-              ))}
+              {jobs.map((job, index) => {
+                // Normalize salary for consistent display
+                const normalizedSalary = normalizeSalary(job.salary)
+                const salaryDisplay = normalizedSalary 
+                  ? getSalaryDisplayString(normalizedSalary) 
+                  : job.salary || 'Salary not disclosed'
+                
+                return (
+                  <JobCard 
+                    key={job.id || `job-${index}`} 
+                    job={{...job, salary: salaryDisplay} as any} 
+                  />
+                )
+              })}
             </div>
           )}
         </main>

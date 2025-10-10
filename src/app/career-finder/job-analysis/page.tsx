@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Briefcase, MapPin, DollarSign, Target, CheckCircle2, AlertCircle, FileText, ExternalLink } from 'lucide-react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
+import { normalizeSalary, getSalaryDisplayString } from '@/lib/utils/salary-normalizer'
 
 interface JobData {
   id?: string
@@ -306,7 +307,7 @@ export default function JobAnalysisPage() {
           {job.salary && (
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              <span>{job.salary}</span>
+              <span>{getSalaryDisplayString(normalizeSalary(job.salary))}</span>
             </div>
           )}
           {job.source && (
