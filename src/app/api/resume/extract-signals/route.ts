@@ -34,14 +34,33 @@ export async function POST(request: NextRequest) {
 
     // ENTERPRISE FIX: extractResumeSignals returns plain object { keywords, location, locations }
     // NOT a wrapped response with .success, .data, .metadata
-    const signals = await PerplexityIntelligenceService.extractResumeSignals(resume)
+    let signals
+    try {
+      signals = await PerplexityIntelligenceService.extractResumeSignals(resume)
+    } catch (perplexityError) {
+      console.error('[EXTRACT_SIGNALS] Perplexity error:', perplexityError)
+      // Return graceful fallback instead of 500 error
+      return NextResponse.json({
+        success: false,
+        keywords: [],
+        location: null,
+        locations: [],
+        error: 'Signal extraction failed',
+        details: (perplexityError as Error).message
+      })
+    }
 
     if (!signals || !signals.keywords || signals.keywords.length === 0) {
       console.error('[EXTRACT_SIGNALS] No keywords extracted from resume')
-      return NextResponse.json(
-        { error: 'Failed to extract resume signals', details: 'No keywords found in resume text' },
-        { status: 500 }
-      )
+      // Return empty but valid response instead of 500 error
+      return NextResponse.json({
+        success: false,
+        keywords: [],
+        location: null,
+        locations: [],
+        error: 'No keywords found',
+        details: 'Unable to extract meaningful keywords from resume text'
+      })
     }
 
     console.log('[EXTRACT_SIGNALS] Success:', {

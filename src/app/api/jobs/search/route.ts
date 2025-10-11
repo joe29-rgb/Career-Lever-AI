@@ -68,12 +68,13 @@ export async function POST(request: NextRequest) {
       disableIndustryWeighting // ENTERPRISE: Disable tenure-based weighting
     } = body
     
-    // CRITICAL: Validate location is provided
-    if (!location || location.trim().length < 2) {
-      return NextResponse.json({ 
-        error: 'Location is required. Please ensure your resume contains your location or enter it manually.',
-        hint: 'Add your city and province/state to your resume (e.g., "Edmonton, AB")'
-      }, { status: 400 })
+    // LOCATION VALIDATION: Optional but recommended
+    // Allow empty location for remote/global searches
+    if (location) {
+      location = location.trim()
+    } else {
+      location = '' // Empty string is OK - will search all locations
+      console.log('[JOB_SEARCH] No location provided - searching all locations')
     }
 
     let useResumeMatching = body.useResumeMatching || false
