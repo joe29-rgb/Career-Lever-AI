@@ -28,9 +28,10 @@ interface JobData {
 interface AnalysisResult {
   matchScore?: number // Optional - undefined when no resume
   matchingSkills: string[]
-  missingSkills?: string[] // Optional - may not be present in all responses
+  missingSkills: string[] // Required from Perplexity
+  skillsToHighlight?: string[] // May be present in comprehensive research
   recommendations: string[]
-  estimatedFit: 'excellent' | 'good' | 'fair' | 'poor'
+  estimatedFit: 'excellent' | 'good' | 'fair' | 'poor' | string // Allow any string from Perplexity
 }
 
 interface CompanyResearch {
@@ -60,6 +61,24 @@ interface CompanyResearch {
     range: string
     marketComparison: string
   }
+  // Comprehensive research fields
+  news?: Array<{
+    title: string
+    summary: string
+    url: string
+    date?: string
+    source?: string
+    impact?: string
+  }>
+  reviews?: Array<{
+    platform: string
+    rating?: number
+    summary: string
+    url: string
+    pros?: string[]
+    cons?: string[]
+  }>
+  timestamp?: number
 }
 
 export default function JobAnalysisPage() {
@@ -135,9 +154,10 @@ export default function JobAnalysisPage() {
         const typedAnalysis: AnalysisResult = {
           matchScore: cachedResearch.jobAnalysis.matchScore,
           matchingSkills: cachedResearch.jobAnalysis.matchingSkills || [],
-          missingSkills: cachedResearch.jobAnalysis.missingSkills,
+          missingSkills: cachedResearch.jobAnalysis.missingSkills || [],
+          skillsToHighlight: cachedResearch.jobAnalysis.skillsToHighlight,
           recommendations: cachedResearch.jobAnalysis.recommendations || [],
-          estimatedFit: (cachedResearch.jobAnalysis.estimatedFit as AnalysisResult['estimatedFit']) || 'good'
+          estimatedFit: cachedResearch.jobAnalysis.estimatedFit || 'good'
         }
         
         setAnalysis(typedAnalysis)
@@ -454,7 +474,7 @@ export default function JobAnalysisPage() {
           </div>
 
           {/* Missing Skills */}
-          {analysis.missingSkills && analysis.missingSkills.length > 0 && (
+          {analysis.missingSkills.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Target className="w-6 h-6 text-yellow-500" />
