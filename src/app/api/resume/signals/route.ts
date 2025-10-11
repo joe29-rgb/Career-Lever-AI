@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { dbService } from '@/lib/database'
 import Resume from '@/models/Resume'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
+import { LocalResumeParser } from '@/lib/local-resume-parser'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -22,20 +23,38 @@ export async function GET(req: NextRequest) {
     try {
       console.log('[signals:input]', { len: txt.length, preview: txt.slice(0, 500) })
     } catch {}
+    
     const started = Date.now()
-    const signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 50)
+    let signals
+    let method = 'perplexity'
+    
+    // Try Perplexity first, fallback to local parser
+    try {
+      signals = await PerplexityIntelligenceService.extractResumeSignals(txt, 50)
+    } catch (perplexityError) {
+      console.warn('[signals] Perplexity failed, using local parser:', (perplexityError as Error).message)
+      const parsed = LocalResumeParser.parse(txt, 50)
+      signals = {
+        keywords: parsed.keywords,
+        location: parsed.location || undefined,
+        locations: parsed.locations
+      }
+      method = 'local-parser'
+    }
+    
     const durationMs = Date.now() - started
     // Basic verification logging (best-effort, do not block)
     try {
       console.log('[signals]', {
         userId: (session.user as any).id,
         durationMs,
+        method,
         keywordCount: (signals.keywords || []).length,
         primaryLocation: signals.location || null,
         hasLocationsList: Array.isArray(signals.locations),
       })
     } catch {}
-    return NextResponse.json({ success: true, keywords: signals.keywords || [], location: signals.location || null, locations: signals.locations || [] })
+    return NextResponse.json({ success: true, keywords: signals.keywords || [], location: signals.location || null, locations: signals.locations || [], method })
   } catch (e) {
     return NextResponse.json({ success: true, keywords: [], location: null, locations: [] })
   }
@@ -63,21 +82,38 @@ export async function POST(request: NextRequest) {
     console.log('[API] Processing resume signals request')
     console.log('[API] Resume length:', body.resumeText.length)
 
-    const signals = await PerplexityIntelligenceService.extractResumeSignals(
-      body.resumeText,
-      body.maxKeywords || 50
-    )
+    let signals
+    let method = 'perplexity'
+    
+    // Try Perplexity first, fallback to local parser
+    try {
+      signals = await PerplexityIntelligenceService.extractResumeSignals(
+        body.resumeText,
+        body.maxKeywords || 50
+      )
+    } catch (perplexityError) {
+      console.warn('[API] Perplexity failed, using local parser:', (perplexityError as Error).message)
+      const parsed = LocalResumeParser.parse(body.resumeText, body.maxKeywords || 50)
+      signals = {
+        keywords: parsed.keywords,
+        location: parsed.location || undefined,
+        locations: parsed.locations
+      }
+      method = 'local-parser'
+    }
 
-    console.log('[API] Extraction successful:', signals)
+    console.log('[API] Extraction successful:', { method, keywordCount: signals.keywords.length })
 
     return NextResponse.json({
       success: true,
       keywords: signals.keywords,
       location: signals.location,
+      method,
       metadata: {
         keywordCount: signals.keywords.length,
         primaryLocation: signals.location,
-        extractedAt: new Date().toISOString()
+        extractedAt: new Date().toISOString(),
+        method
       }
     })
 
