@@ -131,9 +131,17 @@ export default function JobAnalysisPage() {
           age: Date.now() - (cachedResearch.timestamp || 0)
         })
         
-        // Use cached analysis
-        setAnalysis(cachedResearch.jobAnalysis)
-        CareerFinderStorage.setJobAnalysis(cachedResearch.jobAnalysis)
+        // Use cached analysis - ensure proper type compatibility
+        const typedAnalysis: AnalysisResult = {
+          matchScore: cachedResearch.jobAnalysis.matchScore,
+          matchingSkills: cachedResearch.jobAnalysis.matchingSkills || [],
+          missingSkills: cachedResearch.jobAnalysis.missingSkills,
+          recommendations: cachedResearch.jobAnalysis.recommendations || [],
+          estimatedFit: (cachedResearch.jobAnalysis.estimatedFit as AnalysisResult['estimatedFit']) || 'good'
+        }
+        
+        setAnalysis(typedAnalysis)
+        CareerFinderStorage.setJobAnalysis(typedAnalysis)
         
         // Also set company research
         setCompanyResearch(cachedResearch as any)
