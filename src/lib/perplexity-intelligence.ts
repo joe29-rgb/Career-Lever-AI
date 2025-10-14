@@ -8,6 +8,8 @@ import {
   DISCOVERY_PRIORITY_ORDER,
   CANADIAN_ATS_COMPANIES
 } from './public-job-boards-config'
+import { parseAIResponse } from './utils/ai-response-parser'
+import { PerplexityErrorContext } from './errors/perplexity-error'
 
 // Environment
 const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
@@ -225,9 +227,7 @@ export class PerplexityIntelligenceService {
       return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
     }
     try {
-      const out = await withRetry(async () => {
-        const client = createClient()
-        const user = `COMPREHENSIVE RESEARCH TASK: Search for contacts, emails, website, and complete intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
+      const userPrompt = `COMPREHENSIVE RESEARCH TASK: Search for contacts, emails, website, and complete intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
 
 **MANDATORY SEARCH SOURCES:**
 - Use Google search extensively
@@ -274,11 +274,20 @@ export class PerplexityIntelligenceService {
 6. Search "${input.company} revenue employees industry" for business intelligence
 7. DO NOT return "Unknown", "No description available", or "No data" - search multiple sources until you find information
 8. Include REAL contact information (names, titles, LinkedIn URLs) - minimum 3 contacts if company has >10 employees`
+      const out = await withRetry(async () => {
+        const client = createClient()
+        const user = userPrompt
         const res = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 3000, model: 'sonar-pro' })
         if (!res.content?.trim()) throw new Error('Empty response')
         return res
       })
-      const parsed = JSON.parse(out.content.trim()) as IntelligenceResponse
+      const context: PerplexityErrorContext = {
+        requestId,
+        prompts: { system: SYSTEM, user: userPrompt },
+        timestamp: started,
+        endpoint: 'researchCompanyV2'
+      }
+      const parsed = parseAIResponse<IntelligenceResponse>(out.content ?? '', { stripMarkdown: true, extractFirst: true }, context)
       parsed.company = parsed.company || input.company
       parsed.freshness = parsed.freshness || new Date().toISOString()
       parsed.sources = Array.isArray(parsed.sources) ? parsed.sources.slice(0, 12) : []
@@ -327,8 +336,13 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
     try {
       const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400, model: 'sonar-pro' })
       const text = (out.content || '').trim()
-      let parsed: IntelligenceResponse
-      try { parsed = JSON.parse(text) as IntelligenceResponse } catch { throw new Error('Failed to parse intelligence JSON') }
+      const context: PerplexityErrorContext = {
+        requestId: generateRequestId(),
+        prompts: { system: SYSTEM, user },
+        timestamp: Date.now(),
+        endpoint: 'researchCompany'
+      }
+      const parsed = parseAIResponse<IntelligenceResponse>(text, { stripMarkdown: true, extractFirst: true }, context)
       // Minimal validation
       parsed.company = parsed.company || input.company
       parsed.freshness = parsed.freshness || new Date().toISOString()
@@ -371,7 +385,13 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
     try {
       const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 900, model: 'sonar-pro' })
       const text = (out.content || '').trim()
-      const parsed = JSON.parse(text)
+      const context: PerplexityErrorContext = {
+        requestId: generateRequestId(),
+        prompts: { system: SYSTEM, user },
+        timestamp: Date.now(),
+        endpoint: 'salaryForRole'
+      }
+      const parsed = parseAIResponse<Record<string, unknown>>(text, { stripMarkdown: true, extractFirst: true }, context)
       setCache(key, parsed)
       return parsed
     } catch {
@@ -459,6 +479,8 @@ ${targetBoards.slice(0, 10).join(', ')}
 
 Return ${limit} unique, recent listings in JSON format. For Canadian locations, prioritize Job Bank, Jobboom, Workopolis first.`
 
+    const requestId = generateRequestId()
+    const started = Date.now()
     try {
       const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
         temperature: 0.2, 
@@ -487,13 +509,18 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
       // FIX: Remove trailing commas before ]
       text = text.replace(/,(\s*)\]/g, '$1]')
       
+      const context: PerplexityErrorContext = {
+        requestId,
+        prompts: { system: SYSTEM_JOBS, user: USER_JOBS },
+        timestamp: started,
+        endpoint: 'jobListings'
+      }
       let parsed: unknown
       try {
-        parsed = JSON.parse(text)
+        parsed = parseAIResponse<unknown>(text, { stripMarkdown: true, extractFirst: true }, context)
       } catch (parseError: unknown) {
         console.error('[PERPLEXITY] JSON parse failed, raw text:', text.substring(0, 500))
         console.error('[PERPLEXITY] Parse error:', parseError)
-        // Return empty array instead of crashing
         return []
       }
       
@@ -547,10 +574,18 @@ OUTPUT JSON FORMAT:
   }
 ]`
     const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
+    const requestId = generateRequestId()
+    const started = Date.now()
     try {
       const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000, model: 'sonar-pro' })
       const text = (out.content || '').trim()
-      const parsed = JSON.parse(text)
+      const context: PerplexityErrorContext = {
+        requestId,
+        prompts: { system: SYSTEM_CONTACTS, user: USER_CONTACTS },
+        timestamp: started,
+        endpoint: 'hiringContacts'
+      }
+      const parsed = parseAIResponse<unknown>(text, { stripMarkdown: true, extractFirst: true }, context)
       const arr = Array.isArray(parsed) ? parsed.slice(0, 5) : []
       setCache(key, arr)
       return arr

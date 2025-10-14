@@ -3,6 +3,7 @@ export class PerplexityService {
   private readonly baseURL = (process.env.PERPLEXITY_BASE_URL || 'https://api.perplexity.ai') + '/chat/completions'
   private readonly defaultModel = process.env.PERPLEXITY_MODEL || 'sonar-pro'
   private static memoryCache: Map<string, { expiresAt: number; value: { content: string; usage?: unknown; cost: number } }> = new Map()
+  private static inflightRequests: Map<string, Promise<{ content: string; usage?: unknown; cost: number }>> = new Map()
   private static defaultTtlMs = Number(process.env.PPX_CACHE_TTL_MS || 24*60*60*1000)
   private readonly debug: boolean = process.env.NODE_ENV === 'development' || process.env.PPX_DEBUG === 'true'
 
@@ -40,6 +41,12 @@ export class PerplexityService {
       return cached.value
     }
 
+    const inflight = PerplexityService.inflightRequests.get(key)
+    if (inflight) {
+      if (this.debug) console.log('🔁 Awaiting existing in-flight request')
+      return inflight
+    }
+
     const payload = {
       model: options.model || this.defaultModel,
       messages: [
@@ -55,74 +62,83 @@ export class PerplexityService {
 
     // timeout implemented below via AbortController
 
-    const maxRetries = 3
-    let lastErr: unknown
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        if (this.debug) console.log(`🔄 Attempt ${attempt + 1}/${maxRetries}`)
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), 600000)
-        const res: Response = await fetch(this.baseURL, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'CareerLever/1.0'
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        })
-        clearTimeout(timer)
-        if (this.debug) {
-          console.log(`📡 Response status: ${res.status} ${res.statusText}`)
-          try { console.log('📡 Response headers:', Object.fromEntries(res.headers.entries())) } catch {}
-        }
-        if (res.status === 429) {
-          const retryAfter = res.headers.get('retry-after')
-          const backoff = retryAfter ? parseInt(retryAfter) * 1000 : 400 * Math.pow(2, attempt)
-          if (this.debug) console.log(`⏳ Rate limited, waiting ${backoff}ms`)
-          await new Promise(r=>setTimeout(r, backoff))
-          continue
-        }
-        if (!res.ok) {
-          const errorText = await res.text().catch(()=>'')
-          const error = this.handleApiError(res.status, res.statusText, errorText)
+    const requestPromise = (async () => {
+      const maxRetries = 3
+      let lastErr: unknown
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          if (this.debug) console.log(`🔄 Attempt ${attempt + 1}/${maxRetries}`)
+          const controller = new AbortController()
+          const timer = setTimeout(() => controller.abort(), 600000)
+          const res: Response = await fetch(this.baseURL, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.apiKey}`,
+              'Content-Type': 'application/json',
+              'User-Agent': 'CareerLever/1.0'
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          })
+          clearTimeout(timer)
           if (this.debug) {
-            console.error('❌ API Error:', error.message)
-            if (errorText) console.error('❌ Raw response:', errorText.slice(0, 500))
+            console.log(`📡 Response status: ${res.status} ${res.statusText}`)
+            try { console.log('📡 Response headers:', Object.fromEntries(res.headers.entries())) } catch {}
           }
-          throw error
+          if (res.status === 429) {
+            const retryAfter = res.headers.get('retry-after')
+            const backoff = retryAfter ? parseInt(retryAfter) * 1000 : 400 * Math.pow(2, attempt)
+            if (this.debug) console.log(`⏳ Rate limited, waiting ${backoff}ms`)
+            await new Promise(r=>setTimeout(r, backoff))
+            continue
+          }
+          if (!res.ok) {
+            const errorText = await res.text().catch(()=> '')
+            const error = this.handleApiError(res.status, res.statusText, errorText)
+            if (this.debug) {
+              console.error('❌ API Error:', error.message)
+              if (errorText) console.error('❌ Raw response:', errorText.slice(0, 500))
+            }
+            throw error
+          }
+          const data: { choices?: Array<{ message?: { content?: string } }>; usage?: unknown } = await res.json()
+          if (!data?.choices?.[0]?.message?.content) {
+            const err = new Error(`Invalid response structure: ${JSON.stringify(data).slice(0, 400)}`)
+            if (this.debug) console.error('❌ Invalid response:', err.message)
+            throw err
+          }
+          const value: { content: string; usage?: unknown; cost: number } = {
+            content: data.choices[0].message.content,
+            usage: data?.usage,
+            cost: this.calculateCost(data?.usage),
+          }
+          if (this.debug) {
+            console.log('✅ Success! Content length:', value.content.length)
+            if (value.usage) console.log('📊 Usage:', value.usage)
+            console.log('💰 Cost:', value.cost)
+          }
+          PerplexityService.memoryCache.set(key, { expiresAt: Date.now() + PerplexityService.defaultTtlMs, value })
+          return value
+        } catch (e: unknown) {
+          lastErr = e
+          const msg = (e as Error)?.message || String(e)
+          if (this.debug) console.error(`❌ Attempt ${attempt + 1} failed:`, msg)
+          if (msg.includes('401') || msg.includes('403')) break
+          if (attempt === maxRetries - 1) break
+          const backoff = 400 * Math.pow(2, attempt)
+          if (this.debug) console.log(`⏳ Retrying in ${backoff}ms...`)
+          await new Promise(r=>setTimeout(r, backoff))
         }
-        const data: { choices?: Array<{ message?: { content?: string } }>; usage?: unknown } = await res.json()
-        if (!data?.choices?.[0]?.message?.content) {
-          const err = new Error(`Invalid response structure: ${JSON.stringify(data).slice(0, 400)}`)
-          if (this.debug) console.error('❌ Invalid response:', err.message)
-          throw err
-        }
-        const value: { content: string; usage?: unknown; cost: number } = {
-          content: data.choices[0].message.content,
-          usage: data?.usage,
-          cost: this.calculateCost(data?.usage),
-        }
-        if (this.debug) {
-          console.log('✅ Success! Content length:', value.content.length)
-          if (value.usage) console.log('📊 Usage:', value.usage)
-          console.log('💰 Cost:', value.cost)
-        }
-        PerplexityService.memoryCache.set(key, { expiresAt: Date.now() + PerplexityService.defaultTtlMs, value })
-        return value
-      } catch (e: unknown) {
-        lastErr = e
-        const msg = (e as Error)?.message || String(e)
-        if (this.debug) console.error(`❌ Attempt ${attempt + 1} failed:`, msg)
-        if (msg.includes('401') || msg.includes('403')) break
-        if (attempt === maxRetries - 1) break
-        const backoff = 400 * Math.pow(2, attempt)
-        if (this.debug) console.log(`⏳ Retrying in ${backoff}ms...`)
-        await new Promise(r=>setTimeout(r, backoff))
       }
+      throw lastErr || new Error('Perplexity request failed')
+    })()
+
+    PerplexityService.inflightRequests.set(key, requestPromise)
+    try {
+      return await requestPromise
+    } finally {
+      PerplexityService.inflightRequests.delete(key)
     }
-    throw lastErr || new Error('Perplexity request failed')
   }
 
   // Convenience wrapper: choose sonar vs sonar-pro

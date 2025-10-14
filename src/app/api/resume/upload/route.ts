@@ -15,6 +15,8 @@ function cleanExtractedText(text: string): string {
     .trim()
 }
 
+const MIN_VALID_PDF_TEXT_LENGTH = Number(process.env.RESUME_MIN_TEXT_LENGTH || 150)
+const ASCII_FALLBACK_CONFIDENCE = 0.3
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
   console.log('[PDF_PARSE] Starting extraction, buffer size:', buffer.length, 'bytes')
   
@@ -38,10 +40,11 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
         cleanedLength: cleanedText.length,
         preview: cleanedText.slice(0, 200)
       })
+      const confidence = cleanedText.length >= MIN_VALID_PDF_TEXT_LENGTH ? 0.9 : 0.5
       return {
         text: cleanedText,
         method: 'pdf-parse',
-        confidence: cleanedText.length > 100 ? 0.9 : 0.5
+        confidence
       }
     }
     console.log('[PDF_PARSE] Method 1 text too short, trying fallback')
@@ -92,7 +95,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
       preview: cleanedText.slice(0, 200)
     })
     
-    if (cleanedText.length > 100) {
+    if (cleanedText.length >= MIN_VALID_PDF_TEXT_LENGTH) {
       console.log('[PDF_PARSE] ✅ Method 2 SUCCESS')
       return {
         text: cleanedText,
@@ -119,7 +122,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
       preview: asciiText.slice(0, 200)
     })
     
-    if (asciiText.length > 100) {
+    if (asciiText.length >= MIN_VALID_PDF_TEXT_LENGTH) {
       const cleanedText = cleanExtractedText(asciiText)
       console.log('[PDF_PARSE] ⚠️ Method 3 SUCCESS (ASCII fallback - LOW QUALITY):', cleanedText.length, 'chars')
       console.warn('[PDF_PARSE] WARNING: Using ASCII fallback may corrupt company names and other data')
@@ -127,10 +130,16 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
       return {
         text: cleanedText,
         method: 'ascii-fallback',
-        confidence: 0.6
+        confidence: ASCII_FALLBACK_CONFIDENCE
+      }
+    } else {
+      console.log('[PDF_PARSE] Method 3 text too short, rejecting ASCII fallback')
+      return {
+        text: '',
+        method: 'ascii-fallback',
+        confidence: 0
       }
     }
-    console.log('[PDF_PARSE] Method 3 text too short')
   } catch (error) {
     console.error('[PDF_PARSE] ❌ Method 3 failed:', error)
   }
@@ -214,8 +223,8 @@ export async function POST(request: NextRequest) {
             firstWords: extractedText?.slice(0, 100)
           })
           
-          if (!text || text.length < 50) {
-            extractionError = 'PDF could not be processed. Please paste your resume text instead.'
+          if (!text || text.length < MIN_VALID_PDF_TEXT_LENGTH) {
+            extractionError = 'PDF text extraction was incomplete. Please paste your resume content instead.'
           }
         } catch (pdfError) {
           console.error('PDF processing failed completely:', pdfError)
@@ -234,11 +243,27 @@ export async function POST(request: NextRequest) {
 
     extractedText = cleanExtractedText(extractedText || '')
 
-    if (!extractedText || extractedText.length < 20) {
+    const asciiFallbackUsed = extractionMethod === 'ascii-fallback'
+
+    if (asciiFallbackUsed) {
+      extractionError = extractionError || 'PDF could not be reliably processed (ASCII fallback). Please paste your resume text instead.'
+      extractionConfidence = Math.min(extractionConfidence, ASCII_FALLBACK_CONFIDENCE)
+    }
+
+    if (!extractedText || extractedText.length < MIN_VALID_PDF_TEXT_LENGTH) {
       return NextResponse.json({ 
         error: 'No readable content', 
         details: extractionError || 'Could not extract text from the file. Please paste your resume text instead.',
         extractionMethod 
+      }, { status: 400 })
+    }
+
+    if (asciiFallbackUsed) {
+      return NextResponse.json({
+        error: 'Resume quality too low',
+        details: extractionError,
+        extractionMethod,
+        confidence: extractionConfidence
       }, { status: 400 })
     }
 
