@@ -124,12 +124,13 @@ export async function POST(request: NextRequest) {
             })
             
             // ENTERPRISE: User wants to switch industries
-            if (targetIndustry) {
+            if (targetIndustry && targetIndustry.trim()) {
               // Find matching industry from resume, or create synthetic one
+              const normalizedTarget = targetIndustry.toLowerCase()
               effectivePrimaryIndustry = careerTimeline.industries.find(
-                (i: any) => i.name.toLowerCase().includes(targetIndustry.toLowerCase())
+                (i: any) => i?.name?.toLowerCase()?.includes(normalizedTarget)
               )
-              
+
               if (effectivePrimaryIndustry) {
                 console.log(`[JOB_SEARCH] User targeting industry switch TO: ${effectivePrimaryIndustry.name}`)
               } else {
@@ -138,7 +139,10 @@ export async function POST(request: NextRequest) {
                 effectivePrimaryIndustry = {
                   name: targetIndustry,
                   yearsOfExperience: 0,
-                  keywords: keywords.split(',').map((k: string) => k.trim()),
+                  keywords: keywords
+                    .split(',')
+                    .map((k: string) => k.trim())
+                    .filter(Boolean),
                   percentage: 100 // Give full weight to target industry
                 }
               }

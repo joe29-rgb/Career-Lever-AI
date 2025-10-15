@@ -1,4 +1,6 @@
-import crypto from 'crypto'
+import * as crypto from 'crypto'
+import { LRUCache } from 'lru-cache'
+import { z } from 'zod'
 import { PerplexityService } from './perplexity-service'
 import { 
   CANADIAN_JOB_BOARDS, 
@@ -16,8 +18,26 @@ const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
 const MAX_RETRY_ATTEMPTS = Number(process.env.PPX_MAX_RETRIES || 3)
 const RETRY_DELAY_MS = Number(process.env.PPX_RETRY_DELAY || 1000)
 
-type CacheEntry = { expiresAt: number; value: unknown; metadata?: { createdAt: number; hitCount: number; lastAccessed: number } }
-const cache: Map<string, CacheEntry> = new Map()
+type CacheRecord = {
+  value: unknown
+  metadata: { createdAt: number; hitCount: number; lastAccessed: number }
+}
+
+const cache = new LRUCache<string, CacheRecord>({
+  max: 1000,
+  maxSize: 50_000_000,
+  ttl: CACHE_TTL_MS,
+  sizeCalculation: (record) => {
+    if (!record) return 0
+    try {
+      return JSON.stringify(record.value).length
+    } catch {
+      return 0
+    }
+  },
+  updateAgeOnGet: true,
+  updateAgeOnHas: true
+})
 
 function makeKey(prefix: string, payload: unknown): string {
   const raw = typeof payload === 'string' ? payload : JSON.stringify(payload)
@@ -27,12 +47,20 @@ function makeKey(prefix: string, payload: unknown): string {
 function getCache(key: string): unknown | undefined {
   const entry = cache.get(key)
   if (!entry) return undefined
-  if (Date.now() > entry.expiresAt) { cache.delete(key); return undefined }
+  entry.metadata.hitCount += 1
+  entry.metadata.lastAccessed = Date.now()
   return entry.value
 }
 
 function setCache(key: string, value: unknown) {
-  cache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value })
+  cache.set(key, {
+    value,
+    metadata: {
+      createdAt: Date.now(),
+      hitCount: 0,
+      lastAccessed: Date.now()
+    }
+  })
 }
 
 function createClient(): PerplexityService { return new PerplexityService() }
@@ -42,17 +70,54 @@ function generateRequestId(): string {
   return crypto.randomBytes(8).toString('hex')
 }
 
-async function withRetry<T>(operation: () => Promise<T>, maxAttempts: number = MAX_RETRY_ATTEMPTS): Promise<T> {
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxAttempts: number = MAX_RETRY_ATTEMPTS,
+  logger?: { warn?: (message: string, context?: Record<string, unknown>) => void }
+): Promise<T> {
   let lastError: unknown
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try { return await operation() } catch (err) {
+    try {
+      return await operation()
+    } catch (err) {
       lastError = err
       if (attempt === maxAttempts) break
-      const delay = RETRY_DELAY_MS * Math.pow(2, attempt - 1)
+      const baseDelay = RETRY_DELAY_MS * Math.pow(2, attempt - 1)
+      const jitter = Math.random() * RETRY_DELAY_MS
+      const delay = baseDelay + jitter
+      logger?.warn?.('Retrying Perplexity operation', {
+        attempt,
+        delay,
+        error: err instanceof Error ? err.message : String(err)
+      })
       await new Promise(resolve => setTimeout(resolve, delay))
     }
   }
   throw (lastError instanceof Error ? lastError : new Error('Operation failed'))
+}
+
+function extractJsonBlock(raw: string): string {
+  let cleaned = raw.trim()
+  cleaned = cleaned.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+  const match = cleaned.match(/({[\s\S]*}|\[[\s\S]*\])/)
+  if (match) {
+    return match[0]
+  }
+  return cleaned
+}
+
+class PerplexityError extends Error {
+  constructor(message: string, readonly cause?: unknown) {
+    super(message)
+    this.name = 'PerplexityError'
+  }
+}
+
+class ValidationError extends PerplexityError {
+  constructor(message: string, readonly issues: z.ZodIssue[]) {
+    super(message)
+    this.name = 'ValidationError'
+  }
 }
 
 function inferEmails(name: string, companyDomain: string): string[] {
@@ -784,7 +849,7 @@ OUTPUT JSON FORMAT:
       setCache(key, parsed)
       return { 
         success: true, 
-        data: parsed, 
+        data: parsed,
         metadata: { 
           requestId, 
           timestamp: started, 
@@ -1244,69 +1309,6 @@ IMPORTANT:
         cleanedContent = jsonMatch[0]
       }
       
-      console.log('[SIGNALS] Cleaned for parsing:', cleanedContent.slice(0, 200))
-
-      const parsed = JSON.parse(cleanedContent)
-
-      const result = {
-        keywords: Array.isArray(parsed.keywords) ? parsed.keywords.slice(0, maxKeywords) : [],
-        location: parsed.location || undefined, // CRITICAL: No default location ever
-        locations: parsed.location ? [parsed.location] : []
-      }
-
-      console.log('[SIGNALS] Final result:', result)
-
-      setCache(key, result)
-      return result
-
-    } catch (error) {
-      console.error('[SIGNALS] Extraction failed:', error)
-      // CRITICAL: Return empty results, NO defaults - let user know extraction failed
-      return {
-        keywords: [],
-        location: undefined, // NEVER default location
-        locations: [] // NEVER default locations
-      }
-    }
-  }
-
-  /**
-   * ENHANCED AGGRESSIVE COMPANY RESEARCH
-   * Uses comprehensive prompt to gather hiring contacts, automation threats, and deep intelligence
-   */
-  static async enhancedCompanyResearch(params: {
-    companyName: string
-    jobTitle?: string
-    location?: string
-    industry?: string
-    companyWebsite?: string
-  }): Promise<EnhancedResponse<any>> {
-    const requestId = generateRequestId()
-    const started = Date.now()
-    const key = makeKey('ppx:enhanced:research', params)
-    const cached = getCache(key)
-    
-    if (cached) {
-      return { 
-        success: true, 
-        data: cached, 
-        metadata: { requestId, timestamp: started, duration: Date.now() - started }, 
-        cached: true 
-      }
-    }
-
-    try {
-      // Generate company slug and handle for searches
-      const companySlug = params.companyName.toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-      
-      const companyWebsite = params.companyWebsite || 
-        `${params.companyName.toLowerCase().replace(/\s+inc\.?$|\s+ltd\.?$|\s+llc\.?$|\s+corp\.?$/i, '').replace(/\s+/g, '')}.com`
-
-      const out = await withRetry(async () => {
-        const client = createClient()
-        const prompt = `COMPREHENSIVE RESEARCH TASK: Search for contacts, emails, website, and complete intelligence for ${params.companyName}${params.jobTitle ? ` (role: ${params.jobTitle})` : ''}${params.location ? ` in ${params.location}` : ''}.
 
 **MANDATORY SEARCH SOURCES:**
 - Use Google search extensively
@@ -1419,178 +1421,36 @@ IMPORTANT:
 
 Return ONLY valid JSON.`
 
-        return client.makeRequest(
-          'You are an elite corporate intelligence analyst. Conduct comprehensive research and return detailed JSON with hiring contacts and strategic intelligence.',
-          prompt,
-          { temperature: 0.1, maxTokens: 6000, model: 'sonar-pro' }
-        )
-      })
+      return client.makeRequest(
+        'You are an elite corporate intelligence analyst. Conduct comprehensive research and return detailed JSON with hiring contacts and strategic intelligence.',
+        prompt,
+        { temperature: 0.1, maxTokens: 6000, model: 'sonar-pro' }
+      )
+    })
 
-      const parsed = JSON.parse(out.content.trim())
-      
-      console.log(`[ENHANCED_RESEARCH] Complete intelligence for ${params.companyName}`)
-      console.log(`[CONTACTS] Found ${parsed.hiringContactIntelligence?.keyContacts?.length || 0} key contacts`)
-      console.log(`[AI_THREAT] Risk: ${parsed.aiAutomationThreat?.roleRisk || 'N/A'}`)
-      console.log(`[CULTURE] Rating: ${parsed.reviewAnalysis?.glassdoor?.rating || 'N/A'}`)
-      
-      setCache(key, parsed)
-      
-      return { 
-        success: true, 
-        data: parsed, 
-        metadata: { requestId, timestamp: started, duration: Date.now() - started }, 
-        cached: false 
-      }
-    } catch (e) {
-      console.error('[ENHANCED_RESEARCH] Failed:', e)
-      return { 
-        success: false, 
-        data: null, 
-        metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, 
-        cached: false 
-      }
-    }
-  }
+    const cleaned = out.content.trim().replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
+    const parsed = JSON.parse(cleaned) as Partial<EnhancedCompanyResearchData>
 
-  /**
-   * 🚀 ONE-SHOT COMPREHENSIVE RESEARCH
-   * Replaces multiple API calls with a single comprehensive prompt
-   * Returns: Job Analysis + Company Research + Hiring Contacts + News + Reviews
-   * @param params - Job and resume details
-   * @returns Complete research data for all Career Finder pages
-   */
-  static async comprehensiveJobResearch(params: {
-    jobTitle: string
-    company: string
-    jobDescription: string
-    location?: string
-    resumeText: string
-    resumeSkills?: string[]
-  }): Promise<EnhancedResponse<{
-    jobAnalysis: {
-      matchScore: number
-      matchingSkills: string[]
-      missingSkills: string[]
-      skillsToHighlight: string[]
-      recommendations: string[]
-      estimatedFit: string
-    }
-    companyIntel: {
-      company: string
-      description: string
-      size?: string
-      revenue?: string
-      industry?: string
-      founded?: string
-      headquarters?: string
-      website?: string
-      marketPosition?: string
-    }
-    companyPsychology: {
-      culture: string
-      values: string[]
-      managementStyle?: string
-      workEnvironment?: string
-    }
-    hiringContacts: Array<{
-      name: string
-      title: string
-      department?: string
-      email?: string
-      linkedinUrl?: string
-      authority: 'decision maker' | 'recruiter' | 'manager' | 'coordinator'
-      confidence: number
-    }>
-    marketIntelligence: {
-      competitivePosition?: string
-      industryTrends?: string
-      financialStability?: string
-      recentPerformance?: string
-    }
-    news: Array<{
-      title: string
-      summary: string
-      url: string
-      date?: string
-      source?: string
-      impact?: string
-    }>
-    reviews: Array<{
-      platform: string
-      rating?: number
-      summary: string
-      url: string
-      pros?: string[]
-      cons?: string[]
-    }>
-    compensation?: {
-      salaryRange?: string
-      benefits?: string
-    }
-    strategicRecommendations: {
-      applicationStrategy: string
-      contactStrategy: string
-      interviewPrep: string[]
-    }
-    sources: string[]
-    confidenceLevel: number
-  }>> {
-    const requestId = generateRequestId()
-    const started = Date.now()
-    
-    try {
-      const client = createClient()
-      
-      const prompt = `
-# 🎯 COMPREHENSIVE JOB APPLICATION RESEARCH
-
-## JOB DETAILS
-- **Position:** ${params.jobTitle}
-- **Company:** ${params.company}
-- **Location:** ${params.location || 'Not specified'}
-- **Description:** ${params.jobDescription.slice(0, 1000)}
-
-## CANDIDATE RESUME SKILLS
-${params.resumeSkills ? params.resumeSkills.slice(0, 20).join(', ') : 'Extract from description below'}
-
-## RESUME TEXT (First 2000 chars)
-${params.resumeText.slice(0, 2000)}
-
----
-
-# YOUR MISSION
-Conduct a **comprehensive research report** covering ALL of the following sections. This is a ONE-TIME research call, so be thorough and detailed. Include clickable URLs wherever possible.
-
-## OUTPUT FORMAT (Valid JSON ONLY)
-\`\`\`json
-{
-  "jobAnalysis": {
-    "matchScore": 85,
-    "matchingSkills": ["skill1", "skill2"],
-    "missingSkills": ["skill3", "skill4"],
-    "skillsToHighlight": ["top skill to emphasize"],
-    "recommendations": ["specific action 1", "specific action 2"],
-    "estimatedFit": "Excellent | Good | Moderate | Poor"
-  },
-  "companyIntel": {
-    "company": "${params.company}",
-    "description": "detailed company overview (minimum 200 chars)",
-    "size": "employee count or range",
-    "revenue": "annual revenue if public",
-    "industry": "primary industry",
-    "founded": "year",
-    "headquarters": "city, state/country",
-    "website": "https://company.com",
-    "marketPosition": "market leader | challenger | niche player"
-  },
-  "companyPsychology": {
-    "culture": "detailed culture description based on reviews and public info",
-    "values": ["value1", "value2", "value3"],
-    "managementStyle": "hierarchical | flat | hybrid",
-    "workEnvironment": "remote-friendly | hybrid | office-centric"
-  },
-  "hiringContacts": [
-    {
+    const data: EnhancedCompanyResearchData = {
+      companyIntelligence: {
+        name: parsed.companyIntelligence?.name ?? params.companyName,
+        industry: parsed.companyIntelligence?.industry,
+        founded: parsed.companyIntelligence?.founded,
+        headquarters: parsed.companyIntelligence?.headquarters,
+        employeeCount: parsed.companyIntelligence?.employeeCount,
+        revenue: parsed.companyIntelligence?.revenue,
+        website: parsed.companyIntelligence?.website,
+        description: parsed.companyIntelligence?.description ?? 'No description available',
+        marketPosition: parsed.companyIntelligence?.marketPosition,
+        financialStability: parsed.companyIntelligence?.financialStability,
+        recentPerformance: parsed.companyIntelligence?.recentPerformance
+      },
+      hiringContactIntelligence: {
+        officialChannels: parsed.hiringContactIntelligence?.officialChannels,
+        keyContacts: Array.isArray(parsed.hiringContactIntelligence?.keyContacts)
+          ? parsed.hiringContactIntelligence.keyContacts
+              .map((contact) =>
+                contact?.name && contact?.title
       "name": "Real Person Name",
       "title": "Talent Acquisition Manager",
       "department": "Human Resources",
@@ -1685,40 +1545,92 @@ Conduct a **comprehensive research report** covering ALL of the following sectio
         cleanedContent = jsonMatch[0]
       }
 
-      const parsed = JSON.parse(cleanedContent)
+      const parsed = JSON.parse(cleanedContent) as Partial<ComprehensiveJobResearchData>
 
-      // Ensure all required fields exist with defaults
-      const data = {
-        jobAnalysis: parsed.jobAnalysis || {
-          matchScore: 0,
-          matchingSkills: [],
-          missingSkills: [],
-          skillsToHighlight: [],
-          recommendations: [],
-          estimatedFit: 'Unknown'
+      const data: ComprehensiveJobResearchData = {
+        jobAnalysis: {
+          matchScore: parsed.jobAnalysis?.matchScore ?? 0,
+          matchingSkills: parsed.jobAnalysis?.matchingSkills ?? [],
+          missingSkills: parsed.jobAnalysis?.missingSkills ?? [],
+          skillsToHighlight: parsed.jobAnalysis?.skillsToHighlight ?? [],
+          recommendations: parsed.jobAnalysis?.recommendations ?? [],
+          estimatedFit: parsed.jobAnalysis?.estimatedFit ?? 'Unknown'
         },
-        companyIntel: parsed.companyIntel || {
-          company: params.company,
-          description: 'No description available',
-          size: 'Unknown',
-          industry: 'Unknown'
+        companyIntel: {
+          company: parsed.companyIntel?.company ?? params.company,
+          description: parsed.companyIntel?.description ?? 'No description available',
+          size: parsed.companyIntel?.size ?? 'Unknown',
+          revenue: parsed.companyIntel?.revenue,
+          industry: parsed.companyIntel?.industry ?? 'Unknown',
+          founded: parsed.companyIntel?.founded,
+          headquarters: parsed.companyIntel?.headquarters,
+          website: parsed.companyIntel?.website,
+          marketPosition: parsed.companyIntel?.marketPosition
         },
-        companyPsychology: parsed.companyPsychology || {
-          culture: 'No information available',
-          values: []
+        companyPsychology: {
+          culture: parsed.companyPsychology?.culture ?? 'No information available',
+          values: parsed.companyPsychology?.values ?? [],
+          managementStyle: parsed.companyPsychology?.managementStyle,
+          workEnvironment: parsed.companyPsychology?.workEnvironment
         },
-        hiringContacts: Array.isArray(parsed.hiringContacts) ? parsed.hiringContacts : [],
-        marketIntelligence: parsed.marketIntelligence || {},
-        news: Array.isArray(parsed.news) ? parsed.news : [],
-        reviews: Array.isArray(parsed.reviews) ? parsed.reviews : [],
-        compensation: parsed.compensation || {},
-        strategicRecommendations: parsed.strategicRecommendations || {
-          applicationStrategy: 'Apply through company website',
-          contactStrategy: 'Reach out to HR via LinkedIn',
-          interviewPrep: []
+        hiringContacts: Array.isArray(parsed.hiringContacts)
+          ? parsed.hiringContacts.map((contact) => ({
+              name: contact.name,
+              title: contact.title,
+              department: contact.department,
+              email: contact.email,
+              linkedinUrl: contact.linkedinUrl,
+              authority: contact.authority ?? 'manager',
+              confidence: contact.confidence ?? 0,
+              contactMethod: contact.contactMethod
+            })).filter((contact): contact is NonNullable<typeof contact> => !!(contact?.name && contact?.title))
+          : [],
+        marketIntelligence: {
+          competitivePosition: parsed.marketIntelligence?.competitivePosition,
+          industryTrends: parsed.marketIntelligence?.industryTrends,
+          financialStability: parsed.marketIntelligence?.financialStability,
+          recentPerformance: parsed.marketIntelligence?.recentPerformance
         },
-        sources: Array.isArray(parsed.sources) ? parsed.sources : [],
-        confidenceLevel: parsed.confidenceLevel || 0.5
+        news: Array.isArray(parsed.news)
+          ? parsed.news
+              .map((item) =>
+                item?.title && item?.summary && item?.url
+                  ? {
+                      title: item.title,
+                      summary: item.summary,
+                      url: item.url,
+                      date: item.date,
+                      source: item.source,
+                      impact: item.impact
+                    }
+                  : undefined
+              )
+              .filter((item): item is NonNullable<typeof item> => !!item)
+          : [],
+        reviews: Array.isArray(parsed.reviews)
+          ? parsed.reviews
+              .map((item) =>
+                item?.platform && item?.summary && item?.url
+                  ? {
+                      platform: item.platform,
+                      rating: item.rating,
+                      summary: item.summary,
+                      url: item.url,
+                      pros: item.pros,
+                      cons: item.cons
+                    }
+                  : undefined
+              )
+              .filter((item): item is NonNullable<typeof item> => !!item)
+          : [],
+        compensation: parsed.compensation ?? {},
+        strategicRecommendations: {
+          applicationStrategy: parsed.strategicRecommendations?.applicationStrategy ?? 'Apply through company website',
+          contactStrategy: parsed.strategicRecommendations?.contactStrategy ?? 'Reach out to HR via LinkedIn',
+          interviewPrep: parsed.strategicRecommendations?.interviewPrep ?? []
+        },
+        sources: Array.isArray(parsed.sources) ? parsed.sources.filter((source): source is string => typeof source === 'string') : [],
+        confidenceLevel: parsed.confidenceLevel ?? 0.5
       }
 
       console.log('[COMPREHENSIVE_RESEARCH] ✅ Research complete:', {
@@ -1741,22 +1653,9 @@ Conduct a **comprehensive research report** covering ALL of the following sectio
       }
     } catch (error) {
       console.error('[COMPREHENSIVE_RESEARCH] Error:', error)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {
         success: false,
-        data: null as unknown as {
-          jobAnalysis: any
-          companyIntel: any
-          companyPsychology: any
-          hiringContacts: any[]
-          marketIntelligence: any
-          news: any[]
-          reviews: any[]
-          compensation: any
-          strategicRecommendations: any
-          sources: string[]
-          confidenceLevel: number
-        },
+        data: null,
         metadata: {
           requestId,
           timestamp: started,
@@ -1767,4 +1666,155 @@ Conduct a **comprehensive research report** covering ALL of the following sectio
       }
     }
   }
+}
+
+interface EnhancedCompanyResearchData {
+  companyIntelligence: {
+    name: string
+    industry?: string
+    founded?: string
+    headquarters?: string
+    employeeCount?: string
+    revenue?: string
+    website?: string
+    description?: string
+    marketPosition?: string
+    financialStability?: string
+    recentPerformance?: string
+  }
+  hiringContactIntelligence: {
+    officialChannels?: {
+      careersPage?: string
+      jobsEmail?: string
+      hrEmail?: string
+      phone?: string
+      address?: string
+    }
+    keyContacts?: Array<{
+      name: string
+      title: string
+      department?: string
+      linkedinUrl?: string
+      email?: string
+      authority?: string
+      contactMethod?: string
+    }>
+    emailFormat?: string
+    socialMedia?: Record<string, string>
+  }
+  companyPsychology?: {
+    culture?: string
+    values?: string[]
+    managementStyle?: string
+    workEnvironment?: string
+  }
+  reviewAnalysis?: {
+    glassdoor?: {
+      rating?: number
+      reviewCount?: number
+      ceoApproval?: string | number
+      recommendToFriend?: string | number
+      pros?: string[]
+      cons?: string[]
+    }
+    employeeSentiment?: string
+  }
+  aiAutomationThreat?: {
+    roleRisk?: string
+    automationProbability?: string
+    timeframe?: string
+    companyAIAdoption?: string
+    futureOutlook?: string
+    recommendations?: string[]
+  }
+  recentNews?: Array<{
+    headline?: string
+    date?: string
+    source?: string
+    url?: string
+    impact?: string
+  }>
+  compensation?: {
+    salaryRange?: string
+    benefits?: string
+  }
+  redFlags?: string[]
+  strategicRecommendations?: {
+    applicationStrategy?: string
+    contactStrategy?: string
+    interviewPrep?: string
+  }
+  sources?: string[]
+  confidenceLevel?: number
+}
+
+interface ComprehensiveJobResearchData {
+  jobAnalysis: {
+    matchScore: number
+    matchingSkills: string[]
+    missingSkills: string[]
+    skillsToHighlight: string[]
+    recommendations: string[]
+    estimatedFit: string
+  }
+  companyIntel: {
+    company: string
+    description: string
+    size?: string
+    revenue?: string
+    industry?: string
+    founded?: string
+    headquarters?: string
+    website?: string
+    marketPosition?: string
+  }
+  companyPsychology: {
+    culture: string
+    values: string[]
+    managementStyle?: string
+    workEnvironment?: string
+  }
+  hiringContacts: Array<{
+    name: string
+    title: string
+    department?: string
+    email?: string
+    linkedinUrl?: string
+    authority: 'decision maker' | 'recruiter' | 'manager' | 'coordinator'
+    confidence: number
+    contactMethod?: string
+  }>
+  marketIntelligence: {
+    competitivePosition?: string
+    industryTrends?: string[]
+    financialStability?: string
+    recentPerformance?: string
+  }
+  news: Array<{
+    title: string
+    summary: string
+    url: string
+    date?: string
+    source?: string
+    impact?: string
+  }>
+  reviews: Array<{
+    platform: string
+    rating?: number
+    summary: string
+    url: string
+    pros?: string[]
+    cons?: string[]
+  }>
+  compensation: {
+    salaryRange?: string
+    benefits?: string
+  }
+  strategicRecommendations: {
+    applicationStrategy: string
+    contactStrategy: string
+    interviewPrep: string[]
+  }
+  sources: string[]
+  confidenceLevel: number
 }

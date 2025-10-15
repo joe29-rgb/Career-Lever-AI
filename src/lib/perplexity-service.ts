@@ -62,6 +62,7 @@ export class PerplexityService {
 
     // timeout implemented below via AbortController
 
+<<<<<<< HEAD
     const requestPromise = (async () => {
       const maxRetries = 3
       let lastErr: unknown
@@ -81,6 +82,46 @@ export class PerplexityService {
             signal: controller.signal
           })
           clearTimeout(timer)
+=======
+    const maxRetries = 3
+    let lastErr: unknown
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        if (this.debug) console.log(`🔄 Attempt ${attempt + 1}/${maxRetries}`)
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 600000)
+        const res: Response = await fetch(this.baseURL, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'CareerLever/1.0'
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        })
+        clearTimeout(timer)
+        if (this.debug) {
+          console.log(`📡 Response status: ${res.status} ${res.statusText}`)
+          try {
+            const headersObject: Record<string, string> = {}
+            res.headers.forEach((value, key) => {
+              headersObject[key] = value
+            })
+            console.log('📡 Response headers:', headersObject)
+          } catch {}
+        }
+        if (res.status === 429) {
+          const retryAfter = res.headers.get('retry-after')
+          const backoff = retryAfter ? parseInt(retryAfter) * 1000 : 400 * Math.pow(2, attempt)
+          if (this.debug) console.log(`⏳ Rate limited, waiting ${backoff}ms`)
+          await new Promise(r=>setTimeout(r, backoff))
+          continue
+        }
+        if (!res.ok) {
+          const errorText = await res.text().catch(()=>'')
+          const error = this.handleApiError(res.status, res.statusText, errorText)
+>>>>>>> 6c65b58 (chore: update Perplexity intelligence service scaffolding)
           if (this.debug) {
             console.log(`📡 Response status: ${res.status} ${res.statusText}`)
             try { console.log('📡 Response headers:', Object.fromEntries(res.headers.entries())) } catch {}

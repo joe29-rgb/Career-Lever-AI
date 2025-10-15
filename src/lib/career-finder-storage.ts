@@ -3,6 +3,8 @@
  * Eliminates localStorage key inconsistencies and race conditions
  */
 
+import type { CompanyResearchResult } from './company-research-types'
+
 export interface StoredJob {
   id?: string
   title: string
@@ -24,49 +26,7 @@ export interface StoredResume {
   personalInfo?: any
 }
 
-export interface StoredCompanyResearch {
-  company: string
-  description?: string
-  size?: string
-  revenue?: string
-  industry?: string
-  founded?: string
-  headquarters?: string
-  psychology?: string
-  marketIntelligence?: any
-  financials?: any[]
-  culture?: any[]
-  salaries?: any[]
-  contacts?: any[]
-  hiringContacts: any[] // Always an array
-  sources?: any[]
-  confidence?: number
-  // Enhanced fields for comprehensive research
-  jobAnalysis?: {
-    matchScore?: number
-    matchingSkills: string[]
-    missingSkills?: string[]
-    skillsToHighlight?: string[]
-    recommendations: string[]
-    estimatedFit?: string
-  }
-  news?: Array<{
-    title: string
-    summary: string
-    url: string
-    date?: string
-    source?: string
-  }>
-  reviews?: Array<{
-    platform: string
-    rating?: number
-    summary: string
-    url: string
-    pros?: string[]
-    cons?: string[]
-  }>
-  timestamp?: number
-}
+export type StoredCompanyResearch = CompanyResearchResult
 
 export interface StoredJobAnalysis {
   matchScore?: number
@@ -95,9 +55,9 @@ export class CareerFinderStorage {
   static setJob(job: StoredJob): void {
     try {
       localStorage.setItem(this.KEYS.SELECTED_JOB, JSON.stringify(job))
-      console.log('[STORAGE] ✅ Job saved:', job.title, '@', job.company)
+      console.log('[STORAGE] Job saved:', job.title, '@', job.company)
     } catch (error) {
-      console.error('[STORAGE] ❌ Failed to save job:', error)
+      console.error('[STORAGE] Failed to save job:', error)
     }
   }
 
@@ -106,11 +66,11 @@ export class CareerFinderStorage {
       const stored = localStorage.getItem(this.KEYS.SELECTED_JOB)
       if (stored) {
         const parsed = JSON.parse(stored)
-        console.log('[STORAGE] ✅ Job loaded:', parsed.title)
+        console.log('[STORAGE] Job loaded:', parsed.title)
         return parsed
       }
     } catch (error) {
-      console.error('[STORAGE] ❌ Failed to load job:', error)
+      console.error('[STORAGE] Failed to load job:', error)
     }
     return null
   }
@@ -118,9 +78,9 @@ export class CareerFinderStorage {
   static clearJob(): void {
     try {
       localStorage.removeItem(this.KEYS.SELECTED_JOB)
-      console.log('[STORAGE] ✅ Job cleared')
+      console.log('[STORAGE] Job cleared')
     } catch (error) {
-      console.error('[STORAGE] ❌ Failed to clear job:', error)
+      console.error('[STORAGE] Failed to clear job:', error)
     }
   }
 
@@ -129,9 +89,9 @@ export class CareerFinderStorage {
   static setResume(resume: StoredResume): void {
     try {
       localStorage.setItem(this.KEYS.RESUME_DATA, JSON.stringify(resume))
-      console.log('[STORAGE] ✅ Resume saved, text length:', resume.extractedText?.length || 0)
+      console.log('[STORAGE] Resume saved, text length:', resume.extractedText?.length || 0)
     } catch (error) {
-      console.error('[STORAGE] ❌ Failed to save resume:', error)
+      console.error('[STORAGE] Failed to save resume:', error)
     }
   }
 
@@ -142,7 +102,7 @@ export class CareerFinderStorage {
       if (stored) {
         const parsed = JSON.parse(stored)
         if (parsed.extractedText && parsed.extractedText.length > 100) {
-          console.log('[STORAGE] ✅ Resume loaded from cf:resume')
+          console.log('[STORAGE] Resume loaded from cf:resume')
           return parsed
         }
       }
@@ -155,7 +115,7 @@ export class CareerFinderStorage {
           if (legacy) {
             const parsed = JSON.parse(legacy)
             if (parsed.extractedText && parsed.extractedText.length > 100) {
-              console.log('[STORAGE] ✅ Resume loaded from legacy key:', key)
+              console.log('[STORAGE] Resume loaded from legacy key:', key)
               // Migrate to unified key
               this.setResume(parsed)
               return parsed
@@ -164,7 +124,7 @@ export class CareerFinderStorage {
         } catch {}
       }
     } catch (error) {
-      console.error('[STORAGE] ❌ Failed to load resume:', error)
+      console.error('[STORAGE] Failed to load resume:', error)
     }
     return null
   }
@@ -175,43 +135,18 @@ export class CareerFinderStorage {
       // Also clear legacy keys
       localStorage.removeItem('uploadedResume')
       localStorage.removeItem('selectedResume')
-      console.log('[STORAGE] ✅ Resume cleared')
+      console.log('[STORAGE] Resume cleared')
     } catch (error) {
-      console.error('[STORAGE] ❌ Failed to clear resume:', error)
+      console.error('[STORAGE] Failed to clear resume:', error)
     }
   }
 
   // ============= COMPANY RESEARCH MANAGEMENT =============
 
-  static setCompanyResearch(data: any): void {
+  static setCompanyResearch(data: StoredCompanyResearch): void {
     try {
-      // CRITICAL: Ensure hiringContacts is always an array
-      const processedData: StoredCompanyResearch = {
-        company: data.company || '',
-        description: data.description,
-        size: data.size,
-        revenue: data.revenue,
-        industry: data.industry,
-        founded: data.founded,
-        headquarters: data.headquarters,
-        psychology: data.psychology,
-        marketIntelligence: data.marketIntelligence,
-        financials: data.financials || [],
-        culture: data.culture || [],
-        salaries: data.salaries || [],
-        contacts: Array.isArray(data.contacts) ? data.contacts : [],
-        hiringContacts: Array.isArray(data.hiringContacts) 
-          ? data.hiringContacts 
-          : Array.isArray(data.contacts) 
-            ? data.contacts 
-            : [],
-        sources: data.sources || [],
-        confidence: data.confidence || 0.5
-      }
-      
-      localStorage.setItem(this.KEYS.COMPANY_RESEARCH, JSON.stringify(processedData))
-      console.log('[STORAGE] ✅ Company research saved:', processedData.company, 
-        `(${processedData.hiringContacts.length} contacts)`)
+      localStorage.setItem(this.KEYS.COMPANY_RESEARCH, JSON.stringify(data))
+      console.log('[STORAGE] ✅ Company research saved:', data.company, `(${data.hiringContacts.length} contacts)`)
     } catch (error) {
       console.error('[STORAGE] ❌ Failed to save company research:', error)
     }
@@ -221,15 +156,9 @@ export class CareerFinderStorage {
     try {
       const stored = localStorage.getItem(this.KEYS.COMPANY_RESEARCH)
       if (stored) {
-        const parsed = JSON.parse(stored)
-        // CRITICAL: Always ensure hiringContacts exists as array
-        const safe: StoredCompanyResearch = {
-          ...parsed,
-          hiringContacts: Array.isArray(parsed.hiringContacts) ? parsed.hiringContacts : [],
-          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : []
-        }
-        console.log('[STORAGE] ✅ Company research loaded:', safe.company)
-        return safe
+        const parsed = JSON.parse(stored) as StoredCompanyResearch
+        console.log('[STORAGE] ✅ Company research loaded:', parsed.company)
+        return parsed
       }
     } catch (error) {
       console.error('[STORAGE] ❌ Failed to load company research:', error)
