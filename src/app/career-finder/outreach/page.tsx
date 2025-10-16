@@ -490,19 +490,28 @@ ${name}`
       </div>
 
       {/* Bottom Navigation */}
-      <div className="mt-8 flex justify-between">
+      <div className="mt-8 flex justify-between items-center">
         <Button
           onClick={() => router.push('/career-finder/cover-letter')}
           variant="outline"
         >
           ← Back to Cover Letter
         </Button>
-        <Button
-          onClick={() => router.push('/dashboard')}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          Complete Application ✓
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={() => router.push('/career-finder/search')}
+            variant="outline"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+          >
+            Apply to More Jobs →
+          </Button>
+          <Button
+            onClick={() => router.push('/dashboard')}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Complete Application ✓
+          </Button>
+        </div>
       </div>
     </div>
   )
