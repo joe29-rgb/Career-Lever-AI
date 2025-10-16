@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 
+// CRITICAL: Set route timeout to 5 minutes (Railway/Vercel max)
+export const maxDuration = 300 // 5 minutes in seconds
+
 /**
  * 🚀 ONE-SHOT COMPREHENSIVE RESEARCH ENDPOINT
  * Replaces multiple separate API calls with a single comprehensive research request
@@ -29,15 +32,23 @@ export async function POST(request: NextRequest) {
       skillsCount: resumeSkills?.length || 0
     })
 
-    // Make single comprehensive Perplexity call
-    const result = await PerplexityIntelligenceService.comprehensiveJobResearch({
-      jobTitle,
-      company,
-      jobDescription: jobDescription || '',
-      location,
-      resumeText,
-      resumeSkills
-    })
+    const startTime = Date.now()
+
+    // Make single comprehensive Perplexity call with 4-minute timeout
+    const result = await Promise.race([
+      PerplexityIntelligenceService.comprehensiveJobResearch({
+        jobTitle,
+        company,
+        jobDescription: jobDescription || '',
+        location,
+        resumeText,
+        resumeSkills
+      }),
+      // Timeout after 4 minutes (leave 1 minute buffer for response)
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Research timeout after 4 minutes')), 240000)
+      )
+    ])
 
     if (!result.success || !result.data) {
       console.error('[COMPREHENSIVE_RESEARCH_API] Research failed:', result.metadata.error)
@@ -47,8 +58,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const actualDuration = Date.now() - startTime
+
     console.log('[COMPREHENSIVE_RESEARCH_API] ✅ Research complete:', {
-      duration: result.metadata.duration,
+      duration: actualDuration,
       matchScore: result.data.jobAnalysis.matchScore,
       contactsFound: result.data.hiringContacts.length,
       newsArticles: result.data.news.length,
