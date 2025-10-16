@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import { normalizeSalary, getSalaryDisplayString } from '@/lib/utils/salary-normalizer'
 import CareerFinderStorage from '@/lib/career-finder-storage'
+import { deduplicateJobs } from '@/lib/job-deduplication'
 
 interface JobListing {
   id?: string
@@ -350,7 +351,11 @@ export default function SearchPage() {
 
       console.log(`[SEARCH] Found ${data.jobs.length} jobs from ${data.sources?.length || 0} sources`)
 
-      const jobResults = data.jobs || []
+      // ✅ FIX #1: DEDUPLICATE JOBS to prevent infinite loop
+      const rawJobs = data.jobs || []
+      const jobResults = deduplicateJobs(rawJobs)
+      console.log(`[SEARCH] After deduplication: ${jobResults.length} unique jobs`)
+      
       setJobs(jobResults)
       setMetadata(data.metadata || {})
       

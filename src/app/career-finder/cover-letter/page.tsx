@@ -1,6 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect } from 'react'
+import { toTitleCase } from '@/lib/text-formatting'
 import Link from 'next/link'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 
@@ -43,16 +46,18 @@ export default function CareerFinderCoverLetterPage() {
         } catch {}
         
         // Load selected job
-        let selectedJob: any = null
+        let selectedJob: { title?: string; company?: string } | null = null
         try { selectedJob = JSON.parse(localStorage.getItem('cf:selectedJob') || 'null') } catch {}
         const jobTitle = selectedJob?.title || 'Role'
         const company = selectedJob?.company || 'Company'
         
-        // Load userName from signals
+        // Load userName from signals and format to Title Case
         let userName = '[Your Name]'
         try {
           const signals = JSON.parse(localStorage.getItem('cf:signals') || '{}')
-          userName = signals.personalInfo?.name || '[Your Name]'
+          const rawName = signals.personalInfo?.name || '[Your Name]'
+          // ✅ FIX #3: Convert ALL CAPS names to Title Case
+          userName = toTitleCase(rawName)
         } catch {}
         
         // Call new autopilot endpoint
