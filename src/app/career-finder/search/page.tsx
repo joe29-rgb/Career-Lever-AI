@@ -420,23 +420,42 @@ export default function SearchPage() {
                   disabled={loading}
                 />
               </div>
-              <button 
-                type="submit" 
-                className="btn-primary text-lg px-8 py-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="inline-block animate-spin mr-2">⏳</span>
-                    <span>Searching...</span>
-                  </>
-                ) : (
-                  <>
-                    <MagnifyingGlassIcon className="w-6 h-6 inline mr-2" />
-                    <span>Search</span>
-                  </>
+              <div className="flex gap-2">
+                <button 
+                  type="submit" 
+                  className="btn-primary text-lg px-8 py-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="inline-block animate-spin mr-2">⏳</span>
+                      <span>Searching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MagnifyingGlassIcon className="w-6 h-6 inline mr-2" />
+                      <span>Search</span>
+                    </>
+                  )}
+                </button>
+                {jobs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Clear cache and reset
+                      localStorage.removeItem('cf:jobResults')
+                      localStorage.removeItem('cf:jobResultsTime')
+                      setJobs([])
+                      setSearchQuery('')
+                      console.log('[SEARCH] Cache cleared, ready for new search')
+                    }}
+                    className="px-6 py-4 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-semibold transition-all whitespace-nowrap"
+                    disabled={loading}
+                  >
+                    🔄 New Search
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
             
             {/* AI Matching Always Active Indicator */}
