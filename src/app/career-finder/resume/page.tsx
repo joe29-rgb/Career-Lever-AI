@@ -172,9 +172,15 @@ export default function CareerFinderResumePage() {
                   setExistingResume(null)
                   setComprehensiveAnalysis(null)
                   try {
+                    // Clear all autopilot cache
                     localStorage.removeItem('cf:resume')
                     localStorage.removeItem('cf:autopilotReady')
                     localStorage.removeItem('cf:comprehensiveAnalysis')
+                    localStorage.removeItem('cf:signals')
+                    localStorage.removeItem('cf:resumeVariants')
+                    localStorage.removeItem('cf:coverLetters')
+                    localStorage.removeItem('cf:emailOutreach')
+                    console.log('[CACHE] All autopilot cache cleared')
                   } catch {}
                 }}
                 className="px-6 py-3 bg-red-500 text-white rounded-xl font-semibold hover:bg-red-600 transition-colors"
@@ -321,6 +327,15 @@ export default function CareerFinderResumePage() {
               onUploadSuccess={async (resume) => {
                 try {
                   console.log('[AUTOPILOT] Resume uploaded, triggering autopilot...', resume._id)
+                  
+                  // Clear old autopilot cache before generating new data
+                  localStorage.removeItem('cf:signals')
+                  localStorage.removeItem('cf:resumeVariants')
+                  localStorage.removeItem('cf:coverLetters')
+                  localStorage.removeItem('cf:emailOutreach')
+                  localStorage.removeItem('cf:comprehensiveAnalysis')
+                  console.log('[CACHE] Old autopilot cache cleared')
+                  
                   localStorage.setItem('cf:autopilotReady', '1')
                   
                   // Trigger autopilot to pre-compute AI data
