@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { extractWeightedKeywords } from '@/lib/keyword-extraction'
+import { withRetryOptional } from '@/lib/db-retry'
 import connectToDatabase from '@/lib/mongodb'
 import Resume from '@/models/Resume'
 
@@ -107,15 +108,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP 3: Save to resume document for caching
+    // STEP 3: Save to resume document for caching (with retry logic)
     resume.resumeSignals = enhancedSignals
     if (comprehensiveResearch) {
       resume.comprehensiveResearch = comprehensiveResearch
       resume.comprehensiveResearchAt = new Date()
     }
-    await resume.save()
+    
+    const saveResult = await withRetryOptional(
+      () => resume.save(),
+      { maxRetries: 3, timeoutMs: 10000 }
+    )
 
-    console.log('[AUTOPILOT] Data cached to resume document')
+    if (saveResult) {
+      console.log('[AUTOPILOT] ✅ Data cached to resume document')
+    } else {
+      console.warn('[AUTOPILOT] ⚠️ Failed to cache to database, but continuing with in-memory data')
+    }
 
     return NextResponse.json({
       success: true,
