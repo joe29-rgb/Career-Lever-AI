@@ -5,7 +5,10 @@ export const dynamic = 'force-dynamic'
 import { ResumeUpload } from '@/components/resume-upload'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
+import CareerFinderStorage from '@/lib/career-finder-storage'
+import { formatResumeWithLineBreaks } from '@/lib/text-formatting'
 import { AutopilotProgressTracker } from '@/components/autopilot-progress-tracker'
 import toast from 'react-hot-toast'
 
@@ -144,8 +147,8 @@ export default function CareerFinderResumePage() {
             </div>
             
             <div className="bg-muted/50 rounded-lg p-4 mb-4 max-h-[200px] overflow-y-auto">
-              <p className="text-sm text-foreground whitespace-pre-wrap">
-                {existingResume.extractedText?.slice(0, 500)}
+              <p className="text-sm text-foreground whitespace-pre-wrap font-mono">
+                {formatResumeWithLineBreaks(existingResume.extractedText || '').slice(0, 500)}
                 {existingResume.extractedText?.length > 500 && '...'}
               </p>
             </div>
