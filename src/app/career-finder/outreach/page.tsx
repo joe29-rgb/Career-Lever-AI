@@ -79,39 +79,56 @@ export default function CareerFinderOutreachPage() {
       // Load job analysis for match insights
       const analysis = CareerFinderStorage.getJobAnalysis()
 
-      // Fetch enhanced company research
-      console.log('[OUTREACH] Fetching enhanced research for:', job.company)
-      const response = await fetch('/api/v2/company/enhanced-research', {
+      // AUTOPILOT: Check cache first
+      const cacheKey = 'cf:emailOutreach'
+      const cached = localStorage.getItem(cacheKey)
+      
+      if (cached) {
+        console.log('[OUTREACH] ✅ Loading from cache')
+        const outreach = JSON.parse(cached)
+        setEmailSubject(outreach.subjects?.[0] || `Application for ${job.title}`)
+        setEmailBody(outreach.templates?.[0]?.body || '')
+        setLoading(false)
+        return
+      }
+
+      console.log('[OUTREACH] 🔄 Generating email outreach via autopilot...')
+
+      // Extract resume highlights
+      const skills = analysis?.matchingSkills || []
+      const resumeHighlights = skills.slice(0, 3)
+
+      // Call new autopilot endpoint
+      const response = await fetch('/api/contacts/email-outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyName: job.company,
+          hiringContact: {
+            name: 'Hiring Manager',
+            title: 'Hiring Manager'
+          },
           jobTitle: job.title,
-          location: job.location
+          company: job.company,
+          resumeHighlights
         })
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        setCompanyData(result.data)
-        console.log('[OUTREACH] Enhanced research loaded:', {
-          contacts: result.data.hiringContactIntelligence?.keyContacts?.length || 0
-        })
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
 
-        // Auto-select first contact if available
-        const contacts = result.data.hiringContactIntelligence?.keyContacts || []
-        if (contacts.length > 0) {
-          selectContact(contacts[0], job, analysis, resumeText)
-        } else {
-          // Use official email if no contacts found
-          const officialEmail = result.data.hiringContactIntelligence?.officialChannels?.jobsEmail || 
-                               result.data.hiringContactIntelligence?.officialChannels?.hrEmail
-          if (officialEmail) {
-            generateEmailForOfficial(officialEmail, job, analysis, resumeText)
-          }
-        }
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        const { subjects, templates } = result.data
+        setEmailSubject(subjects?.[0] || `Application for ${job.title}`)
+        setEmailBody(templates?.[0]?.body || '')
+        
+        // Cache the result
+        localStorage.setItem(cacheKey, JSON.stringify(result.data))
+        console.log('[OUTREACH] ✅ Email outreach generated and cached')
       } else {
-        console.warn('[OUTREACH] Enhanced research failed, using basic contact')
+        throw new Error(result.error || 'Failed to generate email outreach')
       }
 
       setLoading(false)

@@ -16,14 +16,24 @@ export default function CareerFinderCoverLetterPage() {
     (async () => {
       try { localStorage.setItem('cf:progress', JSON.stringify({ step: 6, total: 7 })) } catch {}
       setLoading(true)
+      
       try {
-        // Pull selected template/tone and selected resume variant
-        let chosenTone = 'professional'
-        try { const t = localStorage.getItem('cf:tone'); if (t) chosenTone = t } catch {}
-        let selectedHtml = ''
-        try { selectedHtml = localStorage.getItem('cf:selectedResumeHtml') || '' } catch {}
-
-        // Load resume text (fallback)
+        // AUTOPILOT: Check cache first
+        const cacheKey = 'cf:coverLetters'
+        const cached = localStorage.getItem(cacheKey)
+        
+        if (cached) {
+          console.log('[COVER_LETTER] ✅ Loading from cache')
+          const letters = JSON.parse(cached)
+          setLetterA(letters.variantA || '')
+          setLetterB(letters.variantB || '')
+          setLoading(false)
+          return
+        }
+        
+        console.log('[COVER_LETTER] 🔄 Generating new cover letters via autopilot...')
+        
+        // Load resume text
         let resumeText = ''
         try {
           const rl = await fetch('/api/resume/list')
@@ -32,43 +42,52 @@ export default function CareerFinderCoverLetterPage() {
             resumeText = (rj?.resumes?.[0]?.extractedText || '').toString().slice(0, 8000)
           }
         } catch {}
+        
         // Load selected job
         let selectedJob: any = null
         try { selectedJob = JSON.parse(localStorage.getItem('cf:selectedJob') || 'null') } catch {}
         const jobTitle = selectedJob?.title || 'Role'
-        const companyName = selectedJob?.company || 'Company'
-        const jobDescription = (selectedJob?.description || '').toString().slice(0, 8000)
-        // Load company insights (auto) to provide culture/news/contacts
-        let companyData: any = null
-        try {
-          const website = (()=>{ try{ const u=new URL(selectedJob?.url||''); return 'https://'+u.hostname.replace(/^www\./,'') }catch{return ''} })()
-          const cr = await fetch('/api/v2/company/deep-research', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ companyName, website: website || undefined, jobTitle: jobTitle || undefined }) })
-          if (cr.ok) {
-            const cj = await cr.json()
-            companyData = cj.companyData || cj.research || null
-          }
-        } catch {}
-        // Extract company tone/psychology for styling
-        let psychology: any = null
-        try {
-          if (jobDescription) {
-            const p = await fetch('/api/insights/psychology', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ jobDescription, companySignals: companyData || {} }) })
-            const pj = await p.json().catch(()=>({}))
-            if (p.ok && pj.psychology) psychology = pj.psychology
-          }
-        } catch {}
-        const payload = { raw: true, jobTitle, companyName, jobDescription, resumeText: (selectedHtml || resumeText), companyData, psychology, save: false }
-        // Generate two variants by tweaking tone/length
-        const [ra, rb] = await Promise.all([
-          fetch('/api/cover-letter/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, tone: chosenTone || 'professional', length: 'medium' }) }),
-          fetch('/api/cover-letter/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, tone: (chosenTone === 'professional' ? 'conversational' : 'professional'), length: 'short' }) })
-        ])
-        const ja = await ra.json().catch(()=>({}))
-        const jb = await rb.json().catch(()=>({}))
-        if (ra.ok && ja.coverLetter) setLetterA(ja.coverLetter)
-        if (rb.ok && jb.coverLetter) setLetterB(jb.coverLetter)
-        if ((!ra.ok || !rb.ok) && !ja.coverLetter && !jb.coverLetter) setError('Failed to generate cover letters')
-      } catch {}
+        const company = selectedJob?.company || 'Company'
+        
+        // Call new autopilot endpoint
+        const response = await fetch('/api/cover-letter/generate-v2', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobTitle,
+            company,
+            resumeText,
+            jobRequirements: [],
+            companyInsights: {
+              culture: '',
+              values: [],
+              recentNews: []
+            }
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+        
+        const result = await response.json()
+        
+        if (result.success && result.data) {
+          const { variantA, variantB } = result.data
+          setLetterA(variantA || '')
+          setLetterB(variantB || '')
+          
+          // Cache the result
+          localStorage.setItem(cacheKey, JSON.stringify(result.data))
+          console.log('[COVER_LETTER] ✅ Cover letters generated and cached')
+        } else {
+          throw new Error(result.error || 'Failed to generate cover letters')
+        }
+      } catch (err) {
+        console.error('[COVER_LETTER] Error:', err)
+        setError('Failed to generate cover letters')
+      }
+      
       setLoading(false)
     })()
   }, [])

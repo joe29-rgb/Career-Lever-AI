@@ -108,66 +108,69 @@ export default function CareerFinderOptimizerPage() {
     setVariantA(''); setVariantB('')
     
     try {
-      console.log('[OPTIMIZER] Generating variants with template:', template)
+      // AUTOPILOT: Check cache first
+      const cacheKey = 'cf:resumeVariants'
+      const cached = localStorage.getItem(cacheKey)
       
-      // CRITICAL FIX: Increase to 60-second timeout for slow Perplexity responses
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000)
+      if (cached && !overrideText) {
+        console.log('[OPTIMIZER] ✅ Loading variants from cache')
+        const variants = JSON.parse(cached)
+        setVariantA(variants.variantA || '')
+        setVariantB(variants.variantB || '')
+        hasGeneratedRef.current = true
+        setLoading(false)
+        processingRef.current = false
+        return
+      }
       
-      // ✅ Use unified storage for job description
+      console.log('[OPTIMIZER] 🔄 Generating new variants via autopilot...')
+      
+      // Get job data
       const selectedJob = CareerFinderStorage.getJob()
-      const jobDescription = (selectedJob?.description || selectedJob?.summary || '').toString().slice(0, 8000)
+      const jobTitle = selectedJob?.title || 'Professional'
+      const jobRequirements = selectedJob?.skills || []
       
-      const bodyBase = { 
-        resumeText: (overrideText || resumeText).slice(0, 8000), 
-        template, 
-        jobDescription, 
-        humanize, 
-        highlights 
-      }
-      
-      const [ra, rb] = await Promise.all([
-        fetch('/api/resume-builder/generate', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ ...bodyBase, tone }),
-          signal: controller.signal
-        }),
-        fetch('/api/resume-builder/generate', { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ ...bodyBase, tone: tone === 'professional' ? 'conversational' : 'professional' }),
-          signal: controller.signal
+      // Call new autopilot endpoint
+      const response = await fetch('/api/resume/optimize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: (overrideText || resumeText).slice(0, 8000),
+          jobTitle,
+          jobRequirements,
+          companyInsights: {
+            culture: '',
+            values: [],
+            industry: ''
+          }
         })
-      ])
+      })
       
-      clearTimeout(timeoutId)
-      
-      const ja = await ra.json().catch(()=>({}))
-      const jb = await rb.json().catch(()=>({}))
-      
-      if (ra.ok && ja?.output?.html) {
-        setVariantA(ja.output.html)
-        console.log('[OPTIMIZER] Variant A generated successfully')
-      }
-      if (rb.ok && jb?.output?.html) {
-        setVariantB(jb.output.html)
-        console.log('[OPTIMIZER] Variant B generated successfully')
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
       }
       
-      hasGeneratedRef.current = true
+      const result = await response.json()
+      
+      if (result.success && result.data) {
+        const { variantA: vA, variantB: vB } = result.data
+        setVariantA(vA || '')
+        setVariantB(vB || '')
+        
+        // Cache the result
+        localStorage.setItem(cacheKey, JSON.stringify(result.data))
+        console.log('[OPTIMIZER] ✅ Variants generated and cached')
+        
+        hasGeneratedRef.current = true
+      } else {
+        throw new Error(result.error || 'Failed to generate variants')
+      }
       
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[OPTIMIZER] Request timed out after 60 seconds')
-        // CRITICAL: Show user-friendly error message
-        setVariantA('<div style="padding:20px;text-align:center;color:#ef4444;">⏱️ Resume generation timed out. The AI service is taking longer than expected. Please try again or use the "Generate" button below.</div>')
-        setVariantB('<div style="padding:20px;text-align:center;color:#ef4444;">⏱️ Resume generation timed out. The AI service is taking longer than expected. Please try again or use the "Generate" button below.</div>')
-      } else {
-        console.error('[OPTIMIZER] Generation error:', error)
-        setVariantA(`<div style="padding:20px;text-align:center;color:#ef4444;">❌ Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}</div>`)
-        setVariantB(`<div style="padding:20px;text-align:center;color:#ef4444;">❌ Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}</div>`)
-      }
+      console.error('[OPTIMIZER] Generation error:', error)
+      const errorMsg = `<div style="padding:20px;text-align:center;color:#ef4444;">❌ Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}</div>`
+      setVariantA(errorMsg)
+      setVariantB(errorMsg)
     } finally {
       setLoading(false)
       processingRef.current = false
