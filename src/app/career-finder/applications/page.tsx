@@ -48,53 +48,55 @@ export default function ApplicationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Application Tracker</h1>
-          <p className="text-gray-600">Track and manage your job applications</p>
+        <div className="mb-8 animate-fade-in">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            Application Tracker
+          </h1>
+          <p className="text-gray-600">Track and manage your job applications with style ✨</p>
         </div>
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg shadow">
+          <div className="bg-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
             <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
             <div className="text-sm text-gray-600">Total</div>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg shadow">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-blue-200">
             <div className="text-2xl font-bold text-blue-900">{stats.applied}</div>
             <div className="text-sm text-blue-600">Applied</div>
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg shadow">
+          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-yellow-200">
             <div className="text-2xl font-bold text-yellow-900">{stats.interview}</div>
             <div className="text-sm text-yellow-600">Interview</div>
           </div>
-          <div className="bg-red-50 p-4 rounded-lg shadow">
+          <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-red-200">
             <div className="text-2xl font-bold text-red-900">{stats.rejected}</div>
             <div className="text-sm text-red-600">Rejected</div>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg shadow">
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-green-200">
             <div className="text-2xl font-bold text-green-900">{stats.offer}</div>
             <div className="text-sm text-green-600">Offers</div>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg shadow">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-purple-200">
             <div className="text-2xl font-bold text-purple-900">{stats.accepted}</div>
             <div className="text-sm text-purple-600">Accepted</div>
           </div>
-          <div className="bg-indigo-50 p-4 rounded-lg shadow">
+          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-indigo-200">
             <div className="text-2xl font-bold text-indigo-900">{stats.responseRate}%</div>
             <div className="text-sm text-indigo-600">Response Rate</div>
           </div>
         </div>
 
         {/* Applications List */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Applications</h2>
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+          <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">Applications</h2>
             <Link 
               href="/career-finder/search"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
             >
               + Apply to More Jobs
             </Link>
