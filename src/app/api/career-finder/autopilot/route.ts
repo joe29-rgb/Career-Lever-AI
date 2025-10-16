@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
+import { extractWeightedKeywords } from '@/lib/keyword-extraction'
 import connectToDatabase from '@/lib/mongodb'
 import Resume from '@/models/Resume'
 
@@ -51,19 +52,38 @@ export async function POST(request: NextRequest) {
     console.log('[AUTOPILOT] Starting autopilot flow for resume:', resumeId)
     console.log('[AUTOPILOT] Resume text length:', resumeText.length)
 
-    // STEP 1: Extract resume signals (keywords, location) - API CALL #1
-    console.log('[AUTOPILOT] Extracting resume signals...')
+    // STEP 1: Extract weighted keywords using new multi-factor system
+    console.log('[AUTOPILOT] Extracting weighted keywords...')
+    const keywordResult = await extractWeightedKeywords(resumeText)
+    
+    console.log('[AUTOPILOT] Weighted keywords extracted:', {
+      total: keywordResult.allKeywords.length,
+      top: keywordResult.topKeywords.length,
+      primaryIndustry: keywordResult.metadata.primaryIndustry
+    })
+
+    // STEP 1.5: Extract location from resume signals (still need Perplexity for this)
     const signals = await PerplexityIntelligenceService.extractResumeSignals(
       resumeText,
-      50 // max keywords
+      50
     )
 
-    console.log('[AUTOPILOT] Signals extracted:', {
-      keywords: signals.keywords?.length || 0,
-      location: signals.location
+    // Merge weighted keywords with signals
+    const enhancedSignals = {
+      ...signals,
+      keywords: keywordResult.topKeywords, // Use top 18 weighted keywords
+      allKeywords: keywordResult.allKeywords,
+      keywordMetadata: keywordResult.metadata
+    }
+
+    console.log('[AUTOPILOT] Enhanced signals:', {
+      keywords: enhancedSignals.keywords?.length || 0,
+      location: enhancedSignals.location,
+      primaryIndustry: keywordResult.metadata.primaryIndustry
     })
 
     // STEP 2: Run comprehensive research if job details provided - API CALL #2
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let comprehensiveResearch: any = null
     if (jobTitle && company && jobDescription) {
       console.log('[AUTOPILOT] Running comprehensive job research...')
@@ -88,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
 
     // STEP 3: Save to resume document for caching
-    resume.resumeSignals = signals
+    resume.resumeSignals = enhancedSignals
     if (comprehensiveResearch) {
       resume.comprehensiveResearch = comprehensiveResearch
       resume.comprehensiveResearchAt = new Date()
@@ -99,9 +119,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      signals,
+      signals: enhancedSignals,
+      keywordMetadata: keywordResult.metadata,
       comprehensiveResearch,
-      message: 'Autopilot data prepared and cached'
+      message: 'Autopilot data prepared and cached with weighted keywords'
     })
 
   } catch (error) {
