@@ -318,12 +318,39 @@ export default function CareerFinderResumePage() {
               <h3 className="text-2xl font-bold gradient-text">Resume Upload</h3>
             </div>
             <ResumeUpload 
-              onUploadSuccess={() => {
+              onUploadSuccess={async (resume) => {
                 try {
+                  console.log('[AUTOPILOT] Resume uploaded, triggering autopilot...', resume._id)
                   localStorage.setItem('cf:autopilotReady', '1')
+                  
+                  // Trigger autopilot to pre-compute AI data
+                  const autopilotResponse = await fetch('/api/career-finder/autopilot', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      resumeId: resume._id
+                    })
+                  })
+                  
+                  if (autopilotResponse.ok) {
+                    const autopilotData = await autopilotResponse.json()
+                    console.log('[AUTOPILOT] Success:', autopilotData)
+                    
+                    // Cache signals in localStorage for instant access
+                    if (autopilotData.signals) {
+                      localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
+                    }
+                  } else {
+                    console.warn('[AUTOPILOT] Failed:', await autopilotResponse.text())
+                  }
+                  
                   // Trigger re-fetch
                   window.location.reload()
-                } catch {}
+                } catch (error) {
+                  console.error('[AUTOPILOT] Error:', error)
+                  // Still reload even if autopilot fails
+                  window.location.reload()
+                }
               }} 
               onUploadError={() => {}}
             />
