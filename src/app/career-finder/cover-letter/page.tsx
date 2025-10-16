@@ -48,6 +48,13 @@ export default function CareerFinderCoverLetterPage() {
         const jobTitle = selectedJob?.title || 'Role'
         const company = selectedJob?.company || 'Company'
         
+        // Load userName from signals
+        let userName = '[Your Name]'
+        try {
+          const signals = JSON.parse(localStorage.getItem('cf:signals') || '{}')
+          userName = signals.personalInfo?.name || '[Your Name]'
+        } catch {}
+        
         // Call new autopilot endpoint
         const response = await fetch('/api/cover-letter/generate-v2', {
           method: 'POST',
@@ -61,7 +68,8 @@ export default function CareerFinderCoverLetterPage() {
               culture: '',
               values: [],
               recentNews: []
-            }
+            },
+            userName
           })
         })
         

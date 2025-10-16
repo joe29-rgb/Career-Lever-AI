@@ -1383,7 +1383,7 @@ CRITICAL: Order industries by yearsOfExperience (LONGEST FIRST), not by recency!
   static async extractResumeSignals(
     resumeText: string,
     maxKeywords: number = 50
-  ): Promise<{ keywords: string[]; location?: string; locations?: string[] }> {
+  ): Promise<{ keywords: string[]; location?: string; locations?: string[]; personalInfo?: { name?: string; email?: string; phone?: string } }> {
     const key = makeKey('ppx:resume:signals:v3', { t: resumeText.slice(0, 3000), maxKeywords })
     const cached = getCache(key) as { keywords: string[]; location?: string; locations?: string[] } | undefined
     if (cached) return cached
@@ -1392,7 +1392,7 @@ CRITICAL: Order industries by yearsOfExperience (LONGEST FIRST), not by recency!
       const client = createClient()
       
       // ENTERPRISE PROMPT - WEIGHTED KEYWORD EXTRACTION WITH TIME-BASED RELEVANCE
-      const prompt = `CRITICAL TASK: Extract weighted keywords and location from this resume.
+      const prompt = `CRITICAL TASK: Extract weighted keywords, location, and personal info from this resume.
 
 RESUME TEXT:
 ${resumeText}
@@ -1414,15 +1414,27 @@ LOCATION EXTRACTION RULES:
 4. If multiple locations, use the FIRST one found (likely primary)
 5. Return EXACTLY as found (e.g., "Edmonton, AB" not "Edmonton, Alberta")
 
+PERSONAL INFORMATION EXTRACTION:
+1. Extract full name (usually at the top of resume)
+2. Extract email address (look for @ symbol)
+3. Extract phone number (look for phone patterns)
+4. If not found, return null for that field
+
 RETURN STRICT JSON (no explanation, no markdown):
 {
   "keywords": ["Most Important Skill", "Second Most Important", "...", "50th skill"],
-  "location": "City, PROVINCE"
+  "location": "City, PROVINCE",
+  "personalInfo": {
+    "name": "Full Name",
+    "email": "email@example.com",
+    "phone": "555-1234"
+  }
 }
 
 IMPORTANT: 
 - Order keywords by weighted importance (years of experience + recency)
-- If NO location found after thorough search, return "location": null (do NOT guess or default)`
+- If NO location found after thorough search, return "location": null (do NOT guess or default)
+- If personal info not found, return null for those fields`
 
       console.log('[SIGNALS] Input length:', resumeText.length)
       console.log('[SIGNALS] First 300 chars:', resumeText.slice(0, 300))
@@ -1447,12 +1459,14 @@ IMPORTANT:
         cleanedContent = jsonMatch[0]
       }
 
-      const parsed = JSON.parse(cleanedContent) as { keywords: string[]; location?: string; locations?: string[] }
+      const parsed = JSON.parse(cleanedContent) as { keywords: string[]; location?: string; locations?: string[]; personalInfo?: { name?: string; email?: string; phone?: string } }
       
       console.log('[SIGNALS] Parsed:', {
         keywordCount: parsed.keywords?.length,
         location: parsed.location,
-        hasLocations: !!parsed.locations
+        hasLocations: !!parsed.locations,
+        hasPersonalInfo: !!parsed.personalInfo,
+        name: parsed.personalInfo?.name
       })
 
       setCache(key, parsed)
@@ -1861,6 +1875,7 @@ Return ONLY valid JSON:
       recentNews: Array<{ title: string; summary: string }>
     }
     hiringManager?: { name: string; title: string }
+    userName?: string
   }): Promise<EnhancedResponse<{
     variantA: string
     variantB: string
@@ -1901,6 +1916,7 @@ ${params.resumeText.slice(0, 1500)}
 ${params.companyInsights.recentNews.map(n => `- ${n.title}: ${n.summary}`).join('\n')}
 
 ${params.hiringManager ? `**Hiring Manager:** ${params.hiringManager.name}, ${params.hiringManager.title}` : ''}
+${params.userName ? `**Applicant Name:** ${params.userName}` : ''}
 
 Generate TWO cover letter variants:
 1. **Variant A (Formal & Traditional):** Professional tone, structured format
@@ -1913,6 +1929,7 @@ For each variant:
 - Highlight relevant experience from resume
 - Show genuine enthusiasm for the role
 - Include a strong call-to-action
+- Sign with "${params.userName || '[Your Name]'}" at the end
 
 Also provide 3-5 personalization tips that were used.
 

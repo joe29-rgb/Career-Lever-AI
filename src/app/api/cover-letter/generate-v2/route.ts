@@ -16,7 +16,8 @@ export async function POST(request: NextRequest) {
       jobRequirements, 
       resumeText, 
       companyInsights,
-      hiringManager 
+      hiringManager,
+      userName 
     } = await request.json()
     
     if (!jobTitle || !company || !resumeText) {
@@ -36,7 +37,8 @@ export async function POST(request: NextRequest) {
         values: [], 
         recentNews: [] 
       },
-      hiringManager
+      hiringManager,
+      userName
     })
     
     return NextResponse.json(result)
