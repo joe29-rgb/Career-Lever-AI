@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import { AutopilotProgressTracker } from '@/components/autopilot-progress-tracker'
+import toast from 'react-hot-toast'
 
 export default function CareerFinderResumePage() {
   const [existingResume, setExistingResume] = useState<any>(null)
@@ -355,16 +356,26 @@ export default function CareerFinderResumePage() {
                     if (autopilotData.signals) {
                       localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
                     }
+                    
+                    toast.success('✅ Resume uploaded! Autopilot is preparing your data...', {
+                      duration: 3000
+                    })
                   } else {
                     console.warn('[AUTOPILOT] Failed:', await autopilotResponse.text())
+                    toast.error('⚠️ Resume uploaded, but autopilot failed. You can still proceed manually.', {
+                      duration: 4000
+                    })
                   }
                   
                   // Trigger re-fetch
-                  window.location.reload()
+                  setTimeout(() => window.location.reload(), 1000)
                 } catch (error) {
                   console.error('[AUTOPILOT] Error:', error)
+                  toast.error('⚠️ Resume uploaded, but autopilot encountered an error.', {
+                    duration: 4000
+                  })
                   // Still reload even if autopilot fails
-                  window.location.reload()
+                  setTimeout(() => window.location.reload(), 1000)
                 }
               }} 
               onUploadError={() => {}}
