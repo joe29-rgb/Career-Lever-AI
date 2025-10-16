@@ -5,14 +5,20 @@ import Resume from '@/models/Resume'
 import { dbService } from '@/lib/database'
 import { isRateLimited } from '@/lib/rate-limit'
 import path from 'path'
+import { cleanPDFExtraction } from '@/lib/utils/pdf-cleaner'
 
 function cleanExtractedText(text: string): string {
-  return text
-    .replace(/\b(obj|endobj|stream|endstream|xref|trailer|startxref)\b/gi, '') // PDF artifacts
+  // Use comprehensive PDF cleaner first
+  let cleaned = cleanPDFExtraction(text)
+  
+  // Additional cleaning for resume-specific content
+  cleaned = cleaned
     .replace(/https?:\/\/[^\s]+/gi, '') // URLs
     .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi, '') // Emails (during parsing)
     .replace(/\s+/g, ' ') // Whitespace
     .trim()
+  
+  return cleaned
 }
 
 const MIN_VALID_PDF_TEXT_LENGTH = Number(process.env.RESUME_MIN_TEXT_LENGTH || 150)

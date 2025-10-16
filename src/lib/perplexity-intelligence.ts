@@ -1741,4 +1741,338 @@ IMPORTANT:
       }
     }
   }
+
+  // Resume Optimizer: Generate tailored resume variants
+  static async generateResumeVariants(params: {
+    resumeText: string
+    jobTitle: string
+    jobRequirements: string[]
+    companyInsights: { culture: string; values: string[]; industry: string }
+  }): Promise<EnhancedResponse<{
+    variantA: string
+    variantB: string
+    recommendations: string[]
+  }>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const cacheKey = makeKey('resume-variants', params)
+    
+    const cached = getCache(cacheKey)
+    if (cached) {
+      return {
+        success: true,
+        data: cached as { variantA: string; variantB: string; recommendations: string[] },
+        metadata: { requestId, timestamp: started, duration: 0 },
+        cached: true
+      }
+    }
+
+    try {
+      const client = createClient()
+      const systemPrompt = 'You are a professional resume optimization expert. Return only valid JSON.'
+      const userPrompt = `Analyze this resume and create TWO tailored variants for the target role.
+
+**Resume:**
+${params.resumeText}
+
+**Target Role:** ${params.jobTitle}
+
+**Key Requirements:**
+${params.jobRequirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
+
+**Company Culture:** ${params.companyInsights.culture}
+**Company Values:** ${params.companyInsights.values.join(', ')}
+**Industry:** ${params.companyInsights.industry}
+
+Generate TWO resume variants:
+1. **Variant A (Achievement-Focused):** Emphasize quantifiable achievements and metrics
+2. **Variant B (Skills-Focused):** Highlight technical skills and competencies
+
+For each variant, rewrite the resume to:
+- Match keywords from job requirements
+- Align with company culture and values
+- Use industry-specific terminology
+- Optimize for ATS (Applicant Tracking Systems)
+- Keep formatting clean and professional
+
+Also provide 3-5 strategic recommendations for improving the resume.
+
+Return ONLY valid JSON:
+{
+  "variantA": "Full resume text for Variant A...",
+  "variantB": "Full resume text for Variant B...",
+  "recommendations": ["Recommendation 1", "Recommendation 2", ...]
+}`
+
+      const response = await withRetry(
+        () => client.makeRequest(systemPrompt, userPrompt, { temperature: 0.2, maxTokens: 4000, model: 'sonar-pro' }),
+        MAX_RETRY_ATTEMPTS
+      )
+
+      const parsed = parseAIResponse<{
+        variantA: string
+        variantB: string
+        recommendations: string[]
+      }>(response.content)
+
+      const data = {
+        variantA: parsed.variantA || params.resumeText,
+        variantB: parsed.variantB || params.resumeText,
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : []
+      }
+
+      setCache(cacheKey, data)
+
+      return {
+        success: true,
+        data,
+        metadata: { requestId, timestamp: started, duration: Date.now() - started },
+        cached: false
+      }
+    } catch (error) {
+      console.error('[RESUME_VARIANTS] Error:', error)
+      return {
+        success: false,
+        data: {
+          variantA: params.resumeText,
+          variantB: params.resumeText,
+          recommendations: []
+        },
+        metadata: { 
+          requestId, 
+          timestamp: started, 
+          duration: Date.now() - started,
+          error: (error as Error).message 
+        },
+        cached: false
+      }
+    }
+  }
+
+  // Cover Letter Generator: Create personalized cover letters
+  static async generateCoverLetters(params: {
+    jobTitle: string
+    company: string
+    jobRequirements: string[]
+    resumeText: string
+    companyInsights: {
+      culture: string
+      values: string[]
+      recentNews: Array<{ title: string; summary: string }>
+    }
+    hiringManager?: { name: string; title: string }
+  }): Promise<EnhancedResponse<{
+    variantA: string
+    variantB: string
+    personalization: string[]
+  }>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const cacheKey = makeKey('cover-letters', params)
+    
+    const cached = getCache(cacheKey)
+    if (cached) {
+      return {
+        success: true,
+        data: cached as { variantA: string; variantB: string; personalization: string[] },
+        metadata: { requestId, timestamp: started, duration: 0 },
+        cached: true
+      }
+    }
+
+    try {
+      const client = createClient()
+      const systemPrompt = 'You are an expert cover letter writer. Return only valid JSON.'
+      const userPrompt = `Create TWO personalized cover letter variants for this job application.
+
+**Job Title:** ${params.jobTitle}
+**Company:** ${params.company}
+
+**Key Requirements:**
+${params.jobRequirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
+
+**Resume Summary:**
+${params.resumeText.slice(0, 1500)}
+
+**Company Culture:** ${params.companyInsights.culture}
+**Company Values:** ${params.companyInsights.values.join(', ')}
+
+**Recent Company News:**
+${params.companyInsights.recentNews.map(n => `- ${n.title}: ${n.summary}`).join('\n')}
+
+${params.hiringManager ? `**Hiring Manager:** ${params.hiringManager.name}, ${params.hiringManager.title}` : ''}
+
+Generate TWO cover letter variants:
+1. **Variant A (Formal & Traditional):** Professional tone, structured format
+2. **Variant B (Conversational & Modern):** Engaging tone, storytelling approach
+
+For each variant:
+- Address the hiring manager by name if available
+- Reference specific company news or achievements
+- Align with company culture and values
+- Highlight relevant experience from resume
+- Show genuine enthusiasm for the role
+- Include a strong call-to-action
+
+Also provide 3-5 personalization tips that were used.
+
+Return ONLY valid JSON:
+{
+  "variantA": "Full cover letter text for Variant A...",
+  "variantB": "Full cover letter text for Variant B...",
+  "personalization": ["Tip 1", "Tip 2", ...]
+}`
+
+      const response = await withRetry(
+        () => client.makeRequest(systemPrompt, userPrompt, { temperature: 0.3, maxTokens: 4000, model: 'sonar-pro' }),
+        MAX_RETRY_ATTEMPTS
+      )
+
+      const parsed = parseAIResponse<{
+        variantA: string
+        variantB: string
+        personalization: string[]
+      }>(response.content)
+
+      const data = {
+        variantA: parsed.variantA || 'Cover letter generation failed',
+        variantB: parsed.variantB || 'Cover letter generation failed',
+        personalization: Array.isArray(parsed.personalization) ? parsed.personalization : []
+      }
+
+      setCache(cacheKey, data)
+
+      return {
+        success: true,
+        data,
+        metadata: { requestId, timestamp: started, duration: Date.now() - started },
+        cached: false
+      }
+    } catch (error) {
+      console.error('[COVER_LETTERS] Error:', error)
+      return {
+        success: false,
+        data: {
+          variantA: 'Cover letter generation failed',
+          variantB: 'Cover letter generation failed',
+          personalization: []
+        },
+        metadata: { 
+          requestId, 
+          timestamp: started, 
+          duration: Date.now() - started,
+          error: (error as Error).message 
+        },
+        cached: false
+      }
+    }
+  }
+
+  // Email Outreach Generator: Create personalized email templates
+  static async generateEmailOutreach(params: {
+    hiringContact: { name: string; title: string; email?: string }
+    jobTitle: string
+    company: string
+    resumeHighlights: string[]
+  }): Promise<EnhancedResponse<{
+    subjects: string[]
+    templates: Array<{ type: 'formal' | 'conversational'; body: string }>
+    mailtoLink: string
+  }>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+    const cacheKey = makeKey('email-outreach', params)
+    
+    const cached = getCache(cacheKey)
+    if (cached) {
+      return {
+        success: true,
+        data: cached as { subjects: string[]; templates: Array<{ type: 'formal' | 'conversational'; body: string }>; mailtoLink: string },
+        metadata: { requestId, timestamp: started, duration: 0 },
+        cached: true
+      }
+    }
+
+    try {
+      const client = createClient()
+      const systemPrompt = 'You are an expert at professional networking and cold email outreach. Return only valid JSON.'
+      const userPrompt = `Create personalized email outreach templates for contacting a hiring manager.
+
+**Hiring Contact:** ${params.hiringContact.name}, ${params.hiringContact.title}
+**Job Title:** ${params.jobTitle}
+**Company:** ${params.company}
+
+**Resume Highlights:**
+${params.resumeHighlights.map((h, i) => `${i + 1}. ${h}`).join('\n')}
+
+Generate:
+1. **3 email subject lines** (varied approaches: direct, curious, value-focused)
+2. **2 email templates:**
+   - Formal: Professional, respectful tone
+   - Conversational: Friendly, engaging tone
+
+Each template should:
+- Be concise (150-200 words)
+- Reference the hiring manager by name
+- Show genuine interest in the role/company
+- Highlight 1-2 relevant achievements
+- Include a clear call-to-action
+- Be personalized, not generic
+
+Return ONLY valid JSON:
+{
+  "subjects": ["Subject 1", "Subject 2", "Subject 3"],
+  "templates": [
+    { "type": "formal", "body": "Email body..." },
+    { "type": "conversational", "body": "Email body..." }
+  ]
+}`
+
+      const response = await withRetry(
+        () => client.makeRequest(systemPrompt, userPrompt, { temperature: 0.4, maxTokens: 3000, model: 'sonar-pro' }),
+        MAX_RETRY_ATTEMPTS
+      )
+
+      const parsed = parseAIResponse<{
+        subjects: string[]
+        templates: Array<{ type: 'formal' | 'conversational'; body: string }>
+      }>(response.content)
+
+      const mailtoLink = params.hiringContact.email 
+        ? `mailto:${params.hiringContact.email}?subject=${encodeURIComponent(parsed.subjects?.[0] || 'Inquiry about ' + params.jobTitle)}`
+        : ''
+
+      const data = {
+        subjects: Array.isArray(parsed.subjects) ? parsed.subjects : [],
+        templates: Array.isArray(parsed.templates) ? parsed.templates : [],
+        mailtoLink
+      }
+
+      setCache(cacheKey, data)
+
+      return {
+        success: true,
+        data,
+        metadata: { requestId, timestamp: started, duration: Date.now() - started },
+        cached: false
+      }
+    } catch (error) {
+      console.error('[EMAIL_OUTREACH] Error:', error)
+      return {
+        success: false,
+        data: {
+          subjects: [],
+          templates: [],
+          mailtoLink: ''
+        },
+        metadata: { 
+          requestId, 
+          timestamp: started, 
+          duration: Date.now() - started,
+          error: (error as Error).message 
+        },
+        cached: false
+      }
+    }
+  }
 }
