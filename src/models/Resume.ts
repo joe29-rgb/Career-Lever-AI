@@ -20,6 +20,32 @@ export interface IResume extends Document {
   contactEmail?: string;
   contactPhone?: string;
   yearsExperience?: number;
+  // Autopilot cache fields
+  resumeSignals?: {
+    keywords: string[];
+    location?: string;
+    locations?: string[];
+  };
+  comprehensiveResearch?: any; // Full comprehensive research data
+  comprehensiveResearchAt?: Date; // When research was cached
+  resumeVariants?: {
+    variantA: string;
+    variantB: string;
+    recommendations: string[];
+    generatedAt: Date;
+  };
+  coverLetters?: {
+    variantA: string;
+    variantB: string;
+    personalization: string[];
+    generatedAt: Date;
+  };
+  emailOutreach?: {
+    subjects: string[];
+    templates: Array<{ type: string; body: string }>;
+    mailtoLink: string;
+    generatedAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +104,31 @@ const ResumeSchema: Schema = new Schema({
   contactPhone: { type: String, trim: true },
   yearsExperience: { type: Number, min: 0 },
   customizedVersions: [CustomizedResumeSchema],
+  // Autopilot cache fields
+  resumeSignals: {
+    type: Schema.Types.Mixed,
+    required: false
+  },
+  comprehensiveResearch: {
+    type: Schema.Types.Mixed,
+    required: false
+  },
+  comprehensiveResearchAt: {
+    type: Date,
+    required: false
+  },
+  resumeVariants: {
+    type: Schema.Types.Mixed,
+    required: false
+  },
+  coverLetters: {
+    type: Schema.Types.Mixed,
+    required: false
+  },
+  emailOutreach: {
+    type: Schema.Types.Mixed,
+    required: false
+  },
 }, {
   timestamps: true,
 });
