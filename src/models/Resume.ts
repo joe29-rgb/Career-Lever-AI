@@ -141,5 +141,10 @@ ResumeSchema.index({ userId: 1, updatedAt: -1 }); // Compound: user's recently u
 ResumeSchema.index({ 'customizedVersions.jobApplicationId': 1 }); // Find customized versions
 ResumeSchema.index({ extractedText: 'text', userName: 'text', originalFileName: 'text' }); // Full-text search
 
+// Autopilot cache indexes
+ResumeSchema.index({ userId: 1, comprehensiveResearchAt: -1 }); // Find recent research
+ResumeSchema.index({ 'resumeSignals.keywords': 1 }); // Search by keywords
+ResumeSchema.index({ 'resumeSignals.location': 1 }); // Search by location
+
 export default mongoose.models.Resume || mongoose.model<IResume>('Resume', ResumeSchema);
 

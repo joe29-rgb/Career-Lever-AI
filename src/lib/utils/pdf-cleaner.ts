@@ -32,3 +32,6 @@ export function cleanPDFExtraction(text: string): string {
   
   return cleaned
 }
+
+// Default export for convenience
+export default cleanPDFExtraction

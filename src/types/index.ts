@@ -1,6 +1,13 @@
 // Re-export from unified types
 export * from './unified'
 
+// Autopilot domain types
+export * from './signals'
+export * from './comprehensive'
+export * from './variants'
+export * from './cover-letters'
+export * from './email-outreach'
+
 // Resume Types
 export interface Resume {
   _id?: string;
