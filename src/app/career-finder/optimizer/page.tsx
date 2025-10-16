@@ -7,12 +7,48 @@ import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 
 const TEMPLATES = [
-  { id: 'modern', name: 'Modern' },
-  { id: 'professional', name: 'Professional' },
-  { id: 'creative', name: 'Creative' },
-  { id: 'tech', name: 'Tech-Focused' },
-  { id: 'minimal', name: 'Minimal' },
-  { id: 'executive', name: 'Executive' },
+  { 
+    id: 'modern', 
+    name: 'Modern', 
+    description: 'Clean, contemporary design with visual elements',
+    bestFor: ['Tech', 'Startup', 'Marketing', 'Design'],
+    icon: '🚀'
+  },
+  { 
+    id: 'professional', 
+    name: 'Professional', 
+    description: 'Traditional, formal layout for conservative industries',
+    bestFor: ['Finance', 'Legal', 'Corporate', 'Healthcare'],
+    icon: '💼'
+  },
+  { 
+    id: 'creative', 
+    name: 'Creative', 
+    description: 'Bold, unique design to showcase creativity',
+    bestFor: ['Design', 'Marketing', 'Media', 'Arts'],
+    icon: '🎨'
+  },
+  { 
+    id: 'tech', 
+    name: 'Tech-Focused', 
+    description: 'Developer-friendly with project highlights',
+    bestFor: ['Software Engineering', 'DevOps', 'Data Science'],
+    icon: '💻'
+  },
+  { 
+    id: 'minimal', 
+    name: 'Minimal/ATS', 
+    description: 'Plain text, maximum ATS compatibility',
+    bestFor: ['ATS Systems', 'Large Corporations', 'Government'],
+    icon: '📄'
+  },
+  { 
+    id: 'executive', 
+    name: 'Executive', 
+    description: 'Leadership-focused with metrics emphasis',
+    bestFor: ['C-Suite', 'Director', 'VP', 'Senior Management'],
+    icon: '👔'
+  },
 ]
 
 export default function CareerFinderOptimizerPage() {
@@ -338,20 +374,31 @@ export default function CareerFinderOptimizerPage() {
       {/* Template Selection */}
       <div className="bg-card border border-border rounded-xl p-6 mb-6">
         <h2 className="text-xl font-bold text-foreground mb-2">Choose Resume Template</h2>
-        <p className="text-sm text-muted-foreground mb-4">Select a template style for your optimized resume</p>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <p className="text-sm text-muted-foreground mb-4">Select a template style that matches your industry and experience level</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {TEMPLATES.map(t => (
             <button 
               key={t.id} 
-              className={`border border-border rounded-lg p-3 text-left hover:shadow-lg transition-all ${template===t.id?'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500':''}`} 
+              className={`border border-border rounded-lg p-4 text-left hover:shadow-lg transition-all ${template===t.id?'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500':''}`} 
               onClick={()=>handleTemplateChange(t.id)}
             >
-              <div className="w-full h-16 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded mb-2 overflow-hidden">
-                <div className="h-4 bg-blue-500/60"></div>
-                <div className="h-2 bg-gray-300 dark:bg-gray-600 mt-1 w-3/4 mx-1"></div>
-                <div className="h-2 bg-gray-300 dark:bg-gray-600 mt-1 w-2/3 mx-1"></div>
+              <div className="flex items-start gap-3 mb-3">
+                <div className="text-3xl">{t.icon}</div>
+                <div className="flex-1">
+                  <div className="font-semibold text-foreground text-lg mb-1">{t.name}</div>
+                  <div className="text-xs text-muted-foreground">{t.description}</div>
+                </div>
+                {template === t.id && (
+                  <div className="text-blue-500 text-xl">✓</div>
+                )}
               </div>
-              <div className="font-semibold truncate text-foreground">{t.name}</div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {t.bestFor.map((industry) => (
+                  <span key={industry} className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                    {industry}
+                  </span>
+                ))}
+              </div>
             </button>
           ))}
         </div>
