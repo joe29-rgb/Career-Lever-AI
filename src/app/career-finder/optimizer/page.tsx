@@ -96,6 +96,13 @@ export default function CareerFinderOptimizerPage() {
     CareerFinderStorage.setTone(tone)
   }, [tone])
 
+  const handleRegenerate = async () => {
+    // Clear cache to force new generation
+    localStorage.removeItem('cf:resumeVariants')
+    console.log('[OPTIMIZER] 🔄 Cache cleared, regenerating variants...')
+    await generateVariants()
+  }
+
   const generateVariants = async () => {
     // CRITICAL FIX: Prevent multiple simultaneous calls
     if (processingRef.current) {
@@ -411,7 +418,7 @@ export default function CareerFinderOptimizerPage() {
       </div>
       {/* Action Buttons */}
       <div className="flex items-center justify-between gap-4 mt-6">
-        <Button variant="outline" onClick={generateVariants} disabled={loading} className="px-6">
+        <Button variant="outline" onClick={handleRegenerate} disabled={loading} className="px-6">
           {loading ? 'Generating...' : 'Regenerate Variants'}
         </Button>
         <div className="flex items-center gap-4">
