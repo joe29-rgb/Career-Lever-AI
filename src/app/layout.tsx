@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -12,13 +11,6 @@ import Link from 'next/link'
 import { Toaster } from 'react-hot-toast'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { DebugPanel } from '@/components/debug-panel'
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-  fallback: ['system-ui', 'arial'],
-})
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
@@ -42,7 +34,7 @@ export default function RootLayout({
   }
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans bg-background text-foreground min-h-screen`}>
+      <body className="font-sans bg-background text-foreground min-h-screen" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
         <script dangerouslySetInnerHTML={{ __html: `try{(${function(){
           if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
         }.toString()})()}catch(e){}` }} />
