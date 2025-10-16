@@ -125,6 +125,29 @@ export interface CompanyResearchResult {
   glassdoorRating?: CompanyGlassdoorRating
   stockProfile?: CompanyStockProfile
   timestamp?: number
+  
+  // Optional comprehensive research data (from comprehensiveJobResearch)
+  jobAnalysis?: {
+    matchScore: number
+    matchingSkills: string[]
+    missingSkills: string[]
+    skillsToHighlight: string[]
+    recommendations: string[]
+    estimatedFit: string
+  }
+  news?: Array<{
+    title: string
+    summary: string
+    url: string
+    date?: string
+    source?: string
+    impact?: string
+  }>
+  strategicRecommendations?: {
+    applicationStrategy: string
+    contactStrategy: string
+    interviewPrep: string[]
+  }
 }
 
 export type CompanyResearchPayload = Partial<CompanyResearchResult> & {

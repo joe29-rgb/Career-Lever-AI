@@ -162,7 +162,7 @@ export default function CareerFinderCompanyPage() {
                           <p className="text-sm">{companyData.marketIntelligence.competitivePosition}</p>
                         </div>
                       )}
-                      {companyData.marketIntelligence.industryTrends?.length > 0 && (
+                      {companyData.marketIntelligence.industryTrends && companyData.marketIntelligence.industryTrends.length > 0 && (
                         <div>
                           <h4 className="font-semibold text-primary mb-2">Industry Trends</h4>
                           <ul className="space-y-1">
@@ -175,7 +175,7 @@ export default function CareerFinderCompanyPage() {
                           </ul>
                         </div>
                       )}
-                      {companyData.marketIntelligence.recentNews?.length > 0 && (
+                      {companyData.marketIntelligence.recentNews && companyData.marketIntelligence.recentNews.length > 0 && (
                         <div>
                           <h4 className="font-semibold text-primary mb-2">Recent Developments</h4>
                           <ul className="space-y-1">

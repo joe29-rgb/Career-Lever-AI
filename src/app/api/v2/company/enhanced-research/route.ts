@@ -1,6 +1,9 @@
 /**
  * Enhanced Company Research API
  * Returns comprehensive intelligence including hiring contacts, AI threat analysis, and strategic recommendations
+ * 
+ * ⚠️ TEMPORARILY DISABLED: enhancedCompanyResearch method removed due to file corruption
+ * TODO: Restore after perplexity-intelligence.ts is fixed
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -13,6 +16,14 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
+  return NextResponse.json(
+    { error: 'Endpoint temporarily disabled during maintenance' },
+    { status: 503 }
+  )
+}
+
+/* COMMENTED OUT UNTIL METHOD IS RESTORED
+async function POST_ORIGINAL(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -69,4 +80,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
-
+*/

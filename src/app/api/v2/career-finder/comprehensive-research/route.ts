@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       resumeSkills
     })
 
-    if (!result.success) {
+    if (!result.success || !result.data) {
       console.error('[COMPREHENSIVE_RESEARCH_API] Research failed:', result.metadata.error)
       return NextResponse.json(
         { error: 'Research failed', details: result.metadata.error },
@@ -73,4 +73,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

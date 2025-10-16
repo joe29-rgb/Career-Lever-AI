@@ -1,6 +1,4 @@
 import * as crypto from 'crypto'
-import { LRUCache } from 'lru-cache'
-import { z } from 'zod'
 import { PerplexityService } from './perplexity-service'
 import { 
   CANADIAN_JOB_BOARDS, 
@@ -21,23 +19,21 @@ const RETRY_DELAY_MS = Number(process.env.PPX_RETRY_DELAY || 1000)
 type CacheRecord = {
   value: unknown
   metadata: { createdAt: number; hitCount: number; lastAccessed: number }
+  expiresAt: number
 }
 
-const cache = new LRUCache<string, CacheRecord>({
-  max: 1000,
-  maxSize: 50_000_000,
-  ttl: CACHE_TTL_MS,
-  sizeCalculation: (record) => {
-    if (!record) return 0
-    try {
-      return JSON.stringify(record.value).length
-    } catch {
-      return 0
+// Simple Map-based cache with TTL
+const cache = new Map<string, CacheRecord>()
+
+// Cache cleanup interval (every hour)
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, record] of cache.entries()) {
+    if (now > record.expiresAt) {
+      cache.delete(key)
     }
-  },
-  updateAgeOnGet: true,
-  updateAgeOnHas: true
-})
+  }
+}, 60 * 60 * 1000)
 
 function makeKey(prefix: string, payload: unknown): string {
   const raw = typeof payload === 'string' ? payload : JSON.stringify(payload)
@@ -47,6 +43,13 @@ function makeKey(prefix: string, payload: unknown): string {
 function getCache(key: string): unknown | undefined {
   const entry = cache.get(key)
   if (!entry) return undefined
+  
+  // Check if expired
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key)
+    return undefined
+  }
+  
   entry.metadata.hitCount += 1
   entry.metadata.lastAccessed = Date.now()
   return entry.value
@@ -55,6 +58,7 @@ function getCache(key: string): unknown | undefined {
 function setCache(key: string, value: unknown) {
   cache.set(key, {
     value,
+    expiresAt: Date.now() + CACHE_TTL_MS,
     metadata: {
       createdAt: Date.now(),
       hitCount: 0,
@@ -96,27 +100,10 @@ async function withRetry<T>(
   throw (lastError instanceof Error ? lastError : new Error('Operation failed'))
 }
 
-function extractJsonBlock(raw: string): string {
-  let cleaned = raw.trim()
-  cleaned = cleaned.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
-  const match = cleaned.match(/({[\s\S]*}|\[[\s\S]*\])/)
-  if (match) {
-    return match[0]
-  }
-  return cleaned
-}
-
 class PerplexityError extends Error {
   constructor(message: string, readonly cause?: unknown) {
     super(message)
     this.name = 'PerplexityError'
-  }
-}
-
-class ValidationError extends PerplexityError {
-  constructor(message: string, readonly issues: z.ZodIssue[]) {
-    super(message)
-    this.name = 'ValidationError'
   }
 }
 
@@ -280,6 +267,157 @@ Rules:
 - Mark estimates or unverified signals clearly.
 - NEVER add text before or after the JSON response.
 `
+
+interface ComprehensiveJobResearchData {
+  jobAnalysis: {
+    matchScore: number
+    matchingSkills: string[]
+    missingSkills: string[]
+    skillsToHighlight: string[]
+    recommendations: string[]
+    estimatedFit: string
+  }
+  companyIntel: {
+    company: string
+    description: string
+    size?: string
+    revenue?: string
+    industry?: string
+    founded?: string
+    headquarters?: string
+    website?: string
+    marketPosition?: string
+  }
+  companyPsychology: {
+    culture: string
+    values: string[]
+    managementStyle?: string
+    workEnvironment?: string
+  }
+  hiringContacts: Array<{
+    name: string
+    title: string
+    department?: string
+    email?: string
+    linkedinUrl?: string
+    authority: 'decision maker' | 'recruiter' | 'manager' | 'coordinator'
+    confidence: number
+    contactMethod?: string
+  }>
+  marketIntelligence: {
+    competitivePosition?: string
+    industryTrends?: string
+    financialStability?: string
+    recentPerformance?: string
+  }
+  news: Array<{
+    title: string
+    summary: string
+    url: string
+    date?: string
+    source?: string
+    impact?: string
+  }>
+  reviews: Array<{
+    platform: string
+    rating?: number
+    summary: string
+    url: string
+    pros?: string[]
+    cons?: string[]
+  }>
+  compensation: {
+    salaryRange?: string
+    benefits?: string
+  }
+  strategicRecommendations: {
+    applicationStrategy: string
+    contactStrategy: string
+    interviewPrep: string[]
+  }
+  sources: string[]
+  confidenceLevel: number
+}
+
+interface EnhancedCompanyResearchData {
+  companyIntelligence: {
+    name: string
+    industry?: string
+    founded?: string
+    headquarters?: string
+    employeeCount?: string
+    revenue?: string
+    website?: string
+    description?: string
+    marketPosition?: string
+    financialStability?: string
+    recentPerformance?: string
+  }
+  hiringContactIntelligence: {
+    officialChannels?: {
+      careersPage?: string
+      jobsEmail?: string
+      hrEmail?: string
+      phone?: string
+      address?: string
+    }
+    keyContacts?: Array<{
+      name: string
+      title: string
+      department?: string
+      linkedinUrl?: string
+      email?: string
+      authority?: string
+      contactMethod?: string
+    }>
+    emailFormat?: string
+    socialMedia?: Record<string, string>
+  }
+  companyPsychology?: {
+    culture?: string
+    values?: string[]
+    managementStyle?: string
+    workEnvironment?: string
+  }
+  reviewAnalysis?: {
+    glassdoor?: {
+      rating?: number
+      reviewCount?: number
+      ceoApproval?: string | number
+      recommendToFriend?: string | number
+      pros?: string[]
+      cons?: string[]
+    }
+    employeeSentiment?: string
+  }
+  aiAutomationThreat?: {
+    roleRisk?: string
+    automationProbability?: string
+    timeframe?: string
+    companyAIAdoption?: string
+    futureOutlook?: string
+    recommendations?: string[]
+  }
+  recentNews?: Array<{
+    headline?: string
+    date?: string
+    source?: string
+    url?: string
+    impact?: string
+  }>
+  compensation?: {
+    salaryRange?: string
+    benefits?: string
+  }
+  redFlags?: string[]
+  strategicRecommendations?: {
+    applicationStrategy?: string
+    contactStrategy?: string
+    interviewPrep?: string[]
+  }
+  sources?: string[]
+  confidenceLevel?: number
+}
 
 export class PerplexityIntelligenceService {
   // V2: Enhanced company research with retries and metadata
@@ -1116,7 +1254,7 @@ Return ONLY the JSON array. If you can't find ANY real people after searching AL
   // Cache utilities
   static getCacheStats() {
     const stats = { totalEntries: cache.size, totalHits: 0, entriesByPrefix: {} as Record<string, number> }
-    cache.forEach((entry: CacheEntry, key: string) => {
+    cache.forEach((entry: CacheRecord, key: string) => {
       const prefix = key.split(':')[0]
       stats.entriesByPrefix[prefix] = (stats.entriesByPrefix[prefix] || 0) + 1
       const meta = entry.metadata as { hitCount?: number } | undefined
@@ -1127,7 +1265,7 @@ Return ONLY the JSON array. If you can't find ANY real people after searching AL
 
   static clearCache(prefix?: string) {
     if (!prefix) { const size = cache.size; cache.clear(); return size }
-    const keys = Array.from(cache.keys()).filter(k => k.startsWith(prefix))
+    const keys = (Array.from(cache.keys()) as string[]).filter(k => k.startsWith(prefix))
     keys.forEach(k => cache.delete(k))
     return keys.length
   }
@@ -1308,149 +1446,91 @@ IMPORTANT:
       if (jsonMatch) {
         cleanedContent = jsonMatch[0]
       }
+
+      const parsed = JSON.parse(cleanedContent) as { keywords: string[]; location?: string; locations?: string[] }
       
+      console.log('[SIGNALS] Parsed:', {
+        keywordCount: parsed.keywords?.length,
+        location: parsed.location,
+        hasLocations: !!parsed.locations
+      })
 
-**MANDATORY SEARCH SOURCES:**
-- Use Google search extensively
-- Search LinkedIn company page: site:linkedin.com/company/${companySlug}
-- Search LinkedIn employees: site:linkedin.com "${params.companyName}" CEO OR president OR manager OR recruiter OR HR
-- Search all social media platforms (Twitter, Facebook, Instagram, YouTube)
-- Search company website thoroughly: site:${companyWebsite}
-- Search business directories (BBB, Yellow Pages, ZoomInfo, Glassdoor)
-- Search news sources and press releases
-- Search "${params.companyName}" headquarters address phone email
-- Search "${params.companyName}" site:glassdoor.com for reviews
-
-**RETURN DETAILED JSON:**
-{
-  "companyIntelligence": {
-    "name": "${params.companyName}",
-    "industry": "specific industry",
-    "founded": "year",
-    "headquarters": "full address",
-    "employeeCount": "employee range",
-    "revenue": "annual revenue",
-    "website": "official website",
-    "description": "detailed overview (NOT 'No description available')",
-    "marketPosition": "industry ranking",
-    "financialStability": "assessment",
-    "recentPerformance": "last 12 months highlights"
-  },
-  "hiringContactIntelligence": {
-    "officialChannels": {
-      "careersPage": "URL",
-      "jobsEmail": "email",
-      "hrEmail": "email",
-      "phone": "phone number",
-      "address": "mailing address"
-    },
-    "keyContacts": [
-      {
-        "name": "Full Name",
-        "title": "Job Title",
-        "department": "Department",
-        "linkedinUrl": "LinkedIn URL",
-        "email": "email if available",
-        "authority": "decision maker | recruiter | manager",
-        "contactMethod": "recommended approach"
-      }
-    ],
-    "emailFormat": "first.last@company.com pattern",
-    "socialMedia": {
-      "linkedin": "company page URL",
-      "twitter": "handle and URL",
-      "facebook": "page URL",
-      "instagram": "handle and URL"
+      setCache(key, parsed)
+      return parsed
+    } catch (error) {
+      console.error('[SIGNALS] Extraction failed:', error)
+      return { keywords: [], location: undefined }
     }
+  }
+
+  /**
+   * ONE-SHOT COMPREHENSIVE RESEARCH
+   * Replaces multiple API calls with a single comprehensive prompt
+   * Returns: Job Analysis + Company Research + Hiring Contacts + News + Reviews
+   * 
+   * @param params - Job and resume details
+   * @returns Complete research data for all Career Finder pages
+   */
+  static async comprehensiveJobResearch(params: {
+    jobTitle: string
+    company: string
+    jobDescription: string
+    location?: string
+    resumeText: string
+    resumeSkills?: string[]
+  }): Promise<EnhancedResponse<ComprehensiveJobResearchData | null>> {
+    const requestId = generateRequestId()
+    const started = Date.now()
+
+    try {
+      const client = createClient()
+
+      const prompt = `COMPREHENSIVE JOB APPLICATION RESEARCH
+
+- Position: ${params.jobTitle}
+- Company: ${params.company}
+- Location: ${params.location || 'Not specified'}
+- Description: ${params.jobDescription.slice(0, 1000)}
+
+CANDIDATE SKILLS: ${params.resumeSkills ? params.resumeSkills.slice(0, 20).join(', ') : 'Extract from resume below'}
+
+RESUME TEXT (First 2000 chars):
+${params.resumeText.slice(0, 2000)}
+
+---
+
+YOUR MISSION: Conduct a comprehensive research report covering ALL of the following sections. This is a ONE-TIME research call, so be thorough and detailed. Include clickable URLs wherever possible.
+
+OUTPUT FORMAT (Valid JSON ONLY):
+\`\`\`json
+{
+  "jobAnalysis": {
+    "matchScore": 85,
+    "matchingSkills": ["skill1", "skill2"],
+    "missingSkills": ["skill3", "skill4"],
+    "skillsToHighlight": ["top skill to emphasize"],
+    "recommendations": ["specific action 1", "specific action 2"],
+    "estimatedFit": "Excellent|Good|Moderate|Poor"
+  },
+  "companyIntel": {
+    "company": "${params.company}",
+    "description": "detailed company overview (minimum 200 chars)",
+    "size": "employee count or range",
+    "revenue": "annual revenue if public",
+    "industry": "primary industry",
+    "founded": "year",
+    "headquarters": "city, state/country",
+    "website": "https://company.com",
+    "marketPosition": "market leader|challenger|niche player"
   },
   "companyPsychology": {
-    "culture": "detailed culture description",
-    "values": ["core values in practice"],
-    "managementStyle": "leadership approach",
-    "workEnvironment": "description"
+    "culture": "detailed culture description based on reviews and public info",
+    "values": ["value1", "value2", "value3"],
+    "managementStyle": "hierarchical|flat|hybrid",
+    "workEnvironment": "remote-friendly|hybrid|office-centric"
   },
-  "reviewAnalysis": {
-    "glassdoor": {
-      "rating": 0,
-      "reviewCount": 0,
-      "ceoApproval": "percentage",
-      "recommendToFriend": "percentage",
-      "pros": ["top positives"],
-      "cons": ["top concerns"]
-    },
-    "employeeSentiment": "overall sentiment"
-  },
-  "aiAutomationThreat": {
-    "roleRisk": "LOW | MODERATE | HIGH",
-    "automationProbability": "percentage",
-    "timeframe": "years",
-    "companyAIAdoption": "current AI usage",
-    "futureOutlook": "5-year projection",
-    "recommendations": ["skill development suggestions"]
-  },
-  "recentNews": [
+  "hiringContacts": [
     {
-      "headline": "news headline",
-      "date": "YYYY-MM-DD",
-      "source": "publication",
-      "url": "article URL",
-      "impact": "employment impact"
-    }
-  ],
-  "compensation": {
-    "salaryRange": "range for ${params.jobTitle || 'typical roles'}",
-    "benefits": "benefits package description"
-  },
-  "redFlags": ["concerning patterns if any"],
-  "strategicRecommendations": {
-    "applicationStrategy": "how to apply",
-    "contactStrategy": "who to contact first",
-    "interviewPrep": "company-specific tips"
-  },
-  "sources": ["list of sources"],
-  "confidenceLevel": 0.95
-}
-
-**CRITICAL:** 
-- Find REAL contact information (names, emails, LinkedIn profiles)
-- Minimum 3 contacts if company has 10+ employees
-- DO NOT return "Unknown" or "No description available" - search until you find data
-- Include specific salary information if available
-- Assess AI/automation threat for ${params.jobTitle || 'the role'}
-- Provide actionable contact strategies
-
-Return ONLY valid JSON.`
-
-      return client.makeRequest(
-        'You are an elite corporate intelligence analyst. Conduct comprehensive research and return detailed JSON with hiring contacts and strategic intelligence.',
-        prompt,
-        { temperature: 0.1, maxTokens: 6000, model: 'sonar-pro' }
-      )
-    })
-
-    const cleaned = out.content.trim().replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
-    const parsed = JSON.parse(cleaned) as Partial<EnhancedCompanyResearchData>
-
-    const data: EnhancedCompanyResearchData = {
-      companyIntelligence: {
-        name: parsed.companyIntelligence?.name ?? params.companyName,
-        industry: parsed.companyIntelligence?.industry,
-        founded: parsed.companyIntelligence?.founded,
-        headquarters: parsed.companyIntelligence?.headquarters,
-        employeeCount: parsed.companyIntelligence?.employeeCount,
-        revenue: parsed.companyIntelligence?.revenue,
-        website: parsed.companyIntelligence?.website,
-        description: parsed.companyIntelligence?.description ?? 'No description available',
-        marketPosition: parsed.companyIntelligence?.marketPosition,
-        financialStability: parsed.companyIntelligence?.financialStability,
-        recentPerformance: parsed.companyIntelligence?.recentPerformance
-      },
-      hiringContactIntelligence: {
-        officialChannels: parsed.hiringContactIntelligence?.officialChannels,
-        keyContacts: Array.isArray(parsed.hiringContactIntelligence?.keyContacts)
-          ? parsed.hiringContactIntelligence.keyContacts
-              .map((contact) =>
-                contact?.name && contact?.title
       "name": "Real Person Name",
       "title": "Talent Acquisition Manager",
       "department": "Human Resources",
@@ -1473,7 +1553,7 @@ Return ONLY valid JSON.`
       "url": "https://newsource.com/article",
       "date": "2024-01-15",
       "source": "TechCrunch",
-      "impact": "positive | neutral | negative for employment"
+      "impact": "positive|neutral|negative for employment"
     }
   ],
   "reviews": [
@@ -1495,39 +1575,38 @@ Return ONLY valid JSON.`
     "contactStrategy": "who to contact first and how",
     "interviewPrep": ["prepare for X", "research Y", "practice Z"]
   },
-  "sources": [
-    "https://source1.com",
-    "https://source2.com",
-    "https://source3.com"
-  ],
+  "sources": ["https://source1.com", "https://source2.com", "https://source3.com"],
   "confidenceLevel": 0.85
 }
 \`\`\`
 
-## CRITICAL REQUIREMENTS
-1. **Job Analysis**: Compare resume skills to job requirements, calculate match score
-2. **Company Intel**: Search company website, LinkedIn, Crunchbase, Wikipedia for REAL data
-3. **Hiring Contacts**: Find REAL people on LinkedIn, company website, job boards
+CRITICAL REQUIREMENTS:
+1. Job Analysis: Compare resume skills to job requirements, calculate match score
+2. Company Intel: Search company website, LinkedIn, Crunchbase, Wikipedia for REAL data
+3. Hiring Contacts: Find REAL people on LinkedIn, company website, job boards
    - Minimum 2-3 contacts if company has 10+ employees
    - Include verified LinkedIn URLs and emails where possible
    - DO NOT return fake/placeholder names
-4. **News**: Find 2-5 recent news articles about the company (with clickable URLs)
-5. **Reviews**: Search Glassdoor, Indeed, Comparably for employee reviews (with clickable URLs)
-6. **Market Intelligence**: Research industry trends, competitive landscape
-7. **Strategic Recommendations**: Provide actionable, company-specific advice
+4. News: Find 2-5 recent news articles about the company with clickable URLs
+5. Reviews: Search Glassdoor, Indeed, Comparably for employee reviews with clickable URLs
+6. Market Intelligence: Research industry trends, competitive landscape
+7. Strategic Recommendations: Provide actionable, company-specific advice
 
-## IMPORTANT
+IMPORTANT:
 - Return ONLY valid JSON (no markdown, no explanations)
 - All URLs must be real and clickable
 - If data not found after searching, use "Not available" but ALWAYS try multiple sources first
-- Focus on actionable intelligence, not generic advice
-`
+- Focus on actionable intelligence, not generic advice`
 
       const out = await withRetry(async () => {
         return client.makeRequest(
           'You are an elite corporate intelligence analyst providing comprehensive job application research. Return detailed JSON with all requested fields.',
           prompt,
-          { temperature: 0.2, maxTokens: 8000, model: 'sonar-pro' }
+          {
+            temperature: 0.2,
+            maxTokens: 8000,
+            model: 'sonar-pro'
+          }
         )
       })
 
@@ -1540,13 +1619,14 @@ Return ONLY valid JSON.`
       cleanedContent = cleanedContent.replace(/^```(?:json)?\s*/gm, '').replace(/```\s*$/gm, '')
       
       // Extract JSON object
-      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
+      const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         cleanedContent = jsonMatch[0]
       }
 
       const parsed = JSON.parse(cleanedContent) as Partial<ComprehensiveJobResearchData>
 
+      // Construct with fallbacks
       const data: ComprehensiveJobResearchData = {
         jobAnalysis: {
           matchScore: parsed.jobAnalysis?.matchScore ?? 0,
@@ -1574,16 +1654,18 @@ Return ONLY valid JSON.`
           workEnvironment: parsed.companyPsychology?.workEnvironment
         },
         hiringContacts: Array.isArray(parsed.hiringContacts)
-          ? parsed.hiringContacts.map((contact) => ({
-              name: contact.name,
-              title: contact.title,
-              department: contact.department,
-              email: contact.email,
-              linkedinUrl: contact.linkedinUrl,
-              authority: contact.authority ?? 'manager',
-              confidence: contact.confidence ?? 0,
-              contactMethod: contact.contactMethod
-            })).filter((contact): contact is NonNullable<typeof contact> => !!(contact?.name && contact?.title))
+          ? parsed.hiringContacts
+              .map(contact => ({
+                name: contact.name,
+                title: contact.title,
+                department: contact.department,
+                email: contact.email,
+                linkedinUrl: contact.linkedinUrl,
+                authority: contact.authority ?? 'manager',
+                confidence: contact.confidence ?? 0,
+                contactMethod: contact.contactMethod
+              }))
+              .filter(contact => !!contact?.name && contact?.title)
           : [],
         marketIntelligence: {
           competitivePosition: parsed.marketIntelligence?.competitivePosition,
@@ -1593,34 +1675,30 @@ Return ONLY valid JSON.`
         },
         news: Array.isArray(parsed.news)
           ? parsed.news
-              .map((item) =>
-                item?.title && item?.summary && item?.url
-                  ? {
-                      title: item.title,
-                      summary: item.summary,
-                      url: item.url,
-                      date: item.date,
-                      source: item.source,
-                      impact: item.impact
-                    }
-                  : undefined
-              )
+              .map(item => (item?.title && item?.summary && item?.url
+                ? {
+                    title: item.title,
+                    summary: item.summary,
+                    url: item.url,
+                    date: item.date,
+                    source: item.source,
+                    impact: item.impact
+                  }
+                : undefined))
               .filter((item): item is NonNullable<typeof item> => !!item)
           : [],
         reviews: Array.isArray(parsed.reviews)
           ? parsed.reviews
-              .map((item) =>
-                item?.platform && item?.summary && item?.url
-                  ? {
-                      platform: item.platform,
-                      rating: item.rating,
-                      summary: item.summary,
-                      url: item.url,
-                      pros: item.pros,
-                      cons: item.cons
-                    }
-                  : undefined
-              )
+              .map(item => (item?.platform && item?.summary && item?.url
+                ? {
+                    platform: item.platform,
+                    rating: item.rating,
+                    summary: item.summary,
+                    url: item.url,
+                    pros: item.pros,
+                    cons: item.cons
+                  }
+                : undefined))
               .filter((item): item is NonNullable<typeof item> => !!item)
           : [],
         compensation: parsed.compensation ?? {},
@@ -1629,26 +1707,23 @@ Return ONLY valid JSON.`
           contactStrategy: parsed.strategicRecommendations?.contactStrategy ?? 'Reach out to HR via LinkedIn',
           interviewPrep: parsed.strategicRecommendations?.interviewPrep ?? []
         },
-        sources: Array.isArray(parsed.sources) ? parsed.sources.filter((source): source is string => typeof source === 'string') : [],
+        sources: Array.isArray(parsed.sources)
+          ? parsed.sources.filter((source): source is string => typeof source === 'string')
+          : [],
         confidenceLevel: parsed.confidenceLevel ?? 0.5
       }
 
-      console.log('[COMPREHENSIVE_RESEARCH] ✅ Research complete:', {
-        matchScore: data.jobAnalysis.matchScore,
-        contacts: data.hiringContacts.length,
-        news: data.news.length,
-        reviews: data.reviews.length,
-        confidence: data.confidenceLevel
-      })
+      console.log('[COMPREHENSIVE_RESEARCH] Complete -', 
+        'matchScore:', data.jobAnalysis.matchScore, 
+        'contacts:', data.hiringContacts.length, 
+        'news:', data.news.length, 
+        'reviews:', data.reviews.length, 
+        'confidence:', data.confidenceLevel)
 
       return {
         success: true,
         data,
-        metadata: {
-          requestId,
-          timestamp: started,
-          duration: Date.now() - started
-        },
+        metadata: { requestId, timestamp: started, duration: Date.now() - started },
         cached: false
       }
     } catch (error) {
@@ -1656,165 +1731,14 @@ Return ONLY valid JSON.`
       return {
         success: false,
         data: null,
-        metadata: {
-          requestId,
-          timestamp: started,
+        metadata: { 
+          requestId, 
+          timestamp: started, 
           duration: Date.now() - started,
-          error: (error as Error).message
+          error: (error as Error).message 
         },
         cached: false
       }
     }
   }
-}
-
-interface EnhancedCompanyResearchData {
-  companyIntelligence: {
-    name: string
-    industry?: string
-    founded?: string
-    headquarters?: string
-    employeeCount?: string
-    revenue?: string
-    website?: string
-    description?: string
-    marketPosition?: string
-    financialStability?: string
-    recentPerformance?: string
-  }
-  hiringContactIntelligence: {
-    officialChannels?: {
-      careersPage?: string
-      jobsEmail?: string
-      hrEmail?: string
-      phone?: string
-      address?: string
-    }
-    keyContacts?: Array<{
-      name: string
-      title: string
-      department?: string
-      linkedinUrl?: string
-      email?: string
-      authority?: string
-      contactMethod?: string
-    }>
-    emailFormat?: string
-    socialMedia?: Record<string, string>
-  }
-  companyPsychology?: {
-    culture?: string
-    values?: string[]
-    managementStyle?: string
-    workEnvironment?: string
-  }
-  reviewAnalysis?: {
-    glassdoor?: {
-      rating?: number
-      reviewCount?: number
-      ceoApproval?: string | number
-      recommendToFriend?: string | number
-      pros?: string[]
-      cons?: string[]
-    }
-    employeeSentiment?: string
-  }
-  aiAutomationThreat?: {
-    roleRisk?: string
-    automationProbability?: string
-    timeframe?: string
-    companyAIAdoption?: string
-    futureOutlook?: string
-    recommendations?: string[]
-  }
-  recentNews?: Array<{
-    headline?: string
-    date?: string
-    source?: string
-    url?: string
-    impact?: string
-  }>
-  compensation?: {
-    salaryRange?: string
-    benefits?: string
-  }
-  redFlags?: string[]
-  strategicRecommendations?: {
-    applicationStrategy?: string
-    contactStrategy?: string
-    interviewPrep?: string
-  }
-  sources?: string[]
-  confidenceLevel?: number
-}
-
-interface ComprehensiveJobResearchData {
-  jobAnalysis: {
-    matchScore: number
-    matchingSkills: string[]
-    missingSkills: string[]
-    skillsToHighlight: string[]
-    recommendations: string[]
-    estimatedFit: string
-  }
-  companyIntel: {
-    company: string
-    description: string
-    size?: string
-    revenue?: string
-    industry?: string
-    founded?: string
-    headquarters?: string
-    website?: string
-    marketPosition?: string
-  }
-  companyPsychology: {
-    culture: string
-    values: string[]
-    managementStyle?: string
-    workEnvironment?: string
-  }
-  hiringContacts: Array<{
-    name: string
-    title: string
-    department?: string
-    email?: string
-    linkedinUrl?: string
-    authority: 'decision maker' | 'recruiter' | 'manager' | 'coordinator'
-    confidence: number
-    contactMethod?: string
-  }>
-  marketIntelligence: {
-    competitivePosition?: string
-    industryTrends?: string[]
-    financialStability?: string
-    recentPerformance?: string
-  }
-  news: Array<{
-    title: string
-    summary: string
-    url: string
-    date?: string
-    source?: string
-    impact?: string
-  }>
-  reviews: Array<{
-    platform: string
-    rating?: number
-    summary: string
-    url: string
-    pros?: string[]
-    cons?: string[]
-  }>
-  compensation: {
-    salaryRange?: string
-    benefits?: string
-  }
-  strategicRecommendations: {
-    applicationStrategy: string
-    contactStrategy: string
-    interviewPrep: string[]
-  }
-  sources: string[]
-  confidenceLevel: number
 }

@@ -7,10 +7,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Briefcase, MapPin, DollarSign, Target, CheckCircle2, AlertCircle, FileText, ExternalLink } from 'lucide-react'
+import { Briefcase, MapPin, DollarSign, Target, CheckCircle2, AlertCircle, FileText, ExternalLink } from 'lucide-react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 import { normalizeSalary, getSalaryDisplayString } from '@/lib/utils/salary-normalizer'
+import { CompanyResearchResult } from '@/lib/company-research-types'
 
 interface JobData {
   id?: string
@@ -34,62 +35,14 @@ interface AnalysisResult {
   estimatedFit: 'excellent' | 'good' | 'fair' | 'poor' | string // Allow any string from Perplexity
 }
 
-interface CompanyResearch {
-  aiRiskAnalysis?: {
-    automationScore: number
-    futureOutlook: string
-    riskLevel: string
-    aiImpact: string
-  }
-  culture?: {
-    values: string[]
-    workEnvironment: string
-  }
-  marketIntelligence?: string | {
-    industryTrends: string[]
-    competitivePosition: string
-    recentNews: string[]
-  }
-  hiringContacts?: Array<{
-    name: string
-    title: string
-    email?: string | null
-    linkedinUrl?: string | null
-    confidence: number
-  }>
-  salaryIntelligence?: {
-    range: string
-    marketComparison: string
-  }
-  // Comprehensive research fields
-  news?: Array<{
-    title: string
-    summary: string
-    url: string
-    date?: string
-    source?: string
-    impact?: string
-  }>
-  reviews?: Array<{
-    platform: string
-    rating?: number
-    summary: string
-    url: string
-    pros?: string[]
-    cons?: string[]
-  }>
-  timestamp?: number
-}
-
 export default function JobAnalysisPage() {
   const router = useRouter()
   const [job, setJob] = useState<JobData | null>(null)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
-  const [companyResearch, setCompanyResearch] = useState<CompanyResearch | null>(null)
+  const [companyResearch, setCompanyResearch] = useState<CompanyResearchResult | null>(null)
   const [loadingResearch, setLoadingResearch] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [hasResume, setHasResume] = useState(false)
   const [canProceed, setCanProceed] = useState(false) // ENTERPRISE: Prevent accidental skip
   const [hasRedirected, setHasRedirected] = useState(false) // 🔒 Prevent infinite redirect loop
 
@@ -126,7 +79,7 @@ export default function JobAnalysisPage() {
       // Auto-analyze immediately
       console.log('🎯 [JOB_ANALYSIS] Starting job analysis...')
       await analyzeJob(jobData)
-    } catch (err: any) {
+    } catch (err) {
       console.error('🎯 [JOB_ANALYSIS] ❌ Failed to load job:', err)
       setError('Failed to load job data')
       setLoading(false)
@@ -137,13 +90,12 @@ export default function JobAnalysisPage() {
     // ✅ CRITICAL FIX: Use unified storage for resume
     const resumeData = CareerFinderStorage.getResume()
     const resumeText = resumeData?.extractedText || ''
-    setHasResume(!!resumeData)
 
     try {
       // 🚀 OPTIMIZATION: Check for cached comprehensive research first
       const cachedResearch = CareerFinderStorage.getCompanyResearch()
       
-      if (cachedResearch && cachedResearch.jobAnalysis) {
+      if (cachedResearch?.jobAnalysis) {
         console.log('🎯 [JOB_ANALYSIS] ✅ Using cached comprehensive research (cost savings!):', {
           matchScore: cachedResearch.jobAnalysis.matchScore,
           matchingSkills: cachedResearch.jobAnalysis.matchingSkills?.length,
@@ -164,7 +116,7 @@ export default function JobAnalysisPage() {
         CareerFinderStorage.setJobAnalysis(typedAnalysis)
         
         // Also set company research
-        setCompanyResearch(cachedResearch as any)
+        setCompanyResearch(cachedResearch)
         setLoadingResearch(false)
         
         console.log('🎯 [JOB_ANALYSIS] ✅ All data loaded from cache - NO API CALLS NEEDED!')
@@ -202,7 +154,7 @@ export default function JobAnalysisPage() {
       if (!resumeData) {
         console.log('📋 Browsing job without resume - match score disabled')
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('🎯 [JOB_ANALYSIS] ❌ Analysis failed:', err)
       // Provide fallback analysis (without match score if no resume)
       setAnalysis({
@@ -240,7 +192,7 @@ export default function JobAnalysisPage() {
       
       if (age < FIVE_MINUTES) {
         console.log('[COMPANY_RESEARCH] ✅ Using cached data (age:', Math.round(age / 1000), 'seconds) - NO API CALL!')
-        setCompanyResearch(cachedResearch as any)
+        setCompanyResearch(cachedResearch)
         setLoadingResearch(false)
         return
       } else {
@@ -274,21 +226,27 @@ export default function JobAnalysisPage() {
         const contacts = data.contacts?.data || data.hiringContacts || data.contacts || []
         const safeContacts = Array.isArray(contacts) ? contacts : []
         
-        const researchData = {
+        const researchData: Partial<CompanyResearchResult> = {
+          company: companyName,
+          description: data.company?.description || '',
           aiRiskAnalysis: data.aiRiskAnalysis,
-          culture: data.company?.culture,
-          marketIntelligence: data.marketIntelligence || 'No market intelligence available',
+          marketIntelligence: data.marketIntelligence,
           hiringContacts: safeContacts,
-          salaryIntelligence: data.salaryIntelligence
+          salaryIntelligence: data.salaryIntelligence,
+          financials: [],
+          culture: [],
+          salaries: [],
+          contacts: [],
+          sources: [],
+          confidence: 0.8,
+          recentNews: [],
+          reviews: []
         }
         
-        setCompanyResearch(researchData)
+        setCompanyResearch(researchData as CompanyResearchResult)
         
         // ✅ CRITICAL FIX: Store company research using unified storage
-        CareerFinderStorage.setCompanyResearch({ 
-          ...researchData,
-          company: companyName 
-        })
+        CareerFinderStorage.setCompanyResearch(researchData as CompanyResearchResult)
       }
     } catch (err) {
       console.error('[COMPANY_RESEARCH] Error:', err)
@@ -304,19 +262,28 @@ export default function JobAnalysisPage() {
     router.push('/career-finder/company')
   }
 
+  /**
+   * Extract clean domain from company website URL
+   * CRITICAL for email inference and contact discovery
+   * 
+   * Used for:
+   * - Email pattern inference (firstname@company.com)
+   * - Contact discovery when LinkedIn fails
+   * - Company research and verification
+   * - Validating company legitimacy
+   * 
+   * @example
+   * extractWebsite('https://www.shopify.com/careers') → 'shopify.com'
+   * extractWebsite('http://google.com/jobs') → 'google.com'
+   */
   const extractWebsite = (url: string): string => {
     try {
-      const urlObj = new URL(url)
-      // Try to extract company domain from job board URL
-      // e.g., indeed.com/company/spotify -> spotify.com
-      const pathParts = urlObj.pathname.split('/')
-      const companyIndex = pathParts.indexOf('company')
-      if (companyIndex >= 0 && pathParts[companyIndex + 1]) {
-        return `${pathParts[companyIndex + 1]}.com`
-      }
-      return job?.company?.toLowerCase().replace(/\s+/g, '') + '.com' || ''
+      const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`)
+      return urlObj.hostname.replace(/^www\./, '')
     } catch {
-      return job?.company?.toLowerCase().replace(/\s+/g, '') + '.com' || ''
+      // Fallback to regex if URL parsing fails
+      const match = url.match(/^(?:https?:\/\/)?(?:www\.)?([^\/]+)/)
+      return match ? match[1] : url
     }
   }
 
@@ -528,19 +495,19 @@ export default function JobAnalysisPage() {
               <h3 className="text-lg font-bold text-foreground mb-3">🤖 AI & Automation Risk</h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">Automation Score</p>
-                  <p className="text-2xl font-bold text-foreground">{companyResearch.aiRiskAnalysis.automationScore}%</p>
+                  <p className="text-sm text-muted-foreground">Automation Probability</p>
+                  <p className="text-2xl font-bold text-foreground">{companyResearch.aiRiskAnalysis.automationProbability}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Risk Level</p>
+                  <p className="text-sm text-muted-foreground">Role Risk</p>
                   <p className={`text-lg font-bold ${
-                    companyResearch.aiRiskAnalysis.riskLevel === 'Low' ? 'text-green-500' :
-                    companyResearch.aiRiskAnalysis.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-red-500'
-                  }`}>{companyResearch.aiRiskAnalysis.riskLevel}</p>
+                    companyResearch.aiRiskAnalysis.roleRisk?.toLowerCase().includes('low') ? 'text-green-500' :
+                    companyResearch.aiRiskAnalysis.roleRisk?.toLowerCase().includes('medium') ? 'text-yellow-500' : 'text-red-500'
+                  }`}>{companyResearch.aiRiskAnalysis.roleRisk}</p>
                 </div>
               </div>
               <p className="text-sm text-foreground"><strong>Future Outlook:</strong> {companyResearch.aiRiskAnalysis.futureOutlook}</p>
-              <p className="text-sm text-foreground mt-2"><strong>AI Impact:</strong> {companyResearch.aiRiskAnalysis.aiImpact}</p>
+              <p className="text-sm text-foreground mt-2"><strong>AI Adoption:</strong> {companyResearch.aiRiskAnalysis.companyAIAdoption}</p>
             </div>
           )}
 
@@ -555,7 +522,7 @@ export default function JobAnalysisPage() {
                   {companyResearch.marketIntelligence.competitivePosition && (
                     <p className="text-sm text-foreground mb-3">{companyResearch.marketIntelligence.competitivePosition}</p>
                   )}
-                  {companyResearch.marketIntelligence.industryTrends?.length > 0 && (
+                  {companyResearch.marketIntelligence.industryTrends && Array.isArray(companyResearch.marketIntelligence.industryTrends) && companyResearch.marketIntelligence.industryTrends.length > 0 && (
                     <div className="mb-3">
                       <p className="text-sm font-semibold text-muted-foreground mb-2">Industry Trends:</p>
                       <ul className="space-y-1">
@@ -568,7 +535,7 @@ export default function JobAnalysisPage() {
                       </ul>
                     </div>
                   )}
-                  {companyResearch.marketIntelligence.recentNews?.length > 0 && (
+                  {companyResearch.marketIntelligence.recentNews && Array.isArray(companyResearch.marketIntelligence.recentNews) && companyResearch.marketIntelligence.recentNews.length > 0 && (
                     <div>
                       <p className="text-sm font-semibold text-muted-foreground mb-2">Recent News:</p>
                       <ul className="space-y-1">
@@ -611,7 +578,7 @@ export default function JobAnalysisPage() {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {Math.round(contact.confidence * 100)}% match
+                      {contact.confidence ? Math.round(contact.confidence * 100) : 0}% match
                     </div>
                   </div>
                 ))}
@@ -623,30 +590,28 @@ export default function JobAnalysisPage() {
           {companyResearch.salaryIntelligence && (
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground mb-3">💰 Salary Intelligence</h3>
-              <p className="text-sm text-foreground mb-2"><strong>Expected Range:</strong> {companyResearch.salaryIntelligence.range}</p>
-              <p className="text-sm text-foreground">{companyResearch.salaryIntelligence.marketComparison}</p>
+              <p className="text-sm text-foreground mb-2"><strong>Expected Range:</strong> {companyResearch.salaryIntelligence.salaryRange}</p>
+              {companyResearch.salaryIntelligence.benefits && (
+                <p className="text-sm text-foreground"><strong>Benefits:</strong> {companyResearch.salaryIntelligence.benefits}</p>
+              )}
+              {companyResearch.salaryIntelligence.notes && (
+                <p className="text-sm text-muted-foreground mt-2">{companyResearch.salaryIntelligence.notes}</p>
+              )}
             </div>
           )}
 
           {/* Company Culture */}
-          {companyResearch.culture && (
+          {companyResearch.culture && companyResearch.culture.length > 0 && (
             <div className="bg-card border border-border rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground mb-3">🌟 Company Culture</h3>
-              {companyResearch.culture.workEnvironment && (
-                <p className="text-sm text-foreground mb-3">{companyResearch.culture.workEnvironment}</p>
-              )}
-              {companyResearch.culture.values && companyResearch.culture.values.length > 0 && (
-                <div>
-                  <p className="text-sm font-semibold text-muted-foreground mb-2">Core Values:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {companyResearch.culture.values.map((value, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                        {value}
-                      </span>
-                    ))}
+              <div className="space-y-2">
+                {companyResearch.culture.map((point, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-primary mt-1">•</span>
+                    <p className="text-sm text-foreground">{point.point}</p>
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -34,9 +34,24 @@ export interface MarketInsight {
   skillsDemand: Array<{ skill: string; demandScore: number; avgSalaryImpact: number }>
 }
 
+interface SalaryItem {
+  title?: string
+  range?: string
+  currency?: string
+  geo?: string
+  source?: string
+  confidence?: number
+}
+
+interface SalaryResponse {
+  items?: SalaryItem[]
+  summary?: string
+  freshness?: string
+}
+
 export class MarketIntelligenceService {
   private static instance: MarketIntelligenceService
-  private cache: Map<string, { data: any; timestamp: number }> = new Map()
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map()
   private readonly CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
 
   static getInstance(): MarketIntelligenceService {
@@ -51,22 +66,46 @@ export class MarketIntelligenceService {
    */
   async getSalaryData(role: string, location: string): Promise<SalaryData> {
     const cacheKey = `salary:${role}:${location}`
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<SalaryData>(cacheKey)
     if (cached) return cached
 
     try {
-      const result = await PerplexityIntelligenceService.salaryForRole(role, location, 'mid')
+      const result = await PerplexityIntelligenceService.salaryForRole(role, location, 'mid') as SalaryResponse
+      
+      // Parse salary data from Perplexity response
+      // Response format: { items: [{title, range, currency, geo, source, confidence}], summary, freshness }
+      const items = result.items || []
+      
+      interface ParsedRange {
+        min: number
+        max: number
+      }
+      
+      const ranges = items.map((item: SalaryItem): ParsedRange | null => {
+        const range = item.range || ''
+        const match = range.match(/\$?([\d,]+)k?\s*-\s*\$?([\d,]+)k?/i)
+        if (match) {
+          return {
+            min: parseInt(match[1].replace(/,/g, '')) * (range.includes('k') ? 1000 : 1),
+            max: parseInt(match[2].replace(/,/g, '')) * (range.includes('k') ? 1000 : 1)
+          }
+        }
+        return null
+      }).filter((r): r is ParsedRange => r !== null)
+      
+      const avgMin = ranges.length > 0 ? ranges.reduce((sum: number, r: ParsedRange) => sum + r.min, 0) / ranges.length : 0
+      const avgMax = ranges.length > 0 ? ranges.reduce((sum: number, r: ParsedRange) => sum + r.max, 0) / ranges.length : 0
       
       const salaryData: SalaryData = {
         role,
         location,
-        avgSalary: result.averageBase || 0,
-        minSalary: result.rangeMin || 0,
-        maxSalary: result.rangeMax || 0,
-        currency: result.currency || 'USD',
+        avgSalary: ranges.length > 0 ? (avgMin + avgMax) / 2 : 0,
+        minSalary: ranges.length > 0 ? Math.min(...ranges.map((r: ParsedRange) => r.min)) : 0,
+        maxSalary: ranges.length > 0 ? Math.max(...ranges.map((r: ParsedRange) => r.max)) : 0,
+        currency: items[0]?.currency || 'USD',
         experienceLevel: 'mid',
-        sources: result.sources?.map((s: any) => s.url) || [],
-        confidence: result.confidence || 0.7
+        sources: items.map((item: SalaryItem) => item.source).filter((s): s is string => !!s),
+        confidence: items[0]?.confidence || 0.7
       }
 
       this.setCache(cacheKey, salaryData)
@@ -93,7 +132,7 @@ export class MarketIntelligenceService {
    */
   async getMarketTrends(industry?: string): Promise<IndustryTrend[]> {
     const cacheKey = `trends:${industry || 'general'}`
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<IndustryTrend[]>(cacheKey)
     if (cached) return cached
 
     try {
@@ -137,7 +176,7 @@ export class MarketIntelligenceService {
    */
   async getTopIndustries(): Promise<Array<{ industry: string; count: number; avgSalary?: number }>> {
     const cacheKey = 'top-industries'
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<Array<{ industry: string; count: number; avgSalary?: number }>>(cacheKey)
     if (cached) return cached
 
     try {
@@ -168,7 +207,7 @@ export class MarketIntelligenceService {
    */
   async getSkillsDemand(industry?: string): Promise<Array<{ skill: string; demandScore: number; avgSalaryImpact: number }>> {
     const cacheKey = `skills:${industry || 'general'}`
-    const cached = this.getFromCache(cacheKey)
+    const cached = this.getFromCache<Array<{ skill: string; demandScore: number; avgSalaryImpact: number }>>(cacheKey)
     if (cached) return cached
 
     try {
@@ -214,23 +253,28 @@ export class MarketIntelligenceService {
   }
 
   // Helper methods for parsing Perplexity responses
-  private parseMarketTrends(response: any): IndustryTrend[] {
+  private parseMarketTrends(response: unknown): IndustryTrend[] {
     try {
+      let parsed: unknown = response
+      
       // Perplexity returns structured JSON
       if (typeof response === 'string') {
         // Extract JSON from markdown if needed
         const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/)
         if (jsonMatch) {
-          response = JSON.parse(jsonMatch[1])
+          parsed = JSON.parse(jsonMatch[1])
         }
       }
 
-      if (Array.isArray(response)) {
-        return response.slice(0, 5)
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0, 5)
       }
 
-      if (response.trends && Array.isArray(response.trends)) {
-        return response.trends.slice(0, 5)
+      if (parsed && typeof parsed === 'object' && 'trends' in parsed) {
+        const obj = parsed as { trends: unknown }
+        if (Array.isArray(obj.trends)) {
+          return obj.trends.slice(0, 5)
+        }
       }
 
       // Fallback parsing
@@ -241,21 +285,26 @@ export class MarketIntelligenceService {
     }
   }
 
-  private parseTopIndustries(response: any): Array<{ industry: string; count: number; avgSalary?: number }> {
+  private parseTopIndustries(response: unknown): Array<{ industry: string; count: number; avgSalary?: number }> {
     try {
+      let parsed: unknown = response
+      
       if (typeof response === 'string') {
         const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/)
         if (jsonMatch) {
-          response = JSON.parse(jsonMatch[1])
+          parsed = JSON.parse(jsonMatch[1])
         }
       }
 
-      if (Array.isArray(response)) {
-        return response.slice(0, 10)
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0, 10)
       }
 
-      if (response.industries && Array.isArray(response.industries)) {
-        return response.industries.slice(0, 10)
+      if (parsed && typeof parsed === 'object' && 'industries' in parsed) {
+        const obj = parsed as { industries: unknown }
+        if (Array.isArray(obj.industries)) {
+          return obj.industries.slice(0, 10)
+        }
       }
 
       return []
@@ -265,21 +314,26 @@ export class MarketIntelligenceService {
     }
   }
 
-  private parseSkillsDemand(response: any): Array<{ skill: string; demandScore: number; avgSalaryImpact: number }> {
+  private parseSkillsDemand(response: unknown): Array<{ skill: string; demandScore: number; avgSalaryImpact: number }> {
     try {
+      let parsed: unknown = response
+      
       if (typeof response === 'string') {
         const jsonMatch = response.match(/```json\n([\s\S]*?)\n```/)
         if (jsonMatch) {
-          response = JSON.parse(jsonMatch[1])
+          parsed = JSON.parse(jsonMatch[1])
         }
       }
 
-      if (Array.isArray(response)) {
-        return response.slice(0, 10)
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0, 10)
       }
 
-      if (response.skills && Array.isArray(response.skills)) {
-        return response.skills.slice(0, 10)
+      if (parsed && typeof parsed === 'object' && 'skills' in parsed) {
+        const obj = parsed as { skills: unknown }
+        if (Array.isArray(obj.skills)) {
+          return obj.skills.slice(0, 10)
+        }
       }
 
       return []
@@ -290,7 +344,7 @@ export class MarketIntelligenceService {
   }
 
   // Cache management
-  private getFromCache(key: string): any | null {
+  private getFromCache<T>(key: string): T | null {
     const cached = this.cache.get(key)
     if (!cached) return null
 
@@ -300,10 +354,10 @@ export class MarketIntelligenceService {
       return null
     }
 
-    return cached.data
+    return cached.data as T
   }
 
-  private setCache(key: string, data: any): void {
+  private setCache(key: string, data: unknown): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now()
