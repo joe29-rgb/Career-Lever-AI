@@ -25,8 +25,11 @@ WORKDIR /app
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy all source files
+# Copy all source files (including UI components)
 COPY . .
+
+# Explicitly verify critical directories exist
+RUN ls -la src/components/ui/ || echo "WARNING: UI components not found"
 
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
