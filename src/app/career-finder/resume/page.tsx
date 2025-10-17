@@ -3,19 +3,22 @@
 export const dynamic = 'force-dynamic'
 
 import { ResumeUpload } from '@/components/resume-upload'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
-import CareerFinderStorage from '@/lib/career-finder-storage'
 import { formatResumeWithLineBreaks } from '@/lib/text-formatting'
 import { AutopilotProgressTracker } from '@/components/autopilot-progress-tracker'
 import toast from 'react-hot-toast'
 
+interface Resume {
+  _id: string
+  extractedText: string
+  originalFileName?: string
+}
+
 export default function CareerFinderResumePage() {
-  const [existingResume, setExistingResume] = useState<any>(null)
+  const [existingResume, setExistingResume] = useState<Resume | null>(null)
   const [loadingExisting, setLoadingExisting] = useState<boolean>(true)
-  const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<any>(null)
+  const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<Record<string, unknown> | null>(null)
   const [analyzingResume, setAnalyzingResume] = useState<boolean>(false)
   
   // COMPETITIVE ADVANTAGE: Comprehensive resume analysis with AI risk
@@ -97,50 +100,9 @@ export default function CareerFinderResumePage() {
             try {
               localStorage.setItem('cf:resume', JSON.stringify(mostRecent))
               localStorage.setItem('cf:autopilotReady', '1')
-              
-              // CRITICAL FIX: Trigger autopilot for saved resumes too!
-              console.log('[AUTOPILOT] Triggering autopilot for saved resume...')
-              const autopilotResponse = await fetch('/api/career-finder/autopilot', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                  resumeId: mostRecent._id
-                })
-              })
-              
-              if (autopilotResponse.ok) {
-                const autopilotData = await autopilotResponse.json()
-                console.log('[AUTOPILOT] Success for saved resume:', autopilotData)
-                
-                // Cache signals in localStorage for instant access
-                if (autopilotData.signals) {
-                  localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
-                  console.log('[AUTOPILOT] ✅ Cached signals:', {
-                    keywords: autopilotData.signals.keywords?.length || 0,
-                    location: autopilotData.signals.location,
-                    topKeywords: autopilotData.signals.keywords?.slice(0, 5)
-                  })
-                  
-                  // Also cache keywords and location separately for search page
-                  if (autopilotData.signals.keywords && autopilotData.signals.keywords.length > 0) {
-                    const topKeywords = autopilotData.signals.keywords.slice(0, 5).join(', ')
-                    localStorage.setItem('cf:keywords', topKeywords)
-                    console.log('[AUTOPILOT] ✅ Cached keywords for search:', topKeywords)
-                  }
-                  
-                  if (autopilotData.signals.location) {
-                    localStorage.setItem('cf:location', autopilotData.signals.location)
-                    console.log('[AUTOPILOT] ✅ Cached location for search:', autopilotData.signals.location)
-                  }
-                } else {
-                  console.warn('[AUTOPILOT] ⚠️ No signals in response')
-                }
-              } else {
-                const errorText = await autopilotResponse.text()
-                console.error('[AUTOPILOT] ❌ Failed for saved resume:', errorText)
-              }
-            } catch (autopilotError) {
-              console.warn('[AUTOPILOT] Error for saved resume:', autopilotError)
+              console.log('[RESUME_PAGE] Resume cached, autopilot will trigger on Continue button')
+            } catch (cacheError) {
+              console.warn('[RESUME_PAGE] Failed to cache resume:', cacheError)
             }
           }
         }
@@ -199,12 +161,56 @@ export default function CareerFinderResumePage() {
             </div>
 
             <div className="flex gap-3">
-              <Link 
-                href="/career-finder/search"
-                className="flex-1 btn-gradient text-center py-3 rounded-xl font-semibold"
+              <button
+                onClick={async () => {
+                  if (!existingResume?._id) return
+                  
+                  try {
+                    console.log('[AUTOPILOT] 🚀 Continue button clicked - triggering autopilot...')
+                    
+                    // Trigger autopilot
+                    const autopilotResponse = await fetch('/api/career-finder/autopilot', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        resumeId: existingResume._id
+                      })
+                    })
+                    
+                    if (autopilotResponse.ok) {
+                      const autopilotData = await autopilotResponse.json()
+                      console.log('[AUTOPILOT] ✅ Success:', autopilotData)
+                      
+                      // Cache signals
+                      if (autopilotData.signals) {
+                        localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
+                        
+                        // Cache keywords and location separately
+                        if (autopilotData.signals.keywords?.length > 0) {
+                          const topKeywords = autopilotData.signals.keywords.slice(0, 5).join(', ')
+                          localStorage.setItem('cf:keywords', topKeywords)
+                          console.log('[AUTOPILOT] ✅ Keywords:', topKeywords)
+                        }
+                        
+                        if (autopilotData.signals.location) {
+                          localStorage.setItem('cf:location', autopilotData.signals.location)
+                          console.log('[AUTOPILOT] ✅ Location:', autopilotData.signals.location)
+                        }
+                      }
+                    } else {
+                      console.error('[AUTOPILOT] ❌ Failed:', await autopilotResponse.text())
+                    }
+                  } catch (error) {
+                    console.error('[AUTOPILOT] ❌ Error:', error)
+                  }
+                  
+                  // Navigate to search regardless of autopilot success (fallback)
+                  window.location.href = '/career-finder/search'
+                }}
+                className="flex-1 btn-gradient text-center py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
               >
                 🚀 Continue with this Resume
-              </Link>
+              </button>
               <button 
                 onClick={() => {
                   if (existingResume?.extractedText) {
