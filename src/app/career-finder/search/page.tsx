@@ -434,7 +434,7 @@ export default function SearchPage() {
               <div className="flex gap-2">
                 <button 
                   type="submit" 
-                  className="btn-primary text-lg px-8 py-4 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 sm:py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
                   disabled={loading}
                 >
                   {loading ? (
@@ -494,11 +494,11 @@ export default function SearchPage() {
 
       {/* ✅ FIX #6: Search Prompt Banner for Cached Resume */}
       {showSearchPrompt && (
-        <div className="max-w-4xl mx-auto px-4 mt-6">
+        <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
           <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-2xl p-6 flex items-center gap-4">
             <div className="text-4xl">💡</div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-foreground mb-1">Resume Detected!</h3>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Find Your Perfect Job</h1>
               <p className="text-sm text-muted-foreground">
                 We found your resume. Enter keywords above and click Search to find matching jobs, or let AI analyze your resume automatically.
               </p>

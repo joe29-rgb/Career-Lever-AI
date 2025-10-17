@@ -98,7 +98,7 @@ export default function InterviewPrepPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       {/* Header */}
       <div className="gradient-hero p-8 rounded-b-3xl shadow-2xl mb-8">
         <div className="max-w-4xl mx-auto">
@@ -169,7 +169,7 @@ export default function InterviewPrepPage() {
               {!selectedApp ? (
                 <div className="gradient-border-card text-center py-12">
                   <Lightbulb className="w-16 h-16 mx-auto text-yellow-500 mb-4" />
-                  <h3 className="text-xl font-bold mb-2">Select an Application</h3>
+                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">Interview Preparation</h1>
                   <p className="text-muted-foreground">
                     Choose an application from the left to generate interview prep
                   </p>
