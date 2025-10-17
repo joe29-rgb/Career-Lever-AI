@@ -387,15 +387,15 @@ export default function CareerFinderOptimizerPage() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       <CareerFinderBackButton />
       
       {/* Personal Info Header with ATS Score */}
       {resumeText && (
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-border rounded-xl p-6 mb-6">
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-border rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-foreground mb-2">{personalInfo.name || 'Resume Optimizer'}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{personalInfo.name || 'Resume Optimizer'}</h1>
               <div className="flex flex-wrap gap-4 text-muted-foreground">
                 {personalInfo.email && (
                   <div className="flex items-center gap-2">

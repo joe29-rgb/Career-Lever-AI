@@ -295,12 +295,12 @@ ${name}`
   const currentEmail = selectedContact?.email || officialChannels?.jobsEmail || officialChannels?.hrEmail
 
   return (
-    <div className="container mx-auto px-6 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       <CareerFinderBackButton />
 
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">Ready to Reach Out</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Ready to Reach Out</h1>
         <p className="text-gray-600">
           Your personalized outreach materials for {jobData?.title} at {jobData?.company}
         </p>
@@ -484,7 +484,7 @@ ${name}`
               <Button
                 onClick={sendEmail}
                 disabled={!currentEmail}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <Mail className="w-5 h-5" />
                 Open in Email Client
