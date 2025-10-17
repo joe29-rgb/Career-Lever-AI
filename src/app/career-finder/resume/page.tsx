@@ -115,9 +115,29 @@ export default function CareerFinderResumePage() {
                 // Cache signals in localStorage for instant access
                 if (autopilotData.signals) {
                   localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
+                  console.log('[AUTOPILOT] ✅ Cached signals:', {
+                    keywords: autopilotData.signals.keywords?.length || 0,
+                    location: autopilotData.signals.location,
+                    topKeywords: autopilotData.signals.keywords?.slice(0, 5)
+                  })
+                  
+                  // Also cache keywords and location separately for search page
+                  if (autopilotData.signals.keywords && autopilotData.signals.keywords.length > 0) {
+                    const topKeywords = autopilotData.signals.keywords.slice(0, 5).join(', ')
+                    localStorage.setItem('cf:keywords', topKeywords)
+                    console.log('[AUTOPILOT] ✅ Cached keywords for search:', topKeywords)
+                  }
+                  
+                  if (autopilotData.signals.location) {
+                    localStorage.setItem('cf:location', autopilotData.signals.location)
+                    console.log('[AUTOPILOT] ✅ Cached location for search:', autopilotData.signals.location)
+                  }
+                } else {
+                  console.warn('[AUTOPILOT] ⚠️ No signals in response')
                 }
               } else {
-                console.warn('[AUTOPILOT] Failed for saved resume:', await autopilotResponse.text())
+                const errorText = await autopilotResponse.text()
+                console.error('[AUTOPILOT] ❌ Failed for saved resume:', errorText)
               }
             } catch (autopilotError) {
               console.warn('[AUTOPILOT] Error for saved resume:', autopilotError)
