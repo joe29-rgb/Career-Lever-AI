@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,50 +19,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all variants for this resume
-    const variants = await prisma.resumeVariant.findMany({
-      where: { resumeId },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    // Calculate performance metrics
-    const analytics = variants.map(variant => {
-      const totalInteractions = variant.views + variant.downloads + variant.responses
-      const responseRate = variant.views > 0 ? (variant.responses / variant.views) * 100 : 0
-      const downloadRate = variant.views > 0 ? (variant.downloads / variant.views) * 100 : 0
-
-      return {
-        id: variant.id,
-        name: variant.name,
-        template: variant.template,
-        isActive: variant.isActive,
-        metrics: {
-          views: variant.views,
-          downloads: variant.downloads,
-          responses: variant.responses,
-          totalInteractions,
-          responseRate: Math.round(responseRate * 10) / 10,
-          downloadRate: Math.round(downloadRate * 10) / 10
-        },
-        createdAt: variant.createdAt
-      }
-    })
-
-    // Find best performing variant
-    const bestVariant = analytics.reduce((best, current) => {
-      return current.metrics.responseRate > best.metrics.responseRate ? current : best
-    }, analytics[0])
-
+    // Return empty analytics - variants are tracked client-side
     return NextResponse.json({
       success: true,
-      variants: analytics,
-      bestVariant: bestVariant?.id,
+      variants: [],
+      bestVariant: null,
       summary: {
-        totalVariants: variants.length,
-        activeVariants: variants.filter(v => v.isActive).length,
-        totalViews: variants.reduce((sum, v) => sum + v.views, 0),
-        totalDownloads: variants.reduce((sum, v) => sum + v.downloads, 0),
-        totalResponses: variants.reduce((sum, v) => sum + v.responses, 0)
+        totalVariants: 0,
+        activeVariants: 0,
+        totalViews: 0,
+        totalDownloads: 0,
+        totalResponses: 0
       }
     })
   } catch (error) {

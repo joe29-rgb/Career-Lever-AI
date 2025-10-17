@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import connectToDatabase from '@/lib/mongodb'
+import JobApplication from '@/models/JobApplication'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,22 +12,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Get applications with response dates
-    const applications = await prisma.jobApplication.findMany({
-      where: {
+    await connectToDatabase()
+    const applications = await JobApplication.find(
+      {
         userId: session.user.id,
-        status: {
-          not: 'Applied'
-        }
+        status: { $ne: 'Applied' }
       },
-      select: {
-        createdAt: true,
-        updatedAt: true,
-        status: true
-      },
-      orderBy: {
-        updatedAt: 'desc'
-      }
-    })
+      { createdAt: 1, updatedAt: 1, status: 1 }
+    ).sort({ updatedAt: -1 })
 
     if (applications.length === 0) {
       return NextResponse.json({

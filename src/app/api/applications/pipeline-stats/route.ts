@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import connectToDatabase from '@/lib/mongodb'
+import JobApplication from '@/models/JobApplication'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,10 +12,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Get application counts by status
-    const applications = await prisma.jobApplication.findMany({
-      where: { userId: session.user.id },
-      select: { status: true }
-    })
+    await connectToDatabase()
+    const applications = await JobApplication.find(
+      { userId: session.user.id },
+      { status: 1 }
+    )
 
     // Count by status
     const stats = {

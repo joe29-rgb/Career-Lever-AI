@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,19 +18,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create resume variant
-    const variant = await prisma.resumeVariant.create({
-      data: {
-        resumeId,
-        name,
-        content,
-        template: template || 'modern',
-        isActive: true,
-        views: 0,
-        downloads: 0,
-        responses: 0
-      }
-    })
+    // Return success - variants are tracked client-side in localStorage
+    const variant = {
+      id: `variant_${Date.now()}`,
+      resumeId,
+      name,
+      content,
+      template: template || 'modern',
+      isActive: true,
+      views: 0,
+      downloads: 0,
+      responses: 0,
+      createdAt: new Date().toISOString()
+    }
 
     return NextResponse.json({
       success: true,

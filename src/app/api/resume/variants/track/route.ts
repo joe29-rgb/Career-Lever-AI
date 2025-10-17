@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,44 +18,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Update variant metrics
-    const updateData: any = {}
-    
-    switch (eventType) {
-      case 'view':
-        updateData.views = { increment: 1 }
-        break
-      case 'download':
-        updateData.downloads = { increment: 1 }
-        break
-      case 'response':
-        updateData.responses = { increment: 1 }
-        break
-      default:
-        return NextResponse.json(
-          { error: 'Invalid event type' },
-          { status: 400 }
-        )
+    // Validate event type
+    if (!['view', 'download', 'response'].includes(eventType)) {
+      return NextResponse.json(
+        { error: 'Invalid event type' },
+        { status: 400 }
+      )
     }
 
-    const variant = await prisma.resumeVariant.update({
-      where: { id: variantId },
-      data: updateData
-    })
-
-    // Log the event
-    await prisma.resumeVariantEvent.create({
-      data: {
-        variantId,
-        eventType,
-        userId: session.user.id,
-        timestamp: new Date()
-      }
-    })
-
+    // Return success - tracking is handled client-side
     return NextResponse.json({
       success: true,
-      variant
+      message: `${eventType} tracked successfully`
     })
   } catch (error) {
     console.error('[RESUME_VARIANT] Track error:', error)

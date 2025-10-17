@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import prisma from '@/lib/prisma'
+import connectToDatabase from '@/lib/mongodb'
+import JobApplication from '@/models/JobApplication'
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,25 +12,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Get applications that need follow-up
-    const applications = await prisma.jobApplication.findMany({
-      where: {
+    await connectToDatabase()
+    const applications = await JobApplication.find(
+      {
         userId: session.user.id,
-        status: {
-          in: ['Applied', 'Screening', 'Under Review']
-        }
+        status: { $in: ['Applied', 'Screening', 'Under Review'] }
       },
-      select: {
-        id: true,
-        company: true,
-        jobTitle: true,
-        createdAt: true,
-        status: true,
-        lastFollowUp: true
-      },
-      orderBy: {
-        createdAt: 'asc'
-      }
-    })
+      { _id: 1, company: 1, jobTitle: 1, createdAt: 1, status: 1, lastFollowUp: 1 }
+    ).sort({ createdAt: 1 })
 
     const now = new Date()
     const reminders = applications
@@ -57,7 +47,7 @@ export async function GET(request: NextRequest) {
         }
 
         return {
-          id: app.id,
+          id: app._id.toString(),
           company: app.company,
           jobTitle: app.jobTitle,
           appliedDate: appliedDate.toISOString(),
