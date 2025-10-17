@@ -15,6 +15,23 @@ import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs }
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Calculate years of experience from resume text
+function calculateYearsFromResume(resumeText: string): number {
+  const dateRegex = /(\w+\s+\d{4})\s*[-–—]\s*(\w+\s+\d{4}|Present|Current)/gi
+  const matches = Array.from(resumeText.matchAll(dateRegex))
+  
+  let totalMonths = 0
+  for (const match of matches) {
+    const startDate = new Date(match[1])
+    const endDate = match[2].match(/Present|Current/i) ? new Date() : new Date(match[2])
+    const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                  (endDate.getMonth() - startDate.getMonth())
+    if (months > 0 && months < 600) totalMonths += months // Sanity check
+  }
+  
+  return Math.round(totalMonths / 12)
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.PERPLEXITY_API_KEY) return NextResponse.json({ error: 'AI temporarily unavailable (missing PERPLEXITY_API_KEY)' }, { status: 503 })
@@ -64,16 +81,16 @@ export async function POST(request: NextRequest) {
         if (recent?.context?.hiringContactName) hiringContact = recent.context.hiringContactName
       } catch {}
 
-      // Try to include yearsExperience from the latest resume
-      let yearsExperience: number | undefined = undefined
-      try {
-        await connectToDatabase()
-        const latest = await Resume.findOne({ userId: session.user.id }).sort({ createdAt: -1 }).lean()
-        if (typeof (latest as any)?.yearsExperience === 'number') yearsExperience = (latest as any).yearsExperience
-      } catch {}
+      // Calculate years of experience from resume text
+      const yearsExperience = calculateYearsFromResume(resumeText)
+      console.log('[COVER_LETTER] Calculated experience:', yearsExperience, 'years')
 
       const ppx = new PerplexityService()
-      const companyPayload = { ...(psychology ? { psychology } : {}), ...(yearsExperience ? { yearsExperience } : {}) }
+      const companyPayload = { 
+        ...(psychology ? { psychology } : {}), 
+        yearsExperience,
+        experienceNote: `CRITICAL: Candidate has EXACTLY ${yearsExperience} years of experience. Do NOT say "decades" or exaggerate.`
+      }
       const userPrompt = buildEnhancedCoverLetterUserPrompt({
         candidateName,
         jobTitle,
@@ -176,9 +193,11 @@ export async function POST(request: NextRequest) {
     if (companyData) {
       Object.assign(companyPayload, companyData)
     }
-    if (typeof (resume as any).yearsExperience === 'number') {
-      companyPayload.yearsExperience = (resume as any).yearsExperience
-    }
+    // Calculate years of experience from resume text
+    const yearsExperience = calculateYearsFromResume(resume.extractedText || '')
+    companyPayload.yearsExperience = yearsExperience
+    companyPayload.experienceNote = `CRITICAL: Candidate has EXACTLY ${yearsExperience} years of experience. Do NOT say "decades" or exaggerate.`
+    console.log('[COVER_LETTER] Calculated experience:', yearsExperience, 'years')
     const userPrompt = buildEnhancedCoverLetterUserPrompt({
       candidateName,
       jobTitle: jobApplication.jobTitle,
