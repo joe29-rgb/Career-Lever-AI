@@ -28,6 +28,7 @@ export interface ModernJobCardProps {
   aiRiskLevel?: 'low' | 'medium' | 'high' | 'critical'
   aiRiskScore?: number
   onView?: () => void
+  isLoading?: boolean
 }
 
 const colorThemes = {
@@ -78,6 +79,7 @@ export function ModernJobCard({
   aiRiskLevel,
   aiRiskScore,
   onView,
+  isLoading = false,
 }: ModernJobCardProps) {
   const theme = colorThemes[colorTheme]
 
@@ -85,7 +87,20 @@ export function ModernJobCard({
   const salaryDisplay = getSalaryDisplay({ title, salary, location })
 
   return (
-    <div className="relative w-full rounded-[25px] overflow-hidden shadow-lg transition-transform duration-300 hover:scale-[1.02]">
+    <div className={cn(
+      "relative w-full rounded-[25px] overflow-hidden shadow-lg transition-all duration-300",
+      isLoading ? "scale-[1.02] ring-4 ring-blue-500 ring-opacity-50" : "hover:scale-[1.02]"
+    )}>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[2px] flex items-center justify-center z-50 rounded-[25px]">
+          <div className="bg-white/95 px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+            <div className="w-5 h-5 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-blue-600 font-semibold text-sm">Loading insights...</span>
+          </div>
+        </div>
+      )}
+
       {/* Main colored section */}
       <div 
         className="relative px-4 pt-4 pb-3"

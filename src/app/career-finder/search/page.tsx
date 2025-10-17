@@ -53,6 +53,7 @@ export default function SearchPage() {
     canadianPriority?: boolean
     cachedResults?: boolean
   } | null>(null)
+  const [loadingJobId, setLoadingJobId] = useState<string | null>(null)
   
   const { data: session, status } = useSession()
 
@@ -85,6 +86,10 @@ export default function SearchPage() {
   // Handler for job selection - stores job and navigates to analysis
   const handleJobSelection = async (job: JobListing) => {
     try {
+      // Set loading state for this job
+      const jobId = job.id || `${job.company}-${job.title}`
+      setLoadingJobId(jobId)
+      
       // Store in localStorage with correct key
       const jobData = {
         ...job,
@@ -172,6 +177,7 @@ export default function SearchPage() {
       router.push('/career-finder/job-analysis')
     } catch (error) {
       console.error('Failed to store job:', error)
+      setLoadingJobId(null)
       // Still navigate even if storage fails
       router.push('/career-finder/job-analysis')
     }
@@ -590,10 +596,13 @@ export default function SearchPage() {
                   ? getSalaryDisplayString(normalizedSalary) 
                   : 'Salary not disclosed'
                 
+                const jobId = job.id || `job-${index}`
+                const isJobLoading = loadingJobId === jobId
+                
                 return (
                   <ModernJobCard
-                    key={job.id || `job-${index}`}
-                    id={job.id || `job-${index}`}
+                    key={jobId}
+                    id={jobId}
                     title={job.title}
                     company={job.company}
                     location={job.location}
@@ -604,6 +613,7 @@ export default function SearchPage() {
                     postedDate="Posted recently"
                     colorTheme={colorTheme}
                     onView={() => handleJobSelection(job)}
+                    isLoading={isJobLoading}
                   />
                 )
               })}
