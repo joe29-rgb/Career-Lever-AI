@@ -1762,6 +1762,7 @@ IMPORTANT:
     jobTitle: string
     jobRequirements: string[]
     companyInsights: { culture: string; values: string[]; industry: string }
+    template?: string
   }): Promise<EnhancedResponse<{
     variantA: string
     variantB: string
@@ -1784,7 +1785,20 @@ IMPORTANT:
     try {
       const client = createClient()
       const systemPrompt = 'You are a professional resume optimization expert. Return only valid JSON with properly formatted resume text.'
-      const userPrompt = `Analyze this resume and create TWO tailored variants for the target role.
+      
+      // Build template-specific instructions
+      const templateInstructions = {
+        modern: 'Use a contemporary style with visual hierarchy. Emphasize innovation and forward-thinking achievements.',
+        professional: 'Use traditional, formal language. Focus on stability, reliability, and proven track record.',
+        creative: 'Use dynamic language and unique phrasing. Highlight creativity, innovation, and out-of-the-box thinking.',
+        tech: 'Use technical terminology and emphasize projects, technologies, and technical achievements.',
+        minimal: 'Use simple, direct language. Focus on facts and quantifiable results. Maximum ATS compatibility.',
+        executive: 'Use leadership language. Emphasize strategic impact, team leadership, and business results.'
+      }
+      
+      const templateStyle = templateInstructions[params.template as keyof typeof templateInstructions] || templateInstructions.modern
+      
+      const userPrompt = `Analyze this resume and create TWO tailored variants for the target role using the ${params.template} template style.
 
 **Resume:**
 ${params.resumeText}
@@ -1798,9 +1812,11 @@ ${params.jobRequirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
 **Company Values:** ${params.companyInsights.values.join(', ')}
 **Industry:** ${params.companyInsights.industry}
 
+**Template Style (${params.template}):** ${templateStyle}
+
 Generate TWO resume variants:
-1. **Variant A (Achievement-Focused):** Emphasize quantifiable achievements and metrics
-2. **Variant B (Skills-Focused):** Highlight technical skills and competencies
+1. **Variant A (Achievement-Focused):** Emphasize quantifiable achievements and metrics. ${templateStyle}
+2. **Variant B (Skills-Focused):** Highlight technical skills and competencies. ${templateStyle}
 
 CRITICAL FORMATTING REQUIREMENTS:
 - Use proper line breaks (\\n\\n for sections, \\n for lines)
@@ -1811,13 +1827,15 @@ CRITICAL FORMATTING REQUIREMENTS:
 - Ensure proper spacing between sections
 - NO markdown formatting (no **, no #, no _)
 - Plain text only with line breaks
+- INCLUDE ALL job history from original resume
 
 For each variant, rewrite the resume to:
 - Match keywords from job requirements
 - Align with company culture and values
-- Use industry-specific terminology
+- Use industry-specific terminology appropriate for ${params.template} template
 - Optimize for ATS (Applicant Tracking Systems)
 - Keep formatting clean and professional
+- Apply ${params.template} template style throughout
 
 Also provide 3-5 strategic recommendations for improving the resume.
 

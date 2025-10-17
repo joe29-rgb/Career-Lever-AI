@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    const { resumeText, jobTitle, jobRequirements, companyInsights } = await request.json()
+    const { resumeText, jobTitle, jobRequirements, companyInsights, template } = await request.json()
     
     if (!resumeText || !jobTitle) {
       return NextResponse.json(
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       resumeText,
       jobTitle,
       jobRequirements: jobRequirements || [],
-      companyInsights: companyInsights || { culture: '', values: [], industry: '' }
+      companyInsights: companyInsights || { culture: '', values: [], industry: '' },
+      template: template || 'modern'
     })
     
     return NextResponse.json(result)

@@ -184,7 +184,8 @@ export default function CareerFinderOptimizerPage() {
             culture: '',
             values: [],
             industry: ''
-          }
+          },
+          template: template
         })
       })
       
