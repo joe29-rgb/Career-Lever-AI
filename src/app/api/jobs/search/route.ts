@@ -22,7 +22,7 @@ import Resume from '@/models/Resume'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-export const maxDuration = 60 // Allow up to 60 seconds for comprehensive search
+export const maxDuration = 30 // Reduced from 60s - faster timeout for better UX
 
 interface JobSearchRequest {
   keywords: string

@@ -1783,7 +1783,7 @@ IMPORTANT:
 
     try {
       const client = createClient()
-      const systemPrompt = 'You are a professional resume optimization expert. Return only valid JSON.'
+      const systemPrompt = 'You are a professional resume optimization expert. Return only valid JSON with properly formatted resume text.'
       const userPrompt = `Analyze this resume and create TWO tailored variants for the target role.
 
 **Resume:**
@@ -1802,6 +1802,16 @@ Generate TWO resume variants:
 1. **Variant A (Achievement-Focused):** Emphasize quantifiable achievements and metrics
 2. **Variant B (Skills-Focused):** Highlight technical skills and competencies
 
+CRITICAL FORMATTING REQUIREMENTS:
+- Use proper line breaks (\\n\\n for sections, \\n for lines)
+- Include contact info on separate lines
+- Use clear section headers (PROFESSIONAL SUMMARY, EXPERIENCE, EDUCATION, SKILLS)
+- Format each job entry with: Title\\nCompany | Location | Dates\\n• Achievement 1\\n• Achievement 2
+- Keep bullet points aligned with • symbol
+- Ensure proper spacing between sections
+- NO markdown formatting (no **, no #, no _)
+- Plain text only with line breaks
+
 For each variant, rewrite the resume to:
 - Match keywords from job requirements
 - Align with company culture and values
@@ -1813,8 +1823,8 @@ Also provide 3-5 strategic recommendations for improving the resume.
 
 Return ONLY valid JSON:
 {
-  "variantA": "Full resume text for Variant A...",
-  "variantB": "Full resume text for Variant B...",
+  "variantA": "Full resume text with proper \\n line breaks...",
+  "variantB": "Full resume text with proper \\n line breaks...",
   "recommendations": ["Recommendation 1", "Recommendation 2", ...]
 }`
 
