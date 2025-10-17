@@ -310,7 +310,7 @@ ${name}`
         {/* Left Column: Contacts */}
         <div className="lg:col-span-1 space-y-6">
           {/* Hiring Contacts */}
-          {contacts.length > 0 && (
+          {contacts.length > 0 ? (
             <div className="bg-white rounded-xl shadow-sm border p-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-blue-600" />
@@ -356,6 +356,33 @@ ${name}`
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                <User className="w-5 h-5 text-yellow-600" />
+                No Specific Contacts Found
+              </h3>
+              <p className="text-sm text-gray-700 mb-4">
+                We couldn't find specific hiring contacts for this company. Try these options:
+              </p>
+              <div className="space-y-3">
+                <div className="bg-white p-3 rounded border">
+                  <p className="text-xs text-gray-600 mb-1">Suggested Email Addresses:</p>
+                  <div className="space-y-1">
+                    {jobData?.company && (
+                      <>
+                        <p className="text-sm font-mono">careers@{jobData.company.toLowerCase().replace(/\s+/g, '')}.com</p>
+                        <p className="text-sm font-mono">hr@{jobData.company.toLowerCase().replace(/\s+/g, '')}.com</p>
+                        <p className="text-sm font-mono">jobs@{jobData.company.toLowerCase().replace(/\s+/g, '')}.com</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600">
+                  💡 <strong>Tip:</strong> Search LinkedIn for "{jobData?.company} recruiter" or "{jobData?.company} talent acquisition"
+                </p>
               </div>
             </div>
           )}

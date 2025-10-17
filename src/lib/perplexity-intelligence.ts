@@ -1535,7 +1535,9 @@ OUTPUT FORMAT (Valid JSON ONLY):
     "founded": "year",
     "headquarters": "city, state/country",
     "website": "https://company.com",
-    "marketPosition": "market leader|challenger|niche player"
+    "marketPosition": "market leader|challenger|niche player",
+    "generalEmail": "careers@company.com or hr@company.com or info@company.com",
+    "careersPage": "https://company.com/careers"
   },
   "companyPsychology": {
     "culture": "detailed culture description based on reviews and public info",
@@ -1597,6 +1599,9 @@ OUTPUT FORMAT (Valid JSON ONLY):
 CRITICAL REQUIREMENTS:
 1. Job Analysis: Compare resume skills to job requirements, calculate match score
 2. Company Intel: Search company website, LinkedIn, Crunchbase, Wikipedia for REAL data
+   - MUST find general company email (careers@, hr@, jobs@, info@, contact@)
+   - Check company website contact page, footer, careers page
+   - If no email found, generate likely addresses based on domain
 3. Hiring Contacts: Find REAL people on LinkedIn, company website, job boards
    - Minimum 2-3 contacts if company has 10+ employees
    - Include verified LinkedIn URLs and emails where possible
