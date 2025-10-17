@@ -92,11 +92,36 @@ export default function CareerFinderResumePage() {
             const mostRecent = j.resumes[0]
             console.log('[RESUME_PAGE] Found DB resume:', mostRecent._id)
             setExistingResume(mostRecent)
+            
             // Cache it for future use
             try {
               localStorage.setItem('cf:resume', JSON.stringify(mostRecent))
               localStorage.setItem('cf:autopilotReady', '1')
-            } catch {}
+              
+              // CRITICAL FIX: Trigger autopilot for saved resumes too!
+              console.log('[AUTOPILOT] Triggering autopilot for saved resume...')
+              const autopilotResponse = await fetch('/api/career-finder/autopilot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  resumeId: mostRecent._id
+                })
+              })
+              
+              if (autopilotResponse.ok) {
+                const autopilotData = await autopilotResponse.json()
+                console.log('[AUTOPILOT] Success for saved resume:', autopilotData)
+                
+                // Cache signals in localStorage for instant access
+                if (autopilotData.signals) {
+                  localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
+                }
+              } else {
+                console.warn('[AUTOPILOT] Failed for saved resume:', await autopilotResponse.text())
+              }
+            } catch (autopilotError) {
+              console.warn('[AUTOPILOT] Error for saved resume:', autopilotError)
+            }
           }
         }
       } catch (e) {
