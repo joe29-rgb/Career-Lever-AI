@@ -106,6 +106,13 @@ export default function CareerFinderOutreachPage() {
       }
       setJobData(job)
 
+      // Load company research data (includes hiring contacts)
+      const companyResearch = CareerFinderStorage.getCompanyResearch()
+      if (companyResearch) {
+        console.log('[OUTREACH] ✅ Loaded company research with contacts:', companyResearch.keyContacts?.length || 0)
+        setCompanyData(companyResearch as any)
+      }
+
       // Load resume
       const resume = CareerFinderStorage.getResume()
       const resumeText = resume?.extractedText || ''
