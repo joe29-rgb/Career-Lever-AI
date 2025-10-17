@@ -42,6 +42,7 @@ export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showSearchPrompt, setShowSearchPrompt] = useState(false)
   // CRITICAL FIX: Always use AI matching for better results
   const [useResumeMatching, setUseResumeMatching] = useState(true)
   const [activeStatus, setActiveStatus] = useState<JobStatus>('discover')
@@ -200,6 +201,11 @@ export default function SearchPage() {
     if (savedLocation && !filters.location) {
       setFilters(prev => ({ ...prev, location: savedLocation }))
       console.log('[PERPLEXITY AUDIT FIX] Pre-populated location:', savedLocation)
+    }
+    
+    // ✅ FIX #6: Show search prompt if cached resume exists but no search performed
+    if (resumeData && !autopilotReady && jobs.length === 0) {
+      setShowSearchPrompt(true)
     }
     
     if (keywords || autopilotReady) {
@@ -485,6 +491,27 @@ export default function SearchPage() {
           </form>
         </div>
       </section>
+
+      {/* ✅ FIX #6: Search Prompt Banner for Cached Resume */}
+      {showSearchPrompt && (
+        <div className="max-w-4xl mx-auto px-4 mt-6">
+          <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-2 border-blue-500/30 rounded-2xl p-6 flex items-center gap-4">
+            <div className="text-4xl">💡</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-foreground mb-1">Resume Detected!</h3>
+              <p className="text-sm text-muted-foreground">
+                We found your resume. Enter keywords above and click Search to find matching jobs, or let AI analyze your resume automatically.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSearchPrompt(false)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto px-4 lg:px-8 py-8">
         {/* Main Content: Job Grid */}

@@ -48,11 +48,40 @@ export default function JobAnalysisPage() {
 
   useEffect(() => {
     // 🔒 CRITICAL: Only run once on mount, prevent redirect loop
-    if (!hasRedirected) {
-      console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
-      loadAndAnalyzeJob()
+    if (hasRedirected) return
+    
+    // ✅ FIX #10: Validate job data exists
+    const validateJobData = () => {
+      const storedJob = localStorage.getItem('cf:selectedJob')
+      if (!storedJob) {
+        console.error('[JOB_ANALYSIS] ❌ No job data found')
+        setError('No job selected. Please select a job from the search page.')
+        setLoading(false)
+        return false
+      }
+      
+      try {
+        const parsed = JSON.parse(storedJob)
+        if (!parsed.title || !parsed.company) {
+          console.error('[JOB_ANALYSIS] ❌ Invalid job data:', parsed)
+          setError('Invalid job data. Please select a job again.')
+          setLoading(false)
+          return false
+        }
+        return true
+      } catch (e) {
+        console.error('[JOB_ANALYSIS] ❌ Failed to parse job data:', e)
+        setError('Corrupted job data. Please select a job again.')
+        setLoading(false)
+        return false
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    if (!validateJobData()) {
+      return
+    }
+    console.log('🎯 [JOB_ANALYSIS] Page mounted - starting analysis flow')
+    loadAndAnalyzeJob()
   }, [])
 
   const loadAndAnalyzeJob = async () => {
