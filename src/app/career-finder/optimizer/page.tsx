@@ -197,12 +197,17 @@ export default function CareerFinderOptimizerPage() {
       
       if (result.success && result.data) {
         const { variantA: vA, variantB: vB } = result.data
-        setVariantA(vA || '')
-        setVariantB(vB || '')
         
-        // Cache the result
-        localStorage.setItem(cacheKey, JSON.stringify(result.data))
-        console.log('[OPTIMIZER] ✅ Variants generated and cached')
+        // Format plain text as HTML with proper styling
+        const formattedA = formatResumeAsHTML(vA || '', personalInfo)
+        const formattedB = formatResumeAsHTML(vB || '', personalInfo)
+        
+        setVariantA(formattedA)
+        setVariantB(formattedB)
+        
+        // Cache the formatted result
+        localStorage.setItem(cacheKey, JSON.stringify({ variantA: formattedA, variantB: formattedB }))
+        console.log('[OPTIMIZER] ✅ Variants generated, formatted, and cached')
         
         hasGeneratedRef.current = true
       } else {
@@ -274,27 +279,86 @@ export default function CareerFinderOptimizerPage() {
   
   // Calculate ATS compatibility score (0-100)
   const calculateATSScore = (text: string): number => {
-    let score = 60 // Base score
+    let score = 50 // Base score
     
-    // Check for contact info
+    // Check for contact info (+15 points)
     if (text.match(/@/)) score += 5
     if (text.match(/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/)) score += 5
     if (text.match(/[A-Z][a-z]+,\s*[A-Z]{2}/)) score += 5
     
-    // Check for standard sections
+    // Check for standard sections (+15 points)
     if (text.match(/experience|employment/i)) score += 5
     if (text.match(/education/i)) score += 5
     if (text.match(/skills/i)) score += 5
     
-    // Check for keywords and quantifiable achievements
+    // Check for keywords and quantifiable achievements (+10 points)
     const keywords = text.match(/\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b/g) || []
     if (keywords.length > 30) score += 5
+    if (keywords.length > 50) score += 5
     
-    // Check for numbers/metrics (good for ATS)
+    // Check for numbers/metrics (good for ATS) (+10 points)
     const numbers = text.match(/\d+%|\$\d+|increased|decreased|improved/gi) || []
     if (numbers.length > 3) score += 5
+    if (numbers.length > 6) score += 5
     
     return Math.min(score, 100)
+  }
+  
+  // Convert plain text resume to HTML with proper formatting
+  const formatResumeAsHTML = (text: string, personalInfo: any): string => {
+    if (!text) return ''
+    
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    let html = '<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; padding: 20px;">'
+    
+    // Add name header
+    if (personalInfo.name) {
+      html += `<h1 style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">${personalInfo.name}</h1>`
+    }
+    
+    // Add contact info
+    const contactParts = []
+    if (personalInfo.location) contactParts.push(personalInfo.location)
+    if (personalInfo.phone) contactParts.push(personalInfo.phone)
+    if (personalInfo.email) contactParts.push(personalInfo.email)
+    
+    if (contactParts.length > 0) {
+      html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
+    }
+    
+    // Process each line
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      
+      // Skip name and contact lines (already added)
+      if (personalInfo.name && line.includes(personalInfo.name)) continue
+      if (personalInfo.email && line.includes(personalInfo.email)) continue
+      if (personalInfo.phone && line.includes(personalInfo.phone.replace(/[\s.-]/g, ''))) continue
+      
+      // Section headers (all caps)
+      if (line.match(/^[A-Z\s]{3,}$/) && line.length < 50) {
+        html += `<h2 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 4px; margin-top: 24px; margin-bottom: 12px; color: #1a1a1a;">${line}</h2>`
+      }
+      // Bullet points
+      else if (line.startsWith('•') || line.startsWith('-')) {
+        html += `<div style="margin-left: 20px; margin-bottom: 6px;">${line}</div>`
+      }
+      // Job titles / positions (bold if followed by company)
+      else if (i < lines.length - 1 && lines[i + 1].includes('|')) {
+        html += `<div style="font-weight: bold; font-size: 16px; margin-top: 16px; margin-bottom: 4px;">${line}</div>`
+      }
+      // Company/location/dates line
+      else if (line.includes('|')) {
+        html += `<div style="font-style: italic; color: #666; font-size: 14px; margin-bottom: 8px;">${line}</div>`
+      }
+      // Regular paragraph
+      else {
+        html += `<p style="margin-bottom: 12px;">${line}</p>`
+      }
+    }
+    
+    html += '</div>'
+    return html
   }
 
   return (

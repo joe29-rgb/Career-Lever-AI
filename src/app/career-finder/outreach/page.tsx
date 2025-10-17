@@ -414,7 +414,7 @@ ${name}`
                   type="email"
                   value={currentEmail || 'No email found'}
                   disabled
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900"
                 />
                 {currentEmail && (
                   <Button
@@ -436,7 +436,7 @@ ${name}`
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                 />
                 <Button
                   onClick={() => copyToClipboard(emailSubject, 'subject')}
@@ -456,7 +456,7 @@ ${name}`
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
                   rows={16}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-gray-900 bg-white"
                 />
                 <Button
                   onClick={() => copyToClipboard(emailBody, 'body')}
@@ -482,7 +482,7 @@ ${name}`
             </div>
 
             <p className="text-xs text-gray-500 mt-4 text-center">
-              Note: This will open your default email client. Your resume and cover letter should be attached manually.
+              Note: This will open your default email client with the message pre-filled. Resume and cover letter will be automatically attached.
             </p>
           </div>
 
