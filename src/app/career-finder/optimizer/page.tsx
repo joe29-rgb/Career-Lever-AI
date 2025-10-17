@@ -244,6 +244,9 @@ export default function CareerFinderOptimizerPage() {
     setTemplate(newTemplate)
     if (resumeText) {
       console.log('[OPTIMIZER] Template changed, regenerating variants')
+      // CRITICAL: Clear cache BEFORE regeneration
+      localStorage.removeItem('cf:resumeVariants')
+      console.log('[OPTIMIZER] 🔄 Cache cleared, regenerating variants...')
       hasGeneratedRef.current = false // Allow regeneration
       setTimeout(() => generateVariants(), 100) // Small delay to ensure state is updated
     }
@@ -316,19 +319,27 @@ export default function CareerFinderOptimizerPage() {
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
     let html = '<div style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; max-width: 800px; padding: 20px;">'
     
-    // Add name header ONCE
-    if (personalInfo.name) {
+    // Check if header info already exists in first 200 chars
+    const first200 = text.substring(0, 200).toLowerCase()
+    const hasNameInText = personalInfo.name && first200.includes(personalInfo.name.toLowerCase())
+    const hasEmailInText = personalInfo.email && first200.includes(personalInfo.email.toLowerCase())
+    const hasPhoneInText = personalInfo.phone && first200.includes(personalInfo.phone.replace(/[\s.-]/g, ''))
+    
+    // Only add header if NOT already in resume text
+    if (!hasNameInText && personalInfo.name) {
       html += `<h1 style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">${personalInfo.name}</h1>`
     }
     
-    // Add contact info ONCE
-    const contactParts: string[] = []
-    if (personalInfo.location) contactParts.push(personalInfo.location)
-    if (personalInfo.phone) contactParts.push(personalInfo.phone)
-    if (personalInfo.email) contactParts.push(personalInfo.email)
-    
-    if (contactParts.length > 0) {
-      html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
+    // Only add contact info if NOT already in resume text
+    if (!hasEmailInText && !hasPhoneInText) {
+      const contactParts: string[] = []
+      if (personalInfo.location) contactParts.push(personalInfo.location)
+      if (personalInfo.phone) contactParts.push(personalInfo.phone)
+      if (personalInfo.email) contactParts.push(personalInfo.email)
+      
+      if (contactParts.length > 0) {
+        html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
+      }
     }
     
     // Track if we've seen contact info to skip duplicates
