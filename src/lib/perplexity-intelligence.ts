@@ -633,6 +633,8 @@ Return a JSON object with: company, freshness (ISO datetime), sources[{title,url
 
 PRIORITY CANADIAN SOURCES:
 - Job Bank Canada (jobbank.gc.ca) - Government jobs
+- AutoJobs (autojobs.com) - Canadian automotive & skilled trades
+- SimplyHired Canada (simplyhired.ca) - Canadian aggregator
 - Jobboom (jobboom.com) - Bilingual Canadian
 - Workopolis (workopolis.com) - Canadian
 - Indeed Canada (ca.indeed.com)
@@ -903,7 +905,10 @@ CANADIAN ATS PLATFORMS - Check these tech companies:
 
 REQUIREMENTS:
 1. **CRITICAL**: Use your real-time web search to find ACTUAL job postings on these boards
-2. Search queries like: "site:jobbank.gc.ca ${options.roleHint || 'jobs'} ${location}"
+2. Search queries like: 
+   - "site:jobbank.gc.ca ${options.roleHint || 'jobs'} ${location}"
+   - "site:autojobs.com ${options.roleHint || 'jobs'} ${location}"
+   - "site:simplyhired.ca ${options.roleHint || 'jobs'} ${location}"
 3. For each board, extract: title, company, location, salary (if shown), URL, posted date
 4. Match skills from resume to job requirements
 5. Calculate skillMatchPercent (0-100) based on overlap
