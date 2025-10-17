@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
+import { ResumeSkeleton } from '@/components/skeleton-loader'
 
 const TEMPLATES = [
   { 
@@ -538,7 +539,13 @@ export default function CareerFinderOptimizerPage() {
             </div>
           </div>
           <div className="bg-white dark:bg-gray-900">
-            <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+            {loading && !variantA ? (
+              <div className="p-6">
+                <ResumeSkeleton />
+              </div>
+            ) : (
+              <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+            )}
           </div>
         </div>
         
@@ -559,7 +566,13 @@ export default function CareerFinderOptimizerPage() {
             </div>
           </div>
           <div className="bg-white dark:bg-gray-900">
-            <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+            {loading && !variantB ? (
+              <div className="p-6">
+                <ResumeSkeleton />
+              </div>
+            ) : (
+              <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+            )}
           </div>
         </div>
       </div>

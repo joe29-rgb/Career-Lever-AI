@@ -10,6 +10,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Download, Loader2 } from 'lucide-react'
 import { useResumeContext } from '@/components/resume-context'
 import toast from 'react-hot-toast'
+import { CoverLetterSkeleton } from '@/components/skeleton-loader'
 
 export default function CoverLetterPage() {
   const { selectedResume, resumes, setSelectedResumeId, refresh } = useResumeContext()
@@ -277,7 +278,9 @@ export default function CoverLetterPage() {
           <CardDescription>Review your cover letter before downloading.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {previewHtml ? (
+          {isLoading ? (
+            <CoverLetterSkeleton />
+          ) : previewHtml ? (
             <>
               <div className="border rounded overflow-hidden">
                 <iframe srcDoc={previewHtml} className="w-full h-96 border-0" title="Cover Letter Preview" />
