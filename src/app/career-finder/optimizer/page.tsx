@@ -305,7 +305,7 @@ export default function CareerFinderOptimizerPage() {
   }
   
   // Convert plain text resume to HTML with proper formatting
-  const formatResumeAsHTML = (text: string, personalInfo: any): string => {
+  const formatResumeAsHTML = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
     if (!text) return ''
     
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
@@ -317,7 +317,7 @@ export default function CareerFinderOptimizerPage() {
     }
     
     // Add contact info
-    const contactParts = []
+    const contactParts: string[] = []
     if (personalInfo.location) contactParts.push(personalInfo.location)
     if (personalInfo.phone) contactParts.push(personalInfo.phone)
     if (personalInfo.email) contactParts.push(personalInfo.email)
