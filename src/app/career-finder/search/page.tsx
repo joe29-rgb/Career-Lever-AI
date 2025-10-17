@@ -218,36 +218,17 @@ export default function SearchPage() {
       const performInitialSearch = async () => {
         let query = keywords
         // CRITICAL FIX: Use savedLocation as fallback, not filters.location (state might not be updated yet)
-        let loc = location || savedLocation || filters.location
+        const loc = location || savedLocation || filters.location
 
-        // ENTERPRISE FIX: If autopilot mode, extract keywords from resume
-        if (!query && autopilotReady && resumeData) {
-          try {
-            const resume = JSON.parse(resumeData)
-            // Extract first 5 keywords from resume
-            const resumeText = resume.extractedText || ''
-            const response = await fetch('/api/resume/extract-signals', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ resume: resumeText })
-            })
-            
-            if (response.ok) {
-              const signals = await response.json()
-              const topKeywords = signals.keywords?.slice(0, 5).join(', ') || ''
-              const resumeLocation = signals.location // CRITICAL: No fallback - use actual extracted location
-              query = topKeywords
-              setSearchQuery(topKeywords)
-              if (resumeLocation) {
-                // CRITICAL FIX: Update loc directly for the search payload
-                loc = resumeLocation
-                setFilters(prev => ({ ...prev, location: resumeLocation }))
-              }
-              setUseResumeMatching(true)
-              console.log('[AUTOPILOT] Auto-search with keywords:', topKeywords, 'location:', resumeLocation || 'NOT FOUND')
-            }
-          } catch (e) {
-            console.error('[AUTOPILOT] Failed to extract keywords:', e)
+        // CRITICAL FIX: Use cached keywords from localStorage (already extracted by autopilot)
+        if (!query && autopilotReady) {
+          if (savedKeywords) {
+            query = savedKeywords
+            setSearchQuery(savedKeywords)
+            setUseResumeMatching(true)
+            console.log('[AUTOPILOT] ✅ Using cached keywords:', savedKeywords)
+          } else {
+            console.warn('[AUTOPILOT] ⚠️ autopilotReady but no keywords in localStorage')
           }
         }
 

@@ -433,6 +433,18 @@ export default function CareerFinderResumePage() {
                     // Cache signals in localStorage for instant access
                     if (autopilotData.signals) {
                       localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
+                      
+                      // CRITICAL: Cache keywords and location separately for search page
+                      if (autopilotData.signals.keywords?.length > 0) {
+                        const topKeywords = autopilotData.signals.keywords.slice(0, 5).join(', ')
+                        localStorage.setItem('cf:keywords', topKeywords)
+                        console.log('[AUTOPILOT] ✅ Keywords:', topKeywords)
+                      }
+                      
+                      if (autopilotData.signals.location) {
+                        localStorage.setItem('cf:location', autopilotData.signals.location)
+                        console.log('[AUTOPILOT] ✅ Location:', autopilotData.signals.location)
+                      }
                     }
                     
                     toast.success('✅ Resume uploaded! Autopilot is preparing your data...', {
