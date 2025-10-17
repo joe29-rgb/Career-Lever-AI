@@ -302,15 +302,33 @@ export async function POST(request: NextRequest) {
       // Non-critical, continue
     }
 
+    // CRITICAL: Filter out confidential jobs (they break the flow)
+    const filteredJobs = jobs.filter((job: any) => {
+      const company = (job.company || '').toLowerCase().trim()
+      const isConfidential = company === 'confidential' || 
+                            company === 'confidential company' ||
+                            company === 'undisclosed' ||
+                            company === 'private' ||
+                            company === ''
+      
+      if (isConfidential) {
+        console.log(`[JOB_SEARCH] ❌ Filtered out confidential job: ${job.title}`)
+      }
+      
+      return !isConfidential
+    })
+
+    console.log(`[JOB_SEARCH] Filtered ${jobs.length - filteredJobs.length} confidential jobs, ${filteredJobs.length} remaining`)
+
     // Get recommended boards for this location
     const recommendations = PerplexityIntelligenceService.getRecommendedBoards(location)
 
     return NextResponse.json({
       success: true,
       query: { keywords, location, sources },
-      totalResults: jobs.length,
-      returnedResults: jobs.length,
-      jobs: jobs.slice(0, limit),
+      totalResults: filteredJobs.length,
+      returnedResults: filteredJobs.length,
+      jobs: filteredJobs.slice(0, limit),
       metadata: {
         ...metadata,
         searchedAt: new Date().toISOString(),
