@@ -11,13 +11,91 @@ export function ExportHub({ resume }: ExportHubProps) {
   const [exporting, setExporting] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  const generateResumeHTML = (resume: any) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+          h1 { font-size: 28px; margin-bottom: 5px; color: #1a1a1a; }
+          h2 { font-size: 18px; border-bottom: 2px solid #333; padding-bottom: 5px; margin-top: 20px; margin-bottom: 10px; }
+          .contact { font-size: 14px; color: #666; margin-bottom: 20px; }
+          .section { margin-bottom: 20px; }
+          .job { margin-bottom: 15px; }
+          .job-title { font-weight: bold; font-size: 16px; }
+          .job-company { font-style: italic; color: #666; font-size: 14px; }
+          ul { margin: 5px 0; padding-left: 20px; }
+          li { margin-bottom: 5px; }
+        </style>
+      </head>
+      <body>
+        <h1>${resume.personalInfo?.name || 'Your Name'}</h1>
+        <div class="contact">
+          ${[resume.personalInfo?.email, resume.personalInfo?.phone, resume.personalInfo?.location].filter(Boolean).join(' | ')}
+        </div>
+        
+        ${resume.personalInfo?.summary ? `
+          <div class="section">
+            <h2>PROFESSIONAL SUMMARY</h2>
+            <p>${resume.personalInfo.summary}</p>
+          </div>
+        ` : ''}
+        
+        ${resume.experience?.length ? `
+          <div class="section">
+            <h2>EXPERIENCE</h2>
+            ${resume.experience.map((exp: any) => `
+              <div class="job">
+                <div class="job-title">${exp.position || 'Position'}</div>
+                <div class="job-company">${exp.company || 'Company'} | ${exp.location || ''} | ${exp.startDate || ''} - ${exp.current ? 'Present' : exp.endDate || ''}</div>
+                ${exp.achievements?.length ? `
+                  <ul>
+                    ${exp.achievements.map((achievement: string) => `<li>${achievement}</li>`).join('')}
+                  </ul>
+                ` : ''}
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${resume.education?.length ? `
+          <div class="section">
+            <h2>EDUCATION</h2>
+            ${resume.education.map((edu: any) => `
+              <div class="job">
+                <div class="job-title">${edu.degree || 'Degree'} in ${edu.field || 'Field'}</div>
+                <div class="job-company">${edu.institution || 'Institution'} | ${edu.graduationDate || ''}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        
+        ${resume.skills?.length ? `
+          <div class="section">
+            <h2>SKILLS</h2>
+            <p>${resume.skills.join(' • ')}</p>
+          </div>
+        ` : ''}
+      </body>
+      </html>
+    `
+  }
+
   const handleExportPDF = async () => {
     setExporting('pdf')
     try {
-      const response = await fetch('/api/resume/export/pdf', {
+      // Generate HTML from resume
+      const resumeHtml = generateResumeHTML(resume)
+      
+      const response = await fetch('/api/resume/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume })
+        body: JSON.stringify({ 
+          resumeHtml,
+          filename: `${resume.personalInfo?.name || 'resume'}.pdf`
+        })
       })
 
       if (response.ok) {
@@ -25,8 +103,9 @@ export function ExportHub({ resume }: ExportHubProps) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${resume.personalInfo?.fullName || 'resume'}.pdf`
+        a.download = `${resume.personalInfo?.name || 'resume'}.pdf`
         a.click()
+        window.URL.revokeObjectURL(url)
       }
     } catch (error) {
       console.error('PDF export error:', error)
@@ -38,10 +117,13 @@ export function ExportHub({ resume }: ExportHubProps) {
   const handleExportWord = async () => {
     setExporting('word')
     try {
-      const response = await fetch('/api/resume/export/docx', {
+      const response = await fetch('/api/resume/export-docx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume })
+        body: JSON.stringify({ 
+          resume,
+          filename: `${resume.personalInfo?.name || 'resume'}.docx`
+        })
       })
 
       if (response.ok) {
@@ -49,8 +131,9 @@ export function ExportHub({ resume }: ExportHubProps) {
         const url = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `${resume.personalInfo?.fullName || 'resume'}.docx`
+        a.download = `${resume.personalInfo?.name || 'resume'}.docx`
         a.click()
+        window.URL.revokeObjectURL(url)
       }
     } catch (error) {
       console.error('Word export error:', error)
