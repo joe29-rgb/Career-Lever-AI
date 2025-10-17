@@ -220,6 +220,10 @@ export default function CareerFinderResumePage() {
                           localStorage.setItem('cf:location', autopilotData.signals.location)
                           console.log('[AUTOPILOT] ✅ Location:', autopilotData.signals.location)
                         }
+                        
+                        // CRITICAL: Set autopilot ready flag so search page knows to auto-search
+                        localStorage.setItem('cf:autopilotReady', '1')
+                        console.log('[AUTOPILOT] ✅ Set autopilotReady flag')
                       }
                     } else {
                       console.error('[AUTOPILOT] ❌ Failed:', await autopilotResponse.text())
@@ -415,8 +419,6 @@ export default function CareerFinderResumePage() {
                   localStorage.removeItem('cf:comprehensiveAnalysis')
                   console.log('[CACHE] Old autopilot cache cleared')
                   
-                  localStorage.setItem('cf:autopilotReady', '1')
-                  
                   // Trigger autopilot to pre-compute AI data
                   const autopilotResponse = await fetch('/api/career-finder/autopilot', {
                     method: 'POST',
@@ -445,6 +447,10 @@ export default function CareerFinderResumePage() {
                         localStorage.setItem('cf:location', autopilotData.signals.location)
                         console.log('[AUTOPILOT] ✅ Location:', autopilotData.signals.location)
                       }
+                      
+                      // CRITICAL: Set autopilot ready flag AFTER successful extraction
+                      localStorage.setItem('cf:autopilotReady', '1')
+                      console.log('[AUTOPILOT] ✅ Set autopilotReady flag')
                     }
                     
                     toast.success('✅ Resume uploaded! Autopilot is preparing your data...', {

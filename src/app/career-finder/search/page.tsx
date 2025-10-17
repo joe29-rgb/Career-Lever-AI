@@ -195,13 +195,12 @@ export default function SearchPage() {
     const savedKeywords = localStorage.getItem('cf:keywords') || ''
     const resumeData = localStorage.getItem('cf:resume')
     
-    console.log('[PERPLEXITY AUDIT FIX] Autopilot check:', { 
-      autopilotReady, 
-      savedLocation, 
-      savedKeywords: savedKeywords.slice(0, 50),
-      hasResume: !!resumeData,
-      hasKeywords: !!savedKeywords // FIX: Check savedKeywords from localStorage, not state
-    })
+    console.log('[PERPLEXITY AUDIT FIX] Autopilot check:')
+    console.log('  - autopilotReady:', autopilotReady)
+    console.log('  - savedLocation:', savedLocation)
+    console.log('  - savedKeywords:', savedKeywords)
+    console.log('  - hasResume:', !!resumeData)
+    console.log('  - hasKeywords:', !!savedKeywords)
     
     // CRITICAL: Pre-populate location from localStorage if available
     if (savedLocation && !filters.location) {
