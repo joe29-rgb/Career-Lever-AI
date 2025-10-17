@@ -92,10 +92,9 @@ export default function CareerFinderOptimizerPage() {
         console.log('[OPTIMIZER] 📋 Extracted personal info:', info)
         setPersonalInfo(info)
         
-        // Calculate ATS score
-        const score = calculateATSScore(resumeData.extractedText)
-        console.log('[OPTIMIZER] 📊 ATS Score:', score)
-        setAtsScore(score)
+        // Don't calculate ATS score yet - wait for optimized resume
+        console.log('[OPTIMIZER] ⏳ ATS Score will be calculated after optimization')
+        setAtsScore(null)
         
         return
       }
@@ -205,6 +204,11 @@ export default function CareerFinderOptimizerPage() {
         setVariantA(formattedA)
         setVariantB(formattedB)
         
+        // Calculate ATS score on optimized resume
+        const scoreA = calculateATSScore(vA || '')
+        console.log('[OPTIMIZER] 📊 ATS Score (optimized):', scoreA)
+        setAtsScore(scoreA)
+        
         // Cache the formatted result
         localStorage.setItem(cacheKey, JSON.stringify({ variantA: formattedA, variantB: formattedB }))
         console.log('[OPTIMIZER] ✅ Variants generated, formatted, and cached')
@@ -309,14 +313,14 @@ export default function CareerFinderOptimizerPage() {
     if (!text) return ''
     
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
-    let html = '<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; padding: 20px;">'
+    let html = '<div style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; max-width: 800px; padding: 20px;">'
     
-    // Add name header
+    // Add name header ONCE
     if (personalInfo.name) {
       html += `<h1 style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">${personalInfo.name}</h1>`
     }
     
-    // Add contact info
+    // Add contact info ONCE
     const contactParts: string[] = []
     if (personalInfo.location) contactParts.push(personalInfo.location)
     if (personalInfo.phone) contactParts.push(personalInfo.phone)
@@ -326,22 +330,42 @@ export default function CareerFinderOptimizerPage() {
       html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
     }
     
+    // Track if we've seen contact info to skip duplicates
+    const seenContactInfo = new Set<string>()
+    
     // Process each line
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       
-      // Skip name and contact lines (already added)
-      if (personalInfo.name && line.includes(personalInfo.name)) continue
-      if (personalInfo.email && line.includes(personalInfo.email)) continue
-      if (personalInfo.phone && line.includes(personalInfo.phone.replace(/[\s.-]/g, ''))) continue
+      // Skip duplicate name and contact lines
+      if (personalInfo.name && line.toLowerCase().includes(personalInfo.name.toLowerCase())) {
+        if (seenContactInfo.has('name')) continue
+        seenContactInfo.add('name')
+        continue
+      }
+      if (personalInfo.email && line.includes(personalInfo.email)) {
+        if (seenContactInfo.has('email')) continue
+        seenContactInfo.add('email')
+        continue
+      }
+      if (personalInfo.phone && line.includes(personalInfo.phone.replace(/[\s.-]/g, ''))) {
+        if (seenContactInfo.has('phone')) continue
+        seenContactInfo.add('phone')
+        continue
+      }
+      if (personalInfo.location && line.includes(personalInfo.location)) {
+        if (seenContactInfo.has('location')) continue
+        seenContactInfo.add('location')
+        continue
+      }
       
       // Section headers (all caps)
       if (line.match(/^[A-Z\s]{3,}$/) && line.length < 50) {
         html += `<h2 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 4px; margin-top: 24px; margin-bottom: 12px; color: #1a1a1a;">${line}</h2>`
       }
-      // Bullet points
+      // Bullet points - consistent spacing
       else if (line.startsWith('•') || line.startsWith('-')) {
-        html += `<div style="margin-left: 20px; margin-bottom: 6px;">${line}</div>`
+        html += `<div style="margin-left: 24px; margin-bottom: 4px; line-height: 1.6;">${line}</div>`
       }
       // Job titles / positions (bold if followed by company)
       else if (i < lines.length - 1 && lines[i + 1].includes('|')) {
@@ -353,7 +377,7 @@ export default function CareerFinderOptimizerPage() {
       }
       // Regular paragraph
       else {
-        html += `<p style="margin-bottom: 12px;">${line}</p>`
+        html += `<p style="margin-bottom: 8px; line-height: 1.6;">${line}</p>`
       }
     }
     

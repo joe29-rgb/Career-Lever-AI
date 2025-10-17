@@ -258,10 +258,13 @@ ${name}`
   }
 
   const sendEmail = () => {
-    const email = selectedContact?.email || companyData?.hiringContactIntelligence?.officialChannels?.jobsEmail
-    if (!email) return
+    if (!currentEmail) {
+      console.error('[OUTREACH] No email address available')
+      return
+    }
 
-    const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+    const mailtoLink = `mailto:${currentEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+    console.log('[OUTREACH] Opening email client:', currentEmail)
     window.location.href = mailtoLink
   }
 
@@ -287,8 +290,8 @@ ${name}`
     )
   }
 
-  const contacts = companyData?.hiringContactIntelligence?.keyContacts || []
-  const officialChannels = companyData?.hiringContactIntelligence?.officialChannels
+  const contacts = (companyData as any)?.contacts || (companyData as any)?.hiringContactIntelligence?.keyContacts || []
+  const officialChannels = (companyData as any)?.officialChannels || (companyData as any)?.hiringContactIntelligence?.officialChannels
   const currentEmail = selectedContact?.email || officialChannels?.jobsEmail || officialChannels?.hrEmail
 
   return (

@@ -203,13 +203,13 @@ export default function CareerFinderCompanyPage() {
                 <div className="space-y-3">
                   {companyData.hiringContacts.map((contact: any, index: number) => (
                     <div key={index} className="p-3 bg-secondary rounded-lg">
-                      <p className="font-medium text-foreground">{contact.name}</p>
-                      <p className="text-sm text-muted-foreground">{contact.title}</p>
+                      <p className="font-medium text-white">{contact.name}</p>
+                      <p className="text-sm text-gray-200">{contact.title}</p>
                       {contact.email && (
-                        <p className="text-sm text-blue-600">{contact.email}</p>
+                        <p className="text-sm text-blue-300">{contact.email}</p>
                       )}
                       {contact.department && (
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-gray-300 mt-1">
                           {contact.department} • Confidence: {Math.round((contact.confidence || 0.5) * 100)}%
                         </p>
                       )}

@@ -773,18 +773,6 @@ export default function JobAnalysisPage() {
         >
           {canProceed ? 'Research Company →' : 'Analyzing... Please wait'}
         </button>
-        <button
-          onClick={() => router.push(`/create-application?jobId=${job.id}`)}
-          disabled={!canProceed}
-          className={`flex-1 px-6 py-3 rounded-lg font-medium transition-all ${
-            canProceed
-              ? 'bg-secondary text-secondary-foreground hover:opacity-90 cursor-pointer'
-              : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
-          }`}
-          title={!canProceed ? 'Please review the analysis before proceeding' : ''}
-        >
-          Create Application
-        </button>
       </div>
       
       {/* User guidance */}
