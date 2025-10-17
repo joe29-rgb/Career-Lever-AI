@@ -61,6 +61,40 @@ export default function CareerFinderOutreachPage() {
     loadDataAndGenerateEmail()
   }, [])
 
+  const handleCompleteApplication = async () => {
+    if (!jobData) return
+
+    try {
+      // Create application record
+      const response = await fetch('/api/applications/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId: jobData.id,
+          company: jobData.company,
+          jobTitle: jobData.title,
+          location: jobData.location,
+          salary: jobData.salary,
+          recipient: selectedContact?.email || currentEmail
+        })
+      })
+
+      if (response.ok) {
+        console.log('[OUTREACH] ✅ Application created')
+        // Navigate to interview prep
+        router.push('/career-finder/interview-prep')
+      } else {
+        console.error('[OUTREACH] ❌ Failed to create application')
+        // Still navigate even if creation fails
+        router.push('/career-finder/interview-prep')
+      }
+    } catch (error) {
+      console.error('[OUTREACH] Error creating application:', error)
+      // Navigate anyway
+      router.push('/career-finder/interview-prep')
+    }
+  }
+
   const loadDataAndGenerateEmail = async () => {
     try {
       // Load job data
@@ -506,10 +540,10 @@ ${name}`
             Apply to More Jobs →
           </Button>
           <Button
-            onClick={() => router.push('/dashboard')}
+            onClick={handleCompleteApplication}
             className="bg-green-600 hover:bg-green-700"
           >
-            Complete Application ✓
+            Complete Application → Interview Prep
           </Button>
         </div>
       </div>
