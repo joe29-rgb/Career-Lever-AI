@@ -15,10 +15,34 @@ interface Resume {
   originalFileName?: string
 }
 
+interface ComprehensiveAnalysis {
+  aiRisk?: {
+    aiReplacementRisk: string
+    reasoning: string
+    careerOutlook: string
+    fiveYearOutlook?: string
+    recommendations?: string[]
+  }
+  salaryIntelligence?: {
+    targetRange?: {
+      min?: number
+      max?: number
+    }
+    marketData?: {
+      percentile50?: number
+    }
+  }
+  careerPath?: {
+    currentLevel?: string
+    nextPossibleRoles?: string[]
+  }
+  [key: string]: unknown
+}
+
 export default function CareerFinderResumePage() {
   const [existingResume, setExistingResume] = useState<Resume | null>(null)
   const [loadingExisting, setLoadingExisting] = useState<boolean>(true)
-  const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<Record<string, unknown> | null>(null)
+  const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(null)
   const [analyzingResume, setAnalyzingResume] = useState<boolean>(false)
   
   // COMPETITIVE ADVANTAGE: Comprehensive resume analysis with AI risk
@@ -334,11 +358,11 @@ export default function CareerFinderResumePage() {
                     <p className="text-sm text-muted-foreground mb-1">Current Level</p>
                     <p className="text-lg font-semibold text-foreground">{comprehensiveAnalysis.careerPath.currentLevel}</p>
                   </div>
-                  {comprehensiveAnalysis.careerPath.nextPossibleRoles?.length > 0 && (
+                  {(comprehensiveAnalysis.careerPath.nextPossibleRoles?.length ?? 0) > 0 && (
                     <div>
                       <p className="text-sm text-muted-foreground mb-2">Next Possible Roles</p>
                       <div className="flex flex-wrap gap-2">
-                        {comprehensiveAnalysis.careerPath.nextPossibleRoles.slice(0, 3).map((role: string, i: number) => (
+                        {comprehensiveAnalysis.careerPath.nextPossibleRoles?.slice(0, 3).map((role: string, i: number) => (
                           <span key={i} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">
                             {role}
                           </span>
@@ -351,14 +375,14 @@ export default function CareerFinderResumePage() {
             )}
 
             {/* AI Recommendations */}
-            {comprehensiveAnalysis.aiRisk?.recommendations?.length > 0 && (
+            {(comprehensiveAnalysis.aiRisk?.recommendations?.length ?? 0) > 0 && (
               <div className="bg-gradient-to-br from-yellow-500/10 to-amber-500/10 rounded-xl p-6 border border-yellow-500/20">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-2xl">💡</span>
                   <h4 className="text-lg font-bold text-foreground">AI Recommendations</h4>
                 </div>
                 <ul className="space-y-2">
-                  {comprehensiveAnalysis.aiRisk.recommendations.slice(0, 3).map((rec: string, i: number) => (
+                  {comprehensiveAnalysis.aiRisk?.recommendations?.slice(0, 3).map((rec: string, i: number) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="text-yellow-500 mt-1">•</span>
                       <span className="text-sm text-foreground">{rec}</span>
