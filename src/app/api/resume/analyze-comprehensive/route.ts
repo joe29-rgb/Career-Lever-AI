@@ -4,6 +4,11 @@ import { authOptions } from '@/lib/auth'
 import { PerplexityResumeAnalyzer } from '@/lib/perplexity-resume-analyzer'
 import { isRateLimited } from '@/lib/rate-limit'
 
+// Initialize global cache for comprehensive analysis
+if (!global.analysisCache) {
+  global.analysisCache = new Map()
+}
+
 /**
  * COMPETITIVE ADVANTAGE: Comprehensive AI-Powered Resume Analysis
  * 
@@ -55,6 +60,25 @@ export async function POST(request: NextRequest) {
     console.log('[COMPREHENSIVE_ANALYSIS] Resume length:', resumeText.length, 'characters')
     console.log('[COMPREHENSIVE_ANALYSIS] Options:', options)
 
+    // PERFORMANCE: Check cache first (24 hour TTL)
+    const cacheKey = `comprehensive-analysis:${session.user.id}:${resumeText.substring(0, 100)}`
+    const cached = global.analysisCache?.get(cacheKey)
+    const cacheAge = cached ? Date.now() - cached.timestamp : Infinity
+    const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+    
+    if (cached && cacheAge < CACHE_TTL) {
+      console.log('[COMPREHENSIVE_ANALYSIS] ✅ Using cached result (age:', Math.floor(cacheAge / 1000), 'seconds)')
+      return NextResponse.json({
+        success: true,
+        ...cached.data,
+        metadata: {
+          ...cached.data.metadata,
+          cached: true,
+          cacheAge: Math.floor(cacheAge / 1000)
+        }
+      })
+    }
+
     const startTime = Date.now()
 
     // Execute comprehensive analysis
@@ -66,9 +90,8 @@ export async function POST(request: NextRequest) {
     console.log('[COMPREHENSIVE_ANALYSIS] Career Outlook:', analysis.futureOutlook.fiveYearOutlook)
     console.log('[COMPREHENSIVE_ANALYSIS] Top Skills:', analysis.topSkills.slice(0, 3).map(s => s.skill).join(', '))
 
-    // Return comprehensive results with competitive advantage features highlighted
-    return NextResponse.json({
-      success: true,
+    // Build response data
+    const responseData = {
       analysis: {
         // Core extraction data
         keywords: analysis.keywords,
@@ -135,6 +158,20 @@ export async function POST(request: NextRequest) {
           'job-search-optimization'
         ]
       }
+    }
+
+    // PERFORMANCE: Store in cache for 24 hours
+    if (!global.analysisCache) global.analysisCache = new Map()
+    global.analysisCache.set(cacheKey, {
+      data: responseData,
+      timestamp: Date.now()
+    })
+    console.log('[COMPREHENSIVE_ANALYSIS] ✅ Cached result for 24 hours')
+
+    // Return comprehensive results with competitive advantage features highlighted
+    return NextResponse.json({
+      success: true,
+      ...responseData
     })
 
   } catch (error) {
