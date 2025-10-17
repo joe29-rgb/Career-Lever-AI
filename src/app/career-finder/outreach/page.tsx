@@ -109,7 +109,7 @@ export default function CareerFinderOutreachPage() {
       // Load company research data (includes hiring contacts)
       const companyResearch = CareerFinderStorage.getCompanyResearch()
       if (companyResearch) {
-        console.log('[OUTREACH] ✅ Loaded company research with contacts:', companyResearch.keyContacts?.length || 0)
+        console.log('[OUTREACH] ✅ Loaded company research with contacts:', companyResearch.contacts?.length || 0)
         setCompanyData(companyResearch as any)
       }
 
