@@ -26,93 +26,32 @@
 - Only adds header if NOT already present in resume
 - Prevents duplicate "Joseph McDonald" and phone number
 
----
+### 4. Cover Letter Hallucinations ✅
+**Status:** DEPLOYED
+**Files:** `src/app/api/cover-letter/generate/route.ts`, `src/lib/prompts/perplexity.ts`
+**What was fixed:**
+- Added `calculateYearsFromResume()` function that parses dates from resume text
+- Calculates actual years (e.g., May 2024 - Feb 2014 = ~10 years, not 38)
+- Updated prompt with strict validation rules:
+  - "ONLY use facts directly from resume"
+  - "Do NOT exaggerate years of experience"
+  - "Do NOT mention achievements not in resume"
+- Added `experienceNote` to prompt: "Candidate has EXACTLY X years of experience"
 
-## 🔴 CRITICAL REMAINING FIXES
-
-### 4. Cover Letter Hallucinations (IN PROGRESS)
-**Status:** NEEDS COMPLETION
-**Files to modify:**
-- `src/app/api/cover-letter/generate/route.ts`
-- `src/lib/perplexity-intelligence.ts` (cover letter prompt)
-
-**What needs to be done:**
-1. **Calculate Years of Experience from Resume Text:**
-   ```typescript
-   // Add this function to calculate experience
-   function calculateYearsFromResume(resumeText: string): number {
-     const dateRegex = /(\w+\s+\d{4})\s*[-–—]\s*(\w+\s+\d{4}|Present|Current)/gi
-     const matches = Array.from(resumeText.matchAll(dateRegex))
-     
-     let totalMonths = 0
-     for (const match of matches) {
-       const startDate = new Date(match[1])
-       const endDate = match[2].match(/Present|Current/i) ? new Date() : new Date(match[2])
-       const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
-                     (endDate.getMonth() - startDate.getMonth())
-       if (months > 0 && months < 600) totalMonths += months // Sanity check
-     }
-     
-     return Math.round(totalMonths / 12)
-   }
-   ```
-
-2. **Update Cover Letter Prompt to Use Calculated Experience:**
-   - In `buildEnhancedCoverLetterUserPrompt`, add:
-   ```typescript
-   const calculatedYears = calculateYearsFromResume(candidateHighlights)
-   // Add to prompt: "The candidate has EXACTLY ${calculatedYears} years of experience."
-   ```
-
-3. **Add Strict Validation Rules to Prompt:**
-   ```typescript
-   CRITICAL RULES:
-   - ONLY use facts directly from the resume
-   - The candidate has EXACTLY ${calculatedYears} years of experience - DO NOT say "decades" or "over 38 years"
-   - DO NOT mention achievements not in the resume (e.g., "coding thousands of files" unless explicitly stated)
-   - DO NOT exaggerate or infer experience
-   ```
-
-4. **Tone-Specific Templates:**
-   - Professional: "With ${calculatedYears} years of demonstrated success..."
-   - Conversational: "Over the past ${calculatedYears} years, I've..."
-   - Keep language factual and grounded in resume content
+### 5. Company Email Extraction ✅
+**Status:** DEPLOYED
+**Files:** `src/lib/perplexity-intelligence.ts`, `src/app/career-finder/outreach/page.tsx`
+**What was fixed:**
+- Enhanced company research prompt to find general emails (careers@, hr@, jobs@, info@)
+- Added `generalEmail` and `careersPage` fields to company intel
+- Added fallback UI when no contacts found:
+  - Shows suggested email addresses based on company name
+  - Displays LinkedIn search tips
+  - Provides actionable next steps
 
 ---
 
-### 5. Company Email Extraction for Outreach
-**Status:** NOT STARTED
-**Files to modify:**
-- `src/lib/perplexity-intelligence.ts` (company research)
-- `src/app/career-finder/outreach/page.tsx`
-
-**What needs to be done:**
-1. **Enhance Company Research to Extract Emails:**
-   - Add to company research prompt: "Find the company's general contact email (e.g., careers@, hr@, info@)"
-   - Check company website, LinkedIn, Google results
-   - Return: `{ generalEmail: string | null, hrEmail: string | null }`
-
-2. **Fallback Email Generation:**
-   ```typescript
-   function generateLikelyEmails(companyName: string, domain: string): string[] {
-     const cleanName = companyName.toLowerCase().replace(/[^a-z]/g, '')
-     return [
-       `careers@${domain}`,
-       `hr@${domain}`,
-       `jobs@${domain}`,
-       `info@${domain}`,
-       `contact@${domain}`
-     ]
-   }
-   ```
-
-3. **Update Outreach Page:**
-   - Show extracted emails if found
-   - Show "Suggested emails" with fallback list
-   - Pre-populate email field in mailto link
-   - Add note: "⚠️ No specific contact found. Try these common addresses or search LinkedIn."
-
----
+## 🔴 REMAINING FIXES
 
 ### 6. Job Card Loading Animation
 **Status:** NOT STARTED
@@ -203,26 +142,23 @@
 
 ## 📊 PROGRESS SUMMARY
 
-**Completed:** 3/8 (37.5%)
-**In Progress:** 1/8 (12.5%)
-**Remaining:** 4/8 (50%)
+**Completed:** 5/8 (62.5%) ✅
+**Remaining:** 3/8 (37.5%)
 
 **Estimated Time Remaining:**
-- Cover Letter Fix: 30 minutes
-- Company Email Extraction: 45 minutes
 - Job Card Loading: 15 minutes
 - Skeleton Loaders: 30 minutes
 - Job Board Integration: 20 minutes
 
-**Total:** ~2.5 hours
+**Total:** ~1 hour
 
 ---
 
 ## 🎯 RECOMMENDED ORDER
 
-1. **Cover Letter Hallucinations** (Critical - affects credibility)
-2. **Company Email Extraction** (High - completes outreach flow)
-3. **Job Card Loading Animation** (Medium - UX improvement)
+1. ~~**Cover Letter Hallucinations**~~ ✅ COMPLETED
+2. ~~**Company Email Extraction**~~ ✅ COMPLETED
+3. **Job Card Loading Animation** (Medium - UX improvement) - NEXT
 4. **Skeleton Loaders** (Medium - UX polish)
 5. **Job Board Integration** (Low - feature expansion)
 
