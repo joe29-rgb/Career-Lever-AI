@@ -429,12 +429,16 @@ export default function CareerFinderOptimizerPage() {
     <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       <CareerFinderBackButton />
       
-      {/* Personal Info Header with ATS Score */}
+      {/* Personal Info Header with ATS Score - Dribbble Inspired */}
       {resumeText && (
-        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-border rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
-          <div className="flex items-start justify-between">
+        <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 border border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl backdrop-blur-sm">
+          {/* Decorative gradient orbs */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl -z-10"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-400/20 to-purple-400/20 rounded-full blur-3xl -z-10"></div>
+          
+          <div className="flex items-start justify-between relative z-10">
             <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{personalInfo.name || 'Resume Optimizer'}</h1>
+              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">{personalInfo.name || 'Resume Optimizer'}</h1>
               <div className="flex flex-wrap gap-4 text-muted-foreground">
                 {personalInfo.email && (
                   <div className="flex items-center gap-2">
@@ -465,10 +469,19 @@ export default function CareerFinderOptimizerPage() {
             </div>
             {atsScore !== null && (
               <div className="text-right">
-                <div className="text-5xl font-bold text-primary">{atsScore}%</div>
-                <div className="text-sm text-muted-foreground mt-1">ATS Score</div>
-                <div className={`text-xs font-semibold mt-1 ${atsScore >= 80 ? 'text-green-500' : atsScore >= 60 ? 'text-yellow-500' : 'text-red-500'}`}>
-                  {atsScore >= 80 ? '✓ ATS-Optimized' : atsScore >= 60 ? '⚠ Needs Improvement' : '✗ Low Compatibility'}
+                <div className="relative inline-block">
+                  {/* Circular progress ring */}
+                  <svg className="w-28 h-28 transform -rotate-90">
+                    <circle cx="56" cy="56" r="52" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200 dark:text-gray-700" />
+                    <circle cx="56" cy="56" r="52" stroke="currentColor" strokeWidth="8" fill="none" strokeDasharray={`${2 * Math.PI * 52}`} strokeDashoffset={`${2 * Math.PI * 52 * (1 - atsScore / 100)}`} className={`transition-all duration-1000 ${atsScore >= 80 ? 'text-green-500' : atsScore >= 60 ? 'text-yellow-500' : 'text-red-500'}`} strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <div className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">{atsScore}%</div>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground mt-2 font-medium">ATS Score</div>
+                <div className={`text-xs font-bold mt-1 px-3 py-1 rounded-full inline-block ${atsScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : atsScore >= 60 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                  {atsScore >= 80 ? '✓ Optimized' : atsScore >= 60 ? '⚠ Fair' : '✗ Low'}
                 </div>
               </div>
             )}
@@ -499,15 +512,20 @@ export default function CareerFinderOptimizerPage() {
         </div>
       )}
       
-      {/* Template Selection */}
-      <div className="bg-card border border-border rounded-xl p-6 mb-6">
-        <h2 className="text-xl font-bold text-foreground mb-2">Choose Resume Template</h2>
-        <p className="text-sm text-muted-foreground mb-4">Select a template style that matches your industry and experience level</p>
+      {/* Template Selection - Modern Card */}
+      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl">🎨</div>
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Choose Resume Template</h2>
+            <p className="text-xs text-muted-foreground">Select a style that matches your industry</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {TEMPLATES.map(t => (
             <button 
               key={t.id} 
-              className={`border border-border rounded-lg p-4 text-left hover:shadow-lg transition-all ${template===t.id?'bg-blue-500/10 border-blue-500 ring-2 ring-blue-500':''}`} 
+              className={`group relative border rounded-xl p-5 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl ${template===t.id?'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 border-blue-500 shadow-lg shadow-blue-500/20':'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 bg-white dark:bg-gray-800/50'}`} 
               onClick={()=>handleTemplateChange(t.id)}
             >
               <div className="flex items-start gap-3 mb-3">
