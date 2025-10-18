@@ -359,38 +359,45 @@ export default function CareerFinderOptimizerPage() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       
-      // Skip duplicate name and contact lines
+      // Skip ALL personal info lines - they're already in the header or AI-generated
+      let shouldSkip = false
+      
       if (personalInfo.name && line.toLowerCase().includes(personalInfo.name.toLowerCase())) {
-        if (seenContactInfo.has('name')) {
-          continue // Skip duplicate
+        if (!seenContactInfo.has('name')) {
+          seenContactInfo.add('name')
+          // Skip if we added header OR if it's in AI-generated text
+          if (!hasNameInText || hasNameInText) shouldSkip = true
+        } else {
+          shouldSkip = true // Skip all subsequent occurrences
         }
-        seenContactInfo.add('name')
-        // Skip first occurrence too if we already added header
-        if (!hasNameInText) continue
       }
+      
       if (personalInfo.email && line.includes(personalInfo.email)) {
-        if (seenContactInfo.has('email')) {
-          continue // Skip duplicate
+        if (!seenContactInfo.has('email')) {
+          seenContactInfo.add('email')
+          shouldSkip = true
+        } else {
+          shouldSkip = true
         }
-        seenContactInfo.add('email')
-        // Skip first occurrence too if we already added header
-        if (!hasEmailInText) continue
       }
+      
       if (personalInfo.phone && line.includes(personalInfo.phone.replace(/[\s.-]/g, ''))) {
-        if (seenContactInfo.has('phone')) {
-          continue // Skip duplicate
+        if (!seenContactInfo.has('phone')) {
+          seenContactInfo.add('phone')
+          shouldSkip = true
+        } else {
+          shouldSkip = true
         }
-        seenContactInfo.add('phone')
-        // Skip first occurrence too if we already added header
-        if (!hasPhoneInText) continue
       }
+      
       if (personalInfo.location && line.includes(personalInfo.location)) {
-        if (seenContactInfo.has('location')) {
-          continue // Skip duplicate
+        if (!seenContactInfo.has('location')) {
+          seenContactInfo.add('location')
         }
-        seenContactInfo.add('location')
-        continue // Always skip location lines in body
+        shouldSkip = true // Always skip location lines
       }
+      
+      if (shouldSkip) continue
       
       // Section headers (all caps)
       if (line.match(/^[A-Z\s]{3,}$/) && line.length < 50) {

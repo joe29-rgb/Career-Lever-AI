@@ -22,13 +22,20 @@ export async function POST(req: NextRequest) {
     const tokens = tokenize(resumeText)
     const tokenSet = new Set(tokens)
 
+    // Extract keywords from job analysis (supports multiple formats)
     const targets: string[] = [
+      ...(jobAnalysis?.matchingSkills || []),
+      ...(jobAnalysis?.missingSkills || []),
+      ...(jobAnalysis?.skillsToHighlight || []),
       ...(jobAnalysis?.analysis?.keyRequirements || []),
       ...(jobAnalysis?.analysis?.preferredSkills || []),
       ...(jobAnalysis?.keywords || []),
     ]
       .map((s: string) => s.toLowerCase())
       .filter(Boolean)
+    
+    console.log('[ATS_SCORE] Job analysis structure:', Object.keys(jobAnalysis))
+    console.log('[ATS_SCORE] Extracted targets count:', targets.length)
 
     // Normalize targets by splitting on separators and de-duping
     const expandedTargets = Array.from(
@@ -36,6 +43,9 @@ export async function POST(req: NextRequest) {
         targets.flatMap((t) => t.split(/[,;•\-]/).map((p) => p.trim()).filter((p) => p.length > 1))
       )
     )
+
+    console.log('[ATS_SCORE] Expanded targets:', expandedTargets.slice(0, 10))
+    console.log('[ATS_SCORE] Resume tokens (first 20):', Array.from(tokenSet).slice(0, 20))
 
     const matched: string[] = []
     const missing: string[] = []
@@ -50,6 +60,9 @@ export async function POST(req: NextRequest) {
       const first = parts[0]
       density[kw] = tokens.filter((t) => t === first).length / Math.max(tokens.length, 1)
     }
+    
+    console.log('[ATS_SCORE] Matched keywords:', matched.length, matched.slice(0, 10))
+    console.log('[ATS_SCORE] Missing keywords:', missing.length, missing.slice(0, 10))
 
     const coverage = matched.length / Math.max(expandedTargets.length || 1, 1)
     // Simple ATS score: 70% weight coverage, 30% weight length & repetition penalty
