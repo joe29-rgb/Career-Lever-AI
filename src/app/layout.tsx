@@ -35,9 +35,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-sans bg-background text-foreground min-h-screen" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
-        <script dangerouslySetInnerHTML={{ __html: `try{(${function(){
-          if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
-        }.toString()})()}catch(e){}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Suppress browser extension errors
+          window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('message channel closed')) {
+              e.preventDefault();
+              return true;
+            }
+          });
+          window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && e.reason.message.includes('message channel closed')) {
+              e.preventDefault();
+              return true;
+            }
+          });
+          // Theme init
+          try{(${function(){
+            if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
+          }.toString()})()}catch(e){}
+        ` }} />
         <ClientInit />
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
