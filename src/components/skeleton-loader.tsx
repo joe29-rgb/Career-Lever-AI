@@ -170,3 +170,42 @@ export function JobAnalysisSkeleton() {
     </div>
   )
 }
+
+/**
+ * Job Card Skeleton - for job search loading
+ */
+export function JobCardSkeleton() {
+  return (
+    <div className="gradient-border-card animate-pulse">
+      <div className="p-6 space-y-4">
+        {/* Company & Title */}
+        <div className="space-y-3">
+          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+          <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+        </div>
+        
+        {/* Location & Salary */}
+        <div className="flex gap-4">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+        </div>
+        
+        {/* Skills */}
+        <div className="flex flex-wrap gap-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+          ))}
+        </div>
+        
+        {/* Match Score */}
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+        </div>
+        
+        {/* Button */}
+        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-full"></div>
+      </div>
+    </div>
+  )
+}

@@ -13,6 +13,7 @@ import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import { normalizeSalary, getSalaryDisplayString } from '@/lib/utils/salary-normalizer'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 import { deduplicateJobs } from '@/lib/job-deduplication'
+import { JobCardSkeleton } from '@/components/skeleton-loader'
 
 interface JobListing {
   id?: string
@@ -569,12 +570,21 @@ export default function SearchPage() {
           )}
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="gradient-border-card animate-pulse">
-                  <div className="h-48 bg-muted rounded-xl"></div>
+            <div className="space-y-6">
+              {/* Loading Animation Header */}
+              <div className="text-center py-8">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-primary/10 rounded-full">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                  <span className="text-primary font-semibold">Finding the best opportunities for you...</span>
                 </div>
-              ))}
+              </div>
+              
+              {/* Skeleton Cards */}
+              <div className="grid grid-cols-1 gap-6 max-w-md mx-auto">
+                {[...Array(6)].map((_, i) => (
+                  <JobCardSkeleton key={i} />
+                ))}
+              </div>
             </div>
           ) : jobs.length === 0 ? (
             <div className="text-center py-12">
