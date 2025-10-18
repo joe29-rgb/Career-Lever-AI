@@ -132,6 +132,44 @@ export default function CareerFinderOptimizerPage() {
     CareerFinderStorage.setTone(tone)
   }, [tone])
 
+  // Calculate real ATS score using API that compares against job requirements
+  const calculateRealATSScore = async (resumeText: string) => {
+    try {
+      const jobAnalysis = CareerFinderStorage.getJobAnalysis()
+      if (!jobAnalysis) {
+        console.warn('[OPTIMIZER] ⚠️ No job analysis found, using basic ATS score')
+        setAtsScore(75) // Default score if no job analysis
+        return
+      }
+      
+      console.log('[OPTIMIZER] 📊 Calculating ATS score against job requirements...')
+      const response = await fetch('/api/insights/ats/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText,
+          jobAnalysis
+        })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.ats) {
+          console.log('[OPTIMIZER] ✅ ATS Score:', result.ats.score)
+          console.log('[OPTIMIZER] 📊 Matched Keywords:', result.ats.matchedKeywords.length)
+          console.log('[OPTIMIZER] ⚠️ Missing Keywords:', result.ats.missingKeywords.length)
+          setAtsScore(result.ats.score)
+        }
+      } else {
+        console.warn('[OPTIMIZER] ⚠️ ATS API failed, using fallback score')
+        setAtsScore(75)
+      }
+    } catch (error) {
+      console.error('[OPTIMIZER] ❌ ATS calculation error:', error)
+      setAtsScore(75)
+    }
+  }
+
   const handleRegenerate = async () => {
     // Clear cache to force new generation
     localStorage.removeItem('cf:resumeVariants')
@@ -206,10 +244,8 @@ export default function CareerFinderOptimizerPage() {
         setVariantA(formattedA)
         setVariantB(formattedB)
         
-        // Calculate ATS score on optimized resume
-        const scoreA = calculateATSScore(vA || '')
-        console.log('[OPTIMIZER] 📊 ATS Score (optimized):', scoreA)
-        setAtsScore(scoreA)
+        // Calculate ATS score on optimized resume using real API
+        await calculateRealATSScore(vA || '')
         
         // Cache the formatted result
         localStorage.setItem(cacheKey, JSON.stringify({ variantA: formattedA, variantB: formattedB }))
@@ -286,33 +322,6 @@ export default function CareerFinderOptimizerPage() {
     }
   }
   
-  // Calculate ATS compatibility score (0-100)
-  const calculateATSScore = (text: string): number => {
-    let score = 50 // Base score
-    
-    // Check for contact info (+15 points)
-    if (text.match(/@/)) score += 5
-    if (text.match(/\d{3}[\s.-]?\d{3}[\s.-]?\d{4}/)) score += 5
-    if (text.match(/[A-Z][a-z]+,\s*[A-Z]{2}/)) score += 5
-    
-    // Check for standard sections (+15 points)
-    if (text.match(/experience|employment/i)) score += 5
-    if (text.match(/education/i)) score += 5
-    if (text.match(/skills/i)) score += 5
-    
-    // Check for keywords and quantifiable achievements (+10 points)
-    const keywords = text.match(/\b[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\b/g) || []
-    if (keywords.length > 30) score += 5
-    if (keywords.length > 50) score += 5
-    
-    // Check for numbers/metrics (good for ATS) (+10 points)
-    const numbers = text.match(/\d+%|\$\d+|increased|decreased|improved/gi) || []
-    if (numbers.length > 3) score += 5
-    if (numbers.length > 6) score += 5
-    
-    return Math.min(score, 100)
-  }
-  
   // Convert plain text resume to HTML with proper formatting
   const formatResumeAsHTML = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
     if (!text) return ''
@@ -352,24 +361,35 @@ export default function CareerFinderOptimizerPage() {
       
       // Skip duplicate name and contact lines
       if (personalInfo.name && line.toLowerCase().includes(personalInfo.name.toLowerCase())) {
-        if (seenContactInfo.has('name')) continue
+        if (seenContactInfo.has('name')) {
+          continue // Skip duplicate
+        }
         seenContactInfo.add('name')
-        continue
+        // Skip first occurrence too if we already added header
+        if (!hasNameInText) continue
       }
       if (personalInfo.email && line.includes(personalInfo.email)) {
-        if (seenContactInfo.has('email')) continue
+        if (seenContactInfo.has('email')) {
+          continue // Skip duplicate
+        }
         seenContactInfo.add('email')
-        continue
+        // Skip first occurrence too if we already added header
+        if (!hasEmailInText) continue
       }
       if (personalInfo.phone && line.includes(personalInfo.phone.replace(/[\s.-]/g, ''))) {
-        if (seenContactInfo.has('phone')) continue
+        if (seenContactInfo.has('phone')) {
+          continue // Skip duplicate
+        }
         seenContactInfo.add('phone')
-        continue
+        // Skip first occurrence too if we already added header
+        if (!hasPhoneInText) continue
       }
       if (personalInfo.location && line.includes(personalInfo.location)) {
-        if (seenContactInfo.has('location')) continue
+        if (seenContactInfo.has('location')) {
+          continue // Skip duplicate
+        }
         seenContactInfo.add('location')
-        continue
+        continue // Always skip location lines in body
       }
       
       // Section headers (all caps)

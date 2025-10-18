@@ -109,7 +109,7 @@ export default function CareerFinderOutreachPage() {
       // Load company research data (includes hiring contacts)
       const companyResearch = CareerFinderStorage.getCompanyResearch()
       if (companyResearch) {
-        console.log('[OUTREACH] ✅ Loaded company research with contacts:', companyResearch.contacts?.length || 0)
+        console.log('[OUTREACH] ✅ Loaded company research with contacts:', companyResearch.hiringContacts?.length || 0)
         setCompanyData(companyResearch as any)
       }
 
@@ -290,7 +290,7 @@ ${name}`
     )
   }
 
-  const contacts = (companyData as any)?.contacts || (companyData as any)?.hiringContactIntelligence?.keyContacts || []
+  const contacts = (companyData as any)?.hiringContacts || (companyData as any)?.contacts || (companyData as any)?.hiringContactIntelligence?.keyContacts || []
   const officialChannels = (companyData as any)?.officialChannels || (companyData as any)?.hiringContactIntelligence?.officialChannels
   const currentEmail = selectedContact?.email || officialChannels?.jobsEmail || officialChannels?.hrEmail
 
