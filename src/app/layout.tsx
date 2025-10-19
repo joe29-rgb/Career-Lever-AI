@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import './globals.mobile.css'
 import { Providers } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ClientInit } from '@/components/client-init'
@@ -12,6 +13,7 @@ import { Toaster } from 'react-hot-toast'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { DebugPanel } from '@/components/debug-panel'
 import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
+import { MobileNav } from '@/components/mobile/MobileNav'
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
@@ -61,6 +63,7 @@ export default function RootLayout({
           <Providers>
             <OnboardingRedirect />
             <AppShell>{children}</AppShell>
+            <MobileNav />
           </Providers>
         </ErrorBoundary>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (

@@ -10,6 +10,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "build:mobile": "next build",
         "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
         "lint": "next lint",
         "type-check": "tsc --noEmit",
@@ -17,7 +18,16 @@
         "prebuild": "echo '✅ Environment variables will be validated at runtime'",
         "test": "vitest run --reporter=verbose",
         "debug:perplexity": "node debug-perplexity.js",
-        "test:perplexity": "PPX_DEBUG=true node -e \"require('./debug-perplexity.js')\""
+        "test:perplexity": "PPX_DEBUG=true node -e \"require('./debug-perplexity.js')\"",
+        "cap:init": "npx cap init",
+        "cap:add:ios": "npx cap add ios",
+        "cap:add:android": "npx cap add android",
+        "cap:sync": "npx cap sync",
+        "cap:open:ios": "npx cap open ios",
+        "cap:open:android": "npx cap open android",
+        "mobile:build": "npm run build:mobile && npx cap sync",
+        "mobile:ios": "npm run mobile:build && npx cap open ios",
+        "mobile:android": "npm run mobile:build && npx cap open android"
     },
     "dependencies": {
         "@auth/mongodb-adapter": "^3.10.0",
