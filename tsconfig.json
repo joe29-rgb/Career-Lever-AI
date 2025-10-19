@@ -27,6 +27,7 @@
     "dist", 
     ".next", 
     "vitest.config.ts", 
+    "capacitor.config.ts",
     "capacitor.config.ts.disabled",
     "tests/**/*",
     "**/*.test.ts",
