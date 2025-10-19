@@ -10,7 +10,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
-        "build:mobile": "next build",
+        "build:mobile": "node scripts/build-mobile.js",
         "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
         "lint": "next lint",
         "type-check": "tsc --noEmit",

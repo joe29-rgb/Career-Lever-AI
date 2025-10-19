@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.careerlever.app',
   appName: 'Career Lever AI',
   webDir: 'out',
-  bundledWebRuntime: false,
   
   server: {
     androidScheme: 'https',
@@ -26,18 +25,6 @@ const config: CapacitorConfig = {
   ios: {
     // Automatic content inset for safe areas (notch, Dynamic Island)
     contentInset: 'automatic',
-    // Allow inline media playback without fullscreen
-    allowsInlineMediaPlayback: true,
-    // Native keyboard resize behavior
-    keyboardResize: 'native',
-    // Allow scrolling (important for long forms)
-    disableScroll: false,
-    // Limit navigation to allowed domains
-    limitsNavigationsToAppBoundDomains: true,
-    // Scroll to top on status bar tap
-    scrollEnabled: true,
-    // Prefer native UI over web UI
-    preferredContentMode: 'mobile',
     // Background color (matches app theme)
     backgroundColor: '#ffffff'
   },
@@ -48,36 +35,10 @@ const config: CapacitorConfig = {
     backgroundColor: '#ffffff',
     // Disable mixed content (HTTPS only)
     allowMixedContent: false,
-    // Capture input for better keyboard handling
-    captureInput: true,
     // Disable web debugging in production
     webContentsDebuggingEnabled: process.env.NODE_ENV === 'development',
-    // Resize on fullscreen keyboard
-    resizeOnFullScreen: true,
-    // Handle back button
-    overrideUserAgent: undefined,
     // Append user agent
-    appendUserAgent: 'CareerLeverAI/1.0',
-    
-    // Splash screen configuration
-    splashScreen: {
-      showSpinner: true,
-      spinnerColor: '#667eea',
-      backgroundColor: '#ffffff',
-      androidSpinnerStyle: 'large',
-      androidScaleType: 'CENTER_CROP',
-      splashFullScreen: false,
-      splashImmersive: false
-    },
-    
-    // Build configuration for Android 15 (API 35)
-    buildOptions: {
-      keystorePath: undefined,
-      keystorePassword: undefined,
-      keystoreAlias: undefined,
-      keystoreAliasPassword: undefined,
-      releaseType: 'APK'
-    }
+    appendUserAgent: 'CareerLeverAI/1.0'
   },
   
   // Plugin configuration
