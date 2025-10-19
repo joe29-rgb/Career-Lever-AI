@@ -6,8 +6,12 @@ const config: CapacitorConfig = {
   webDir: 'out',
   
   server: {
+    // Point to Railway backend for all API calls
+    url: process.env.NODE_ENV === 'production' 
+      ? 'https://job-craft-ai-jobcraftai.up.railway.app'
+      : 'http://localhost:3000',
     androidScheme: 'https',
-    iosScheme: 'capacitor',
+    iosScheme: 'https',
     // Allow navigation to backend and external APIs
     allowNavigation: [
       'job-craft-ai-jobcraftai.up.railway.app',
@@ -17,8 +21,7 @@ const config: CapacitorConfig = {
       'https://accounts.google.com',
       'https://*.googleusercontent.com'
     ],
-    // Clear text traffic for development (disable in production)
-    cleartext: process.env.NODE_ENV === 'development'
+    cleartext: false
   },
   
   // iOS-specific configuration
