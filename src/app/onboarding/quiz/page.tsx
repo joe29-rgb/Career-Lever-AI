@@ -24,7 +24,7 @@ const TOTAL_STEPS = 5
 
 export default function OnboardingQuizPage() {
   const router = useRouter()
-  const { data: session, status } = useSession()
+  const { data: session, status, update } = useSession()
   const [currentStep, setCurrentStep] = useState(1)
   const [showSuccess, setShowSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -118,6 +118,9 @@ export default function OnboardingQuizPage() {
 
       // Clear saved progress
       clearQuizProgress()
+
+      // Update session to reflect onboarding completion
+      await update()
 
       // Show success animation
       setShowSuccess(true)

@@ -74,11 +74,54 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      return validateRedirectURL(url, baseUrl)
+      // First validate the URL for security
+      const validatedUrl = validateRedirectURL(url, baseUrl)
+      
+      // If redirecting after sign-in and URL is the base URL or sign-in page
+      if (validatedUrl === baseUrl || validatedUrl.includes('/auth/signin')) {
+        // Check if user needs onboarding (we'll check in the client for now)
+        // The client will handle the redirect based on session data
+        return baseUrl
+      }
+      
+      return validatedUrl
+    },
+    async signIn({ user }) {
+      // Check if user has completed onboarding quiz
+      if (user?.email) {
+        try {
+          await connectToDatabase()
+          const dbUser = await User.findOne({ email: user.email })
+          
+          // New users or users who haven't completed onboarding → quiz
+          if (!dbUser?.profile?.onboardingComplete) {
+            console.log('[AUTH] Redirecting new user to onboarding quiz:', user.email)
+            // Note: This doesn't directly redirect, but we'll handle it in the redirect callback
+            return true
+          }
+          
+          console.log('[AUTH] User has completed onboarding:', user.email)
+        } catch (error) {
+          console.error('[AUTH] Error checking onboarding status:', error)
+        }
+      }
+      return true
     },
     async jwt({ token, user, account }) {
       if (user) {
         token.id = (user as any).id;
+        
+        // Add onboarding status to token on first sign-in
+        if (!token.onboardingComplete) {
+          try {
+            await connectToDatabase()
+            const dbUser = await User.findOne({ email: user.email })
+            token.onboardingComplete = dbUser?.profile?.onboardingComplete || false
+          } catch (error) {
+            console.error('[AUTH] Error fetching onboarding status:', error)
+            token.onboardingComplete = false
+          }
+        }
       }
       if (account && account.provider === 'google') {
         token.googleAccessToken = account.access_token
@@ -114,6 +157,7 @@ export const authOptions: NextAuthOptions = {
         (session as any).user.id = token.id as string;
         ;(session as any).user.role = (token as any).role || 'user'
         ;(session as any).user.teamId = (token as any).teamId || null
+        ;(session as any).user.onboardingComplete = token.onboardingComplete || false
         // Do not expose tokens to the client; server routes can use next-auth/jwt getToken
       }
       return session;

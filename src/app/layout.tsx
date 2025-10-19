@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { Toaster } from 'react-hot-toast'
 import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { DebugPanel } from '@/components/debug-panel'
+import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
@@ -58,6 +59,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
           <Providers>
+            <OnboardingRedirect />
             <AppShell>{children}</AppShell>
           </Providers>
         </ErrorBoundary>
