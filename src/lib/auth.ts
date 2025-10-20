@@ -107,18 +107,24 @@ export const authOptions: NextAuthOptions = {
       }
       return true
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = (user as any).id;
-        
-        // Add onboarding status to token on first sign-in
-        if (!token.onboardingComplete) {
-          try {
-            await connectToDatabase()
-            const dbUser = await User.findOne({ email: user.email })
+      }
+      
+      // Always refresh onboarding status on sign-in or when session is updated
+      if (user || trigger === 'update') {
+        try {
+          await connectToDatabase()
+          const email = user?.email || token.email
+          if (email) {
+            const dbUser = await User.findOne({ email })
             token.onboardingComplete = dbUser?.profile?.onboardingComplete || false
-          } catch (error) {
-            console.error('[AUTH] Error fetching onboarding status:', error)
+          }
+        } catch (error) {
+          console.error('[AUTH] Error fetching onboarding status:', error)
+          // Don't override existing value on error
+          if (token.onboardingComplete === undefined) {
             token.onboardingComplete = false
           }
         }
