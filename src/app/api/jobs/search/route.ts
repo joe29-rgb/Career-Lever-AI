@@ -19,6 +19,7 @@ import { dbService } from '@/lib/database'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { isRateLimited } from '@/lib/rate-limit'
 import Resume from '@/models/Resume'
+import { jobSearchCacheService } from '@/services/job-search-cache.service'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -85,6 +86,33 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[JOB_SEARCH] User ${session.user.id} searching: "${keywords}" in ${location} (Resume matching: ${useResumeMatching})`)
+
+    // 🚀 NEW: Check cache first (3-week retention)
+    const cachedJobs = await jobSearchCacheService.getCachedJobs({
+      keywords,
+      location,
+      workType,
+      experienceLevel,
+      userId: session.user.id
+    });
+
+    if (cachedJobs && cachedJobs.length > 0) {
+      console.log(`[JOB_CACHE] ✅ Using ${cachedJobs.length} cached jobs (${cachedJobs.filter(j => j.seen).length} already seen)`);
+      
+      return NextResponse.json({
+        success: true,
+        query: { keywords, location, sources },
+        totalResults: cachedJobs.length,
+        returnedResults: cachedJobs.length,
+        jobs: cachedJobs.slice(0, limit),
+        metadata: {
+          cached: true,
+          searchedAt: new Date().toISOString(),
+          useResumeMatching: false
+        },
+        sources: [...new Set(cachedJobs.map(j => j.source))]
+      });
+    }
 
     let result: any
     let jobs: any[] = []
@@ -319,6 +347,21 @@ export async function POST(request: NextRequest) {
     })
 
     console.log(`[JOB_SEARCH] Filtered ${jobs.length - filteredJobs.length} confidential jobs, ${filteredJobs.length} remaining`)
+
+    // 🚀 NEW: Cache the search results for 3 weeks
+    if (filteredJobs.length > 0) {
+      await jobSearchCacheService.cacheSearchResults(
+        {
+          keywords,
+          location,
+          workType,
+          experienceLevel,
+          userId: session.user.id
+        },
+        filteredJobs
+      );
+      console.log(`[JOB_CACHE] ✅ Cached ${filteredJobs.length} jobs for future searches`);
+    }
 
     // Get recommended boards for this location
     const recommendations = PerplexityIntelligenceService.getRecommendedBoards(location)
