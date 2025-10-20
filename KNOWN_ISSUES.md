@@ -4,11 +4,12 @@
 
 ---
 
-## **Issue #1: Onboarding Quiz Loop**
+## **Issue #1: Onboarding Quiz Loop** ✅ FIXED
 
 **Reported:** October 19, 2025, 6:41 PM  
-**Status:** 🔴 Known Issue - Deferred  
-**Priority:** High (post-launch)  
+**Fixed:** October 20, 2025, 1:04 PM  
+**Status:** ✅ RESOLVED  
+**Priority:** High  
 **Severity:** Major - Blocks user access
 
 ### **Description:**
@@ -19,11 +20,11 @@ Users are getting stuck in an infinite loop with the onboarding quiz questions w
 - Prevents access to main application features
 - Poor first-time user experience
 
-### **Suspected Cause:**
-- Onboarding completion state not being saved properly
-- Quiz redirect logic may be checking wrong conditions
-- LocalStorage/session state issue
-- OnboardingRedirect component logic
+### **Root Cause (Identified):**
+- JWT callback only checked `onboardingComplete` on first sign-in
+- When user completed quiz, session token was never updated
+- OnboardingRedirect kept seeing `onboardingComplete: false`
+- Created infinite redirect loop to quiz page
 
 ### **Files to Investigate:**
 1. `src/components/onboarding/OnboardingRedirect.tsx` - Redirect logic
@@ -36,19 +37,29 @@ Users are getting stuck in an infinite loop with the onboarding quiz questions w
 2. Complete onboarding quiz
 3. Get redirected back to quiz (loop)
 
-### **Temporary Workaround:**
-- Clear browser localStorage
-- Manually navigate to `/career-finder` or `/dashboard`
+### **Fix Applied:**
 
-### **Fix Plan (After Mobile Launch):**
-1. Debug OnboardingRedirect component
-2. Check quiz completion state persistence
-3. Verify redirect conditions
-4. Add better state logging
-5. Test with fresh user flow
-6. Add escape hatch for stuck users
+**1. Updated JWT Callback (`src/lib/auth.ts`):**
+```typescript
+// Before: Only checked on first sign-in
+if (!token.onboardingComplete) {
+  // fetch from DB
+}
 
-### **Estimated Fix Time:** 2-3 hours
+// After: Always refresh on sign-in or session update
+if (user || trigger === 'update') {
+  const dbUser = await User.findOne({ email })
+  token.onboardingComplete = dbUser?.profile?.onboardingComplete || false
+}
+```
+
+**2. Improved OnboardingRedirect (`src/components/onboarding/OnboardingRedirect.tsx`):**
+- Added `useRef` to prevent multiple redirects
+- Check for exact `false` value (not just falsy)
+- Exclude `/onboarding` and `/auth` paths from redirect
+- Added detailed logging for debugging
+
+**Actual Fix Time:** 15 minutes
 
 ### **Testing Required:**
 - [ ] Fresh user signup
