@@ -143,7 +143,7 @@ JobSearchCacheSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 // CRITICAL FIX: Pre-save validation to filter invalid jobs
 JobSearchCacheSchema.pre('save', function(next) {
   // Filter out jobs with missing required fields
-  const validJobs = this.jobs.filter(job => {
+  const validJobs = this.jobs.filter((job: any) => {
     // Must have description
     if (!job.description || job.description.trim() === '') {
       console.log('[CACHE] ❌ Filtering job with no description:', job.title);
