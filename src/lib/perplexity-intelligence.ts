@@ -1957,17 +1957,26 @@ ${params.hiringManager ? `**Hiring Manager:** ${params.hiringManager.name}, ${pa
 ${params.userName ? `**Applicant Name:** ${params.userName}` : ''}
 
 Generate TWO cover letter variants:
-1. **Variant A (Formal & Traditional):** Professional tone, structured format
-2. **Variant B (Conversational & Modern):** Engaging tone, storytelling approach
+1. **Variant A (Professional & Formal):** Professional business tone, structured format, confident but not overly casual
+2. **Variant B (Engaging & Modern):** Professional but personable tone, storytelling approach, shows personality while maintaining professionalism
+
+CRITICAL REQUIREMENTS:
+- DO NOT make up or exaggerate years of experience - use ONLY what's in the resume
+- DO NOT use overly casual language like "Here's what most people don't realize"
+- DO NOT sound like a teenager or use informal phrases
+- Keep tone PROFESSIONAL and MATURE throughout
+- Be confident but not arrogant
+- Focus on VALUE and SKILLS, not just experience length
 
 For each variant:
 - Address the hiring manager by name if available
 - Reference specific company news or achievements
 - Align with company culture and values
-- Highlight relevant experience from resume
+- Highlight relevant experience from resume (accurately)
 - Show genuine enthusiasm for the role
 - Include a strong call-to-action
 - Sign with "${params.userName || '[Your Name]'}" at the end
+- Keep it concise (250-300 words max)
 
 Also provide 3-5 personalization tips that were used.
 
