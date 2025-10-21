@@ -71,7 +71,11 @@ export async function POST(request: NextRequest) {
     // Send immediately or schedule
     if (send_immediately) {
       // Generate PDF attachments if HTML provided
-      const attachments = []
+      const attachments: Array<{
+        filename: string
+        content: string
+        contentType: string
+      }> = []
       
       if (resumeHTML) {
         try {
