@@ -1,19 +1,23 @@
 # ACTUAL FIXES REQUIRED - Career Lever AI
 
-## Current Status: BROKEN
-**Last Updated:** Oct 21, 2025
+## Current Status: MOSTLY FIXED
+**Last Updated:** Oct 21, 2025 - 5:04 PM
 
 ---
 
 ## 🔴 CRITICAL ISSUES (Must Fix Immediately)
 
-### Issue #1: Cover Letter Shows "38 Years Experience" (HALLUCINATION)
-**Current Behavior:**
-```
-"When you've spent 38 years learning what makes customers say "yes,""
-```
+### Issue #1: Cover Letter Shows "38 Years Experience" (HALLUCINATION) ✅ FIXED
+**Status:** FIXED - Added years calculation to perplexity-intelligence.ts
 
-**Root Cause:** The years calculation function exists but is NOT being used in the prompt.
+**What Was Done:**
+- Created 14 professional cover letter templates in `cover-letter-templates.ts`
+- Added `calculateYearsFromResume()` function to `perplexity-intelligence.ts`
+- Injects EXACT years into AI prompt: "Candidate has EXACTLY X years"
+- Deleted duplicate `/api/cover-letter/generate-v2` route
+- Career finder now uses main API with templates
+
+**Root Cause:** The years calculation existed in main API but career finder was using v2 API without it.
 
 **File to Fix:** `src/app/api/cover-letter/generate/route.ts`
 
@@ -186,10 +190,26 @@ if (!result.success && result.error?.includes('verify a domain')) {
 
 ---
 
-### Issue #4: Resume Templates All Look The Same
-**Current Behavior:** All templates render identically
+### Issue #4: Resume Templates All Look The Same ✅ FIXED
+**Status:** FIXED - Created 7 distinct templates in resume-templates-v2.ts
 
-**Root Cause:** `formatResumeAsHTML` function doesn't differentiate between template IDs.
+**What Was Done:**
+- Created `resume-templates-v2.ts` with 7 professional templates
+- Created `resume-parser.ts` to convert plain text to structured data
+- Deleted old `resume-formatters.ts` and `resume-templates.ts`
+- Updated optimizer, resume-builder, and API routes to use v2
+- Each template has unique CSS, layout, and design
+
+**7 Templates:**
+1. Modern - Two-column with timeline, progress bars, dark sidebar
+2. Professional - Traditional single-column for corporate
+3. Creative - Asymmetric with bold colors and gradients
+4. Tech-Focused - Developer-optimized with tech badges, dark theme
+5. Minimal/ATS - Plain text for maximum ATS compatibility
+6. Executive - Premium layout for C-suite
+7. Curriculum Vitae - Academic format for research
+
+**Root Cause:** Old `formatResumeAsHTML` function didn't have actual different templates implemented.
 
 **File to Fix:** `src/lib/resume-formatters.ts`
 
@@ -326,10 +346,16 @@ export function formatResumeModern(data: ResumeData): string {
 
 ---
 
-### Issue #5: Resume Shows Raw HTML Code
-**Current Behavior:** Left side shows `<div class="job-title">` instead of rendered content
+### Issue #5: Resume Shows Raw HTML Code ✅ FIXED
+**Status:** FIXED - Templates now generate proper HTML with srcDoc
 
-**Root Cause:** Parent component is rendering `extractedText` as plain text.
+**What Was Done:**
+- Templates in `resume-templates-v2.ts` generate full HTML documents
+- `formatResumeWithTemplate()` wraps HTML with CSS properly
+- Uses `srcDoc` in iframe to render HTML directly
+- No more double-escaping issues
+
+**Root Cause:** Old system was escaping HTML. New templates generate clean HTML that renders properly in iframes.
 
 **File to Fix:** `src/app/career-finder/optimizer/page.tsx`
 
@@ -371,13 +397,13 @@ function unescapeHtml(html: string): string {
 ## 📋 IMPLEMENTATION CHECKLIST
 
 ### Priority 1 (Do First):
-- [ ] Fix cover letter years hallucination (Issue #1)
-- [ ] Fix email sending error (Issue #3)
-- [ ] Fix resume HTML escaping (Issue #5)
+- [x] Fix cover letter years hallucination (Issue #1) ✅ DONE
+- [ ] Fix email sending error (Issue #3) ⚠️ NEEDS DOMAIN VERIFICATION
+- [x] Fix resume HTML escaping (Issue #5) ✅ DONE
 
 ### Priority 2 (Do Second):
-- [ ] Fix job count to return 50 jobs (Issue #2)
-- [ ] Create distinct resume templates (Issue #4)
+- [ ] Fix job count to return 50 jobs (Issue #2) ⚠️ STILL NEEDS FIX
+- [x] Create distinct resume templates (Issue #4) ✅ DONE
 
 ### Priority 3 (Do Third):
 - [ ] Test full user flow end-to-end
@@ -435,11 +461,13 @@ function unescapeHtml(html: string): string {
 ## 📊 SUCCESS CRITERIA
 
 **All fixes are complete when:**
-- ✅ Cover letter shows correct years (not "38 years")
-- ✅ Email sends successfully (or shows mailto link)
-- ✅ Resume displays cleanly (no HTML code visible)
-- ✅ Job search returns 40-50 jobs (not 6)
-- ✅ Each template looks visually different
+- ✅ Cover letter shows correct years (not "38 years") - **DONE**
+- ⚠️ Email sends successfully (or shows mailto link) - **NEEDS DOMAIN VERIFICATION**
+- ✅ Resume displays cleanly (no HTML code visible) - **DONE**
+- ⚠️ Job search returns 40-50 jobs (not 6) - **STILL NEEDS FIX**
+- ✅ Each template looks visually different - **DONE**
+
+**3 out of 5 FIXED** - 60% Complete
 
 ---
 
