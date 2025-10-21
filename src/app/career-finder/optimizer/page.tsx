@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 import { ResumeSkeleton } from '@/components/skeleton-loader'
+import { formatResumeAsHTML, type ResumeData } from '@/lib/resume-formatters'
 
 const TEMPLATES = [
   { 
@@ -237,9 +238,9 @@ export default function CareerFinderOptimizerPage() {
       if (result.success && result.data) {
         const { variantA: vA, variantB: vB } = result.data
         
-        // Format plain text as HTML with proper styling
-        const formattedA = formatResumeAsHTML(vA || '', personalInfo)
-        const formattedB = formatResumeAsHTML(vB || '', personalInfo)
+        // Format plain text as HTML with selected template
+        const formattedA = formatResumeWithTemplate(vA || '', personalInfo, template)
+        const formattedB = formatResumeWithTemplate(vB || '', personalInfo, template)
         
         setVariantA(formattedA)
         setVariantB(formattedB)
@@ -396,59 +397,19 @@ export default function CareerFinderOptimizerPage() {
     return finalLines.join('\n').trim()
   }
   
-  // Convert plain text resume to HTML with proper formatting
-  const formatResumeAsHTML = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
+  // ENTERPRISE: Format resume using professional templates
+  const formatResumeWithTemplate = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }, templateId: string): string => {
     if (!text) return ''
     
-    // CRITICAL FIX: Strip ALL personal info from body first
-    const cleanedText = stripPersonalInfoFromBody(text, personalInfo)
-    const lines = cleanedText.split('\n').map(l => l.trim()).filter(Boolean)
+    // CRITICAL: Strip ALL personal info from body to prevent duplication
+    const cleanedBody = stripPersonalInfoFromBody(text, personalInfo)
     
-    let html = '<div style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; max-width: 800px; padding: 20px;">'
-    
-    // Always add header with personal info at the top
-    if (personalInfo.name) {
-      html += `<h1 style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">${personalInfo.name}</h1>`
+    const resumeData: ResumeData = {
+      personalInfo,
+      bodyText: cleanedBody
     }
     
-    // Always add contact info below name
-    const contactParts: string[] = []
-    if (personalInfo.location) contactParts.push(personalInfo.location)
-    if (personalInfo.phone) contactParts.push(personalInfo.phone)
-    if (personalInfo.email) contactParts.push(personalInfo.email)
-    
-    if (contactParts.length > 0) {
-      html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
-    }
-    
-    // Process each line of the cleaned body
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      
-      // Section headers (all caps)
-      if (line.match(/^[A-Z\s]{3,}$/) && line.length < 50) {
-        html += `<h2 style="font-size: 18px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 4px; margin-top: 24px; margin-bottom: 12px; color: #1a1a1a;">${line}</h2>`
-      }
-      // Bullet points - consistent spacing
-      else if (line.startsWith('•') || line.startsWith('-')) {
-        html += `<div style="margin-left: 24px; margin-bottom: 4px; line-height: 1.6;">${line}</div>`
-      }
-      // Job titles / positions (bold if followed by company)
-      else if (i < lines.length - 1 && lines[i + 1].includes('|')) {
-        html += `<div style="font-weight: bold; font-size: 16px; margin-top: 16px; margin-bottom: 4px;">${line}</div>`
-      }
-      // Company/location/dates line
-      else if (line.includes('|')) {
-        html += `<div style="font-style: italic; color: #666; font-size: 14px; margin-bottom: 8px;">${line}</div>`
-      }
-      // Regular paragraph
-      else {
-        html += `<p style="margin-bottom: 8px; line-height: 1.6;">${line}</p>`
-      }
-    }
-    
-    html += '</div>'
-    return html
+    return formatResumeAsHTML(resumeData, templateId)
   }
 
   return (
