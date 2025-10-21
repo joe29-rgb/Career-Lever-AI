@@ -318,50 +318,30 @@ export async function POST(request: NextRequest) {
       // Non-critical, continue
     }
 
-    // CRITICAL: Filter out confidential/invalid jobs (they break the flow)
-    const filteredJobs = jobs.filter((job: any) => {
+    // IMPROVED: Mark confidential jobs instead of filtering them out
+    const processedJobs = jobs.map((job: any) => {
       const company = (job.company || '').toLowerCase().trim()
       const title = (job.title || '').toLowerCase().trim()
       
-      // List of invalid company names that should be filtered
-      const invalidCompanies = [
-        'confidential',
-        'confidential company',
-        'undisclosed',
-        'private',
-        'various',
-        'various employers',
-        'multiple companies',
-        'n/a',
-        'not specified',
-        'tbd',
-        'to be determined',
-        ''
-      ]
+      // Only filter out COMPLETELY invalid jobs (empty title/company)
+      const isCompletelyInvalid = (company === '' && title === '')
       
-      // List of invalid job titles that should be filtered
-      const invalidTitles = [
-        'confidential',
-        'various',
-        'multiple positions',
-        ''
-      ]
+      // Mark confidential companies but keep them
+      const confidentialCompanies = ['confidential', 'confidential company', 'undisclosed', 'private']
+      const isConfidential = confidentialCompanies.includes(company)
       
-      const isInvalidCompany = invalidCompanies.includes(company)
-      const isInvalidTitle = invalidTitles.includes(title)
-      const isInvalid = isInvalidCompany || isInvalidTitle
-      
-      if (isInvalid) {
-        console.log(`[JOB_SEARCH] ❌ Filtered out invalid job: "${job.title}" @ "${job.company}"`)
+      return {
+        ...job,
+        isConfidential,
+        isCompletelyInvalid,
+        note: isConfidential ? 'Company name not disclosed in posting' : undefined
       }
-      
-      return !isInvalid
-    })
+    }).filter((job: any) => !job.isCompletelyInvalid) // Only filter completely invalid
 
-    console.log(`[JOB_SEARCH] Filtered ${jobs.length - filteredJobs.length} confidential jobs, ${filteredJobs.length} remaining`)
+    console.log(`[JOB_SEARCH] Processed ${jobs.length} jobs, ${processedJobs.filter((j: any) => j.isConfidential).length} marked as confidential, ${processedJobs.length} total kept`)
 
     // 🚀 NEW: Cache the search results for 3 weeks
-    if (filteredJobs.length > 0) {
+    if (processedJobs.length > 0) {
       await jobSearchCacheService.cacheSearchResults(
         {
           keywords,
@@ -370,9 +350,9 @@ export async function POST(request: NextRequest) {
           experienceLevel,
           userId: session.user.id
         },
-        filteredJobs
+        processedJobs
       );
-      console.log(`[JOB_CACHE] ✅ Cached ${filteredJobs.length} jobs for future searches`);
+      console.log(`[JOB_CACHE] ✅ Cached ${processedJobs.length} jobs for future searches`);
     }
 
     // Get recommended boards for this location
@@ -381,9 +361,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       query: { keywords, location, sources },
-      totalResults: filteredJobs.length,
-      returnedResults: filteredJobs.length,
-      jobs: filteredJobs.slice(0, limit),
+      totalResults: processedJobs.length,
+      returnedResults: processedJobs.length,
+      jobs: processedJobs.slice(0, limit),
       metadata: {
         ...metadata,
         searchedAt: new Date().toISOString(),
