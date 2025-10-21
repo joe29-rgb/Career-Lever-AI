@@ -85,11 +85,11 @@ export default function SearchPage() {
   }, [])
 
   // Handler for job selection - stores job and navigates to analysis
-  const handleJobSelection = async (job: JobListing) => {
+  const handleJobSelection = async (job: JobListing, jobId: string) => {
     try {
       // Set loading state for this job
-      const jobId = job.id || `${job.company}-${job.title}`
       setLoadingJobId(jobId)
+      console.log('[SEARCH] 🔄 Loading state set for job:', jobId)
       
       // Store in localStorage with correct key
       const jobData = {
@@ -178,9 +178,13 @@ export default function SearchPage() {
       router.push('/career-finder/job-analysis')
     } catch (error) {
       console.error('Failed to store job:', error)
-      setLoadingJobId(null)
       // Still navigate even if storage fails
       router.push('/career-finder/job-analysis')
+    } finally {
+      // Clear loading state after navigation
+      // Note: This will execute before navigation completes, but that's okay
+      // The loading state serves to show feedback during the async operations
+      setTimeout(() => setLoadingJobId(null), 500)
     }
   }
 
@@ -414,14 +418,14 @@ export default function SearchPage() {
                   placeholder="Search jobs by title, company, or keywords..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl text-lg font-medium bg-card text-foreground placeholder:text-muted-foreground border-0 shadow-xl focus:ring-4 focus:ring-white/50 transition-all"
+                  className="modern-input w-full pl-12 pr-4 py-4 text-lg font-medium shadow-xl"
                   disabled={loading}
                 />
               </div>
               <div className="flex gap-2">
                 <button 
                   type="submit" 
-                  className="px-6 py-3 sm:py-4 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
+                  className="btn btn-primary"
                   disabled={loading}
                 >
                   {loading ? (
@@ -447,7 +451,7 @@ export default function SearchPage() {
                       setSearchQuery('')
                       console.log('[SEARCH] Cache cleared, ready for new search')
                     }}
-                    className="px-6 py-4 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-semibold transition-all whitespace-nowrap"
+                    className="btn btn-secondary bg-white/20 hover:bg-white/30 text-white border-white/30"
                     disabled={loading}
                   >
                     🔄 New Search
@@ -621,7 +625,7 @@ export default function SearchPage() {
                     description={`AI Score: ${job.aiScore || 'N/A'}${job.skillMatchPercent ? ` | Skill Match: ${job.skillMatchPercent}%` : ''}`}
                     postedDate="Posted recently"
                     colorTheme={colorTheme}
-                    onView={() => handleJobSelection(job)}
+                    onView={() => handleJobSelection(job, jobId)}
                     isLoading={isJobLoading}
                   />
                 )

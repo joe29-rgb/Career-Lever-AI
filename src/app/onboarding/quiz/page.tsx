@@ -12,7 +12,6 @@ import {
   CurrentSituation,
   WorkPreference,
   Timeline,
-  COMMON_JOB_TITLES,
   getExperienceLevelLabel,
   saveQuizProgress,
   loadQuizProgress,
@@ -20,11 +19,11 @@ import {
   calculateUrgency
 } from '@/lib/onboarding-utils'
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 6
 
 export default function OnboardingQuizPage() {
   const router = useRouter()
-  const { data: session, status, update } = useSession()
+  const { status, update } = useSession()
   const [currentStep, setCurrentStep] = useState(1)
   const [showSuccess, setShowSuccess] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -33,12 +32,12 @@ export default function OnboardingQuizPage() {
   const [answers, setAnswers] = useState<Partial<QuizAnswers>>({
     workPreferences: [],
     preferredLocation: '',
-    yearsOfExperience: 5
+    yearsOfExperience: 5,
+    careerInterests: [] // Multi-select career interests
   })
+  const [hasResume, setHasResume] = useState<boolean | null>(null)
 
-  // Autocomplete state
-  const [roleSearch, setRoleSearch] = useState('')
-  const [roleSuggestions, setRoleSuggestions] = useState<string[]>([])
+  // Autocomplete state (removed - no longer needed for multi-select)
 
   // Load saved progress on mount
   useEffect(() => {
@@ -46,9 +45,6 @@ export default function OnboardingQuizPage() {
     if (saved) {
       setAnswers(saved.answers)
       setCurrentStep(saved.currentStep)
-      if (saved.answers.targetRole) {
-        setRoleSearch(saved.answers.targetRole)
-      }
     }
   }, [])
 
@@ -66,17 +62,7 @@ export default function OnboardingQuizPage() {
     }
   }, [answers, currentStep])
 
-  // Handle role search
-  useEffect(() => {
-    if (roleSearch.length >= 2) {
-      const filtered = COMMON_JOB_TITLES.filter(title =>
-        title.toLowerCase().includes(roleSearch.toLowerCase())
-      ).slice(0, 8)
-      setRoleSuggestions(filtered)
-    } else {
-      setRoleSuggestions([])
-    }
-  }, [roleSearch])
+  // Handle role search (removed - no longer needed for multi-select)
 
   const handleNext = () => {
     if (currentStep < TOTAL_STEPS) {
@@ -132,7 +118,14 @@ export default function OnboardingQuizPage() {
   }
 
   const handleSuccessComplete = () => {
-    router.push('/career-finder/resume')
+    // Route based on resume answer
+    if (hasResume === false) {
+      router.push('/resume-builder')
+    } else if (hasResume === true) {
+      router.push('/resume-manager')
+    } else {
+      router.push('/career-finder/resume')
+    }
   }
 
   // Check if current step is complete
@@ -143,10 +136,12 @@ export default function OnboardingQuizPage() {
       case 2:
         return answers.yearsOfExperience !== undefined
       case 3:
-        return !!answers.targetRole && answers.targetRole.length >= 2
+        return !!(answers.careerInterests && answers.careerInterests.length > 0)
       case 4:
-        return answers.workPreferences!.length > 0
+        return hasResume !== null
       case 5:
+        return answers.workPreferences!.length > 0
+      case 6:
         // Timeline only required for actively searching or career change
         if (answers.currentSituation === 'actively_searching' || answers.currentSituation === 'career_change') {
           return !!answers.timeline
@@ -274,90 +269,127 @@ export default function OnboardingQuizPage() {
         </QuizQuestion>
       )}
 
-      {/* Question 3: Target Role */}
+      {/* Question 3: Career Interests (MULTI-SELECT) */}
       {currentStep === 3 && (
         <QuizQuestion
-          title="What type of role are you targeting?"
-          subtitle="Be specific to get better matches"
+          title="What career areas interest you?"
+          subtitle="Select all that apply"
           onNext={handleNext}
           onBack={handleBack}
           nextDisabled={!isStepComplete()}
         >
-          <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="text"
-                value={roleSearch}
-                onChange={(e) => {
-                  setRoleSearch(e.target.value)
-                  setAnswers({ ...answers, targetRole: e.target.value })
-                }}
-                placeholder="e.g., Sales Manager, Software Engineer, Marketing Director"
-                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all text-lg"
-              />
-              {roleSearch && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {[
+              { value: 'technology', icon: '💻', label: 'Technology' },
+              { value: 'finance', icon: '💰', label: 'Finance' },
+              { value: 'healthcare', icon: '🏥', label: 'Healthcare' },
+              { value: 'education', icon: '📚', label: 'Education' },
+              { value: 'marketing', icon: '📱', label: 'Marketing' },
+              { value: 'sales', icon: '💼', label: 'Sales' },
+              { value: 'operations', icon: '⚙️', label: 'Operations' },
+              { value: 'creative', icon: '🎨', label: 'Creative' },
+              { value: 'engineering', icon: '🔧', label: 'Engineering' },
+              { value: 'legal', icon: '⚖️', label: 'Legal' },
+              { value: 'hr', icon: '👥', label: 'Human Resources' },
+              { value: 'consulting', icon: '📊', label: 'Consulting' }
+            ].map(option => {
+              const isSelected = answers.careerInterests?.includes(option.value)
+              return (
                 <button
+                  key={option.value}
                   onClick={() => {
-                    setRoleSearch('')
-                    setAnswers({ ...answers, targetRole: '' })
+                    const current = answers.careerInterests || []
+                    const updated = isSelected
+                      ? current.filter((i: string) => i !== option.value)
+                      : [...current, option.value]
+                    setAnswers({ ...answers, careerInterests: updated })
                   }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className={`p-4 rounded-xl border-2 text-center transition-all min-h-[100px] ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+                  }`}
                 >
-                  ✕
+                  <div className="text-3xl mb-2">{option.icon}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {option.label}
+                  </div>
+                  {isSelected && (
+                    <div className="mt-2 text-blue-500 text-xl">✓</div>
+                  )}
                 </button>
-              )}
-            </div>
-
-            {/* Suggestions */}
-            {roleSuggestions.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-lg overflow-hidden">
-                <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Suggestions:</span>
-                </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {roleSuggestions.map(title => (
-                    <button
-                      key={title}
-                      onClick={() => {
-                        setRoleSearch(title)
-                        setAnswers({ ...answers, targetRole: title })
-                        setRoleSuggestions([])
-                      }}
-                      className="w-full px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-0"
-                    >
-                      <span className="text-gray-900 dark:text-white">{title}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Popular roles */}
-            {!roleSearch && (
-              <div>
-                <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Popular roles:</div>
-                <div className="flex flex-wrap gap-2">
-                  {['Software Engineer', 'Product Manager', 'Sales Manager', 'Marketing Manager', 'Data Analyst', 'UX Designer'].map(title => (
-                    <button
-                      key={title}
-                      onClick={() => {
-                        setRoleSearch(title)
-                        setAnswers({ ...answers, targetRole: title })
-                      }}
-                      className="px-4 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                    >
-                      {title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              )
+            })}
           </div>
         </QuizQuestion>
       )}
 
-      {/* Question 4: Work Preferences */}
+      {/* Question 4: Resume Question */}
       {currentStep === 4 && (
+        <QuizQuestion
+          title="Do you have a resume ready to upload?"
+          subtitle="This helps us guide you to the right place"
+          onNext={handleNext}
+          onBack={handleBack}
+          nextDisabled={!isStepComplete()}
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <button
+              onClick={() => setHasResume(true)}
+              className={`p-6 rounded-xl border-2 text-center transition-all min-h-[160px] ${
+                hasResume === true
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+              }`}
+            >
+              <div className="text-5xl mb-3">📄</div>
+              <div className="font-bold text-xl text-gray-900 dark:text-white mb-2">
+                Yes, I have a resume
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                I&apos;ll upload my existing resume
+              </div>
+              {hasResume === true && (
+                <div className="mt-3 text-blue-500 text-2xl">✓</div>
+              )}
+            </button>
+            
+            <button
+              onClick={() => setHasResume(false)}
+              className={`p-6 rounded-xl border-2 text-center transition-all min-h-[160px] ${
+                hasResume === false
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-300 dark:hover:border-blue-700'
+              }`}
+            >
+              <div className="text-5xl mb-3">✏️</div>
+              <div className="font-bold text-xl text-gray-900 dark:text-white mb-2">
+                No, I need to build one
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                I&apos;ll create a new resume from scratch
+              </div>
+              {hasResume === false && (
+                <div className="mt-3 text-blue-500 text-2xl">✓</div>
+              )}
+            </button>
+          </div>
+          
+          <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 max-w-2xl mx-auto">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💡</span>
+              <div className="text-sm text-blue-900 dark:text-blue-100">
+                {hasResume === true && "Great! You&apos;ll be able to upload your resume and we&apos;ll optimize it for your target jobs."}
+                {hasResume === false && "No problem! Our resume builder will guide you through creating a professional resume step-by-step."}
+                {hasResume === null && "Choose the option that best describes your situation."}
+              </div>
+            </div>
+          </div>
+        </QuizQuestion>
+      )}
+
+      {/* Question 5: Work Preferences */}
+      {currentStep === 5 && (
         <QuizQuestion
           title="Where do you want to work?"
           subtitle="Select all that apply"
@@ -421,15 +453,15 @@ export default function OnboardingQuizPage() {
                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                💡 Leave blank if you selected "Remote" only
+                💡 Leave blank if you selected &quot;Remote&quot; only
               </p>
             </div>
           </div>
         </QuizQuestion>
       )}
 
-      {/* Question 5: Timeline (conditional) */}
-      {currentStep === 5 && (
+      {/* Question 6: Timeline (conditional) */}
+      {currentStep === 6 && (
         <QuizQuestion
           title="What's your timeline?"
           subtitle={

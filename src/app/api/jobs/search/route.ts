@@ -330,20 +330,44 @@ export async function POST(request: NextRequest) {
       // Non-critical, continue
     }
 
-    // CRITICAL: Filter out confidential jobs (they break the flow)
+    // CRITICAL: Filter out confidential/invalid jobs (they break the flow)
     const filteredJobs = jobs.filter((job: any) => {
       const company = (job.company || '').toLowerCase().trim()
-      const isConfidential = company === 'confidential' || 
-                            company === 'confidential company' ||
-                            company === 'undisclosed' ||
-                            company === 'private' ||
-                            company === ''
+      const title = (job.title || '').toLowerCase().trim()
       
-      if (isConfidential) {
-        console.log(`[JOB_SEARCH] ❌ Filtered out confidential job: ${job.title}`)
+      // List of invalid company names that should be filtered
+      const invalidCompanies = [
+        'confidential',
+        'confidential company',
+        'undisclosed',
+        'private',
+        'various',
+        'various employers',
+        'multiple companies',
+        'n/a',
+        'not specified',
+        'tbd',
+        'to be determined',
+        ''
+      ]
+      
+      // List of invalid job titles that should be filtered
+      const invalidTitles = [
+        'confidential',
+        'various',
+        'multiple positions',
+        ''
+      ]
+      
+      const isInvalidCompany = invalidCompanies.includes(company)
+      const isInvalidTitle = invalidTitles.includes(title)
+      const isInvalid = isInvalidCompany || isInvalidTitle
+      
+      if (isInvalid) {
+        console.log(`[JOB_SEARCH] ❌ Filtered out invalid job: "${job.title}" @ "${job.company}"`)
       }
       
-      return !isConfidential
+      return !isInvalid
     })
 
     console.log(`[JOB_SEARCH] Filtered ${jobs.length - filteredJobs.length} confidential jobs, ${filteredJobs.length} remaining`)

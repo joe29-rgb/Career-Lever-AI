@@ -88,7 +88,8 @@ const JobSearchCacheSchema: Schema = new Schema({
     },
     description: {
       type: String,
-      required: true
+      required: true,
+      default: 'No description available'
     },
     url: {
       type: String,
@@ -138,6 +139,47 @@ JobSearchCacheSchema.index({ normalizedKeywords: 1, location: 1, workType: 1 });
 
 // TTL index to auto-delete expired caches
 JobSearchCacheSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+// CRITICAL FIX: Pre-save validation to filter invalid jobs
+JobSearchCacheSchema.pre('save', function(next) {
+  // Filter out jobs with missing required fields
+  const validJobs = this.jobs.filter(job => {
+    // Must have description
+    if (!job.description || job.description.trim() === '') {
+      console.log('[CACHE] ❌ Filtering job with no description:', job.title);
+      return false;
+    }
+    
+    // Must have company
+    if (!job.company || job.company.trim() === '') {
+      console.log('[CACHE] ❌ Filtering job with no company:', job.title);
+      return false;
+    }
+    
+    // Must have title
+    if (!job.title || job.title.trim() === '') {
+      console.log('[CACHE] ❌ Filtering job with no title');
+      return false;
+    }
+    
+    // Must have location
+    if (!job.location || job.location.trim() === '') {
+      console.log('[CACHE] ❌ Filtering job with no location:', job.title);
+      return false;
+    }
+    
+    return true;
+  });
+  
+  const filteredCount = this.jobs.length - validJobs.length;
+  if (filteredCount > 0) {
+    console.log(`[CACHE] ⚠️ Filtered ${filteredCount} invalid jobs, ${validJobs.length} remaining`);
+  }
+  
+  this.jobs = validJobs;
+  console.log(`[CACHE] ✅ Saving ${this.jobs.length} valid jobs`);
+  next();
+});
 
 // Helper method to check if search matches cache
 JobSearchCacheSchema.methods.matchesSearch = function(

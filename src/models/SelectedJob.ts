@@ -37,7 +37,7 @@ const SelectedJobSchema = new Schema<ISelectedJob>({
     company: { type: String, required: true },
     location: { type: String, required: true },
     salary: String,
-    description: { type: String, required: true },
+    description: { type: String, required: true, default: 'No description available' },
     url: { type: String, required: true },
     source: { type: String, default: 'search' },
     postedDate: String,
@@ -58,6 +58,30 @@ const SelectedJobSchema = new Schema<ISelectedJob>({
 }, {
   timestamps: true
 })
+
+// CRITICAL FIX: Pre-save validation
+SelectedJobSchema.pre('save', function(next) {
+  // Ensure description is not empty
+  if (!this.jobData.description || this.jobData.description.trim() === '') {
+    this.jobData.description = 'No description available';
+    console.log('[SELECTED_JOB] ⚠️ Set default description for:', this.jobData.title);
+  }
+  
+  // Ensure company is not empty
+  if (!this.jobData.company || this.jobData.company.trim() === '') {
+    console.error('[SELECTED_JOB] ❌ Cannot save job with empty company:', this.jobData.title);
+    return next(new Error('Company name is required'));
+  }
+  
+  // Ensure title is not empty
+  if (!this.jobData.title || this.jobData.title.trim() === '') {
+    console.error('[SELECTED_JOB] ❌ Cannot save job with empty title');
+    return next(new Error('Job title is required'));
+  }
+  
+  console.log('[SELECTED_JOB] ✅ Validated job:', this.jobData.title, '@', this.jobData.company);
+  next();
+});
 
 // Compound index for efficient queries
 SelectedJobSchema.index({ userId: 1, selectedAt: -1 })

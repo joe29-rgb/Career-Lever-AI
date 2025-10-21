@@ -3,10 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Sparkles, Target, Zap, Users } from 'lucide-react'
 
 export function HeroSection() {
@@ -52,7 +48,7 @@ export function HeroSection() {
               </Link>
               <Link
                 href={`/auth/signup${email ? `?email=${encodeURIComponent(email)}` : ''}`}
-                className="inline-flex items-center rounded-md bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20"
+                className="btn btn-secondary text-white border-white/20 hover:bg-white/20"
               >
                 Sign up
               </Link>
@@ -61,10 +57,10 @@ export function HeroSection() {
         </div>
         <div className="mx-auto max-w-3xl text-center">
           {/* Badge */}
-          <Badge variant="secondary" className="mb-8 bg-white/10 text-white hover:bg-white/20">
+          <div className="badge badge-accent mb-8 bg-white/10 text-white hover:bg-white/20">
             <Sparkles className="mr-2 h-4 w-4" />
             AI-Powered Job Application Assistant
-          </Badge>
+          </div>
 
           {/* Main Heading */}
           <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-6xl lg:text-7xl">
@@ -143,10 +139,9 @@ export function HeroSection() {
             
             {/* SSO Buttons */}
             <div className="space-y-3">
-              <Button
+              <button
                 onClick={handleGoogle}
-                size="lg"
-                className="w-full bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3"
+                className="btn btn-secondary w-full bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -155,29 +150,27 @@ export function HeroSection() {
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                 </svg>
                 Continue with Google
-              </Button>
+              </button>
 
-              <Button
+              <button
                 onClick={() => signIn('apple', { callbackUrl: '/dashboard' })}
-                size="lg"
-                className="w-full bg-black text-white hover:bg-gray-900 flex items-center justify-center gap-3"
+                className="btn w-full bg-black text-white hover:bg-gray-900 flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
                 </svg>
                 Continue with Apple
-              </Button>
+              </button>
 
-              <Button
+              <button
                 onClick={() => signIn('azure-ad', { callbackUrl: '/dashboard' })}
-                size="lg"
-                className="w-full bg-[#00A4EF] text-white hover:bg-[#008BCF] flex items-center justify-center gap-3"
+                className="btn w-full bg-[#00A4EF] text-white hover:bg-[#008BCF] flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M11.5,3L2,5.5V11H11.5V3M22,3L12.5,5.5V11H22V3M11.5,13H2V18.5L11.5,21V13M12.5,13V21L22,18.5V13H12.5Z"/>
                 </svg>
                 Continue with Microsoft
-              </Button>
+              </button>
             </div>
 
             <div className="mt-6 text-center">
@@ -193,35 +186,35 @@ export function HeroSection() {
 
           {/* Feature Cards */}
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-3">
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-              <CardContent className="p-6 text-center">
+            <div className="card bg-white/10 border-white/20 backdrop-blur-sm">
+              <div className="text-center">
                 <Target className="mx-auto h-8 w-8 text-yellow-400" />
                 <h3 className="mt-4 text-sm font-semibold text-white">Smart Resume Tailoring</h3>
                 <p className="mt-2 text-sm text-blue-100">
                   AI analyzes job descriptions and optimizes your resume for ATS systems
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-              <CardContent className="p-6 text-center">
+            <div className="card bg-white/10 border-white/20 backdrop-blur-sm">
+              <div className="text-center">
                 <Zap className="mx-auto h-8 w-8 text-yellow-400" />
                 <h3 className="mt-4 text-sm font-semibold text-white">Instant Company Research</h3>
                 <p className="mt-2 text-sm text-blue-100">
                   Get company insights from LinkedIn, Glassdoor, and social media
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
-              <CardContent className="p-6 text-center">
+            <div className="card bg-white/10 border-white/20 backdrop-blur-sm">
+              <div className="text-center">
                 <Users className="mx-auto h-8 w-8 text-yellow-400" />
                 <h3 className="mt-4 text-sm font-semibold text-white">Application Tracking</h3>
                 <p className="mt-2 text-sm text-blue-100">
                   Track all your applications and follow-ups in one dashboard
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>

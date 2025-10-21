@@ -15,21 +15,126 @@ import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs }
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Calculate years of experience from resume text
+// CRITICAL FIX: Calculate years of experience from resume text
+// Prevents double-counting overlapping periods and filters out education dates
 function calculateYearsFromResume(resumeText: string): number {
-  const dateRegex = /(\w+\s+\d{4})\s*[-–—]\s*(\w+\s+\d{4}|Present|Current)/gi
-  const matches = Array.from(resumeText.matchAll(dateRegex))
+  // Extract only the work experience section to avoid counting education dates
+  const experienceSection = extractExperienceSection(resumeText)
   
-  let totalMonths = 0
+  // Match date ranges in various formats
+  const dateRegex = /(\w+\s+\d{4}|(\d{1,2}\/\d{4}))\s*[-–—]\s*(\w+\s+\d{4}|Present|Current|(\d{1,2}\/\d{4}))/gi
+  const matches = Array.from(experienceSection.matchAll(dateRegex))
+  
+  // Parse all date ranges into start/end pairs
+  const periods: Array<{ start: Date; end: Date }> = []
   for (const match of matches) {
-    const startDate = new Date(match[1])
-    const endDate = match[2].match(/Present|Current/i) ? new Date() : new Date(match[2])
-    const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
-                  (endDate.getMonth() - startDate.getMonth())
-    if (months > 0 && months < 600) totalMonths += months // Sanity check
+    try {
+      const startStr = match[1]
+      const endStr = match[3]
+      
+      const startDate = new Date(startStr)
+      const endDate = endStr.match(/Present|Current/i) ? new Date() : new Date(endStr)
+      
+      // Validate dates are reasonable (not in future, not before 1970)
+      if (startDate.getFullYear() < 1970 || startDate.getFullYear() > new Date().getFullYear()) continue
+      if (endDate.getFullYear() < 1970 || endDate.getFullYear() > new Date().getFullYear() + 1) continue
+      if (startDate > endDate) continue // Skip invalid ranges
+      
+      const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                    (endDate.getMonth() - startDate.getMonth())
+      
+      // Sanity check: skip periods longer than 50 years or negative
+      if (months > 0 && months < 600) {
+        periods.push({ start: startDate, end: endDate })
+      }
+    } catch (e) {
+      // Skip invalid dates
+      continue
+    }
+  }
+  
+  // If no valid periods found, return 0
+  if (periods.length === 0) return 0
+  
+  // Sort periods by start date
+  periods.sort((a, b) => a.start.getTime() - b.start.getTime())
+  
+  // Merge overlapping periods to avoid double-counting
+  const merged: Array<{ start: Date; end: Date }> = []
+  let current = periods[0]
+  
+  for (let i = 1; i < periods.length; i++) {
+    const next = periods[i]
+    
+    // If periods overlap or are adjacent, merge them
+    if (next.start <= current.end) {
+      current.end = new Date(Math.max(current.end.getTime(), next.end.getTime()))
+    } else {
+      // No overlap, push current and start new period
+      merged.push(current)
+      current = next
+    }
+  }
+  merged.push(current)
+  
+  // Calculate total months from merged periods
+  let totalMonths = 0
+  for (const period of merged) {
+    const months = (period.end.getFullYear() - period.start.getFullYear()) * 12 + 
+                  (period.end.getMonth() - period.start.getMonth())
+    totalMonths += months
   }
   
   return Math.round(totalMonths / 12)
+}
+
+// Extract work experience section from resume to avoid counting education dates
+function extractExperienceSection(resumeText: string): string {
+  const text = resumeText.toLowerCase()
+  
+  // Find work experience section markers
+  const experienceMarkers = [
+    'work experience',
+    'professional experience',
+    'employment history',
+    'experience',
+    'work history',
+    'career history'
+  ]
+  
+  // Find education section markers to exclude
+  const educationMarkers = [
+    'education',
+    'academic background',
+    'academic history',
+    'degrees'
+  ]
+  
+  let experienceStart = -1
+  let experienceMarker = ''
+  
+  // Find the earliest experience marker
+  for (const marker of experienceMarkers) {
+    const index = text.indexOf(marker)
+    if (index !== -1 && (experienceStart === -1 || index < experienceStart)) {
+      experienceStart = index
+      experienceMarker = marker
+    }
+  }
+  
+  // If no experience section found, use entire resume (fallback)
+  if (experienceStart === -1) return resumeText
+  
+  // Find where experience section ends (usually at education or end of document)
+  let experienceEnd = resumeText.length
+  for (const marker of educationMarkers) {
+    const index = text.indexOf(marker, experienceStart + experienceMarker.length)
+    if (index !== -1 && index < experienceEnd) {
+      experienceEnd = index
+    }
+  }
+  
+  return resumeText.substring(experienceStart, experienceEnd)
 }
 
 export async function POST(request: NextRequest) {

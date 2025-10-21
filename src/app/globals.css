@@ -67,6 +67,69 @@
     /* Font Variables */
     --font-inter: 'Inter', ui-sans-serif, system-ui, sans-serif;
     --font-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    
+    /* ============================================
+       DRIBBLE THEME - ADDITIONAL VARIABLES
+       ============================================ */
+    
+    /* Extended Color Palette */
+    --primary-hex: #667eea;
+    --primary-dark-hex: #5a67d8;
+    --primary-light-hex: #7c8ef5;
+    --secondary-hex: #764ba2;
+    --accent-hex: #f093fb;
+    --accent-glow-hex: #4facfe;
+    
+    /* Background Colors (Hex for compatibility) */
+    --bg-primary-hex: #ffffff;
+    --bg-secondary-hex: #f7fafc;
+    --bg-tertiary-hex: #edf2f7;
+    --bg-dark-hex: #1a202c;
+    --bg-card-hex: #1f2937;
+    
+    /* Text Colors (Hex) */
+    --text-primary-hex: #e5e7eb;
+    --text-secondary-hex: #9ca3af;
+    --text-muted-hex: #6b7280;
+    --text-light-hex: #e2e8f0;
+    
+    /* Border Colors (Hex) */
+    --border-color-hex: #374151;
+    --border-focus-hex: #667eea;
+    --border-error-hex: #f56565;
+    --border-success-hex: #48bb78;
+    
+    /* Enhanced Shadows */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
+    --shadow-glow-hover: 0 0 30px rgba(102, 126, 234, 0.5);
+    
+    /* Border Radius Scale */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
+    --radius-full: 9999px;
+    
+    /* Spacing Scale */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+    
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
   }
   
   /* LIGHT THEME (Optional toggle) */
@@ -342,6 +405,215 @@
     @apply h-full rounded-full transition-all duration-500;
     background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
   }
+  
+  /* ============================================
+     DRIBBLE ENHANCED COMPONENTS
+     ============================================ */
+  
+  /* Enhanced Button Styles */
+  .btn {
+    @apply inline-flex items-center justify-center;
+    @apply px-6 py-3 rounded-xl font-semibold text-sm;
+    @apply transition-all duration-200;
+    @apply border-none outline-none cursor-pointer;
+    min-height: 44px; /* Mobile touch target */
+  }
+  
+  .btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none !important;
+  }
+  
+  .btn-primary {
+    @apply text-white;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-glow-hover);
+    transform: translateY(-1px);
+  }
+  
+  .btn-primary:hover:not(:disabled)::before {
+    opacity: 1;
+  }
+  
+  .btn-primary > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .btn-secondary {
+    @apply bg-card text-foreground;
+    border: 2px solid hsl(var(--border));
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    border-color: hsl(var(--primary));
+    @apply bg-muted;
+    transform: translateY(-1px);
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent;
+    color: hsl(var(--primary));
+    border: 2px solid transparent;
+  }
+  
+  .btn-ghost:hover:not(:disabled) {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: hsl(var(--primary));
+  }
+  
+  .btn-danger {
+    @apply bg-destructive text-destructive-foreground;
+  }
+  
+  .btn-danger:hover:not(:disabled) {
+    background: hsl(var(--destructive) / 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(245, 101, 101, 0.3);
+  }
+  
+  /* Enhanced Card Styles */
+  .card {
+    @apply bg-card text-card-foreground;
+    @apply rounded-2xl border border-border;
+    @apply shadow-lg transition-all duration-300;
+    padding: var(--spacing-lg);
+  }
+  
+  .card:hover {
+    @apply border-primary/30 shadow-xl;
+    transform: translateY(-2px);
+  }
+  
+  .job-card {
+    @apply card cursor-pointer;
+  }
+  
+  .job-card:hover {
+    border-color: hsl(var(--primary) / 0.5);
+  }
+  
+  .resume-card {
+    @apply card;
+  }
+  
+  .company-card {
+    @apply card;
+  }
+  
+  .analysis-card {
+    @apply card;
+  }
+  
+  /* Enhanced Form Inputs */
+  .modern-input {
+    @apply w-full px-4 py-3;
+    @apply bg-muted/50 border-2 border-border rounded-xl;
+    @apply text-foreground placeholder:text-muted-foreground;
+    @apply transition-all duration-200;
+    font-size: 14px;
+    font-family: var(--font-body);
+    min-height: 44px;
+  }
+  
+  .modern-input:focus {
+    @apply outline-none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .modern-input:disabled {
+    @apply bg-muted cursor-not-allowed opacity-60;
+  }
+  
+  /* Enhanced Badges */
+  .badge {
+    @apply inline-flex items-center;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  
+  .tag {
+    @apply badge;
+  }
+  
+  .badge-primary {
+    background: rgba(102, 126, 234, 0.1);
+    color: hsl(var(--primary));
+  }
+  
+  .badge-success {
+    background: rgba(72, 187, 120, 0.1);
+    color: hsl(var(--success));
+  }
+  
+  .badge-error {
+    background: rgba(245, 101, 101, 0.1);
+    color: hsl(var(--destructive));
+  }
+  
+  .badge-accent {
+    background: rgba(240, 147, 251, 0.1);
+    color: hsl(var(--accent));
+  }
+  
+  /* Loading States */
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid hsl(var(--border));
+    border-top-color: hsl(var(--primary));
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  .loading-overlay {
+    @apply absolute inset-0;
+    @apply bg-background/95 backdrop-blur-sm;
+    @apply flex flex-col items-center justify-center;
+    border-radius: inherit;
+    z-index: 100;
+  }
+  
+  /* Pulsing Animation */
+  @keyframes pulse-border {
+    0%, 100% {
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+    }
+    50% {
+      border-color: hsl(var(--accent));
+      box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+    }
+  }
+  
+  .pulsing {
+    animation: pulse-border 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  .job-card.researching {
+    animation: pulse-border 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
 }
 
 /* ===================================================================
@@ -397,16 +669,62 @@
 }
 
 /* ===================================================================
-   MOBILE OPTIMIZATIONS
+   MOBILE OPTIMIZATIONS - DRIBBLE THEME
    =================================================================== */
 
 @media (max-width: 768px) {
-  .modern-card {
-    @apply p-4 rounded-xl;
+  /* Larger touch targets for mobile */
+  .btn,
+  input,
+  button,
+  a.btn {
+    min-height: 44px;
+    min-width: 44px;
   }
   
-  .btn-primary, .btn-gradient {
-    @apply px-4 py-2.5 text-sm;
+  /* Full-width buttons on mobile */
+  .btn-primary,
+  .btn-secondary,
+  .btn-gradient {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Adjust card padding */
+  .card,
+  .job-card,
+  .resume-card,
+  .modern-card {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+  }
+  
+  /* Prevent iOS zoom on input focus */
+  body {
+    font-size: 16px;
+  }
+  
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  
+  /* Responsive typography */
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  
+  /* Stack flex containers */
+  .flex-row-mobile {
+    flex-direction: column;
+  }
+  
+  /* Touch-friendly checkboxes and radios */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
   }
 }
 
@@ -672,3 +990,68 @@
 .preload * {
   transition: none !important;
 }
+
+/* ===================================================================
+   ACCESSIBILITY - DRIBBLE THEME
+   =================================================================== */
+
+/* Focus visible states */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================================================
+   ADDITIONAL UTILITY CLASSES
+   =================================================================== */
+
+/* Text utilities */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+.text-muted { color: hsl(var(--muted-foreground)); }
+.text-secondary { color: hsl(var(--secondary)); }
+
+/* Background utilities */
+.bg-primary { background: hsl(var(--primary)); }
+.bg-secondary { background: hsl(var(--secondary)); }
+.bg-card { background: hsl(var(--card)); }
+
+/* Shadow utilities */
+.shadow-xs { box-shadow: var(--shadow-xs); }
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+
+/* Border radius utilities */
+.rounded-xs { border-radius: var(--radius-xs); }
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: var(--radius-full); }

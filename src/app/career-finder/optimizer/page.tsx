@@ -322,82 +322,78 @@ export default function CareerFinderOptimizerPage() {
     }
   }
   
+  // CRITICAL FIX: Aggressively strip personal info from AI-generated resume body
+  const stripPersonalInfoFromBody = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
+    if (!text) return ''
+    
+    // Remove all lines containing personal information
+    const lines = text.split('\n')
+    const filteredLines = lines.filter(line => {
+      const lineLower = line.toLowerCase().trim()
+      const lineNoSpaces = line.replace(/[\s.-]/g, '')
+      
+      // Skip empty lines at the start
+      if (!lineLower) return false
+      
+      // Skip lines with name (case-insensitive, partial match)
+      if (personalInfo.name) {
+        const nameLower = personalInfo.name.toLowerCase()
+        const nameParts = nameLower.split(' ')
+        // Skip if line contains full name or both first and last name
+        if (lineLower.includes(nameLower)) return false
+        if (nameParts.length >= 2 && nameParts.every(part => part.length > 1 && lineLower.includes(part))) return false
+      }
+      
+      // Skip lines with email
+      if (personalInfo.email && lineLower.includes(personalInfo.email.toLowerCase())) return false
+      
+      // Skip lines with phone (normalize spaces/dashes)
+      if (personalInfo.phone) {
+        const phoneNormalized = personalInfo.phone.replace(/[\s.-]/g, '')
+        if (lineNoSpaces.includes(phoneNormalized)) return false
+      }
+      
+      // Skip lines with location
+      if (personalInfo.location && lineLower.includes(personalInfo.location.toLowerCase())) return false
+      
+      // Skip lines that are ONLY contact info (email pattern, phone pattern)
+      if (line.match(/^[\s]*[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+[\s]*$/)) return false
+      if (line.match(/^[\s]*(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})[\s]*$/)) return false
+      
+      return true
+    })
+    
+    return filteredLines.join('\n')
+  }
+  
   // Convert plain text resume to HTML with proper formatting
   const formatResumeAsHTML = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
     if (!text) return ''
     
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+    // CRITICAL FIX: Strip ALL personal info from body first
+    const cleanedText = stripPersonalInfoFromBody(text, personalInfo)
+    const lines = cleanedText.split('\n').map(l => l.trim()).filter(Boolean)
+    
     let html = '<div style="font-family: Arial, sans-serif; line-height: 1.8; color: #333; max-width: 800px; padding: 20px;">'
     
-    // Check if header info already exists in first 200 chars
-    const first200 = text.substring(0, 200).toLowerCase()
-    const hasNameInText = personalInfo.name && first200.includes(personalInfo.name.toLowerCase())
-    const hasEmailInText = personalInfo.email && first200.includes(personalInfo.email.toLowerCase())
-    const hasPhoneInText = personalInfo.phone && first200.includes(personalInfo.phone.replace(/[\s.-]/g, ''))
-    
-    // Only add header if NOT already in resume text
-    if (!hasNameInText && personalInfo.name) {
+    // Always add header with personal info at the top
+    if (personalInfo.name) {
       html += `<h1 style="font-size: 28px; font-weight: bold; margin-bottom: 8px; color: #1a1a1a;">${personalInfo.name}</h1>`
     }
     
-    // Only add contact info if NOT already in resume text
-    if (!hasEmailInText && !hasPhoneInText) {
-      const contactParts: string[] = []
-      if (personalInfo.location) contactParts.push(personalInfo.location)
-      if (personalInfo.phone) contactParts.push(personalInfo.phone)
-      if (personalInfo.email) contactParts.push(personalInfo.email)
-      
-      if (contactParts.length > 0) {
-        html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
-      }
+    // Always add contact info below name
+    const contactParts: string[] = []
+    if (personalInfo.location) contactParts.push(personalInfo.location)
+    if (personalInfo.phone) contactParts.push(personalInfo.phone)
+    if (personalInfo.email) contactParts.push(personalInfo.email)
+    
+    if (contactParts.length > 0) {
+      html += `<div style="font-size: 14px; color: #666; margin-bottom: 24px;">${contactParts.join(' | ')}</div>`
     }
     
-    // Track if we've seen contact info to skip duplicates
-    const seenContactInfo = new Set<string>()
-    
-    // Process each line
+    // Process each line of the cleaned body
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
-      
-      // Skip ALL personal info lines - they're already in the header or AI-generated
-      let shouldSkip = false
-      
-      if (personalInfo.name && line.toLowerCase().includes(personalInfo.name.toLowerCase())) {
-        if (!seenContactInfo.has('name')) {
-          seenContactInfo.add('name')
-          // Skip if we added header OR if it's in AI-generated text
-          if (!hasNameInText || hasNameInText) shouldSkip = true
-        } else {
-          shouldSkip = true // Skip all subsequent occurrences
-        }
-      }
-      
-      if (personalInfo.email && line.includes(personalInfo.email)) {
-        if (!seenContactInfo.has('email')) {
-          seenContactInfo.add('email')
-          shouldSkip = true
-        } else {
-          shouldSkip = true
-        }
-      }
-      
-      if (personalInfo.phone && line.includes(personalInfo.phone.replace(/[\s.-]/g, ''))) {
-        if (!seenContactInfo.has('phone')) {
-          seenContactInfo.add('phone')
-          shouldSkip = true
-        } else {
-          shouldSkip = true
-        }
-      }
-      
-      if (personalInfo.location && line.includes(personalInfo.location)) {
-        if (!seenContactInfo.has('location')) {
-          seenContactInfo.add('location')
-        }
-        shouldSkip = true // Always skip location lines
-      }
-      
-      if (shouldSkip) continue
       
       // Section headers (all caps)
       if (line.match(/^[A-Z\s]{3,}$/) && line.length < 50) {

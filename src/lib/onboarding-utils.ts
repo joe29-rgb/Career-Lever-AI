@@ -6,10 +6,12 @@ export type Urgency = 'high' | 'medium' | 'low'
 export interface QuizAnswers {
   currentSituation: CurrentSituation
   yearsOfExperience: number
-  targetRole: string
+  targetRole?: string
+  careerInterests?: string[] // Multi-select career areas
   workPreferences: WorkPreference[]
   preferredLocation: string
   timeline?: Timeline
+  hasResume?: boolean // Whether user has a resume ready
 }
 
 export interface UserProfile extends QuizAnswers {
