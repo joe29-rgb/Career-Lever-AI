@@ -326,44 +326,74 @@ export default function CareerFinderOptimizerPage() {
   const stripPersonalInfoFromBody = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
     if (!text) return ''
     
-    // Remove all lines containing personal information
-    const lines = text.split('\n')
+    let cleaned = text
+    
+    // AGGRESSIVE: Remove ALL occurrences of name (not just lines)
+    if (personalInfo.name) {
+      const nameRegex = new RegExp(personalInfo.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+      cleaned = cleaned.replace(nameRegex, '')
+      
+      // Also remove individual name parts if they appear together
+      const nameParts = personalInfo.name.split(' ').filter(p => p.length > 2)
+      if (nameParts.length >= 2) {
+        const firstLast = `${nameParts[0]}.*${nameParts[nameParts.length - 1]}`
+        const namePartsRegex = new RegExp(firstLast, 'gi')
+        cleaned = cleaned.replace(namePartsRegex, '')
+      }
+    }
+    
+    // AGGRESSIVE: Remove ALL occurrences of phone
+    if (personalInfo.phone) {
+      // Remove with any formatting
+      const phoneDigits = personalInfo.phone.replace(/\D/g, '')
+      const phoneRegex = new RegExp(phoneDigits.split('').join('[\\s.-]*'), 'g')
+      cleaned = cleaned.replace(phoneRegex, '')
+      // Also remove the original format
+      const phoneEscaped = personalInfo.phone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      cleaned = cleaned.replace(new RegExp(phoneEscaped, 'g'), '')
+    }
+    
+    // AGGRESSIVE: Remove ALL occurrences of email
+    if (personalInfo.email) {
+      const emailRegex = new RegExp(personalInfo.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+      cleaned = cleaned.replace(emailRegex, '')
+    }
+    
+    // AGGRESSIVE: Remove ALL occurrences of location
+    if (personalInfo.location) {
+      const locationRegex = new RegExp(personalInfo.location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+      cleaned = cleaned.replace(locationRegex, '')
+      
+      // Also try to remove just the city or province parts
+      const locationParts = personalInfo.location.split(',').map(p => p.trim())
+      locationParts.forEach(part => {
+        if (part.length > 2) {
+          const partRegex = new RegExp(part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+          cleaned = cleaned.replace(partRegex, '')
+        }
+      })
+    }
+    
+    // Remove empty lines and lines with only punctuation/whitespace
+    const lines = cleaned.split('\n')
     const filteredLines = lines.filter(line => {
-      const lineLower = line.toLowerCase().trim()
-      const lineNoSpaces = line.replace(/[\s.-]/g, '')
-      
-      // Skip empty lines at the start
-      if (!lineLower) return false
-      
-      // Skip lines with name (case-insensitive, partial match)
-      if (personalInfo.name) {
-        const nameLower = personalInfo.name.toLowerCase()
-        const nameParts = nameLower.split(' ')
-        // Skip if line contains full name or both first and last name
-        if (lineLower.includes(nameLower)) return false
-        if (nameParts.length >= 2 && nameParts.every(part => part.length > 1 && lineLower.includes(part))) return false
-      }
-      
-      // Skip lines with email
-      if (personalInfo.email && lineLower.includes(personalInfo.email.toLowerCase())) return false
-      
-      // Skip lines with phone (normalize spaces/dashes)
-      if (personalInfo.phone) {
-        const phoneNormalized = personalInfo.phone.replace(/[\s.-]/g, '')
-        if (lineNoSpaces.includes(phoneNormalized)) return false
-      }
-      
-      // Skip lines with location
-      if (personalInfo.location && lineLower.includes(personalInfo.location.toLowerCase())) return false
-      
-      // Skip lines that are ONLY contact info (email pattern, phone pattern)
-      if (line.match(/^[\s]*[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+[\s]*$/)) return false
-      if (line.match(/^[\s]*(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})[\s]*$/)) return false
-      
+      const trimmed = line.trim()
+      if (!trimmed) return false
+      if (trimmed.match(/^[|\s-]+$/)) return false // Only pipes, spaces, dashes
       return true
     })
     
-    return filteredLines.join('\n')
+    // Remove duplicate empty lines
+    const finalLines: string[] = []
+    let lastWasEmpty = false
+    for (const line of filteredLines) {
+      const isEmpty = !line.trim()
+      if (isEmpty && lastWasEmpty) continue
+      finalLines.push(line)
+      lastWasEmpty = isEmpty
+    }
+    
+    return finalLines.join('\n').trim()
   }
   
   // Convert plain text resume to HTML with proper formatting

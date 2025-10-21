@@ -85,7 +85,20 @@ function calculateYearsFromResume(resumeText: string): number {
     totalMonths += months
   }
   
-  return Math.round(totalMonths / 12)
+  const years = Math.round(totalMonths / 12)
+  
+  // CRITICAL FIX: Cap at realistic maximum
+  // Assume candidate started working at age 18, max age 65
+  // Most candidates are 25-45, so cap at 25 years to be safe
+  const maxRealisticYears = 25
+  const cappedYears = Math.min(years, maxRealisticYears)
+  
+  // If calculated years seem unrealistic (>25), round down to nearest 5
+  if (cappedYears > 15) {
+    return Math.floor(cappedYears / 5) * 5
+  }
+  
+  return cappedYears
 }
 
 // Extract work experience section from resume to avoid counting education dates
