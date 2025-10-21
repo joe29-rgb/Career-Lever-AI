@@ -60,7 +60,7 @@ const SelectedJobSchema = new Schema<ISelectedJob>({
 })
 
 // CRITICAL FIX: Pre-save validation
-SelectedJobSchema.pre('save', function(next) {
+SelectedJobSchema.pre('save', function(this: ISelectedJob, next) {
   // Ensure description is not empty
   if (!this.jobData.description || this.jobData.description.trim() === '') {
     this.jobData.description = 'No description available';
