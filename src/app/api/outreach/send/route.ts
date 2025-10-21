@@ -124,9 +124,21 @@ export async function POST(request: NextRequest) {
           }, { status: 503 })
         }
         
+        // CRITICAL FIX: Check for domain verification error
+        if (result.error?.includes('verify a domain') || result.error?.includes('testing emails')) {
+          console.log('[OUTREACH_SEND] Domain not verified, providing mailto fallback')
+          return NextResponse.json({
+            error: 'Email service requires domain verification',
+            details: result.error,
+            mailto_fallback: `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`,
+            fallback_instructions: 'Click the mailto link to send via your email client, or verify your domain at resend.com/domains'
+          }, { status: 503 })
+        }
+        
         return NextResponse.json({
           error: 'Failed to send email',
-          details: result.error
+          details: result.error,
+          mailto_fallback: `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
         }, { status: 500 })
       }
       

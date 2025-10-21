@@ -218,7 +218,20 @@ export async function POST(request: NextRequest) {
         candidateHighlights: resumeText.slice(0, 2000),
         companyData: companyPayload
       })
-      const out = await ppx.chat(`${ENHANCED_COVER_LETTER_SYSTEM_PROMPT}\n\n${userPrompt}`, { model: 'sonar-pro', maxTokens: 1800, temperature: 0.35 })
+      
+      // CRITICAL FIX: Inject years constraint directly into system prompt
+      const systemPromptWithConstraint = `${ENHANCED_COVER_LETTER_SYSTEM_PROMPT}
+
+CRITICAL EXPERIENCE CONSTRAINT:
+- Candidate has EXACTLY ${yearsExperience} years of total work experience
+- DO NOT say "decades", "38 years", or any number higher than ${yearsExperience}
+- If ${yearsExperience} < 10, say "several years" or "${yearsExperience} years"
+- If ${yearsExperience} >= 10 && ${yearsExperience} < 20, say "${yearsExperience} years" or "over a decade"
+- If ${yearsExperience} >= 20, say "${yearsExperience} years" or "two decades"
+- NEVER invent or exaggerate experience duration
+- Use ONLY the experience data provided in the resume`
+      
+      const out = await ppx.chat(`${systemPromptWithConstraint}\n\n${userPrompt}`, { model: 'sonar-pro', maxTokens: 1800, temperature: 0.35 })
       let coverLetter = (out.content || '').trim()
       // Authenticity validation & sanitization
       const report = validateAuthenticityLetter(resumeText, coverLetter)

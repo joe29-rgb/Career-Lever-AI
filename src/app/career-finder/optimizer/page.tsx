@@ -8,6 +8,18 @@ import CareerFinderStorage from '@/lib/career-finder-storage'
 import { ResumeSkeleton } from '@/components/skeleton-loader'
 import { formatResumeAsHTML, type ResumeData } from '@/lib/resume-formatters'
 
+// CRITICAL FIX: Unescape HTML entities to prevent raw HTML display
+function unescapeHtml(html: string): string {
+  return html
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&apos;/g, "'")
+}
+
 const TEMPLATES = [
   { 
     id: 'modern', 
@@ -242,8 +254,9 @@ export default function CareerFinderOptimizerPage() {
         const formattedA = formatResumeWithTemplate(vA || '', personalInfo, template)
         const formattedB = formatResumeWithTemplate(vB || '', personalInfo, template)
         
-        setVariantA(formattedA)
-        setVariantB(formattedB)
+        // CRITICAL FIX: Unescape HTML to prevent raw code display
+        setVariantA(unescapeHtml(formattedA))
+        setVariantB(unescapeHtml(formattedB))
         
         // Calculate ATS score on optimized resume using real API
         await calculateRealATSScore(vA || '')
