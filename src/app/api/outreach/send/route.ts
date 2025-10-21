@@ -106,8 +106,14 @@ export async function POST(request: NextRequest) {
       }
       
       // Send email with attachments
+      // CRITICAL FIX: Use user's email as FROM address (falls back to default if not available)
+      const userEmail = session.user.email || undefined
+      const fromEmail = userEmail || process.env.EMAIL_FROM || 'onboarding@resend.dev'
+      
       const result = await resendProvider.send({
         to: contact.email,
+        from: fromEmail,
+        replyTo: userEmail, // User's email for replies
         subject: email.subject,
         body: email.body,
         attachments: attachments.length > 0 ? attachments : undefined
