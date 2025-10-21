@@ -10,6 +10,7 @@ import {
 } from './public-job-boards-config'
 import { parseAIResponse } from './utils/ai-response-parser'
 import { PerplexityErrorContext } from './errors/perplexity-error'
+import { getCoverLetterTemplateById } from './cover-letter-templates'
 
 // Environment
 const CACHE_TTL_MS = Number(process.env.PPX_CACHE_TTL_MS || 24 * 60 * 60 * 1000)
@@ -140,6 +141,141 @@ function normalizeSkills(skills: string[]): string[] {
     const k = s.toLowerCase().trim()
     return mapping[k] || s
   })
+}
+
+// CRITICAL FIX: Calculate years of experience from resume text
+// Prevents double-counting overlapping periods and filters out education dates
+function calculateYearsFromResume(resumeText: string): number {
+  // Extract only the work experience section to avoid counting education dates
+  const experienceSection = extractExperienceSection(resumeText)
+  
+  // Match date ranges in various formats
+  const dateRegex = /(\w+\s+\d{4}|(\d{1,2}\/\d{4}))\s*[-–—]\s*(\w+\s+\d{4}|Present|Current|(\d{1,2}\/\d{4}))/gi
+  const matches = Array.from(experienceSection.matchAll(dateRegex))
+  
+  // Parse all date ranges into start/end pairs
+  const periods: Array<{ start: Date; end: Date }> = []
+  for (const match of matches) {
+    try {
+      const startStr = match[1]
+      const endStr = match[3]
+      
+      const startDate = new Date(startStr)
+      const endDate = endStr.match(/Present|Current/i) ? new Date() : new Date(endStr)
+      
+      // Validate dates are reasonable (not in future, not before 1970)
+      if (startDate.getFullYear() < 1970 || startDate.getFullYear() > new Date().getFullYear()) continue
+      if (endDate.getFullYear() < 1970 || endDate.getFullYear() > new Date().getFullYear() + 1) continue
+      if (startDate > endDate) continue // Skip invalid ranges
+      
+      const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + 
+                    (endDate.getMonth() - startDate.getMonth())
+      
+      // Sanity check: skip periods longer than 50 years or negative
+      if (months > 0 && months < 600) {
+        periods.push({ start: startDate, end: endDate })
+      }
+    } catch (e) {
+      // Skip invalid dates
+      continue
+    }
+  }
+  
+  // If no valid periods found, return 0
+  if (periods.length === 0) return 0
+  
+  // Sort periods by start date
+  periods.sort((a, b) => a.start.getTime() - b.start.getTime())
+  
+  // Merge overlapping periods to avoid double-counting
+  const merged: Array<{ start: Date; end: Date }> = []
+  let current = periods[0]
+  
+  for (let i = 1; i < periods.length; i++) {
+    const next = periods[i]
+    
+    // If periods overlap or are adjacent, merge them
+    if (next.start <= current.end) {
+      current.end = new Date(Math.max(current.end.getTime(), next.end.getTime()))
+    } else {
+      // No overlap, push current and start new period
+      merged.push(current)
+      current = next
+    }
+  }
+  merged.push(current)
+  
+  // Calculate total months from merged periods
+  let totalMonths = 0
+  for (const period of merged) {
+    const months = (period.end.getFullYear() - period.start.getFullYear()) * 12 + 
+                  (period.end.getMonth() - period.start.getMonth())
+    totalMonths += months
+  }
+  
+  const years = Math.round(totalMonths / 12)
+  
+  // CRITICAL FIX: Cap at realistic maximum
+  // Assume candidate started working at age 18, max age 65
+  // Most candidates are 25-45, so cap at 25 years to be safe
+  const maxRealisticYears = 25
+  const cappedYears = Math.min(years, maxRealisticYears)
+  
+  // If calculated years seem unrealistic (>15), round down to nearest 5
+  if (cappedYears > 15) {
+    return Math.floor(cappedYears / 5) * 5
+  }
+  
+  return cappedYears
+}
+
+// Extract work experience section from resume to avoid counting education dates
+function extractExperienceSection(resumeText: string): string {
+  const text = resumeText.toLowerCase()
+  
+  // Find work experience section markers
+  const experienceMarkers = [
+    'work experience',
+    'professional experience',
+    'employment history',
+    'experience',
+    'work history',
+    'career history'
+  ]
+  
+  // Find education section markers to exclude
+  const educationMarkers = [
+    'education',
+    'academic background',
+    'academic history',
+    'degrees'
+  ]
+  
+  let experienceStart = -1
+  let experienceMarker = ''
+  
+  // Find the earliest experience marker
+  for (const marker of experienceMarkers) {
+    const index = text.indexOf(marker)
+    if (index !== -1 && (experienceStart === -1 || index < experienceStart)) {
+      experienceStart = index
+      experienceMarker = marker
+    }
+  }
+  
+  // If no experience section found, use entire resume (fallback)
+  if (experienceStart === -1) return resumeText
+  
+  // Find where experience section ends (usually at education or end of document)
+  let experienceEnd = resumeText.length
+  for (const marker of educationMarkers) {
+    const index = text.indexOf(marker, experienceStart + experienceMarker.length)
+    if (index !== -1 && index < experienceEnd) {
+      experienceEnd = index
+    }
+  }
+  
+  return resumeText.substring(experienceStart, experienceEnd)
 }
 
 // Enhanced response wrappers (non-breaking: used by new V2 methods only)
@@ -1917,7 +2053,7 @@ Return ONLY valid JSON:
     }
   }
 
-  // Cover Letter Generator: Create personalized cover letters
+  // Cover Letter Generator: Create personalized cover letters using templates
   static async generateCoverLetters(params: {
     jobTitle: string
     company: string
@@ -1930,6 +2066,7 @@ Return ONLY valid JSON:
     }
     hiringManager?: { name: string; title: string }
     userName?: string
+    templateId?: string
   }): Promise<EnhancedResponse<{
     variantA: string
     variantB: string
@@ -1950,57 +2087,74 @@ Return ONLY valid JSON:
     }
 
     try {
-      const client = createClient()
-      const systemPrompt = 'You are an expert cover letter writer. Return only valid JSON.'
-      const userPrompt = `Create TWO personalized cover letter variants for this job application.
+      // CRITICAL FIX: Calculate years of experience to prevent hallucinations
+      const yearsExperience = calculateYearsFromResume(params.resumeText)
+      console.log('[COVER_LETTERS] Calculated experience:', yearsExperience, 'years')
 
-**Job Title:** ${params.jobTitle}
-**Company:** ${params.company}
+      // Get templates - use professional and modern as defaults
+      const templateA = getCoverLetterTemplateById(params.templateId || 'professional')
+      const templateB = getCoverLetterTemplateById('modern')
+
+      const client = createClient()
+      const systemPrompt = `You are an expert cover letter writer. Use the provided templates as structure guides and fill them with personalized content from the candidate's resume.
+
+CRITICAL EXPERIENCE CONSTRAINT:
+- Candidate has EXACTLY ${yearsExperience} years of total work experience
+- DO NOT say "decades", "38 years", or any number higher than ${yearsExperience}
+- If ${yearsExperience} < 10, say "several years" or "${yearsExperience} years"
+- If ${yearsExperience} >= 10 && ${yearsExperience} < 20, say "${yearsExperience} years" or "over a decade"
+- If ${yearsExperience} >= 20, say "${yearsExperience} years" or "two decades"
+- NEVER invent or exaggerate experience duration
+- Use ONLY the experience data provided in the resume
+
+Return only valid JSON.`
+
+      const userPrompt = `Create TWO personalized cover letter variants using these templates as guides:
+
+**TEMPLATE A (${templateA.name}):**
+${templateA.template}
+
+**TEMPLATE B (${templateB.name}):**
+${templateB.template}
+
+**Job Details:**
+- Job Title: ${params.jobTitle}
+- Company: ${params.company}
+- Hiring Manager: ${params.hiringManager?.name || 'Hiring Manager'}
+- Applicant: ${params.userName || '[Your Name]'}
 
 **Key Requirements:**
 ${params.jobRequirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
 
-**Resume Summary:**
+**Resume Content (${yearsExperience} years experience):**
 ${params.resumeText.slice(0, 1500)}
 
-**Company Culture:** ${params.companyInsights.culture}
-**Company Values:** ${params.companyInsights.values.join(', ')}
+**Company Research:**
+- Culture: ${params.companyInsights.culture}
+- Values: ${params.companyInsights.values.join(', ')}
+- Recent News: ${params.companyInsights.recentNews.map(n => n.title).join(', ')}
 
-**Recent Company News:**
-${params.companyInsights.recentNews.map(n => `- ${n.title}: ${n.summary}`).join('\n')}
+**Instructions:**
+1. Fill in ALL placeholders in the templates with actual data
+2. Replace [X years] with "${yearsExperience} years" (EXACT number)
+3. Use real achievements from resume with metrics
+4. Reference specific company news/values
+5. Keep the template structure but personalize content
+6. Variant A: Use Template A structure
+7. Variant B: Use Template B structure
 
-${params.hiringManager ? `**Hiring Manager:** ${params.hiringManager.name}, ${params.hiringManager.title}` : ''}
-${params.userName ? `**Applicant Name:** ${params.userName}` : ''}
-
-Generate TWO cover letter variants:
-1. **Variant A (Professional & Formal):** Professional business tone, structured format, confident but not overly casual
-2. **Variant B (Engaging & Modern):** Professional but personable tone, storytelling approach, shows personality while maintaining professionalism
-
-CRITICAL REQUIREMENTS:
-- DO NOT make up or exaggerate years of experience - use ONLY what's in the resume
-- DO NOT use overly casual language like "Here's what most people don't realize"
-- DO NOT sound like a teenager or use informal phrases
-- Keep tone PROFESSIONAL and MATURE throughout
-- Be confident but not arrogant
-- Focus on VALUE and SKILLS, not just experience length
-
-For each variant:
-- Address the hiring manager by name if available
-- Reference specific company news or achievements
-- Align with company culture and values
-- Highlight relevant experience from resume (accurately)
-- Show genuine enthusiasm for the role
-- Include a strong call-to-action
-- Sign with "${params.userName || '[Your Name]'}" at the end
-- Keep it concise (250-300 words max)
-
-Also provide 3-5 personalization tips that were used.
+CRITICAL RULES:
+- Experience: EXACTLY ${yearsExperience} years (no more, no less)
+- NO generic phrases like "proven track record" without specifics
+- NO casual language like "Here's what most people don't realize"
+- ALL achievements must come from the actual resume
+- Keep professional and mature tone
 
 Return ONLY valid JSON:
 {
-  "variantA": "Full cover letter text for Variant A...",
-  "variantB": "Full cover letter text for Variant B...",
-  "personalization": ["Tip 1", "Tip 2", ...]
+  "variantA": "Full cover letter text using Template A structure...",
+  "variantB": "Full cover letter text using Template B structure...",
+  "personalization": ["Tip 1", "Tip 2", "Tip 3"]
 }`
 
       const response = await withRetry(
