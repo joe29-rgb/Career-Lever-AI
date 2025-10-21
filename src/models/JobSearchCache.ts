@@ -140,44 +140,16 @@ JobSearchCacheSchema.index({ normalizedKeywords: 1, location: 1, workType: 1 });
 // TTL index to auto-delete expired caches
 JobSearchCacheSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// CRITICAL FIX: Pre-save validation to filter invalid jobs
+// CRITICAL FIX: Simpler pre-save validation - only fix descriptions
 JobSearchCacheSchema.pre('save', function(this: IJobSearchCache, next) {
-  // Fix empty descriptions and filter invalid jobs
-  const validJobs = this.jobs.filter((job: any) => {
-    // CRITICAL FIX: Set default for empty description
+  // Fix empty descriptions ONLY - don't filter jobs
+  this.jobs.forEach((job: any) => {
     if (!job.description || job.description.trim() === '') {
       job.description = 'No description available';
-      console.log('[CACHE] ⚠️ Set default description for:', job.title);
     }
-    
-    // Must have company
-    if (!job.company || job.company.trim() === '') {
-      console.log('[CACHE] ❌ Filtering job with no company:', job.title);
-      return false;
-    }
-    
-    // Must have title
-    if (!job.title || job.title.trim() === '') {
-      console.log('[CACHE] ❌ Filtering job with no title');
-      return false;
-    }
-    
-    // Must have location
-    if (!job.location || job.location.trim() === '') {
-      console.log('[CACHE] ❌ Filtering job with no location:', job.title);
-      return false;
-    }
-    
-    return true;
   });
   
-  const filteredCount = this.jobs.length - validJobs.length;
-  if (filteredCount > 0) {
-    console.log(`[CACHE] ⚠️ Filtered ${filteredCount} invalid jobs, ${validJobs.length} remaining`);
-  }
-  
-  this.jobs = validJobs;
-  console.log(`[CACHE] ✅ Saving ${this.jobs.length} valid jobs`);
+  console.log(`[CACHE] Saving ${this.jobs.length} jobs`);
   next();
 });
 
