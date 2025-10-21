@@ -658,22 +658,27 @@ ATS PLATFORMS (Canadian Tech Companies):
 - Recruitee: Paytm, Ecobee, Geotab, Auvik, Wave, KOHO
 - Ashby: Faire, Clearco, Maple, Borrowell, Shakepay
 
-REQUIREMENTS:
-1. Search ONLY publicly accessible listings (no login)
-2. Prioritize Canadian sources for Canadian locations
-3. **CRITICAL**: Extract salary from job posting (look for "$XX,XXX", "$XX-$XX/hour", "$XXK-$XXK", "salary range", "compensation")
-4. If salary not explicitly stated, look for "competitive salary", "market rate", or industry standard estimates
-5. Deduplicate across all sources
-6. Rank by: recency → Canadian source priority → relevance
-7. Return up to ${limit} listings with salary data whenever available
+CRITICAL REQUIREMENTS:
+1. **EXACT COMPANY NAMES ONLY** - Do NOT use generic placeholders:
+   ❌ REJECT: "Various Employers", "Confidential Company", "Multiple Companies", "Various Auto", "Various [Industry]", "Undisclosed", "Private", "TBD", "N/A"
+   ✅ REQUIRE: Real, specific company names (e.g., "Brandt Tractor Ltd.", "Shopify", "TD Bank")
+2. **VERIFY COMPANY EXISTS** - Include company website/domain when available
+3. **REJECT INVALID LISTINGS** - Skip jobs without real company name, actual job title, or valid location
+4. Search ONLY publicly accessible listings (no login required)
+5. Prioritize Canadian sources for Canadian locations
+6. **Extract salary** from job posting ("$XX,XXX", "$XX-$XX/hour", "$XXK-$XXK", "salary range", "compensation")
+7. If salary not stated, look for "competitive salary", "market rate", or industry estimates
+8. Deduplicate across all sources by company + title
+9. Rank by: recency → Canadian source priority → relevance
+10. Return EXACTLY ${limit} unique listings with complete data
 
-OUTPUT JSON:
+OUTPUT JSON (MUST BE VALID, COMPLETE JSON):
 [{
-  "title": string,
-  "company": string,
-  "location": string,
-  "url": string,
-  "summary": string (50-100 words),
+  "title": string (specific job title, not "Various Positions"),
+  "company": string (EXACT company name, not generic),
+  "location": string (specific city/province),
+  "url": string (direct job posting link),
+  "summary": string (50-100 words, job description),
   "salary": string | null,
   "postedDate": "YYYY-MM-DD",
   "source": string (board name)
@@ -689,7 +694,7 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
         temperature: 0.2, 
-        maxTokens: Math.min(limit * 150, 8000), // INCREASED: More tokens for complete JSON
+        maxTokens: Math.min(limit * 250, 16000), // CRITICAL FIX: Increased significantly for 50 jobs
         model: 'sonar-pro' // Use research model for job search
       })
       let text = (out.content || '').trim()

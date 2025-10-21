@@ -170,6 +170,29 @@ class JobSearchCacheService {
     try {
       await dbService.connect();
 
+      // CRITICAL FIX: Validate and clean jobs BEFORE caching
+      const validJobs = jobs.filter(job => {
+        // Ensure all required fields exist
+        if (!job.title || !job.company || !job.location || !job.url) {
+          console.log(`[JOB_CACHE] ❌ Skipping invalid job: missing required fields`);
+          return false;
+        }
+        
+        // Ensure description exists (set default if empty)
+        if (!job.description || job.description.trim() === '') {
+          job.description = 'No description available';
+        }
+        
+        // Ensure source exists
+        if (!job.source) {
+          job.source = 'Unknown';
+        }
+        
+        return true;
+      });
+
+      console.log(`[JOB_CACHE] Validated ${validJobs.length}/${jobs.length} jobs for caching`);
+
       const normalizedKeywords = this.normalizeKeywords(options.keywords);
 
       // Check if cache already exists
@@ -179,7 +202,7 @@ class JobSearchCacheService {
         // Merge new jobs with existing (avoid duplicates)
         const existingJobIds = new Set(existing.jobs.map((j: any) => j.jobId));
         
-        const newJobs = jobs
+        const newJobs = validJobs
           .filter(job => {
             const jobId = this.generateJobId(job.title, job.company, job.location);
             return !existingJobIds.has(jobId);
@@ -219,7 +242,7 @@ class JobSearchCacheService {
           location: options.location,
           workType: options.workType || 'any',
           experienceLevel: options.experienceLevel,
-          jobs: jobs.map(job => ({
+          jobs: validJobs.map(job => ({
             jobId: this.generateJobId(job.title, job.company, job.location),
             title: job.title,
             company: job.company,
@@ -241,7 +264,7 @@ class JobSearchCacheService {
         });
 
         await cacheEntry.save();
-        console.log(`[JOB_CACHE] ✅ Created new cache with ${jobs.length} jobs`);
+        console.log(`[JOB_CACHE] ✅ Created new cache with ${validJobs.length} jobs`);
       }
     } catch (error) {
       console.error('[JOB_CACHE] Error caching search results:', error);
