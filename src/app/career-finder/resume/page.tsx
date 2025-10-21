@@ -211,7 +211,7 @@ export default function CareerFinderResumePage() {
                         
                         // Cache keywords and location separately
                         if (autopilotData.signals.keywords?.length > 0) {
-                          const topKeywords = autopilotData.signals.keywords.slice(0, 5).join(', ')
+                          const topKeywords = autopilotData.signals.keywords.slice(0, 30).join(', ')
                           localStorage.setItem('cf:keywords', topKeywords)
                           console.log('[AUTOPILOT] ✅ Keywords:', topKeywords)
                         }
@@ -438,7 +438,7 @@ export default function CareerFinderResumePage() {
                       
                       // CRITICAL: Cache keywords and location separately for search page
                       if (autopilotData.signals.keywords?.length > 0) {
-                        const topKeywords = autopilotData.signals.keywords.slice(0, 5).join(', ')
+                        const topKeywords = autopilotData.signals.keywords.slice(0, 30).join(', ')
                         localStorage.setItem('cf:keywords', topKeywords)
                         console.log('[AUTOPILOT] ✅ Keywords:', topKeywords)
                       }

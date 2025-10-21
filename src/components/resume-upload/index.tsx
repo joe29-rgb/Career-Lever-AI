@@ -345,7 +345,7 @@ export function ResumeUpload({
             
             // PERPLEXITY FIX: Standardized localStorage keys as per audit
             localStorage.setItem('cf:location', signals.location || '') // Standard key for location
-            localStorage.setItem('cf:keywords', signals.keywords?.slice(0, 5).join(', ') || '') // Standard key for keywords
+            localStorage.setItem('cf:keywords', signals.keywords?.slice(0, 30).join(', ') || '') // FIXED: Use 30 keywords for better job matches
             localStorage.setItem('cf:resume', JSON.stringify(resume)) // Full resume object
             localStorage.setItem('cf:autopilotReady', '1') // Autopilot flag
             
@@ -355,7 +355,7 @@ export function ResumeUpload({
             
             // Redirect to search page - CRITICAL: Only pass location if extracted
             setTimeout(() => {
-              const keywords = signals.keywords?.slice(0, 5).join(', ') || ''
+              const keywords = signals.keywords?.slice(0, 30).join(', ') || ''
               const location = signals.location || ''
               const url = location 
                 ? `/career-finder/search?auto=true&keywords=${encodeURIComponent(keywords)}&location=${encodeURIComponent(location)}`
