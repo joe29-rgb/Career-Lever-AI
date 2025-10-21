@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { ArrowRight } from 'lucide-react'
 
@@ -32,7 +31,6 @@ const PILL_POSITIONS = [
 ]
 
 export function HeroSectionV2() {
-  const [email, setEmail] = useState('')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -40,9 +38,8 @@ export function HeroSectionV2() {
   }, [])
 
   const handleGetStarted = async () => {
-    const callbackUrl = encodeURIComponent('/dashboard')
     const base = typeof window !== 'undefined' ? window.location.origin : ''
-    const target = `${base}/auth/signin?callbackUrl=${encodeURIComponent(`${base}/dashboard`)}${email ? `&email=${encodeURIComponent(email)}` : ''}`
+    const target = `${base}/auth/signin?callbackUrl=${encodeURIComponent(`${base}/dashboard`)}`
     window.location.href = target
   }
 
@@ -82,7 +79,6 @@ export function HeroSectionV2() {
                   transform: `rotate(${position.rotation}deg)`,
                   animation: `float 6s ease-in-out infinite`,
                   animationDelay: `${pill.delay}s`,
-                  '--rotation': `${position.rotation}deg`,
                 } as React.CSSProperties}
               >
                 <span className="text-xl">{pill.logo}</span>
@@ -162,10 +158,10 @@ export function HeroSectionV2() {
       <style jsx>{`
         @keyframes float {
           0%, 100% { 
-            transform: translateY(0) rotate(var(--rotation)); 
+            transform: translateY(0); 
           }
           50% { 
-            transform: translateY(-20px) rotate(calc(var(--rotation) + 3deg)); 
+            transform: translateY(-20px); 
           }
         }
 
