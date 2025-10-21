@@ -87,10 +87,18 @@ export function ModernJobCard({
   const salaryDisplay = getSalaryDisplay({ title, salary, location })
 
   return (
-    <div className={cn(
-      "relative w-full rounded-[25px] overflow-hidden shadow-lg transition-all duration-300",
-      isLoading ? "scale-[1.02] ring-4 ring-blue-500 ring-opacity-50" : "hover:scale-[1.02]"
-    )}>
+    <div 
+      className={cn(
+        "job-card relative w-full overflow-visible shadow-lg transition-all duration-[400ms]",
+        isLoading ? "scale-[1.02] ring-4 ring-blue-500 ring-opacity-50" : ""
+      )}
+      data-company={company}
+      data-type={colorTheme}
+      style={{
+        borderRadius: '0 12px 24px 24px',
+        transitionTimingFunction: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
+      }}
+    >
       {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[2px] flex items-center justify-center z-50 rounded-[25px]">
@@ -101,7 +109,27 @@ export function ModernJobCard({
         </div>
       )}
 
-      {/* Main colored section */}
+      {/* File Folder Tab */}
+      <div 
+        className="absolute top-[-16px] left-0 w-[120px] h-[20px] flex items-center justify-center"
+        style={{
+          background: theme.bg,
+          borderRadius: '8px 8px 0 0',
+          boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2), 0 -2px 8px rgba(0,0,0,0.1)'
+        }}
+      >
+        <span 
+          className="text-[10px] font-semibold uppercase tracking-wide"
+          style={{ 
+            color: 'rgba(255,255,255,0.8)',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {company.substring(0, 12)}
+        </span>
+      </div>
+
+      {/* Main colored section (Folder Top) */}
       <div 
         className="relative px-4 pt-4 pb-3"
         style={{ background: theme.bg }}
@@ -230,8 +258,21 @@ export function ModernJobCard({
         </Link>
       </div>
 
-      {/* White footer section */}
-      <div className="bg-white px-4 py-4 rounded-b-[25px]">
+      {/* White footer section (Folder Paper) */}
+      <div 
+        className="card-content relative px-4 py-4"
+        style={{
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,1) 100%)',
+          borderRadius: '0 0 21px 25px'
+        }}
+      >
+        {/* Paper Lines Effect */}
+        <div 
+          className="absolute top-4 left-4 right-4 h-[1px] opacity-30 pointer-events-none"
+          style={{
+            background: 'repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0,0,0,0.05) 3px, rgba(0,0,0,0.05) 4px)'
+          }}
+        />
         <div className="flex items-center justify-between">
           {/* Posted date */}
           <div className="flex items-center gap-1 text-xs text-black font-medium">
@@ -250,7 +291,7 @@ export function ModernJobCard({
 }
 
 /**
- * Job Card Grid - displays multiple cards
+ * Job Card Grid - displays multiple cards with folder stacking effect
  */
 export function ModernJobCardGrid({ 
   jobs, 
@@ -260,7 +301,7 @@ export function ModernJobCardGrid({
   onViewJob?: (jobId: string) => void
 }) {
   return (
-    <div className="grid grid-cols-1 gap-6 w-full max-w-md mx-auto px-6 py-6">
+    <div className="grid grid-cols-1 gap-8 w-full max-w-md mx-auto px-6 py-6">
       {jobs.map((job, index) => {
         // Rotate through color themes
         const themes: Array<'purple' | 'red' | 'yellow'> = ['purple', 'red', 'yellow']

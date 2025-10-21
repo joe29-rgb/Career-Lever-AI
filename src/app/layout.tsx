@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import './globals.mobile.css'
+import './globals-folder.css'
 import { Providers } from '@/components/providers'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ClientInit } from '@/components/client-init'
