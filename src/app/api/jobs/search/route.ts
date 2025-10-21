@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[JOB_SEARCH] User ${session.user.id} searching: "${keywords}" in ${location} (Resume matching: ${useResumeMatching})`)
 
-    // 🚀 NEW: Check cache first (3-week retention)
+    // CRITICAL FIX: Get cached jobs but ALWAYS search for new ones too
     const cachedJobs = await jobSearchCacheService.getCachedJobs({
       keywords,
       location,
@@ -97,21 +97,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (cachedJobs && cachedJobs.length > 0) {
-      console.log(`[JOB_CACHE] ✅ Using ${cachedJobs.length} cached jobs (${cachedJobs.filter(j => j.seen).length} already seen)`);
-      
-      return NextResponse.json({
-        success: true,
-        query: { keywords, location, sources },
-        totalResults: cachedJobs.length,
-        returnedResults: cachedJobs.length,
-        jobs: cachedJobs.slice(0, limit),
-        metadata: {
-          cached: true,
-          searchedAt: new Date().toISOString(),
-          useResumeMatching: false
-        },
-        sources: [...new Set(cachedJobs.map(j => j.source))]
-      });
+      console.log(`[JOB_CACHE] Found ${cachedJobs.length} cached jobs - will merge with NEW search results`);
+    } else {
+      console.log(`[JOB_CACHE] No cached jobs found - performing fresh search`);
     }
 
     let result: any
