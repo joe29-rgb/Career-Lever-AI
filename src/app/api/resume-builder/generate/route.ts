@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { PerplexityService } from '@/lib/perplexity-service'
 import { z } from 'zod'
 import { extractKeywords } from '@/lib/utils'
-import { getTemplateById, ResumeFormatter, getTemplateCss } from '@/lib/resume-templates'
+import { getTemplateById } from '@/lib/resume-templates-v2'
 import { isRateLimited } from '@/lib/rate-limit'
 
 const ppx = new PerplexityService()
@@ -332,8 +332,7 @@ Return optimized JSON with the same structure but enhanced content.`
 
 function wrapHtmlFragmentWithTemplateCss(fragmentHtml: string, tpl: ReturnType<typeof getTemplateById>) {
   const safe = (fragmentHtml || '').replace(/<\/?(html|head|body|style)[^>]*>/gi, '')
-  const css = getTemplateCss(tpl)
-  return `<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>${css}</style></head><body><div class=\"resume-container\">${safe}</div></body></html>`
+  return `<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>${tpl.css}</style></head><body><div class=\"resume-container\">${safe}</div></body></html>`
 }
 
 function serializeResumeToPlainText(data: any): string {
@@ -358,9 +357,9 @@ function serializeResumeToPlainText(data: any): string {
 
 async function generateResumeOutput(resume: ResumeData, template: string) {
   const tpl = getTemplateById(template || 'modern')
-  const content = mapResumeDataToContent(resume)
-  const html = ResumeFormatter.formatResume(content, tpl)
-  return { html }
+  const html = tpl.generate(resume)
+  const fullHtml = `<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>${tpl.css}</style></head><body>${html}</body></html>`
+  return { html: fullHtml }
 }
 
 function generateResumePreview(resume: ResumeData, template: string) {

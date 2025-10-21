@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import CareerFinderStorage from '@/lib/career-finder-storage'
 import { ResumeSkeleton } from '@/components/skeleton-loader'
-import { formatResumeAsHTML, type ResumeData } from '@/lib/resume-formatters'
+import { getTemplateById } from '@/lib/resume-templates-v2'
+import { parseResumeText } from '@/lib/resume-parser'
 
 const TEMPLATES = [
   { 
@@ -50,6 +51,13 @@ const TEMPLATES = [
     description: 'Leadership-focused with metrics emphasis',
     bestFor: ['C-Suite', 'Director', 'VP', 'Senior Management'],
     icon: '👔'
+  },
+  { 
+    id: 'cv', 
+    name: 'Curriculum Vitae', 
+    description: 'Academic format for research and scholarly positions',
+    bestFor: ['Academic', 'Research', 'PhD', 'Professor'],
+    icon: '🎓'
   },
 ]
 
@@ -324,116 +332,34 @@ export default function CareerFinderOptimizerPage() {
     }
   }
   
-  // CRITICAL FIX: Aggressively strip personal info from AI-generated resume body
-  const stripPersonalInfoFromBody = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }): string => {
-    if (!text) return ''
-    
-    let cleaned = text
-    
-    // AGGRESSIVE: Remove ALL occurrences of name (not just lines)
-    if (personalInfo.name) {
-      const nameRegex = new RegExp(personalInfo.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
-      cleaned = cleaned.replace(nameRegex, '')
-      
-      // Also remove individual name parts if they appear together
-      const nameParts = personalInfo.name.split(' ').filter(p => p.length > 2)
-      if (nameParts.length >= 2) {
-        const firstLast = `${nameParts[0]}.*${nameParts[nameParts.length - 1]}`
-        const namePartsRegex = new RegExp(firstLast, 'gi')
-        cleaned = cleaned.replace(namePartsRegex, '')
-      }
-    }
-    
-    // AGGRESSIVE: Remove ALL occurrences of phone
-    if (personalInfo.phone) {
-      // Remove with any formatting
-      const phoneDigits = personalInfo.phone.replace(/\D/g, '')
-      const phoneRegex = new RegExp(phoneDigits.split('').join('[\\s.-]*'), 'g')
-      cleaned = cleaned.replace(phoneRegex, '')
-      // Also remove the original format
-      const phoneEscaped = personalInfo.phone.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      cleaned = cleaned.replace(new RegExp(phoneEscaped, 'g'), '')
-    }
-    
-    // AGGRESSIVE: Remove ALL occurrences of email
-    if (personalInfo.email) {
-      const emailRegex = new RegExp(personalInfo.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
-      cleaned = cleaned.replace(emailRegex, '')
-    }
-    
-    // AGGRESSIVE: Remove ALL occurrences of location
-    if (personalInfo.location) {
-      const locationRegex = new RegExp(personalInfo.location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
-      cleaned = cleaned.replace(locationRegex, '')
-      
-      // Also try to remove just the city or province parts
-      const locationParts = personalInfo.location.split(',').map(p => p.trim())
-      locationParts.forEach(part => {
-        if (part.length > 2) {
-          const partRegex = new RegExp(part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
-          cleaned = cleaned.replace(partRegex, '')
-        }
-      })
-    }
-    
-    // Remove empty lines and lines with only punctuation/whitespace
-    const lines = cleaned.split('\n')
-    const filteredLines = lines.filter(line => {
-      const trimmed = line.trim()
-      if (!trimmed) return false
-      if (trimmed.match(/^[|\s-]+$/)) return false // Only pipes, spaces, dashes
-      return true
-    })
-    
-    // Remove duplicate empty lines
-    const finalLines: string[] = []
-    let lastWasEmpty = false
-    for (const line of filteredLines) {
-      const isEmpty = !line.trim()
-      if (isEmpty && lastWasEmpty) continue
-      finalLines.push(line)
-      lastWasEmpty = isEmpty
-    }
-    
-    return finalLines.join('\n').trim()
-  }
-  
-  // ENTERPRISE: Format resume using professional templates
+  // ENTERPRISE: Format resume using professional templates V2
   const formatResumeWithTemplate = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }, templateId: string): string => {
     if (!text) return '<div style="padding: 40px; text-align: center; color: #666;">No resume content available</div>'
     
-    // CRITICAL: Strip ALL personal info from body to prevent duplication
-    const cleanedBody = stripPersonalInfoFromBody(text, personalInfo)
+    // Parse plain text into structured data
+    const resumeData = parseResumeText(text, personalInfo)
     
-    const resumeData: ResumeData = {
-      personalInfo,
-      bodyText: cleanedBody
-    }
+    // Get template and generate HTML
+    const template = getTemplateById(templateId)
+    const htmlContent = template.generate(resumeData)
     
-    // Generate HTML using enterprise templates
-    let html = formatResumeAsHTML(resumeData, templateId)
-    
-    // CRITICAL: Ensure HTML is not double-escaped
-    html = html.replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/&amp;/g, '&')
-              .replace(/&quot;/g, '"')
-              .replace(/&#039;/g, "'")
-    
-    // CRITICAL: Ensure proper DOCTYPE and structure
-    if (!html.includes('<!DOCTYPE html>')) {
-      html = `<!DOCTYPE html>
+    // Wrap in full HTML document with template CSS
+    const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resume</title>
+  <title>Resume - ${resumeData.personalInfo.fullName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    ${template.css}
+  </style>
 </head>
 <body>
-${html}
+${htmlContent}
 </body>
 </html>`
-    }
     
     return html
   }
