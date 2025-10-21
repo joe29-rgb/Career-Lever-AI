@@ -47,7 +47,9 @@ interface EnhancedResearch {
 
 export default function CareerFinderOutreachPage() {
   const [loading, setLoading] = useState(true)
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [jobData, setJobData] = useState<any>(null)
   const [companyData, setCompanyData] = useState<EnhancedResearch | null>(null)
   const [selectedContact, setSelectedContact] = useState<HiringContact | null>(null)
@@ -257,15 +259,75 @@ ${name}`
     setTimeout(() => setCopiedField(null), 2000)
   }
 
-  const sendEmail = () => {
+  const sendEmail = async () => {
     if (!currentEmail) {
       console.error('[OUTREACH] No email address available')
+      setError('No email address available')
       return
     }
 
-    const mailtoLink = `mailto:${currentEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
-    console.log('[OUTREACH] Opening email client:', currentEmail)
-    window.location.href = mailtoLink
+    setSending(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      console.log('[OUTREACH] Sending email to:', currentEmail)
+
+      // Get resume and cover letter HTML from storage
+      const resumeHTML = localStorage.getItem('cf:selectedResumeHtml') || ''
+      const coverLetterHTML = localStorage.getItem('cf:selectedCoverLetterHtml') || ''
+
+      // Prepare contact object
+      const contact = {
+        name: selectedContact?.name || 'Hiring Manager',
+        email: currentEmail,
+        title: selectedContact?.title,
+        company: jobData?.company
+      }
+
+      // Send via API
+      const response = await fetch('/api/outreach/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact,
+          email: {
+            subject: emailSubject,
+            body: emailBody
+          },
+          resumeHTML,
+          coverLetterHTML,
+          send_immediately: true
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        // If email service not configured, fall back to mailto
+        if (result.mailto_fallback) {
+          console.log('[OUTREACH] Email service not configured, using mailto fallback')
+          window.location.href = result.mailto_fallback
+          setSuccess('Opening your email client...')
+        } else {
+          throw new Error(result.error || 'Failed to send email')
+        }
+      } else {
+        console.log('[OUTREACH] ✅ Email sent successfully:', result.message_id)
+        setSuccess(`Email sent successfully to ${currentEmail}!`)
+        
+        // Wait a moment then navigate to next step
+        setTimeout(() => {
+          handleCompleteApplication()
+        }, 2000)
+      }
+
+    } catch (error) {
+      console.error('[OUTREACH] Send error:', error)
+      setError(error instanceof Error ? error.message : 'Failed to send email')
+    } finally {
+      setSending(false)
+    }
   }
 
   if (loading) {
@@ -506,20 +568,41 @@ ${name}`
               </div>
             </div>
 
+            {/* Success/Error Messages */}
+            {success && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-700 text-sm font-medium">{success}</p>
+              </div>
+            )}
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm font-medium">{error}</p>
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="flex gap-4">
               <Button
                 onClick={sendEmail}
-                disabled={!currentEmail}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 min-h-[48px]"
+                disabled={!currentEmail || sending}
+                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 sm:py-4 rounded-lg flex items-center justify-center gap-2 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Mail className="w-5 h-5" />
-                Open in Email Client
+                {sending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Sending Email...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5" />
+                    Send Email Now
+                  </>
+                )}
               </Button>
             </div>
 
             <p className="text-xs text-gray-500 mt-4 text-center">
-              Note: This will open your default email client with the message pre-filled. Resume and cover letter will be automatically attached.
+              {sending ? 'Sending your email with resume and cover letter attachments...' : 'Click to send your email with resume and cover letter attached as PDFs.'}
             </p>
           </div>
 

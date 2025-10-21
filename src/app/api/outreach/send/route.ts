@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { EmailAutomationService } from '@/lib/email-automation'
+import { resendProvider } from '@/lib/email-providers/resend-provider'
+import { generateResumePDF, generateCoverLetterPDF } from '@/lib/server-pdf-generator'
 import { isRateLimited } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +13,7 @@ export const maxDuration = 60
 /**
  * PHASE 3C: Automated Email Sending API
  * 
- * Sends personalized emails to hiring contacts
+ * Sends personalized emails to hiring contacts with attachments
  * Rate limited, authenticated, tracks delivery
  * 
  * Requirements:
@@ -41,6 +43,8 @@ export async function POST(request: NextRequest) {
     const {
       contact,
       email,
+      resumeHTML,
+      coverLetterHTML,
       send_immediately = true,
       scheduled_time
     } = body
@@ -62,10 +66,48 @@ export async function POST(request: NextRequest) {
     
     console.log('[OUTREACH_SEND] Request from user:', session.user.id)
     console.log('[OUTREACH_SEND] Sending to:', contact.name, contact.email)
+    console.log('[OUTREACH_SEND] Has resume:', !!resumeHTML, 'Has cover letter:', !!coverLetterHTML)
     
     // Send immediately or schedule
     if (send_immediately) {
-      const result = await EmailAutomationService.sendEmailNow(contact, email)
+      // Generate PDF attachments if HTML provided
+      const attachments = []
+      
+      if (resumeHTML) {
+        try {
+          const resumePDF = await generateResumePDF(resumeHTML)
+          attachments.push({
+            filename: 'Resume.pdf',
+            content: resumePDF.toString('base64'),
+            contentType: 'application/pdf'
+          })
+          console.log('[OUTREACH_SEND] Resume PDF generated')
+        } catch (error) {
+          console.error('[OUTREACH_SEND] Resume PDF generation failed:', error)
+        }
+      }
+      
+      if (coverLetterHTML) {
+        try {
+          const coverPDF = await generateCoverLetterPDF(coverLetterHTML)
+          attachments.push({
+            filename: 'Cover-Letter.pdf',
+            content: coverPDF.toString('base64'),
+            contentType: 'application/pdf'
+          })
+          console.log('[OUTREACH_SEND] Cover letter PDF generated')
+        } catch (error) {
+          console.error('[OUTREACH_SEND] Cover letter PDF generation failed:', error)
+        }
+      }
+      
+      // Send email with attachments
+      const result = await resendProvider.send({
+        to: contact.email,
+        subject: email.subject,
+        body: email.body,
+        attachments: attachments.length > 0 ? attachments : undefined
+      })
       
       if (!result.success) {
         // Check if it's a configuration error
@@ -88,6 +130,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Email sent successfully',
         message_id: result.message_id,
+        attachments_sent: attachments.length,
         contact: {
           name: contact.name,
           email: contact.email
