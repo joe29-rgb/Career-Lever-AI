@@ -39,7 +39,8 @@ export class ResendProvider {
   
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.RESEND_API_KEY || ''
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@careerlever.ai'
+    // Use Resend's default test email until domain is verified
+    this.fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev'
     
     if (!this.apiKey) {
       console.warn('[RESEND] No API key found. Email sending will fail.')
