@@ -89,22 +89,36 @@ export function ModernJobCard({
   return (
     <div 
       className={cn(
-        "job-card relative w-full overflow-visible shadow-lg transition-all duration-[400ms]",
-        isLoading ? "scale-[1.02] ring-4 ring-blue-500 ring-opacity-50" : ""
+        "job-card relative w-full overflow-visible shadow-2xl transition-all duration-[400ms]",
+        isLoading ? "animate-pulse" : ""
       )}
       data-company={company}
       data-type={colorTheme}
       style={{
         borderRadius: '0 12px 24px 24px',
-        transitionTimingFunction: 'cubic-bezier(0.165, 0.84, 0.44, 1)'
+        transitionTimingFunction: 'cubic-bezier(0.165, 0.84, 0.44, 1)',
+        border: 'none' // NO BORDER - FILE FOLDER LOOK
       }}
     >
-      {/* Loading Overlay */}
+      {/* PULSING SKELETON LOADER - PROPER IMPLEMENTATION */}
       {isLoading && (
-        <div className="absolute inset-0 bg-blue-500/10 backdrop-blur-[2px] flex items-center justify-center z-50 rounded-[25px]">
-          <div className="bg-white/95 px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
-            <div className="w-5 h-5 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-blue-600 font-semibold text-sm">Loading insights...</span>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" style={{ borderRadius: '0 12px 24px 24px' }}>
+          <div className="flex flex-col items-center gap-4">
+            {/* Pulsing Spinner */}
+            <div className="relative">
+              <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+              <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-400 rounded-full animate-ping"></div>
+            </div>
+            {/* Pulsing Text */}
+            <div className="bg-purple-600/90 px-6 py-3 rounded-full shadow-xl animate-pulse">
+              <span className="text-white font-bold text-sm">Loading insights...</span>
+            </div>
+            {/* Skeleton Lines */}
+            <div className="w-48 space-y-2 animate-pulse">
+              <div className="h-2 bg-white/20 rounded"></div>
+              <div className="h-2 bg-white/15 rounded w-3/4"></div>
+              <div className="h-2 bg-white/10 rounded w-1/2"></div>
+            </div>
           </div>
         </div>
       )}

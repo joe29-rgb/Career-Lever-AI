@@ -16,13 +16,13 @@
 @layer base {
   /* DEFAULT: DARK THEME (Figma-inspired) */
   :root {
-    /* Dark Theme Base */
-    --background: 222 47% 11%; /* #111827 */
-    --foreground: 210 40% 98%; /* white text */
+    /* Dark Theme Base - BLACK BACKGROUND */
+    --background: 0 0% 0%; /* #000000 - PURE BLACK */
+    --foreground: 0 0% 100%; /* white text */
     
     /* Cards & Surfaces */
-    --card: 217 33% 17%; /* #1f2937 - slightly lighter */
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 12%; /* #1F1F1F - dark gray on black */
+    --card-foreground: 0 0% 100%;
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
     
@@ -39,8 +39,8 @@
     --accent-foreground: 222.2 84% 4.9%;
     
     /* Muted */
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 17%; /* #2B2B2B */
+    --muted-foreground: 0 0% 70%;
     
     /* Status Colors */
     --destructive: 349 100% 48%; /* #F5001E */
@@ -51,8 +51,8 @@
     --warning-foreground: 0 0% 100%;
     
     /* UI Elements */
-    --border: 217 33% 20%;
-    --input: 217 33% 20%;
+    --border: 0 0% 20%; /* Neutral gray borders */
+    --input: 0 0% 12%; /* Dark input backgrounds */
     --ring: 251 91% 56%;
     --radius: 0.75rem;
     

@@ -4,30 +4,36 @@ import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { ArrowRight } from 'lucide-react'
 
-// Company logos data for floating pills
+// Company logos data for floating pills - MORE RECOGNIZABLE COMPANIES
 const COMPANY_PILLS = [
-  { name: 'Airbnb', logo: '🏠', color: 'linear-gradient(135deg, #FF5A5F 0%, #FF385C 100%)', delay: 0 },
-  { name: 'Meta', logo: '📘', color: 'linear-gradient(135deg, #0075FF 0%, #0056CC 100%)', delay: 0.5 },
-  { name: 'Goldman', logo: '💼', color: '#1F1F1F', delay: 1, textColor: '#FFFFFF' },
-  { name: 'Apple', logo: '🍎', color: '#FFFFFF', delay: 1.5, textColor: '#000000' },
-  { name: 'PepsiCo', logo: '🥤', color: 'linear-gradient(135deg, #004B93 0%, #E32934 100%)', delay: 2 },
-  { name: 'Google', logo: '🔍', color: '#FFFFFF', delay: 2.5, textColor: '#000000' },
-  { name: 'Swiggy', logo: '🍔', color: 'linear-gradient(135deg, #FF6B35 0%, #FF5722 100%)', delay: 3 },
-  { name: 'LinkedIn', logo: '💼', color: 'linear-gradient(135deg, #0077B5 0%, #00A0DC 100%)', delay: 3.5 },
-  { name: 'Spotify', logo: '🎵', color: 'linear-gradient(135deg, #1DB954 0%, #1ED760 100%)', delay: 4 },
+  { name: 'Netflix', logo: '📺', color: '#E50914', delay: 0 },
+  { name: 'Amazon', logo: '📦', color: '#FF9900', delay: 0.5 },
+  { name: 'Spotify', logo: '🎵', color: '#1DB954', delay: 1 },
+  { name: 'LinkedIn', logo: '💼', color: '#0077B5', delay: 1.5 },
+  { name: 'Uber', logo: '🚗', color: '#000000', delay: 2 },
+  { name: 'Airbnb', logo: '🏠', color: '#FF5A5F', delay: 2.5 },
+  { name: 'Meta', logo: '📘', color: '#0075FF', delay: 3 },
+  { name: 'Google', logo: '🔍', color: '#FFFFFF', delay: 3.5, textColor: '#000000' },
+  { name: 'Apple', logo: '🍎', color: '#FFFFFF', delay: 4, textColor: '#000000' },
+  { name: 'Tesla', logo: '⚡', color: '#E82127', delay: 4.5 },
+  { name: 'Goldman', logo: '💰', color: '#1F1F1F', delay: 5, textColor: '#FFFFFF' },
+  { name: 'PepsiCo', logo: '🥤', color: 'linear-gradient(135deg, #004B93 0%, #E32934 100%)', delay: 5.5 },
 ]
 
-// Pill positions (scattered layout)
+// Pill positions (scattered layout) - MORE POSITIONS FOR MORE COMPANIES
 const PILL_POSITIONS = [
-  { top: '25%', left: '8%', rotation: -8 },
-  { top: '30%', right: '12%', rotation: 5 },
-  { top: '45%', left: '15%', rotation: -3 },
-  { bottom: '35%', left: '5%', rotation: 7 },
-  { top: '55%', right: '8%', rotation: -5 },
-  { bottom: '25%', left: '18%', rotation: 4 },
-  { bottom: '30%', right: '15%', rotation: -6 },
-  { top: '65%', left: '25%', rotation: 3 },
-  { bottom: '45%', right: '5%', rotation: -4 },
+  { top: '20%', left: '5%', rotation: -8 },
+  { top: '25%', right: '10%', rotation: 5 },
+  { top: '40%', left: '12%', rotation: -3 },
+  { bottom: '40%', left: '3%', rotation: 7 },
+  { top: '50%', right: '6%', rotation: -5 },
+  { bottom: '30%', left: '15%', rotation: 4 },
+  { bottom: '35%', right: '12%', rotation: -6 },
+  { top: '60%', left: '20%', rotation: 3 },
+  { bottom: '50%', right: '3%', rotation: -4 },
+  { top: '70%', right: '18%', rotation: 6 },
+  { bottom: '20%', left: '25%', rotation: -7 },
+  { top: '35%', right: '25%', rotation: 8 },
 ]
 
 export function HeroSectionV2() {
@@ -51,14 +57,14 @@ export function HeroSectionV2() {
 
   return (
     <section className="landing-page relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-6 py-12">
-      {/* Dark gradient mesh background */}
+      {/* BLACK background with subtle gradients */}
       <div 
         className="absolute inset-0 -z-10"
         style={{
           background: `
-            radial-gradient(circle at 20% 30%, rgba(84, 36, 253, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, rgba(245, 0, 30, 0.15) 0%, transparent 50%),
-            #2B2B2B
+            radial-gradient(circle at 20% 30%, rgba(84, 36, 253, 0.08) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(245, 0, 30, 0.08) 0%, transparent 50%),
+            #000000
           `
         }}
       />
@@ -91,11 +97,11 @@ export function HeroSectionV2() {
 
       {/* Hero Content */}
       <div className="landing-hero relative z-10 text-center max-w-2xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-4">
-          Land Your Dream Job{' '}
+        <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
+          Find Your Dream Job{' '}
           <span className="inline-block animate-bounce-slow">🚀</span>
         </h1>
-        <p className="text-lg text-white/70 mb-8 leading-relaxed">
+        <p className="text-xl font-bold text-white mb-8 leading-relaxed">
           AI-powered resume optimization, company research, and application tracking—all in one platform designed for modern job seekers.
         </p>
 
@@ -104,14 +110,14 @@ export function HeroSectionV2() {
           onClick={handleGetStarted}
           className="landing-cta group inline-flex items-center gap-3 px-12 py-4 bg-gradient-to-r from-[#5424FD] to-[#4318E8] text-white font-bold text-lg rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 relative overflow-hidden"
         >
-          <span className="relative z-10">Get Started Free</span>
+          <span className="relative z-10">Find Your Dream Job</span>
           <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
           
           {/* Shine effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
         </button>
 
-        <p className="mt-6 text-sm text-white/50">
+        <p className="mt-6 text-sm font-semibold text-white/70">
           Join 10,000+ job seekers who landed their dream roles
         </p>
       </div>
@@ -119,7 +125,7 @@ export function HeroSectionV2() {
       {/* SSO Options */}
       <div className="relative z-10 mt-12 max-w-md w-full">
         <div className="text-center mb-4">
-          <p className="text-xs text-white/40 uppercase tracking-wider">Or continue with</p>
+          <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Or continue with</p>
         </div>
         <div className="flex items-center justify-center gap-4">
           <button
