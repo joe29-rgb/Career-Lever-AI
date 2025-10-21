@@ -760,6 +760,20 @@ function escapeHtml(text: string): string {
 }
 
 /**
+ * Ensure HTML is not double-escaped
+ */
+export function unescapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#039;': "'"
+  }
+  return text.replace(/&(?:amp|lt|gt|quot|#039);/g, m => map[m] || m)
+}
+
+/**
  * Main dispatcher function
  */
 export function formatResumeAsHTML(

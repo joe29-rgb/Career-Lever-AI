@@ -1830,7 +1830,9 @@ Generate TWO resume variants:
 
 CRITICAL FORMATTING REQUIREMENTS:
 - Use proper line breaks (\\n\\n for sections, \\n for lines)
-- Include contact info on separate lines
+- DO NOT include name, email, phone, or address in the resume body
+- Personal contact info will be added separately by the template
+- Start directly with PROFESSIONAL SUMMARY or first section
 - Use clear section headers (PROFESSIONAL SUMMARY, EXPERIENCE, EDUCATION, SKILLS)
 - Format each job entry with: Title\\nCompany | Location | Dates\\n• Achievement 1\\n• Achievement 2
 - Keep bullet points aligned with • symbol
@@ -1839,6 +1841,14 @@ CRITICAL FORMATTING REQUIREMENTS:
 - Plain text only with line breaks
 - INCLUDE ALL job history from original resume
 
+CRITICAL - PERSONAL INFO:
+- DO NOT include the person's name anywhere in the resume body
+- DO NOT include email address in the resume body
+- DO NOT include phone number in the resume body
+- DO NOT include physical address in the resume body
+- These will be added by the template header automatically
+- Start the resume body with the PROFESSIONAL SUMMARY section
+
 For each variant, rewrite the resume to:
 - Match keywords from job requirements
 - Align with company culture and values
@@ -1846,13 +1856,14 @@ For each variant, rewrite the resume to:
 - Optimize for ATS (Applicant Tracking Systems)
 - Keep formatting clean and professional
 - Apply ${params.template} template style throughout
+- NEVER duplicate personal contact information
 
 Also provide 3-5 strategic recommendations for improving the resume.
 
 Return ONLY valid JSON:
 {
-  "variantA": "Full resume text with proper \\n line breaks...",
-  "variantB": "Full resume text with proper \\n line breaks...",
+  "variantA": "Full resume text WITHOUT personal info (starts with PROFESSIONAL SUMMARY)...",
+  "variantB": "Full resume text WITHOUT personal info (starts with PROFESSIONAL SUMMARY)...",
   "recommendations": ["Recommendation 1", "Recommendation 2", ...]
 }`
 

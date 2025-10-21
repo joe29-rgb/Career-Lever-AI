@@ -399,7 +399,7 @@ export default function CareerFinderOptimizerPage() {
   
   // ENTERPRISE: Format resume using professional templates
   const formatResumeWithTemplate = (text: string, personalInfo: { name?: string; email?: string; phone?: string; location?: string }, templateId: string): string => {
-    if (!text) return ''
+    if (!text) return '<div style="padding: 40px; text-align: center; color: #666;">No resume content available</div>'
     
     // CRITICAL: Strip ALL personal info from body to prevent duplication
     const cleanedBody = stripPersonalInfoFromBody(text, personalInfo)
@@ -409,69 +409,61 @@ export default function CareerFinderOptimizerPage() {
       bodyText: cleanedBody
     }
     
-    return formatResumeAsHTML(resumeData, templateId)
+    // Generate HTML using enterprise templates
+    let html = formatResumeAsHTML(resumeData, templateId)
+    
+    // CRITICAL: Ensure HTML is not double-escaped
+    html = html.replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&amp;/g, '&')
+              .replace(/&quot;/g, '"')
+              .replace(/&#039;/g, "'")
+    
+    // CRITICAL: Ensure proper DOCTYPE and structure
+    if (!html.includes('<!DOCTYPE html>')) {
+      html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume</title>
+</head>
+<body>
+${html}
+</body>
+</html>`
+    }
+    
+    return html
   }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8 max-w-7xl">
       <CareerFinderBackButton />
       
-      {/* Personal Info Header with ATS Score - Dribbble Inspired */}
-      {resumeText && (
-        <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-blue-950/30 dark:via-purple-950/30 dark:to-pink-950/30 border border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-6 sm:p-8 mb-6 shadow-xl backdrop-blur-sm">
-          {/* Decorative gradient orbs */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl -z-10"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-pink-400/20 to-purple-400/20 rounded-full blur-3xl -z-10"></div>
-          
-          <div className="flex items-start justify-between relative z-10">
-            <div className="flex-1">
-              <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">{personalInfo.name || 'Resume Optimizer'}</h1>
-              <div className="flex flex-wrap gap-4 text-muted-foreground">
-                {personalInfo.email && (
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-sm">{personalInfo.email}</span>
-                  </div>
-                )}
-                {personalInfo.phone && (
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
-                    <span className="text-sm">{personalInfo.phone}</span>
-                  </div>
-                )}
-                {personalInfo.location && (
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span className="text-sm">{personalInfo.location}</span>
-                  </div>
-                )}
+      {/* ATS Score Display - No Personal Info Duplication */}
+      {atsScore !== null && (
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 border border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-6 mb-6 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Resume Optimization</h2>
+              <p className="text-sm text-muted-foreground">Choose your preferred variant below</p>
+            </div>
+            <div className="text-center">
+              <div className="relative inline-block">
+                <svg className="w-28 h-28 transform -rotate-90">
+                  <circle cx="56" cy="56" r="52" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200 dark:text-gray-700" />
+                  <circle cx="56" cy="56" r="52" stroke="currentColor" strokeWidth="8" fill="none" strokeDasharray={`${2 * Math.PI * 52}`} strokeDashoffset={`${2 * Math.PI * 52 * (1 - atsScore / 100)}`} className={`transition-all duration-1000 ${atsScore >= 80 ? 'text-green-500' : atsScore >= 60 ? 'text-yellow-500' : 'text-red-500'}`} strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">{atsScore}%</div>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground mt-2 font-medium">ATS Score</div>
+              <div className={`text-xs font-bold mt-1 px-3 py-1 rounded-full inline-block ${atsScore >= 80 ? 'bg-green-100 text-green-700' : atsScore >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>
+                {atsScore >= 80 ? '✓ Optimized' : atsScore >= 60 ? '⚠ Fair' : '✗ Low'}
               </div>
             </div>
-            {atsScore !== null && (
-              <div className="text-right">
-                <div className="relative inline-block">
-                  {/* Circular progress ring */}
-                  <svg className="w-28 h-28 transform -rotate-90">
-                    <circle cx="56" cy="56" r="52" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-200 dark:text-gray-700" />
-                    <circle cx="56" cy="56" r="52" stroke="currentColor" strokeWidth="8" fill="none" strokeDasharray={`${2 * Math.PI * 52}`} strokeDashoffset={`${2 * Math.PI * 52 * (1 - atsScore / 100)}`} className={`transition-all duration-1000 ${atsScore >= 80 ? 'text-green-500' : atsScore >= 60 ? 'text-yellow-500' : 'text-red-500'}`} strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold bg-gradient-to-br from-blue-600 to-purple-600 bg-clip-text text-transparent">{atsScore}%</div>
-                  </div>
-                </div>
-                <div className="text-xs text-muted-foreground mt-2 font-medium">ATS Score</div>
-                <div className={`text-xs font-bold mt-1 px-3 py-1 rounded-full inline-block ${atsScore >= 80 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : atsScore >= 60 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                  {atsScore >= 80 ? '✓ Optimized' : atsScore >= 60 ? '⚠ Fair' : '✗ Low'}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -576,7 +568,12 @@ export default function CareerFinderOptimizerPage() {
                 <ResumeSkeleton />
               </div>
             ) : (
-              <iframe className="w-full h-96 border-0" srcDoc={variantA || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+              <iframe 
+                className="w-full h-96 border-0" 
+                srcDoc={variantA || '<div style="padding: 24px; text-align: center; color: #666;">Generating variant...</div>'}
+                sandbox="allow-same-origin"
+                title="Resume Variant A"
+              />
             )}
           </div>
         </div>
@@ -603,7 +600,12 @@ export default function CareerFinderOptimizerPage() {
                 <ResumeSkeleton />
               </div>
             ) : (
-              <iframe className="w-full h-96 border-0" srcDoc={variantB || '<div class="p-6 text-center text-muted-foreground">Generating variant...</div>'} />
+              <iframe 
+                className="w-full h-96 border-0" 
+                srcDoc={variantB || '<div style="padding: 24px; text-align: center; color: #666;">Generating variant...</div>'}
+                sandbox="allow-same-origin"
+                title="Resume Variant B"
+              />
             )}
           </div>
         </div>
