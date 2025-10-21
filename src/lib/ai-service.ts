@@ -186,33 +186,6 @@ Please respond with a JSON object containing:
 
 Focus on technical skills, experience requirements, and cultural indicators.`,
 
-  COVER_LETTER_GENERATION: `Create a professional cover letter using the following information. Address it to a real hiring contact if provided (use their name), otherwise use "Hiring Manager":
-
-Job Details:
-- Position: {jobTitle}
-- Company: {companyName}
-- Job Description: {jobDescription}
- - Candidate: {candidateName} — {candidateEmail} — {candidatePhone}
- - Hiring Contact: {hiringContact}
-
-Candidate Background:
-{resumeText}
-
-{companyData}
-
-Requirements:
-- Tone: {tone} (professional, casual, enthusiastic) with varied sentence lengths and natural voice
-- Length: {length} (short: 200-300 words, medium: 300-400 words, long: 400-500 words)
-- Include specific company insights and demonstrate genuine interest (from Company Data if provided)
-- Highlight 2-3 quantified achievements that match the job requirements
-- Avoid generic AI phrasing; keep it human, specific, and concise
-
-Structure the cover letter professionally with:
-1. Strong opening paragraph introducing yourself and the position
-2. Body paragraphs highlighting relevant experience and achievements
-3. Closing paragraph expressing enthusiasm and call to action
-
-Use the candidate's actual experience and achievements from their resume.`,
 
   COMPANY_INSIGHTS: `Based on this company research data, generate personalized insights for a job application:
 
@@ -940,6 +913,8 @@ RESUME:\n${resumeText}`;
     }
   }
 
+  // DEPRECATED: Use /api/cover-letter/generate with templates instead
+  // Kept for backward compatibility with assistant tool calls
   static async generateCoverLetter(
     jobTitle: string,
     companyName: string,
@@ -949,134 +924,31 @@ RESUME:\n${resumeText}`;
     tone: 'professional' | 'casual' | 'enthusiastic' = 'professional',
     length: 'short' | 'medium' | 'long' = 'medium'
   ): Promise<CoverLetterResult> {
-    if (DEMO_MODE) {
-      const coverLetter = `Dear Hiring Manager,\n\nI am excited to apply for the ${jobTitle} role at ${companyName}. I bring relevant achievements and alignment to your needs...\n\nSincerely,\nCandidate`;
-      return { coverLetter, keyPoints: ['Strong intro', 'Aligned achievements', 'Clear CTA'], wordCount: coverLetter.split(/\s+/).length };
+    // Redirect to main API route which uses templates
+    const response = await fetch('/api/cover-letter/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        raw: true,
+        jobTitle,
+        companyName,
+        jobDescription,
+        resumeText,
+        save: false,
+        tone,
+        length
+      })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to generate cover letter')
     }
-    // Perplexity-only: skip assistant path
-    try {
-      const cacheKey = makeKey('cover-letter', JSON.stringify({ jobTitle, companyName, jobDescription, resumeText, tone, length }))
-      const cached = getCache(cacheKey)
-      if (cached) return cached as CoverLetterResult
-      const rcached = await getCacheFromRedis(cacheKey)
-      if (rcached) return rcached as CoverLetterResult
-      let companyInfo = '';
-      if (companyData) {
-        const lines: string[] = []
-        if (companyData.industry) lines.push(`- Industry: ${companyData.industry}`)
-        if (companyData.size) lines.push(`- Size: ${companyData.size}`)
-        if (companyData.description) lines.push(`- Description: ${companyData.description}`)
-        if (Array.isArray(companyData.culture) && companyData.culture.length) lines.push(`- Culture: ${companyData.culture.join(', ')}`)
-        if (Array.isArray(companyData.recentNews) && companyData.recentNews.length) lines.push(`- Recent News: ${companyData.recentNews.map((n: any)=> n.title).join(', ')}`)
-        if (lines.length) companyInfo = `\nCompany Research:\n${lines.join('\n')}`
-      }
-      const candidateName = (companyData && companyData.candidateName) ? `\nCandidate: ${companyData.candidateName} — ${companyData.candidateEmail || ''} ${companyData.candidatePhone ? ' — '+companyData.candidatePhone : ''}` : ''
-      const hiringContact = (companyData && companyData.hiringContact) ? `\nHiring Contact: ${companyData.hiringContact}` : ''
-
-      const prompt = AI_PROMPTS.COVER_LETTER_GENERATION
-        .replace('{jobTitle}', jobTitle)
-        .replace('{companyName}', companyName)
-        .replace('{jobDescription}', jobDescription)
-        .replace('{resumeText}', resumeText)
-        .replace('{companyData}', companyInfo + candidateName + hiringContact)
-        .replace('{tone}', tone)
-        .replace('{length}', length);
-
-      const completion: any = await chatCreate({
-        model: DEFAULT_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a professional career counselor and expert cover letter writer. Create compelling, personalized cover letters that demonstrate genuine interest and highlight relevant qualifications.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.4,
-        max_tokens: 1200,
-      });
-
-      let coverLetter = completion.choices[0]?.message?.content?.trim();
-      logAIUsage('cover-letter', undefined, completion)
-      if (!coverLetter) {
-        throw new Error('Failed to generate cover letter from OpenAI');
-      }
-      coverLetter = this.tidyWhitespace(this.stripMarkdown(coverLetter))
-
-      // Extract key points
-      const keyPoints = await this.extractKeyPointsFromCoverLetter(coverLetter);
-      const wordCount = coverLetter.split(/\s+/).length;
-
-      // Minimal HTML wrapping moved to caller; return raw text only
-      const result = { coverLetter, keyPoints, wordCount };
-      setCache(cacheKey, result)
-      return result
-    } catch (error) {
-      console.error('Cover letter generation error:', error);
-      throw new Error('Failed to generate cover letter');
-    }
-  }
-
-  private static async generateCoverLetterWithAssistant(
-    jobTitle: string,
-    companyName: string,
-    jobDescription: string,
-    resumeText: string,
-    companyData?: any,
-    tone: 'professional' | 'casual' | 'enthusiastic' = 'professional',
-    length: 'short' | 'medium' | 'long' = 'medium'
-  ): Promise<CoverLetterResult> {
-    if (!ASSISTANT_COVER_LETTER_ID) {
-      return this.generateCoverLetter(jobTitle, companyName, jobDescription, resumeText, companyData, tone, length);
-    }
-
-    const companyInfo = companyData ? JSON.stringify(companyData, null, 2) : '';
-    const userContent = `TASK: Generate a tailored cover letter.\n\nJob Title: ${jobTitle}\nCompany: ${companyName}\nTone: ${tone}\nLength: ${length}\n\nJOB DESCRIPTION:\n${jobDescription}\n\nRESUME:\n${resumeText}\n\nCOMPANY DATA:\n${companyInfo}`;
-
-    // Create a thread and add the request
-    const thread = await openai.beta.threads.create({});
-    await openai.beta.threads.messages.create(thread.id, {
-      role: 'user',
-      content: userContent,
-    });
-
-    // Start run
-    let run: any = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: ASSISTANT_COVER_LETTER_ID as string,
-    });
-
-    // Poll for tool calls or completion
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      if (run.status === 'requires_action' && run.required_action?.submit_tool_outputs?.tool_calls?.length) {
-        const tool_outputs = await this.handleAssistantToolCalls(thread.id, run, { jobTitle, companyName, jobDescription, resumeText, tone, length, companyData: companyInfo })
-        run = await openai.beta.threads.runs.submitToolOutputs(thread.id, run.id, { tool_outputs })
-        continue;
-      }
-
-      if (run.status === 'completed') {
-        const messages = await openai.beta.threads.messages.list(thread.id);
-        const last = messages.data.find((m: any) => m.role === 'assistant');
-        const content = last?.content?.[0];
-        const text = (content && 'text' in content) ? content.text.value : undefined;
-        const coverLetterText = text && text.trim().length > 0 ? text.trim() : '';
-        const keyPoints = await this.extractKeyPointsFromCoverLetter(coverLetterText);
-        const wordCount = coverLetterText ? coverLetterText.split(/\s+/).length : 0;
-        return {
-          coverLetter: coverLetterText,
-          keyPoints,
-          wordCount,
-        };
-      }
-
-      if (run.status === 'failed' || run.status === 'cancelled' || run.status === 'expired') {
-        return this.generateCoverLetter(jobTitle, companyName, jobDescription, resumeText, companyData, tone, length);
-      }
-
-      await new Promise((r) => setTimeout(r, 600));
-      run = await openai.beta.threads.runs.retrieve(thread.id, run.id);
+    
+    const result = await response.json()
+    return {
+      coverLetter: result.coverLetter || '',
+      keyPoints: result.keyPoints || [],
+      wordCount: result.wordCount || 0
     }
   }
 

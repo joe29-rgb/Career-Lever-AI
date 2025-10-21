@@ -60,40 +60,56 @@ export default function CareerFinderCoverLetterPage() {
           userName = toTitleCase(rawName)
         } catch {}
         
-        // Call new autopilot endpoint
-        const response = await fetch('/api/cover-letter/generate-v2', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobTitle,
-            company,
-            resumeText,
-            jobRequirements: [],
-            companyInsights: {
-              culture: '',
-              values: [],
-              recentNews: []
-            },
-            userName
+        // Generate TWO variants using main API with templates
+        const [responseA, responseB] = await Promise.all([
+          fetch('/api/cover-letter/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              raw: true,
+              jobTitle,
+              companyName: company,
+              jobDescription: '',
+              resumeText,
+              save: false,
+              templateId: 'professional' // Variant A: Professional
+            })
+          }),
+          fetch('/api/cover-letter/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              raw: true,
+              jobTitle,
+              companyName: company,
+              jobDescription: '',
+              resumeText,
+              save: false,
+              templateId: 'modern' // Variant B: Modern
+            })
           })
-        })
+        ])
         
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
+        if (!responseA.ok || !responseB.ok) {
+          throw new Error(`API error: ${responseA.status} / ${responseB.status}`)
         }
         
-        const result = await response.json()
+        const [resultA, resultB] = await Promise.all([
+          responseA.json(),
+          responseB.json()
+        ])
         
-        if (result.success && result.data) {
-          const { variantA, variantB } = result.data
-          setLetterA(variantA || '')
-          setLetterB(variantB || '')
+        if (resultA.success && resultB.success) {
+          const variantA = resultA.coverLetter || ''
+          const variantB = resultB.coverLetter || ''
+          setLetterA(variantA)
+          setLetterB(variantB)
           
           // Cache the result
-          localStorage.setItem(cacheKey, JSON.stringify(result.data))
+          localStorage.setItem(cacheKey, JSON.stringify({ variantA, variantB }))
           console.log('[COVER_LETTER] ✅ Cover letters generated and cached')
         } else {
-          throw new Error(result.error || 'Failed to generate cover letters')
+          throw new Error(resultA.error || resultB.error || 'Failed to generate cover letters')
         }
       } catch (err) {
         console.error('[COVER_LETTER] Error:', err)
