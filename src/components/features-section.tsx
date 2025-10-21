@@ -74,15 +74,15 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24 bg-[#2B2B2B]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* BEFORE/AFTER METRICS - NEW! */}
         <div className="mx-auto max-w-4xl mb-20">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-2">
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-2">
               Real Results from Real Job Seekers
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-white/70">
               See the dramatic difference Career Lever AI makes
             </p>
           </div>

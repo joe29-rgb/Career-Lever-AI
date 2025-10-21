@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic'
-import { HeroSection } from '@/components/hero-section'
+import { HeroSectionV2 } from '@/components/hero-section-v2'
 import { FeaturesSection } from '@/components/features-section'
 import { StatsSection } from '@/components/stats-section'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      <HeroSection />
+    <div className="min-h-screen bg-[#2B2B2B]">
+      <HeroSectionV2 />
       <FeaturesSection />
       <StatsSection />
     </div>
