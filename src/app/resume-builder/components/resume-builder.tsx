@@ -532,31 +532,8 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
   // Render formatted preview using templates
   const buildFormattedHtml = () => {
     const templateObj = getTemplateById(selectedTemplate)
-    const content = {
-      personalInfo: {
-        fullName: resumeData.personalInfo.fullName,
-        email: resumeData.personalInfo.email,
-        phone: resumeData.personalInfo.phone,
-        location: resumeData.personalInfo.location,
-        linkedin: resumeData.personalInfo.linkedin,
-        summary: resumeData.personalInfo.summary
-      },
-      coreCompetencies: resumeData.skills.technical?.slice(0, 10) || [],
-      experience: resumeData.experience.map(e => ({ 
-        title: e.position, 
-        company: e.company, 
-        location: e.location, 
-        startDate: e.startDate, 
-        endDate: e.current ? 'Present' : e.endDate, 
-        responsibilities: [e.description] 
-      })),
-      skills: [...(resumeData.skills.technical || []), ...(resumeData.skills.soft || [])],
-      education: resumeData.education.map(e => `${e.degree}, ${e.institution} (${e.graduationDate})`),
-      achievements: []
-    }
-    
-    // Use the new template system
-    return templateObj.generate(content)
+    // Pass the resumeData directly - it already matches the ResumeData interface
+    return templateObj.generate(resumeData)
   }
 
   return (
