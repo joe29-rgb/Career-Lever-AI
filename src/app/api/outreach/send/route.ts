@@ -106,18 +106,19 @@ export async function POST(request: NextRequest) {
       }
       
       // Send email with attachments
-      // CRITICAL FIX: Use user's email as FROM address (falls back to default if not available)
+      // CRITICAL FIX: Always use Resend's default email since user domains aren't verified
+      // Set user's email as replyTo so responses go to them
       const userEmail = session.user.email || undefined
-      const fromEmail = userEmail || process.env.EMAIL_FROM || 'onboarding@resend.dev'
+      const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev'
       
       console.log('[OUTREACH_SEND] User email:', userEmail)
       console.log('[OUTREACH_SEND] From email:', fromEmail)
-      console.log('[OUTREACH_SEND] EMAIL_FROM env:', process.env.EMAIL_FROM)
+      console.log('[OUTREACH_SEND] Reply-To:', userEmail)
       
       const result = await resendProvider.send({
         to: contact.email,
-        from: fromEmail,
-        replyTo: userEmail, // User's email for replies
+        from: fromEmail, // Use verified Resend email
+        replyTo: userEmail, // Replies go to user
         subject: email.subject,
         body: email.body,
         attachments: attachments.length > 0 ? attachments : undefined

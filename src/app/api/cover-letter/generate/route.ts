@@ -178,12 +178,21 @@ export async function POST(request: NextRequest) {
     if (!jobApplicationId && !resumeId && raw === true) {
       const parsed = coverLetterRawSchema.safeParse(body);
       if (!parsed.success) {
+        console.error('[COVER_LETTER] Validation failed:', parsed.error.issues)
         return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
       }
-      const { jobTitle, companyName, jobDescription, resumeText } = parsed.data as any;
-      if (!jobTitle || !companyName || !jobDescription || !resumeText) {
+      let { jobTitle, companyName, jobDescription, resumeText } = parsed.data as any;
+      
+      // Allow empty jobDescription - use generic text
+      if (!jobDescription || jobDescription.trim() === '') {
+        jobDescription = `Position at ${companyName} for ${jobTitle} role.`
+        console.log('[COVER_LETTER] No job description provided, using generic text')
+      }
+      
+      if (!jobTitle || !companyName || !resumeText) {
+        console.error('[COVER_LETTER] Missing required fields:', { jobTitle: !!jobTitle, companyName: !!companyName, resumeText: !!resumeText })
         return NextResponse.json(
-          { error: 'Missing required fields: jobTitle, companyName, jobDescription, resumeText' },
+          { error: 'Missing required fields: jobTitle, companyName, resumeText' },
           { status: 400 }
         );
       }
