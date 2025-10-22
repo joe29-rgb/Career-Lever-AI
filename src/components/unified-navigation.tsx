@@ -13,7 +13,6 @@ import {
   Home, 
   FileText, 
   Briefcase, 
-  TrendingUp, 
   Settings,
   User,
   LogOut,
@@ -21,7 +20,9 @@ import {
   Users,
   ChevronDown,
   Bell,
-  MessageSquare
+  Mail,
+  BarChart3,
+  Target
 } from 'lucide-react'
 
 interface NavigationItem {
@@ -32,7 +33,7 @@ interface NavigationItem {
   submenu?: { name: string; href: string; badge?: number }[]
 }
 
-// Dribbble-Quality Navigation Structure
+// Enhanced Navigation Structure with Better Organization
 const navigationItems: NavigationItem[] = [
   { 
     name: 'Dashboard', 
@@ -42,22 +43,31 @@ const navigationItems: NavigationItem[] = [
   },
   {
     name: 'Career Finder',
-    icon: Search,
+    icon: Target,
     submenu: [
       { name: 'Job Search', href: '/career-finder/search' },
-      { name: 'Resume Analysis', href: '/career-finder/resume' },
-      { name: 'Cover Letter', href: '/cover-letter' }
+      { name: 'Job Analysis', href: '/career-finder/job-analysis' },
+      { name: 'Company Research', href: '/career-finder/company' },
+      { name: 'Resume Optimizer', href: '/career-finder/optimizer' },
+      { name: 'Cover Letter', href: '/career-finder/cover-letter' },
+      { name: 'Outreach', href: '/career-finder/outreach' }
     ]
   },
   { 
-    name: 'Resume Builder', 
+    name: 'Resume', 
     href: '/resume-builder', 
     icon: FileText 
   },
   { 
+    name: 'Applications', 
+    href: '/applications', 
+    icon: Briefcase,
+    badge: 0
+  },
+  { 
     name: 'Analytics', 
     href: '/analytics', 
-    icon: TrendingUp 
+    icon: BarChart3 
   },
   { 
     name: 'Network', 
@@ -223,15 +233,32 @@ export function UnifiedNavigation() {
 
           {/* RIGHT SIDE ACTIONS - Always visible */}
           <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-            {/* NOTIFICATIONS ICON - More visible */}
+            {/* QUICK ACTIONS - Search, Notifications & Messages */}
             {session && (
-              <Link 
-                href="/notifications"
-                className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg"></span>
-              </Link>
+              <>
+                <Link 
+                  href="/career-finder/search"
+                  className="hidden lg:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+                  title="Quick Search"
+                >
+                  <Search className="w-5 h-5" />
+                </Link>
+                <Link 
+                  href="/notifications"
+                  className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+                  title="Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg"></span>
+                </Link>
+                <Link 
+                  href="/messages"
+                  className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+                  title="Messages"
+                >
+                  <Mail className="w-5 h-5" />
+                </Link>
+              </>
             )}
 
             {/* THEME TOGGLE - Visible on tablet+ */}
@@ -311,9 +338,36 @@ export function UnifiedNavigation() {
           </div>
         </div>
 
-        {/* MOBILE NAVIGATION PANEL - Enhanced visibility */}
+        {/* MOBILE NAVIGATION PANEL - Enhanced visibility with sections */}
         {session && mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-1 border-t border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl">
+          <div className="md:hidden py-4 space-y-3 border-t border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl max-h-[calc(100vh-80px)] overflow-y-auto">
+            {/* QUICK ACTIONS SECTION */}
+            <div className="px-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Quick Actions</p>
+              <Link
+                href="/career-finder/search"
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-accent/50 transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Search className="w-5 h-5" />
+                <span>Job Search</span>
+              </Link>
+              <Link
+                href="/notifications"
+                className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-accent/50 transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center space-x-3">
+                  <Bell className="w-5 h-5" />
+                  <span>Notifications</span>
+                </div>
+                <span className="w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
+              </Link>
+            </div>
+
+            {/* MAIN NAVIGATION SECTION */}
+            <div className="px-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Navigation</p>
             {navigationItems.map((item) => {
               const Icon = item.icon
               const isActive = isItemActive(item)
@@ -389,9 +443,10 @@ export function UnifiedNavigation() {
                 </div>
               )
             })}
+            </div>
             
             {/* MOBILE FOOTER ACTIONS */}
-            <div className="pt-4 mt-4 border-t border-border/50 space-y-1">
+            <div className="px-4 pt-4 mt-4 border-t border-border/50 space-y-1">
               <ThemeToggle />
               <Link
                 href="/settings"
