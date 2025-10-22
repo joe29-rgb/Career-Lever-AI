@@ -110,6 +110,10 @@ export async function POST(request: NextRequest) {
       const userEmail = session.user.email || undefined
       const fromEmail = userEmail || process.env.EMAIL_FROM || 'onboarding@resend.dev'
       
+      console.log('[OUTREACH_SEND] User email:', userEmail)
+      console.log('[OUTREACH_SEND] From email:', fromEmail)
+      console.log('[OUTREACH_SEND] EMAIL_FROM env:', process.env.EMAIL_FROM)
+      
       const result = await resendProvider.send({
         to: contact.email,
         from: fromEmail,
