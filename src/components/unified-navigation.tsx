@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useNotifications } from '@/hooks/use-notifications'
 import { 
   Menu, 
   X, 
@@ -93,6 +94,7 @@ export function UnifiedNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
+  const { count: notificationCount } = useNotifications()
   
   // Don't show navigation on auth or landing pages
   const isAuthPage = pathname?.startsWith('/auth')
@@ -266,7 +268,11 @@ export function UnifiedNavigation() {
                   title="Notifications"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg"></span>
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-lg">
+                      {notificationCount > 9 ? '9+' : notificationCount}
+                    </span>
+                  )}
                 </Link>
                 <Link 
                   href="/messages"
