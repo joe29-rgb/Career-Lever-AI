@@ -148,12 +148,12 @@ export function UnifiedNavigation() {
 
   return (
     <header 
-      className={`sticky top-0 z-navigation transition-all duration-300 ${
+      className={`sticky top-0 transition-all duration-300 ${
         scrolled 
           ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-xl' 
           : 'bg-background/90 backdrop-blur-lg border-b border-border/50 shadow-md'
       }`}
-      style={{ minHeight: '64px' }}
+      style={{ minHeight: '64px', zIndex: 9999, position: 'sticky' }}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
