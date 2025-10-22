@@ -26,7 +26,7 @@
     {
       "name": "process-followups",
       "schedule": "0 9,14,17 * * *",
-      "command": "curl -X POST https://career-lever-ai.railway.app/api/cron/process-followups"
+      "command": "curl -X POST https://careerleverai.com/api/cron/process-followups"
     }
   ]
 }
