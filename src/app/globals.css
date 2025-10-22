@@ -220,11 +220,11 @@
    =================================================================== */
 
 @layer utilities {
-  /* Navigation & UI Layers */
+  /* Navigation & UI Layers - Ensure navigation is always visible */
   .z-skip-link { z-index: 9999; }
   .z-theme-toggle { z-index: 200; }
-  .z-navigation { z-index: 100; }
-  .z-dropdown { z-index: 150; }
+  .z-navigation { z-index: 1000 !important; } /* Increased for visibility */
+  .z-dropdown { z-index: 1050; }
   .z-sidebar { z-index: 90; }
   
   /* Modal & Overlay Layers */

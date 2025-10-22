@@ -121,28 +121,29 @@ export function UnifiedNavigation() {
     <header 
       className={`sticky top-0 z-navigation transition-all duration-300 ${
         scrolled 
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-lg' 
-          : 'bg-background/60 backdrop-blur-md border-b border-border/30'
+          ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-xl' 
+          : 'bg-background/90 backdrop-blur-lg border-b border-border/50 shadow-md'
       }`}
+      style={{ minHeight: '64px' }}
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* LOGO WITH GRADIENT - Fixed wrapping */}
+          {/* LOGO WITH GRADIENT - Always visible */}
           <Link 
             href={session ? '/dashboard' : '/'} 
-            className="flex items-center gap-3 group shrink-0"
+            className="flex items-center gap-2 sm:gap-3 group shrink-0 z-10"
           >
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 shrink-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 shrink-0">
               CL
             </div>
-            <span className="gradient-text font-bold text-xl hidden sm:inline-block whitespace-nowrap">
+            <span className="gradient-text font-bold text-lg sm:text-xl hidden xs:inline-block whitespace-nowrap">
               Career Lever AI
             </span>
           </Link>
 
-          {/* DESKTOP NAVIGATION WITH DRIBBBLE STYLE */}
+          {/* DESKTOP NAVIGATION - Always visible on desktop */}
           {session && (
-            <nav className="hidden md:flex items-center space-x-1">
+            <nav className="hidden md:flex items-center space-x-1 flex-1 justify-center max-w-3xl mx-auto">
               {navigationItems.map((item) => {
                 const Icon = item.icon
                 const isActive = isItemActive(item)
@@ -220,18 +221,21 @@ export function UnifiedNavigation() {
             </nav>
           )}
 
-          {/* RIGHT SIDE ACTIONS */}
-          <div className="flex items-center space-x-3">
-            {/* NOTIFICATIONS ICON */}
+          {/* RIGHT SIDE ACTIONS - Always visible */}
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            {/* NOTIFICATIONS ICON - More visible */}
             {session && (
-              <button className="hidden md:flex relative p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105">
+              <Link 
+                href="/notifications"
+                className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+              >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
-              </button>
+                <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg"></span>
+              </Link>
             )}
 
-            {/* THEME TOGGLE */}
-            <div className="hidden lg:block">
+            {/* THEME TOGGLE - Visible on tablet+ */}
+            <div className="hidden md:block">
               <ThemeToggle />
             </div>
 
@@ -281,14 +285,14 @@ export function UnifiedNavigation() {
                   </div>
                 </div>
 
-                {/* MOBILE MENU BUTTON */}
+                {/* MOBILE MENU BUTTON - More prominent */}
                 <button
-                  className="md:hidden p-2 rounded-xl hover:bg-accent/50 transition-all"
+                  className="md:hidden p-2 rounded-xl hover:bg-accent/50 transition-all border-2 border-transparent hover:border-primary/20"
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                   aria-label="Toggle mobile menu"
                 >
                   {mobileMenuOpen ? (
-                    <X className="h-6 w-6" />
+                    <X className="h-6 w-6 text-primary" />
                   ) : (
                     <Menu className="h-6 w-6" />
                   )}
@@ -307,9 +311,9 @@ export function UnifiedNavigation() {
           </div>
         </div>
 
-        {/* MOBILE NAVIGATION PANEL - DRIBBBLE STYLE */}
+        {/* MOBILE NAVIGATION PANEL - Enhanced visibility */}
         {session && mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-1 border-t border-border/50">
+          <div className="md:hidden py-4 space-y-1 border-t border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl">
             {navigationItems.map((item) => {
               const Icon = item.icon
               const isActive = isItemActive(item)
