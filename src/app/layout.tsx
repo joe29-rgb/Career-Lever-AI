@@ -16,6 +16,7 @@ import { AnalyticsTracker } from '@/components/analytics-tracker'
 import { DebugPanel } from '@/components/debug-panel'
 import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
 import { MobileNav } from '@/components/mobile/MobileNav'
+import { CommandPalette } from '@/components/command-palette'
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
@@ -64,6 +65,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>
             <OnboardingRedirect />
+            <CommandPalette />
             <AppShell>{children}</AppShell>
             <MobileNav />
           </Providers>

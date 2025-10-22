@@ -115,6 +115,23 @@ export function UnifiedNavigation() {
     setExpandedMenu(null)
   }, [pathname])
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        window.location.href = '/career-finder/search'
+      }
+      // Escape to close mobile menu
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mobileMenuOpen])
+
   const isItemActive = (item: NavigationItem) => {
     if (item.href && pathname === item.href) return true
     if (item.submenu) {

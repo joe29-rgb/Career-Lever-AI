@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation'
 import { UnifiedNavigation } from './unified-navigation'
+import { Breadcrumbs } from './breadcrumbs'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ''
@@ -18,14 +19,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <main id="main-content" role="main">{children}</main>
   }
 
-  // App pages: Single navigation, no sidebar (sidebar was causing double menu)
+  // App pages: Single navigation with breadcrumbs
   return (
     <div className="min-h-screen bg-background">
-      {/* UNIFIED NAVIGATION - SINGLE MENU ONLY */}
+      {/* UNIFIED NAVIGATION */}
       <UnifiedNavigation />
       
-      {/* MAIN CONTENT - NO SIDEBAR */}
+      {/* MAIN CONTENT WITH BREADCRUMBS */}
       <main id="main-content" role="main" className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <Breadcrumbs />
         {children}
       </main>
     </div>
