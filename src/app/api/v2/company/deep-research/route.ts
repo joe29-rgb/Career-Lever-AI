@@ -19,8 +19,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     let { companyName, companyWebsite, targetRole, location } = body
 
+    console.log('[DEEP_RESEARCH] Request body:', JSON.stringify(body, null, 2))
+    console.log('[DEEP_RESEARCH] Validation:', {
+      hasCompanyName: !!companyName,
+      companyNameValue: companyName,
+      hasWebsite: !!companyWebsite,
+      hasRole: !!targetRole,
+      hasLocation: !!location
+    })
+
     if (!companyName) {
-      return NextResponse.json({ error: 'Missing companyName' }, { status: 400 })
+      console.error('[DEEP_RESEARCH] ❌ Missing companyName in request')
+      return NextResponse.json({ 
+        error: 'Missing companyName',
+        received: body,
+        hint: 'Request must include companyName field'
+      }, { status: 400 })
     }
     
     // CRITICAL FIX: Sanitize company name (remove noise from PDF extraction)
