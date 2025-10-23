@@ -3750,3 +3750,467 @@ if (disposableDomains.includes(emailDomain)) {
 
 **The "bazooka" you need: Fix validation layer first, then everything else works**
 
+---
+
+## 📝 CONTINUING AUDIT - SESSION 10 (EXECUTION LAYER)
+
+---
+
+## 🔥 MORE CRITICAL BLOCKERS FOUND
+
+### **FILE: `src/lib/server-pdf-generator.ts`**
+
+**SMOKING GUN #2:**
+```typescript
+Lines 11-27: htmlToSimplePDF() - Creates TEXT FILE, not PDF!
+```
+
+**THE PROBLEM:**
+```typescript
+// Line 27: Returns plain text as "PDF"
+return Buffer.from(pdfContent, 'utf-8')
+```
+
+**What it actually does:**
+1. Strips all HTML tags
+2. Creates plain text
+3. Returns as Buffer
+4. **IT'S NOT A PDF!**
+
+**Result:**
+- Email attachments are `.pdf` files
+- But they're actually `.txt` files
+- Recruiters can't open them
+- Or they open as garbled text
+
+**Comment on line 17:** *"For production, you'd use a library like pdfkit or puppeteer"*
+**Status:** ❌ NOT IMPLEMENTED
+
+---
+
+### **FILE: `src/lib/rate-limit.ts`**
+
+**CRITICAL FINDING:**
+```typescript
+Line 24-30: Route-specific limits
+'outreach-send': NOT DEFINED!
+```
+
+**THE PROBLEM:**
+```typescript
+const limits: Record<string, number> = {
+  'file-upload': 5000,
+  'resume:upload': 5000,
+  'applications:attach': 5000,
+  'ai-requests': 200,
+  'api-general': 2000,
+  'default': 1000
+  // ❌ 'outreach-send' NOT HERE!
+}
+```
+
+**Result:**
+- `outreach/send/route.ts` calls `isRateLimited(userId, 'outreach-send')`
+- Rate limiter doesn't find 'outreach-send'
+- Falls back to 'default': 1000/hour
+- **NOT the 5/hour mentioned in comments!**
+
+**Actual rate limit:** 1000 emails/hour (way too high, will get flagged as spam)
+
+---
+
+### **FILE: `src/lib/email-providers/resend-provider.ts`**
+
+**CRITICAL ISSUES:**
+
+#### 1. **NO API KEY VALIDATION** ❌
+**Lines 40-48:**
+```typescript
+constructor(apiKey?: string) {
+  this.apiKey = apiKey || process.env.RESEND_API_KEY || ''
+  
+  if (!this.apiKey) {
+    console.warn('[RESEND] No API key found. Email sending will fail.')
+    // ❌ CONTINUES ANYWAY!
+  }
+}
+```
+
+**Issue:** Constructor warns but doesn't throw
+**Result:** Email sending fails later with cryptic error
+
+#### 2. **DEFAULT TEST EMAIL** ⚠️
+**Line 43:**
+```typescript
+this.fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev'
+```
+
+**Issue:** Uses Resend test email by default
+**Result:** 
+- Emails come from "onboarding@resend.dev"
+- Looks like spam
+- Low deliverability
+
+---
+
+### **FILE: `src/lib/utils/ai-response-parser.ts`**
+
+**CRITICAL FINDINGS:**
+
+#### 1. **6 PARSING STRATEGIES** ✅ (GOOD!)
+**Lines 47-114:** Multiple fallback strategies
+- Direct JSON.parse
+- Strip markdown
+- Regex extract
+- Code blocks
+- Partial parsing
+- Aggressive cleanup
+
+**Status:** ✅ This is actually well-designed!
+
+#### 2. **BUT: NO SCHEMA VALIDATION** ❌
+**Lines 32-131:** Parses JSON but doesn't validate structure
+
+**Missing:**
+- Field type checking
+- Required field validation
+- Range validation (e.g., salary > 0)
+- Enum validation (e.g., experienceLevel must be 'entry'|'mid'|'senior')
+
+**Result:** Parser succeeds, but data is invalid
+
+---
+
+### **FILE: `src/app/api/jobs/search/route.ts`**
+
+**CRITICAL ISSUES:**
+
+#### 1. **LOCATION VALIDATION TOO STRICT** ❌
+**Lines 72-78:**
+```typescript
+if (!location || location.trim().length < 2) {
+  return NextResponse.json({ 
+    error: 'Location is required. Please ensure your resume contains your location...',
+  }, { status: 400 })
+}
+```
+
+**Issue:** Requires location, but many jobs are remote
+**Result:** Users can't search for remote jobs without entering fake location
+
+#### 2. **MAXDURATION TOO SHORT** ⚠️
+**Line 26:**
+```typescript
+export const maxDuration = 30 // Reduced from 60s
+```
+
+**Issue:** Perplexity searches 25+ job boards
+**Reality:** Takes 45-60 seconds
+**Result:** Request times out before Perplexity finishes
+
+#### 3. **CACHE MERGED WITH NEW RESULTS** ⚠️
+**Lines 91-103:**
+```typescript
+const cachedJobs = await jobSearchCacheService.getCachedJobs({...})
+
+if (cachedJobs && cachedJobs.length > 0) {
+  console.log(`Found ${cachedJobs.length} cached jobs - will merge with NEW search results`)
+}
+```
+
+**Issue:** Comment says "merge" but code doesn't show merge logic
+**Result:** Either returns cache OR new results, not both
+
+---
+
+## 🚨 NEW CRITICAL ISSUES FOUND
+
+### 32. **PDF GENERATOR CREATES TEXT FILES** (CRITICAL)
+**File:** `server-pdf-generator.ts` lines 11-27
+**Issue:** `htmlToSimplePDF()` returns plain text Buffer, not actual PDF
+**Result:** Email attachments are broken, recruiters can't open them
+**Fix:** Use `pdfkit` or `puppeteer` to generate real PDFs
+
+### 33. **RATE LIMIT NOT CONFIGURED** (HIGH)
+**File:** `rate-limit.ts` lines 24-30
+**Issue:** 'outreach-send' not in limits object, falls back to 1000/hour
+**Result:** Way too high, will trigger spam filters
+**Fix:** Add `'outreach-send': 20` to limits object
+
+### 34. **NO API KEY VALIDATION** (HIGH)
+**File:** `resend-provider.ts` lines 40-48
+**Issue:** Constructor warns about missing API key but continues
+**Result:** Email sending fails later with cryptic error
+**Fix:** Throw error in constructor if no API key
+
+### 35. **DEFAULT TEST EMAIL** (MEDIUM)
+**File:** `resend-provider.ts` line 43
+**Issue:** Uses 'onboarding@resend.dev' by default
+**Result:** Emails look like spam, low deliverability
+**Fix:** Require EMAIL_FROM environment variable
+
+### 36. **NO SCHEMA VALIDATION AFTER PARSING** (HIGH)
+**File:** `ai-response-parser.ts` lines 32-131
+**Issue:** Parses JSON but doesn't validate structure
+**Result:** Invalid data passes through (e.g., negative salaries)
+**Fix:** Add Zod schema validation after parsing
+
+### 37. **LOCATION REQUIRED FOR REMOTE JOBS** (MEDIUM)
+**File:** `jobs/search/route.ts` lines 72-78
+**Issue:** Requires location even for remote job searches
+**Result:** Users must enter fake location
+**Fix:** Make location optional if `remote: true`
+
+### 38. **TIMEOUT TOO SHORT** (HIGH)
+**File:** `jobs/search/route.ts` line 26
+**Issue:** 30 second timeout, but Perplexity needs 45-60 seconds
+**Result:** Job searches timeout before completing
+**Fix:** Increase to 60 seconds or add streaming
+
+### 39. **CACHE MERGE NOT IMPLEMENTED** (MEDIUM)
+**File:** `jobs/search/route.ts` lines 91-103
+**Issue:** Comment says "merge" but doesn't merge cached + new results
+**Result:** Users see either old OR new jobs, not both
+**Fix:** Implement actual merge logic with deduplication
+
+---
+
+## 🔧 ACTIONABLE FIXES (EXECUTION LAYER)
+
+### **FIX 1: Replace Fake PDF Generator (20 minutes)** ⭐ CRITICAL
+
+**File:** `src/lib/server-pdf-generator.ts`
+
+**OPTION A: Use pdfkit (Recommended)**
+```typescript
+import PDFDocument from 'pdfkit'
+
+export async function htmlToSimplePDF(html: string, title: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument()
+      const chunks: Buffer[] = []
+      
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', reject)
+      
+      // Add title
+      doc.fontSize(20).text(title, { underline: true })
+      doc.moveDown()
+      
+      // Add content (strip HTML)
+      const text = stripHtmlTags(html)
+      doc.fontSize(12).text(text, { align: 'left' })
+      
+      doc.end()
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+```
+
+**Then install:**
+```bash
+npm install pdfkit @types/pdfkit
+```
+
+**OPTION B: Use html-pdf-node (Simpler)**
+```typescript
+import htmlPdf from 'html-pdf-node'
+
+export async function htmlToSimplePDF(html: string, title: string): Promise<Buffer> {
+  const options = { format: 'A4' }
+  const file = { content: html }
+  
+  const pdfBuffer = await htmlPdf.generatePdf(file, options)
+  return pdfBuffer
+}
+```
+
+### **FIX 2: Configure Rate Limit (1 minute)** ⭐ CRITICAL
+
+**File:** `src/lib/rate-limit.ts` line 24
+
+**ADD:**
+```typescript
+const limits: Record<string, number> = {
+  'file-upload': 5000,
+  'resume:upload': 5000,
+  'applications:attach': 5000,
+  'ai-requests': 200,
+  'api-general': 2000,
+  'outreach-send': 20,        // ⭐ ADD THIS
+  'cover-letter': 50,         // ⭐ ADD THIS
+  'job-search': 100,          // ⭐ ADD THIS
+  'default': 1000
+}
+```
+
+### **FIX 3: Validate API Key (2 minutes)**
+
+**File:** `src/lib/email-providers/resend-provider.ts` lines 40-48
+
+**CHANGE FROM:**
+```typescript
+if (!this.apiKey) {
+  console.warn('[RESEND] No API key found. Email sending will fail.')
+}
+```
+
+**CHANGE TO:**
+```typescript
+if (!this.apiKey) {
+  throw new Error('RESEND_API_KEY environment variable is required. Get one at https://resend.com')
+}
+
+if (!this.fromEmail || this.fromEmail === 'onboarding@resend.dev') {
+  throw new Error('EMAIL_FROM environment variable is required. Use your verified domain email.')
+}
+```
+
+### **FIX 4: Add Schema Validation (15 minutes)**
+
+**File:** `src/lib/utils/ai-response-parser.ts` line 131
+
+**ADD AFTER LINE 131:**
+```typescript
+/**
+ * Parse and validate against Zod schema
+ */
+static parseAndValidate<T = any>(
+  text: string,
+  schema: z.ZodSchema<T>,
+  options: ParseOptions = {},
+  context?: PerplexityErrorContext
+): T {
+  // Parse JSON
+  const parsed = this.parse<T>(text, options, context)
+  
+  // Validate with Zod
+  try {
+    return schema.parse(parsed)
+  } catch (error) {
+    if (context) {
+      throw new PerplexityJSONError(
+        'Parsed JSON failed schema validation',
+        context,
+        JSON.stringify(parsed),
+        [(error as any).message]
+      )
+    }
+    throw error
+  }
+}
+```
+
+### **FIX 5: Make Location Optional for Remote (3 minutes)**
+
+**File:** `src/app/api/jobs/search/route.ts` lines 72-78
+
+**CHANGE FROM:**
+```typescript
+if (!location || location.trim().length < 2) {
+  return NextResponse.json({ error: 'Location is required...' }, { status: 400 })
+}
+```
+
+**CHANGE TO:**
+```typescript
+// Location required UNLESS searching for remote jobs
+if ((!location || location.trim().length < 2) && workType !== 'remote') {
+  return NextResponse.json({ 
+    error: 'Location is required for onsite/hybrid jobs. For remote jobs, select "Remote" work type.',
+  }, { status: 400 })
+}
+
+// Use "Remote" as location for remote job searches
+if (workType === 'remote' && (!location || location.trim().length < 2)) {
+  location = 'Remote'
+  console.log('[JOB_SEARCH] Using "Remote" as location for remote job search')
+}
+```
+
+### **FIX 6: Increase Timeout (1 minute)**
+
+**File:** `src/app/api/jobs/search/route.ts` line 26
+
+**CHANGE FROM:**
+```typescript
+export const maxDuration = 30 // Reduced from 60s
+```
+
+**CHANGE TO:**
+```typescript
+export const maxDuration = 60 // Perplexity needs 45-60s to search 25+ boards
+```
+
+---
+
+## 📊 UPDATED AUDIT SUMMARY
+
+**Files Audited:** 68 of ~450 (15.1% complete)
+**Total Issues:** 76 documented
+**Lines Analyzed:** ~19,000 lines
+
+**New Issues (Execution Layer):**
+- **Critical:** 2 (Fake PDF generator, rate limit not configured)
+- **High:** 4 (No API key validation, no schema validation, timeout too short)
+- **Medium:** 2 (Default test email, location required for remote)
+
+---
+
+## 🎯 UPDATED TOP 20 CRITICAL FIXES
+
+**🔥 TIER 1: BLOCKS CORE FEATURES (61 min)**
+1. **Fix validation before fallback** (5 min) - BLOCKS COVER LETTERS
+2. **Replace fake PDF generator** (20 min) - BLOCKS EMAIL ATTACHMENTS
+3. **Fix PDF generation failure** (3 min) - BLOCKS EMAIL SENDING
+4. **Configure rate limits** (1 min) - PREVENTS SPAM FLAGS
+5. **Validate API keys** (2 min) - PREVENTS CRYPTIC ERRORS
+6. **Increase job search timeout** (1 min) - PREVENTS TIMEOUTS
+7. **Make location optional for remote** (3 min) - UNBLOCKS REMOTE SEARCHES
+8. **Add email validation** (10 min) - PREVENTS BOUNCES
+9. **Add schema validation** (15 min) - PREVENTS INVALID DATA
+10. **Increase rate limit** (1 min) - UNBLOCKS USERS
+
+**🎨 TIER 2: UI/UX ISSUES (45 min)**
+11-14. Theme consistency fixes
+
+**🔧 TIER 3: POLISH (67 min)**
+15-20. Navigation, Perplexity, responsive design
+
+**Total: 173 minutes (~3 hours) to fix all critical issues**
+
+---
+
+## 📈 FINAL FIX TIME ESTIMATE (v4)
+
+**Phase 1 - Critical Feature Fixes:** 61 minutes ⭐ UPDATED (DO THIS FIRST!)
+**Phase 2 - Critical Theme Fixes:** 45 minutes
+**Phase 3 - Navigation & Validation:** 15 minutes
+**Phase 4 - Perplexity Integration:** 22 minutes
+**Phase 5 - Responsive Design:** 45 minutes
+
+**Total Time to Fix All Critical Issues:** ~3 hours 8 minutes
+
+---
+
+## ✅ COMPLETE BLOCKER LIST
+
+**Your app is blocked by 10 critical issues:**
+
+1. ❌ **Validation before fallback** - Cover letters fail
+2. ❌ **Fake PDF generator** - Attachments are text files
+3. ❌ **PDF generation fails silently** - Emails send without resume
+4. ❌ **Rate limit not configured** - Spam filters triggered
+5. ❌ **No API key validation** - Cryptic errors
+6. ❌ **Timeout too short** - Job searches timeout
+7. ❌ **Location required for remote** - Can't search remote jobs
+8. ❌ **No email validation** - High bounce rate
+9. ❌ **No schema validation** - Invalid data passes through
+10. ❌ **Rate limit too strict** - Users blocked
+
+**Fix these 10 issues (61 minutes) → Core features work**
+
