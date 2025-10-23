@@ -32,7 +32,7 @@ function generateUUID(): string {
 // FIXED: Safe imports with fallbacks for missing dependencies
 let PERPLEXITY_PROMPTS: any
 let parseAIResponse: <T = any>(text: string, options?: any, context?: any) => T
-let validateAIResponse: any
+let validateAIResponse: <T = any>(data: T, schema?: string, context?: any) => T
 
 try {
   PERPLEXITY_PROMPTS = require('./prompts/perplexity-prompts').PERPLEXITY_PROMPTS
@@ -52,7 +52,7 @@ try {
   validateAIResponse = require('./validation/schema-validator').validateAIResponse
 } catch (e) {
   console.warn('[RESUME_ANALYZER] schema-validator not found, skipping validation')
-  validateAIResponse = (data: any) => data
+  validateAIResponse = <T = any>(data: T) => data
 }
 
 export interface EnhancedResumeAnalysis {
