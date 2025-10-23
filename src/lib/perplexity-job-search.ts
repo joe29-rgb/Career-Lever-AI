@@ -112,15 +112,21 @@ export class PerplexityJobSearchService {
     `
     
     try {
+      // FIXED: Use correct method from PerplexityIntelligenceService
       const response = await PerplexityIntelligenceService.customQuery({
-        systemPrompt: 'You are a labor market analyst. Return only valid JSON.',
+        systemPrompt: 'You are a labor market analyst. Return only valid JSON with no markdown.',
         userPrompt: query,
         temperature: 0.2,
         maxTokens: 2000
       })
       
       // Parse JSON response
-      const jsonMatch = response.match(/\{[\s\S]*\}/)
+      let content = typeof response === 'string' ? response : response.content || JSON.stringify(response)
+      
+      // Remove markdown code blocks
+      content = content.replace(/```(?:json)?\s*/g, '')
+      
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0])
       }
@@ -157,7 +163,7 @@ export class PerplexityJobSearchService {
         'day'
       )
       
-      if (results.length > 0) {
+      if (results && results.length > 0) {
         return this.parseJobDetails(results[0], jobUrl)
       }
     } catch (error) {
@@ -168,6 +174,7 @@ export class PerplexityJobSearchService {
   }
   
   // HELPER: Fetch jobs from single query
+  // FIXED: Handle unknown result structure
   private static async fetchJobsFromQuery(
     query: string, 
     source: string, 
@@ -181,18 +188,23 @@ export class PerplexityJobSearchService {
         'week'
       )
       
-      return results.map(result => ({
-        title: result.title || 'Unknown Title',
-        company: this.extractCompany(result.snippet || ''),
-        location: this.extractLocation(result.snippet || ''),
-        description: result.snippet || '',
-        url: result.url,
-        salary: this.extractSalary(`${result.title} ${result.snippet}`) || undefined,
-        postedDate: result.postedDate,
+      if (!results || !Array.isArray(results)) {
+        console.warn(`Invalid results from query: ${query}`)
+        return []
+      }
+      
+      return results.map((result: any) => ({
+        title: result.title || result.name || 'Unknown Title',
+        company: this.extractCompany(result.snippet || result.description || ''),
+        location: this.extractLocation(result.snippet || result.description || ''),
+        description: result.snippet || result.description || '',
+        url: result.url || result.link || '',
+        salary: this.extractSalary(`${result.title || ''} ${result.snippet || ''}`) || undefined,
+        postedDate: result.postedDate || result.date || result.published,
         source,
-        isCanadian: this.isCanadianJobSite(result.url),
+        isCanadian: this.isCanadianJobSite(result.url || result.link || ''),
         matchScore: 0, // Will be calculated in deduplicateAndRank
-        jobId: this.generateJobId(result.url)
+        jobId: this.generateJobId(result.url || result.link || '')
       }))
     } catch (error) {
       console.error(`Query failed: ${query}`, error)
@@ -276,9 +288,15 @@ export class PerplexityJobSearchService {
     return `after:${date.toISOString().split('T')[0]}` 
   }
   
-  // HELPER: Calculate days ago from date string
+  // FIXED: Handle invalid dates
   private static getDaysAgo(dateString: string): number {
     const posted = new Date(dateString)
+    
+    if (isNaN(posted.getTime())) {
+      console.warn(`Invalid date: ${dateString}`)
+      return 999 // Return high number to deprioritize
+    }
+    
     const now = new Date()
     const diffMs = now.getTime() - posted.getTime()
     return Math.floor(diffMs / (1000 * 60 * 60 * 24))
@@ -289,15 +307,15 @@ export class PerplexityJobSearchService {
     return /jobbank\.gc\.ca|indeed\.ca|workopolis\.com|glassdoor\.ca/i.test(url)
   }
   
-  // HELPER: Generate unique job ID
+  // FIXED: Universal hash function (no crypto/Buffer dependency)
   private static generateJobId(url: string): string {
-    // Use crypto if available, otherwise fallback to base64
-    try {
-      const crypto = require('crypto')
-      return `job-${crypto.createHash('md5').update(url).digest('hex').substring(0, 16)}`
-    } catch {
-      return `job-${Buffer.from(url).toString('base64').substring(0, 16)}`
+    let hash = 0
+    for (let i = 0; i < url.length; i++) {
+      const char = url.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
     }
+    return `job-${Math.abs(hash).toString(36).padStart(16, '0').substring(0, 16)}`
   }
   
   // HELPER: Parse job details from Perplexity response
