@@ -595,7 +595,9 @@ export class PerplexityIntelligenceService {
   "financials": [{"metric": string, "value": string, "confidence": number, "source": string}],
   "culture": [{"point": string, "confidence": number, "source": string}] (from Glassdoor/reviews),
   "salaries": [{"title": string, "range": string, "currency": string, "geo": string, "source": string, "confidence": number}],
-  "contacts": [{"name": string, "title": string, "url": string, "source": string, "confidence": number}] (executives, managers, recruiters from LinkedIn),
+  "contacts": [{"name": string, "title": string, "email": string, "url": string, "source": string, "confidence": number}] (executives, managers, recruiters from LinkedIn with emails),
+  "generalEmail": string (company general inbox: careers@, hr@, jobs@, info@, hello@, contact@ - MANDATORY),
+  "careersPage": string (company careers/jobs page URL),
   "growth": [{"signal": string, "source": string, "confidence": number}],
   "summary": string (comprehensive 2-3 paragraph summary),
   "recentNews": [{"title": string, "date": string, "url": string, "summary": string}] (last 6 months),
@@ -606,13 +608,16 @@ export class PerplexityIntelligenceService {
 
 **CRITICAL REQUIREMENTS:**
 1. Search company website for About page, Contact page, Leadership/Team page
-2. Search "site:linkedin.com/company/${input.company}" for official company page
-3. Search "site:linkedin.com ${input.company} CEO OR president OR manager" for executive contacts
-4. Search "${input.company} headquarters address phone email"
-5. Search "${input.company} site:glassdoor.com" for reviews and culture insights
-6. Search "${input.company} revenue employees industry" for business intelligence
-7. DO NOT return "Unknown", "No description available", or "No data" - search multiple sources until you find information
-8. Include REAL contact information (names, titles, LinkedIn URLs) - minimum 3 contacts if company has >10 employees`
+2. **MANDATORY**: Extract company general email from website footer/contact page (careers@, hr@, jobs@, info@, hello@, contact@)
+3. **MANDATORY**: Find company careers/jobs page URL
+4. Search "site:linkedin.com/company/${input.company}" for official company page
+5. Search "site:linkedin.com ${input.company} CEO OR president OR manager" for executive contacts WITH emails
+6. Search "${input.company} headquarters address phone email"
+7. Search "${input.company} site:glassdoor.com" for reviews and culture insights
+8. Search "${input.company} revenue employees industry" for business intelligence
+9. DO NOT return "Unknown", "No description available", or "No data" - search multiple sources until you find information
+10. Include REAL contact information (names, titles, emails, LinkedIn URLs) - minimum 3 contacts if company has >10 employees
+11. **APP IS USELESS WITHOUT CONTACT INFO** - Always return at least generalEmail even if no specific contacts found`
       const out = await withRetry(async () => {
         const client = createClient()
         const user = userPrompt
@@ -1177,12 +1182,37 @@ OUTPUT JSON FORMAT:
         // CRITICAL: Multi-source search using Perplexity's sonar-pro research capabilities
         const prompt = `URGENT: Find REAL hiring contacts at ${companyName} using multiple sources. Return ONLY valid JSON, NO explanatory text.
 
-SEARCH STRATEGY (use ALL sources):
-1. LinkedIn profiles: site:linkedin.com/in/ "${companyName}" (recruiter OR "talent acquisition" OR "HR manager" OR "hiring manager")
-2. Company website: site:${companyName.toLowerCase().replace(/\s+/g, '')}.com (careers OR jobs OR contact OR "human resources")
-3. Company careers page: "${companyName}" careers team contact email
-4. Job board postings: site:indeed.com OR site:glassdoor.com "${companyName}" recruiter contact
-5. Press releases/news: "${companyName}" hiring manager OR recruiter name
+SEARCH STRATEGY (use ALL sources in order, be AGGRESSIVE):
+1. **LinkedIn Profiles** (PRIORITY): 
+   - site:linkedin.com/in/ "${companyName}" ("Talent Acquisition" OR "Recruiter" OR "HR Manager" OR "Hiring Manager" OR "People Operations")
+   - site:linkedin.com/in/ "${companyName}" ("Director of HR" OR "VP of People" OR "Head of Talent")
+   - Extract REAL names, titles, and profile URLs
+
+2. **Company Website Deep Scrape**:
+   - site:${companyName.toLowerCase().replace(/\s+/g, '')}.com/careers contact
+   - site:${companyName.toLowerCase().replace(/\s+/g, '')}.com/about team
+   - site:${companyName.toLowerCase().replace(/\s+/g, '')}.com/contact
+   - Look for: careers@, hr@, jobs@, recruiting@, talent@, hiring@, info@, hello@, contact@
+   - Check footer, contact page, careers page, about page
+
+3. **Social Media Profiles**:
+   - site:twitter.com "${companyName}" (recruiter OR hiring)
+   - site:facebook.com "${companyName}" careers
+   - site:instagram.com "${companyName}" (check bio for contact)
+
+4. **Job Board Postings**:
+   - site:indeed.com "${companyName}" contact recruiter
+   - site:glassdoor.com "${companyName}" apply contact
+   - site:linkedin.com/jobs "${companyName}" (extract poster info)
+
+5. **Company Directory Sites**:
+   - site:rocketreach.co "${companyName}"
+   - site:hunter.io "${companyName}"
+   - "${companyName}" email format pattern
+
+6. **FALLBACK - General Company Inbox** (if no hiring contacts found):
+   - Find ANY company email: info@, hello@, contact@, support@
+   - This is CRITICAL - app is useless without at least a general inbox
 
 CRITICAL REQUIREMENTS:
 - Extract REAL names from actual profiles/pages (e.g., "Sarah Johnson", "Michael Chen")
@@ -1190,12 +1220,16 @@ CRITICAL REQUIREMENTS:
 - Include LinkedIn profile URLs when found
 - If company website shows "firstname.lastname@company.com" pattern, use it with REAL names found
 - DO NOT return fake placeholders like "Pattern Guess" or generic "firstname.lastname"
-- If NO real contacts found after searching all sources, return empty array []
+- **MANDATORY FALLBACK**: If NO hiring contacts found, you MUST find the company's general inbox email
+  - Check: careers@, hr@, jobs@, info@, hello@, contact@, support@
+  - Return as: {"name":"General Inbox","title":"Company Contact","email":"info@company.com","emailType":"verified","source":"Company Website","confidence":0.7}
+- NEVER return empty array [] - always return at least the general inbox
 
 JSON FORMAT:
 [{"name":"Sarah Johnson","title":"Senior Recruiter","department":"Talent Acquisition","email":"sarah.johnson@company.com","linkedinUrl":"https://linkedin.com/in/sarah-johnson-xyz","emailType":"verified","source":"LinkedIn + Company Website","confidence":0.95}]
 
-Return ONLY the JSON array. If you can't find ANY real people after searching ALL sources, return: []`
+Return ONLY the JSON array. If you can't find ANY real people after searching ALL sources, you MUST return the company general inbox:
+[{"name":"General Inbox","title":"Company Contact","email":"info@company.com","emailType":"verified","source":"Company Website","confidence":0.7}]`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits + sonar-pro for research
         return client.makeRequest(SYSTEM, prompt, { 
@@ -1749,10 +1783,15 @@ CRITICAL REQUIREMENTS:
    - MUST find general company email (careers@, hr@, jobs@, info@, contact@)
    - Check company website contact page, footer, careers page
    - If no email found, generate likely addresses based on domain
-3. Hiring Contacts: Find REAL people on LinkedIn, company website, job boards
-   - Minimum 2-3 contacts if company has 10+ employees
+3. Hiring Contacts: **CRITICAL - MUST FIND CONTACTS**
+   - Search LinkedIn, Twitter, Facebook, Instagram, company website
+   - Minimum 2-3 REAL hiring contacts if company has 10+ employees
    - Include verified LinkedIn URLs and emails where possible
    - DO NOT return fake/placeholder names
+   - **MANDATORY FALLBACK**: If no hiring contacts found, extract company general inbox:
+     * Check: careers@, hr@, jobs@, info@, hello@, contact@, support@
+     * Return as: {"name":"General Inbox","title":"Company Contact","email":"found@company.com"}
+   - NEVER return empty contacts array - app is useless without contact info
 4. News: Find 2-5 recent news articles about the company with clickable URLs
 5. Reviews: Search Glassdoor, Indeed, Comparably for employee reviews with clickable URLs
 6. Market Intelligence: Research industry trends, competitive landscape
