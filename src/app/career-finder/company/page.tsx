@@ -202,14 +202,14 @@ export default function CareerFinderCompanyPage() {
               {companyData.hiringContacts && companyData.hiringContacts.length > 0 ? (
                 <div className="space-y-3">
                   {companyData.hiringContacts.map((contact: any, index: number) => (
-                    <div key={index} className="p-3 bg-secondary rounded-lg">
-                      <p className="font-medium text-white">{contact.name}</p>
-                      <p className="text-sm text-gray-200">{contact.title}</p>
+                    <div key={index} className="p-4 bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-950/30 dark:to-teal-950/30 border border-green-200/50 dark:border-green-800/50 rounded-lg">
+                      <p className="font-semibold text-foreground">{contact.name}</p>
+                      <p className="text-sm text-muted-foreground">{contact.title}</p>
                       {contact.email && (
-                        <p className="text-sm text-blue-300">{contact.email}</p>
+                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mt-1">{contact.email}</p>
                       )}
                       {contact.department && (
-                        <p className="text-xs text-gray-300 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {contact.department} • Confidence: {Math.round((contact.confidence || 0.5) * 100)}%
                         </p>
                       )}

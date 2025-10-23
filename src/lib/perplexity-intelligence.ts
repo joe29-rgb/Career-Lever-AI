@@ -800,18 +800,18 @@ ATS PLATFORMS (Canadian Tech Companies):
 - Ashby: Faire, Clearco, Maple, Borrowell, Shakepay
 
 CRITICAL REQUIREMENTS:
-1. **EXACT COMPANY NAMES ONLY** - Do NOT use generic placeholders:
-   ❌ REJECT: "Various Employers", "Confidential Company", "Multiple Companies", "Various Auto", "Various [Industry]", "Undisclosed", "Private", "TBD", "N/A"
-   ✅ REQUIRE: Real, specific company names (e.g., "Brandt Tractor Ltd.", "Shopify", "TD Bank")
-2. **VERIFY COMPANY EXISTS** - Include company website/domain when available
-3. **REJECT INVALID LISTINGS** - Skip jobs without real company name, actual job title, or valid location
+1. **ONLY REAL COMPANY NAMES** - ABSOLUTELY NO CONFIDENTIAL LISTINGS:
+   ❌ REJECT AND SKIP: "Confidential", "Various Employers", "Multiple Companies", "Undisclosed", "Private", "TBD", "N/A", "Various [Industry]", "Anonymous", "Stealth", "Hidden"
+   ❌ DO NOT INCLUDE jobs where company name is hidden or confidential
+   ✅ ONLY INCLUDE: Jobs with real, specific company names (e.g., "Ricoh Canada", "Shopify", "TD Bank")
+2. **VERIFY COMPANY EXISTS** - Must be a real, identifiable company
+3. **SKIP INVALID LISTINGS** - If company name is missing or confidential, DO NOT include it in results
 4. Search ONLY publicly accessible listings (no login required)
 5. Prioritize Canadian sources for Canadian locations
-6. **Extract salary** from job posting ("$XX,XXX", "$XX-$XX/hour", "$XXK-$XXK", "salary range", "compensation")
-7. If salary not stated, look for "competitive salary", "market rate", or industry estimates
-8. Deduplicate across all sources by company + title
-9. Rank by: recency → Canadian source priority → relevance
-10. Return EXACTLY ${limit} unique listings with complete data
+6. **Extract salary** from job posting if available
+7. Deduplicate across all sources by company + title
+8. Rank by: recency → Canadian source priority → relevance
+9. Return EXACTLY ${limit} unique listings with REAL company names only
 
 OUTPUT JSON (MUST BE VALID, COMPLETE JSON):
 [{
@@ -1179,36 +1179,30 @@ OUTPUT JSON FORMAT:
         const { getPerplexityConfig } = await import('./config/perplexity-configs')
         const config = getPerplexityConfig('hiringContacts')
         
-        // CRITICAL: Multi-source search using Perplexity's sonar-pro research capabilities
-        const prompt = `Search the web for REAL hiring contacts at ${companyName}. You MUST visit actual websites and extract REAL information. DO NOT make up or guess any information.
+        // CRITICAL: Multi-source search - ONLY REAL DATA, NO FALLBACKS
+        const prompt = `Find hiring contacts for ${companyName}. Return ONLY information you actually find from web searches.
 
-SEARCH THESE EXACT SOURCES:
-1. Search: "${companyName} HR email" OR "${companyName} careers email" OR "${companyName} recruiting email"
-2. Visit ${companyName} official website and find contact page, careers page, about page
-3. Search: site:linkedin.com/in/ "${companyName}" "recruiter" OR "talent acquisition" OR "HR"
-4. Search: "${companyName} contact" OR "${companyName} hiring manager"
+SEARCH INSTRUCTIONS:
+1. Search: "${companyName} HR email"
+2. Search: "${companyName} careers contact"
+3. Search: site:linkedin.com/in/ "${companyName}" recruiter
+4. Visit ${companyName} official website contact page
 
-CRITICAL RULES - READ CAREFULLY:
-❌ DO NOT MAKE UP NAMES - If you cannot find a real person's name from LinkedIn or company website, DO NOT invent one
-❌ DO NOT GUESS EMAILS - Only return emails you actually found on websites or can verify exist
-❌ DO NOT CREATE FAKE LINKEDIN URLS - Only include LinkedIn URLs you actually visited
-❌ DO NOT RETURN PLACEHOLDER DATA - No "Jennifer McNeill", "Chris MacDonald", or other made-up names
-✅ ONLY return information you found from REAL web searches
-✅ If you find hr@company.com or careers@company.com, return that as "General Inbox"
-✅ If you find REAL names on LinkedIn with their actual titles, return those with their real LinkedIn URLs
+ABSOLUTE RULES:
+- ONLY return emails you find on actual websites
+- ONLY return names you find on LinkedIn profiles with real URLs
+- If you find hr@ricoh.ca, return it exactly as you found it
+- If you find scott.leonard@ricoh.ca, return it with the real LinkedIn URL
+- DO NOT make up any information
+- DO NOT guess email patterns
+- DO NOT create fake names
+- If you cannot find ANY real contacts, return empty array []
 
-MANDATORY: You MUST return at least ONE contact. If you cannot find any real people:
-- Return the company's general email (hr@, careers@, info@, contact@)
-- Search "${companyName} email" to find it
-- Visit their website contact page
+Return ONLY valid JSON array:
+[{"name":"Scott Leonard","title":"Director","email":"scott.leonard@ricoh.ca","linkedinUrl":"https://linkedin.com/in/scottleonard","source":"Company Website","confidence":0.9}]
 
-Return ONLY this JSON format with REAL data you found:
-[{"name":"REAL NAME FROM LINKEDIN","title":"REAL TITLE FROM LINKEDIN","email":"REAL EMAIL YOU FOUND","linkedinUrl":"REAL LINKEDIN URL","source":"WHERE YOU FOUND THIS","confidence":0.9}]
-
-OR if no real people found:
-[{"name":"General Inbox","title":"Company Contact","email":"hr@${companyName.toLowerCase().replace(/\s+/g, '')}.com","source":"Company Website","confidence":0.7}]
-
-DO NOT HALLUCINATE. ONLY RETURN REAL DATA YOU FOUND FROM WEB SEARCHES.`
+OR if nothing found:
+[]`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits + sonar-pro for research
         return client.makeRequest(SYSTEM, prompt, { 
