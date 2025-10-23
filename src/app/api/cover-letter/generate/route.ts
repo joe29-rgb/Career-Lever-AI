@@ -4,9 +4,7 @@ import connectToDatabase from '@/lib/mongodb';
 import Resume from '@/models/Resume';
 import CompanyData from '@/models/CompanyData';
 import { authOptions } from '@/lib/auth';
-import { PerplexityService } from '@/lib/perplexity-service';
-import { ENHANCED_COVER_LETTER_SYSTEM_PROMPT, buildEnhancedCoverLetterUserPrompt } from '@/lib/prompts/perplexity'
-import { validateAuthenticityLetter, sanitizeCoverLetter } from '@/lib/authenticity'
+import { generateCoverLetter } from '@/lib/cover-letter-generator';
 import CoverLetter from '@/models/CoverLetter';
 import { isRateLimited } from '@/lib/rate-limit';
 import { coverLetterRawSchema } from '@/lib/validators';
@@ -15,9 +13,11 @@ import { getOrCreateRequestId, logRequestStart, logRequestEnd, now, durationMs }
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// CRITICAL FIX: Calculate years of experience from resume text
-// Prevents double-counting overlapping periods and filters out education dates
-function calculateYearsFromResume(resumeText: string): number {
+// NOTE: calculateYearsFromResume moved to cover-letter-generator.ts
+// This function is no longer needed here
+
+// DEPRECATED: Keeping for reference, but not used
+function calculateYearsFromResumeOLD(resumeText: string): number {
   // Extract only the work experience section to avoid counting education dates
   const experienceSection = extractExperienceSection(resumeText)
   
@@ -176,17 +176,21 @@ export async function POST(request: NextRequest) {
 
     // RAW INPUT MODE: allow direct inputs without DB lookups
     if (!jobApplicationId && !resumeId && raw === true) {
-      const parsed = coverLetterRawSchema.safeParse(body);
-      if (!parsed.success) {
-        console.error('[COVER_LETTER] Validation failed:', parsed.error.issues)
-        return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
-      }
-      let { jobTitle, companyName, jobDescription, resumeText } = parsed.data as any;
+      // Extract and validate required fields BEFORE Zod validation
+      const { jobTitle, companyName, resumeText, template } = body;
+      let { jobDescription } = body;
       
-      // Allow empty jobDescription - use generic text
+      // Allow empty jobDescription - use generic text (BEFORE validation)
       if (!jobDescription || jobDescription.trim() === '') {
         jobDescription = `Position at ${companyName} for ${jobTitle} role.`
         console.log('[COVER_LETTER] No job description provided, using generic text')
+      }
+      
+      // Now validate with Zod (jobDescription is already set)
+      const parsed = coverLetterRawSchema.safeParse({ ...body, jobDescription });
+      if (!parsed.success) {
+        console.error('[COVER_LETTER] Validation failed:', parsed.error.issues)
+        return NextResponse.json({ error: 'Invalid input', details: parsed.error.issues }, { status: 400 });
       }
       
       if (!jobTitle || !companyName || !resumeText) {
@@ -197,10 +201,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // personalize with candidate + hiring contact if saved in context
-      let candidateName = session.user.name || ''
+      // Get candidate info
+      const candidateName = session.user.name || ''
       const candidateEmail = session.user.email || ''
-      const candidatePhone = ''
+      
+      // Get hiring contact if available
       let hiringContact = ''
       try {
         const ja = (await import('@/models/JobApplication')).default
@@ -208,47 +213,24 @@ export async function POST(request: NextRequest) {
         if (recent?.context?.hiringContactName) hiringContact = recent.context.hiringContactName
       } catch {}
 
-      // Calculate years of experience from resume text
-      const yearsExperience = calculateYearsFromResume(resumeText)
-      console.log('[COVER_LETTER] Calculated experience:', yearsExperience, 'years')
-
-      const ppx = new PerplexityService()
-      const companyPayload = { 
-        ...(psychology ? { psychology } : {}), 
-        yearsExperience,
-        experienceNote: `CRITICAL: Candidate has EXACTLY ${yearsExperience} years of experience. Do NOT say "decades" or exaggerate.`
-      }
-      const userPrompt = buildEnhancedCoverLetterUserPrompt({
-        candidateName,
+      // Use shared cover letter generator
+      const result = await generateCoverLetter({
+        resumeText,
         jobTitle,
         companyName,
-        location: '',
         jobDescription,
-        candidateHighlights: resumeText.slice(0, 2000),
-        companyData: companyPayload
+        candidateName,
+        candidateEmail,
+        hiringContactName: hiringContact,
+        templateId: template || 'modern',
+        tone,
+        psychology,
       })
       
-      // CRITICAL FIX: Inject years constraint directly into system prompt
-      const systemPromptWithConstraint = `${ENHANCED_COVER_LETTER_SYSTEM_PROMPT}
-
-CRITICAL EXPERIENCE CONSTRAINT:
-- Candidate has EXACTLY ${yearsExperience} years of total work experience
-- DO NOT say "decades", "38 years", or any number higher than ${yearsExperience}
-- If ${yearsExperience} < 10, say "several years" or "${yearsExperience} years"
-- If ${yearsExperience} >= 10 && ${yearsExperience} < 20, say "${yearsExperience} years" or "over a decade"
-- If ${yearsExperience} >= 20, say "${yearsExperience} years" or "two decades"
-- NEVER invent or exaggerate experience duration
-- Use ONLY the experience data provided in the resume`
-      
-      const out = await ppx.chat(`${systemPromptWithConstraint}\n\n${userPrompt}`, { model: 'sonar-pro', maxTokens: 1800, temperature: 0.35 })
-      let coverLetter = (out.content || '').trim()
-      // Authenticity validation & sanitization
-      const report = validateAuthenticityLetter(resumeText, coverLetter)
-      if (!report.isValid) {
-        coverLetter = sanitizeCoverLetter(resumeText, coverLetter)
-      }
+      const { coverLetter, authenticity: report, wordCount, preview } = result
       const keyPoints: string[] = []
-      const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
+      
+      console.log('[COVER_LETTER] Generated:', wordCount, 'words, authenticity score:', report.authenticityScore)
 
       if (save === true) {
         await connectToDatabase();
@@ -269,7 +251,7 @@ CRITICAL EXPERIENCE CONSTRAINT:
         keyPoints,
         authenticity: report,
         wordCount,
-        preview: { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` }
+        preview
       });
       resp.headers.set('x-request-id', requestId)
       logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
@@ -314,58 +296,37 @@ CRITICAL EXPERIENCE CONSTRAINT:
     }
 
     // Get company research data
-    let companyData = null;
+    let psychology = null;
     if (jobApplication.companyResearch) {
-      companyData = await CompanyData.findById(jobApplication.companyResearch);
+      const companyData = await CompanyData.findById(jobApplication.companyResearch);
+      if (companyData) psychology = companyData;
     }
     // Merge stored context (psychology) if present
-    if (!companyData && jobApplication.context?.companyData) {
-      companyData = { ...(jobApplication.context.companyData || {}) } as any
+    if (!psychology && jobApplication.context?.companyData) {
+      psychology = jobApplication.context.companyData;
     }
 
-    // Generate cover letter using Perplexity
-    let candidateName = session.user.name || ''
-    const candidateEmail = session.user.email || ''
-    const candidatePhone = ''
-    const hiringContact = ''
-    const ppx = new PerplexityService()
-    const companyPayload: any = {}
-    if (companyData) {
-      Object.assign(companyPayload, companyData)
-    }
-    // Calculate years of experience from resume text
-    const yearsExperience = calculateYearsFromResume(resume.extractedText || '')
-    companyPayload.yearsExperience = yearsExperience
-    companyPayload.experienceNote = `CRITICAL: Candidate has EXACTLY ${yearsExperience} years of experience. Do NOT say "decades" or exaggerate.`
-    console.log('[COVER_LETTER] Calculated experience:', yearsExperience, 'years')
-    const userPrompt = buildEnhancedCoverLetterUserPrompt({
-      candidateName,
+    // Get candidate info
+    const candidateName = session.user.name || ''
+    const hiringContactName = jobApplication.context?.hiringContactName || ''
+    
+    // Use shared cover letter generator (SECOND PATH - now using shared code!)
+    const result2 = await generateCoverLetter({
+      resumeText: resume.extractedText || '',
       jobTitle: jobApplication.jobTitle,
       companyName: jobApplication.companyName,
-      location: '',
       jobDescription: jobApplication.jobDescription,
-      candidateHighlights: (resume.extractedText || '').slice(0, 2000),
-      companyData: companyPayload
+      candidateName,
+      hiringContactName,
+      templateId: (body.template as string) || 'modern',
+      tone,
+      psychology,
     })
     
-    // CRITICAL FIX: Inject years constraint directly into system prompt (SECOND PATH)
-    const systemPromptWithConstraint = `${ENHANCED_COVER_LETTER_SYSTEM_PROMPT}
-
-CRITICAL EXPERIENCE CONSTRAINT:
-- Candidate has EXACTLY ${yearsExperience} years of total work experience
-- DO NOT say "decades", "38 years", or any number higher than ${yearsExperience}
-- If ${yearsExperience} < 10, say "several years" or "${yearsExperience} years"
-- If ${yearsExperience} >= 10 && ${yearsExperience} < 20, say "${yearsExperience} years" or "over a decade"
-- If ${yearsExperience} >= 20, say "${yearsExperience} years" or "two decades"
-- NEVER invent or exaggerate experience duration
-- Use ONLY the experience data provided in the resume`
-    
-    const result = await ppx.chat(`${systemPromptWithConstraint}\n\n${userPrompt}`, { model: 'sonar-pro', maxTokens: 1800, temperature: 0.35 })
-    let coverLetter = (result.content || '').trim()
-    const report = validateAuthenticityLetter(resume.extractedText || '', coverLetter)
-    if (!report.isValid) coverLetter = sanitizeCoverLetter(resume.extractedText || '', coverLetter)
+    const { coverLetter, authenticity: report, wordCount, preview: preview2 } = result2
     const keyPoints: string[] = []
-    const wordCount = coverLetter.split(/\s+/).filter(Boolean).length
+    
+    console.log('[COVER_LETTER] Generated (DB path):', wordCount, 'words, authenticity score:', report.authenticityScore)
 
     if (save === true) {
       await CoverLetter.create({
@@ -387,7 +348,7 @@ CRITICAL EXPERIENCE CONSTRAINT:
       keyPoints,
       authenticity: report,
       wordCount,
-      preview: raw ? { html: `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cover Letter</title><style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#333;max-width:8.5in;margin:0 auto;padding:0.5in;white-space:pre-wrap}</style></head><body>${coverLetter.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</body></html>` } : undefined
+      preview: preview2
     });
     resp2.headers.set('x-request-id', requestId)
     logRequestEnd(routeKey, requestId, 200, durationMs(startedAt))
