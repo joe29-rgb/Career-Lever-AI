@@ -3,8 +3,10 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { EmailAutomationService } from '@/lib/email-automation'
 import { resendProvider } from '@/lib/email-providers/resend-provider'
-import { generateResumePDF, generateCoverLetterPDF } from '@/lib/server-pdf-generator'
+import { generateSimplePDF, generateCoverLetterPDF } from '@/lib/pdf/unified-pdf-generator'
 import { isRateLimited } from '@/lib/rate-limit'
+import SentEmail from '@/models/SentEmail'
+import connectToDatabase from '@/lib/mongodb'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -49,10 +51,29 @@ export async function POST(request: NextRequest) {
       scheduled_time
     } = body
     
-    // Validation
+    // Validation - email format and domain
     if (!contact?.email) {
       return NextResponse.json(
         { error: 'Contact email is required' },
+        { status: 400 }
+      )
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(contact.email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      )
+    }
+    
+    // Check for disposable/invalid domains
+    const invalidDomains = ['test.com', 'example.com', 'localhost', 'mailinator.com']
+    const domain = contact.email.split('@')[1]?.toLowerCase()
+    if (invalidDomains.includes(domain)) {
+      return NextResponse.json(
+        { error: 'Invalid email domain' },
         { status: 400 }
       )
     }
@@ -79,29 +100,31 @@ export async function POST(request: NextRequest) {
       
       if (resumeHTML) {
         try {
-          const resumePDF = await generateResumePDF(resumeHTML)
+          const resumePDF = await generateSimplePDF(resumeHTML, 'Resume')
           attachments.push({
             filename: 'Resume.pdf',
             content: resumePDF.toString('base64'),
             contentType: 'application/pdf'
           })
-          console.log('[OUTREACH_SEND] Resume PDF generated')
+          console.log('[OUTREACH_SEND] Resume PDF generated:', resumePDF.length, 'bytes')
         } catch (error) {
           console.error('[OUTREACH_SEND] Resume PDF generation failed:', error)
+          // Don't fail the entire request, just skip the attachment
         }
       }
       
       if (coverLetterHTML) {
         try {
-          const coverPDF = await generateCoverLetterPDF(coverLetterHTML)
+          const coverPDF = await generateCoverLetterPDF(coverLetterHTML, 'modern')
           attachments.push({
             filename: 'Cover-Letter.pdf',
             content: coverPDF.toString('base64'),
             contentType: 'application/pdf'
           })
-          console.log('[OUTREACH_SEND] Cover letter PDF generated')
+          console.log('[OUTREACH_SEND] Cover letter PDF generated:', coverPDF.length, 'bytes')
         } catch (error) {
           console.error('[OUTREACH_SEND] Cover letter PDF generation failed:', error)
+          // Don't fail the entire request, just skip the attachment
         }
       }
       
@@ -125,6 +148,24 @@ export async function POST(request: NextRequest) {
       })
       
       if (!result.success) {
+        // Log failed email to database
+        try {
+          await connectToDatabase()
+          await SentEmail.create({
+            userId: session.user.id,
+            contactEmail: contact.email,
+            contactName: contact.name || 'Unknown',
+            subject: email.subject,
+            body: email.body,
+            attachments: attachments.map(a => ({ filename: a.filename, size: Buffer.from(a.content, 'base64').length })),
+            status: 'failed',
+            error: result.error,
+            metadata: { provider: 'resend' }
+          })
+        } catch (dbError) {
+          console.error('[OUTREACH_SEND] Failed to log error to DB:', dbError)
+        }
+        
         // Check if it's a configuration error
         if (result.error?.includes('API key not configured')) {
           return NextResponse.json({
@@ -151,6 +192,25 @@ export async function POST(request: NextRequest) {
           details: result.error,
           mailto_fallback: `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body)}`
         }, { status: 500 })
+      }
+      
+      // Log successful email to database
+      try {
+        await connectToDatabase()
+        await SentEmail.create({
+          userId: session.user.id,
+          contactEmail: contact.email,
+          contactName: contact.name || 'Unknown',
+          subject: email.subject,
+          body: email.body,
+          attachments: attachments.map(a => ({ filename: a.filename, size: Buffer.from(a.content, 'base64').length })),
+          status: 'sent',
+          messageId: result.message_id,
+          metadata: { provider: 'resend' }
+        })
+      } catch (dbError) {
+        console.error('[OUTREACH_SEND] Failed to log success to DB:', dbError)
+        // Don't fail the request if DB logging fails
       }
       
       return NextResponse.json({

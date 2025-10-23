@@ -26,6 +26,8 @@ export async function isRateLimited(userId: string | undefined, routeKey: string
     'resume:upload': 5000,            // 5000 per hour for resume uploads  
     'applications:attach': 5000,      // 5000 per hour for attachments
     'ai-requests': 200,               // 200 per hour for AI
+    'cover-letter': 1000,             // 1000 per hour for cover letter generation
+    'outreach-send': 5,               // 5 per hour for email sending (strict!)
     'api-general': 2000,              // 2000 per hour general API
     'default': 1000                   // 1000 per hour default
   }
