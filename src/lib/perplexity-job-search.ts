@@ -1,7 +1,7 @@
 import { PerplexityIntelligenceService } from './perplexity-intelligence'
 
-// Define proper types
-interface Job {
+// Define proper types (exported for reuse)
+export interface Job {
   title: string
   company: string
   location: string
@@ -17,14 +17,14 @@ interface Job {
   jobId: string
 }
 
-interface JobSearchOptions {
+export interface JobSearchOptions {
   experienceLevel?: 'entry' | 'mid' | 'senior'
   remote?: boolean
   salaryMin?: number
   limit?: number
 }
 
-interface JobMarketAnalysis {
+export interface JobMarketAnalysis {
   demand: 'high' | 'medium' | 'low'
   averageSalary: { min: number; max: number; currency: string }
   topSkills: string[]
@@ -49,6 +49,7 @@ export class PerplexityJobSearchService {
     location: string, 
     options: JobSearchOptions = {}
   ): Promise<Job[]> {
+    const startTime = Date.now()
     const { experienceLevel, remote, salaryMin, limit = 25 } = options
     
     // Dynamic date filter (last 30 days)
@@ -83,7 +84,13 @@ export class PerplexityJobSearchService {
       }
     })
     
-    return this.deduplicateAndRank(allJobs, limit)
+    const finalJobs = this.deduplicateAndRank(allJobs, limit)
+    
+    // Performance metrics
+    const duration = Date.now() - startTime
+    console.log(`[PERPLEXITY_JOB_SEARCH] Completed in ${duration}ms. Found ${allJobs.length} total, returned ${finalJobs.length} after dedup/ranking`)
+    
+    return finalJobs
   }
   
   // FIXED: Proper job market analysis method
@@ -214,6 +221,11 @@ export class PerplexityJobSearchService {
   
   // FIXED: Deterministic ranking, no random scores
   private static deduplicateAndRank(jobs: Job[], limit: number): Job[] {
+    if (jobs.length === 0) {
+      console.warn('[PERPLEXITY_JOB_SEARCH] No jobs to process')
+      return []
+    }
+    
     // Deduplicate by URL
     const uniqueJobs = new Map<string, Job>()
     jobs.forEach(job => {
