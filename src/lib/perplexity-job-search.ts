@@ -128,7 +128,7 @@ export class PerplexityJobSearchService {
       })
       
       // Parse JSON response
-      let content = typeof response === 'string' ? response : response.content || JSON.stringify(response)
+      let content = typeof response === 'string' ? response : (response as any).content || JSON.stringify(response)
       
       // Remove markdown code blocks
       content = content.replace(/```(?:json)?\s*/g, '')
