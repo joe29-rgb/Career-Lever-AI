@@ -787,20 +787,33 @@ ATS PLATFORMS (Canadian Tech Companies):
 - Workable: FreshBooks, Visier, Unbounce, Axonify
 - Recruitee: Paytm, Ecobee, Geotab, Auvik, Wave, KOHO
 - Ashby: Faire, Clearco, Maple, Borrowell, Shakepay
+- Breezy HR: Lumerate, Zymewire, and other Canadian startups
+- Communitech Job Board: communitech.ca/companies (Waterloo tech ecosystem)
+- RemoteRocketship: remoterocketship.com (Remote Canadian jobs)
+
+🔥 CRITICAL - FOLLOW LINKS AND EXTRACT FULL CONTENT:
+For EACH job found, you MUST:
+1. Find the job in search results (title, company, location, URL)
+2. **FOLLOW THE JOB URL** and visit the actual job posting page
+3. **SCRAPE THE COMPLETE JOB DESCRIPTION** from the posting page (all paragraphs, all bullet points)
+4. Extract salary, benefits, requirements, responsibilities from the posting page
+5. If company name is "Confidential" in search results - **VISIT THE URL** and extract the REAL company name from the posting page
+6. If description is missing - **TRY COMPANY CAREERS PAGE** (company.com/careers) or **COMPANY ATS** (company.breezy.hr, company.greenhouse.io)
 
 CRITICAL REQUIREMENTS:
 1. **ONLY REAL COMPANY NAMES** - ABSOLUTELY NO CONFIDENTIAL LISTINGS:
    ❌ REJECT AND SKIP: "Confidential", "Various Employers", "Multiple Companies", "Undisclosed", "Private", "TBD", "N/A", "Various [Industry]", "Anonymous", "Stealth", "Hidden"
    ❌ DO NOT INCLUDE jobs where company name is hidden or confidential
-   ✅ ONLY INCLUDE: Jobs with real, specific company names (e.g., "Ricoh Canada", "Shopify", "TD Bank")
+   ✅ ONLY INCLUDE: Jobs with real, specific company names (e.g., "Ricoh Canada", "Shopify", "TD Bank", "Lumerate", "Zymewire")
 2. **VERIFY COMPANY EXISTS** - Must be a real, identifiable company
 3. **SKIP INVALID LISTINGS** - If company name is missing or confidential, DO NOT include it in results
-4. Search ONLY publicly accessible listings (no login required)
-5. Prioritize Canadian sources for Canadian locations
-6. **Extract salary** from job posting if available
-7. Deduplicate across all sources by company + title
-8. Rank by: recency → Canadian source priority → relevance
-9. Return EXACTLY ${limit} unique listings with REAL company names only
+4. **EXTRACT FULL DESCRIPTIONS** - Visit each job URL and scrape complete description (minimum 200 words)
+5. Search ONLY publicly accessible listings (no login required)
+6. Prioritize Canadian sources for Canadian locations
+7. **Extract salary** from job posting page if available
+8. Deduplicate across all sources by company + title
+9. Rank by: recency → Canadian source priority → relevance
+10. Return EXACTLY ${limit} unique listings with REAL company names and FULL descriptions
 
 OUTPUT JSON (MUST BE VALID, COMPLETE JSON):
 [{
@@ -808,10 +821,12 @@ OUTPUT JSON (MUST BE VALID, COMPLETE JSON):
   "company": string (EXACT company name, not generic),
   "location": string (specific city/province),
   "url": string (direct job posting link),
-  "summary": string (50-100 words, job description),
-  "salary": string | null,
+  "summary": string (200-400 words, COMPLETE job description from posting page),
+  "salary": string | null (extracted from posting page),
   "postedDate": "YYYY-MM-DD",
-  "source": string (board name)
+  "source": string (board name),
+  "requirements": string[] (key requirements from posting),
+  "benefits": string[] (benefits mentioned in posting)
 }]`
 
     const USER_JOBS = `Search for "${jobTitle}" jobs in ${location} across these prioritized sources:
@@ -1163,42 +1178,48 @@ OUTPUT JSON FORMAT:
 
 MANDATORY SEARCH LOCATIONS (check ALL of these):
 
-🌐 OFFICIAL WEBSITE:
-1. ${companyName} official website /contact page
-2. ${companyName} official website /careers page
-3. ${companyName} official website /about page
-4. ${companyName} official website /team page
-5. Website footer for contact emails
-6. Look for: careers@, hr@, jobs@, recruiting@, talent@, info@, contact@
+🌐 OFFICIAL WEBSITE (VISIT AND SCRAPE):
+1. **VISIT** ${companyName} official website /contact page - EXTRACT all emails
+2. **VISIT** ${companyName} official website /careers page - EXTRACT contact info
+3. **VISIT** ${companyName} official website /about page - EXTRACT team emails
+4. **VISIT** ${companyName} official website /team page - EXTRACT individual emails
+5. **VISIT** Website footer - EXTRACT contact emails
+6. Look for: careers@, hr@, jobs@, recruiting@, talent@, info@, contact@, hello@
 
-🔍 GOOGLE SEARCHES:
-- "${companyName} HR email"
-- "${companyName} careers contact"
-- "${companyName} recruiter email"
-- "${companyName} talent acquisition contact"
+🔍 GOOGLE SEARCHES (FOLLOW TOP 3 RESULTS):
+- "${companyName} HR email" - **VISIT top results and EXTRACT emails**
+- "${companyName} careers contact" - **VISIT and EXTRACT**
+- "${companyName} recruiter email" - **VISIT and EXTRACT**
+- "${companyName} talent acquisition contact" - **VISIT and EXTRACT**
+- "${companyName} hiring manager" - **VISIT and EXTRACT**
 
-🔗 LINKEDIN:
+🔗 LINKEDIN (VISIT PROFILES):
 - Search: site:linkedin.com/in/ "${companyName}" recruiter
 - Search: site:linkedin.com/in/ "${companyName}" HR
 - Search: site:linkedin.com/in/ "${companyName}" talent acquisition
-- Company LinkedIn page: linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')}
-- Extract REAL profile URLs of HR employees
+- **VISIT** Company LinkedIn page: linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')}
+- **VISIT** individual LinkedIn profiles of HR employees
+- Extract REAL names, titles, and profile URLs
 
-🐦 TWITTER/X:
+🐦 TWITTER/X (VISIT PAGES):
 - Search: site:twitter.com "${companyName}" careers
-- Company Twitter bio for contact info
+- **VISIT** Company Twitter bio for contact info
 
-📘 FACEBOOK:
+📘 FACEBOOK (VISIT PAGES):
 - Search: site:facebook.com "${companyName}" jobs
-- Company Facebook page About section
+- **VISIT** Company Facebook page About section
 
-📷 INSTAGRAM:
-- Company Instagram bio for contact email
+📷 INSTAGRAM (VISIT BIO):
+- **VISIT** Company Instagram bio for contact email
 
-💼 JOB BOARDS:
+💼 JOB BOARDS (VISIT POSTINGS):
 - Search: site:indeed.com "${companyName}" contact
 - Search: site:glassdoor.com "${companyName}" contact
-- Job postings with direct contact info
+- **VISIT** Job postings and EXTRACT direct contact info
+
+📧 CONTACTOUT / HUNTER.IO:
+- Search: site:contactout.com "${companyName}"
+- **VISIT** any ContactOut pages and EXTRACT verified emails
 
 EXTRACT ONLY VERIFIED PUBLIC INFORMATION:
 ✅ Email addresses you SEE on websites (careers@, hr@, jobs@, recruiting@, talent@)
