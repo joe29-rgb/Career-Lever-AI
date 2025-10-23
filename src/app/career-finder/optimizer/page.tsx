@@ -464,7 +464,7 @@ ${htmlContent}
         </div>
         <div>
           <div className="mb-1 text-foreground">Tone</div>
-          <select className="w-full border rounded p-2 bg-background text-foreground" value={tone} onChange={(e)=>setTone(e.target.value as any)}>
+          <select className="w-full border rounded p-2 bg-background text-foreground" value={tone} onChange={(e)=>setTone(e.target.value as 'professional' | 'conversational' | 'enthusiastic')}>
             <option value="professional">Professional</option>
             <option value="conversational">Conversational</option>
             <option value="technical">Technical</option>
