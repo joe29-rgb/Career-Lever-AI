@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -9,59 +8,10 @@ import {
   Calendar,
   Target
 } from 'lucide-react'
-
-interface Stats {
-  totalApplications: number
-  appliedThisWeek: number
-  interviewRate: number
-  averageResponseTime: number
-}
+import { useDashboardStatsData } from '@/hooks/use-dashboard-stats'
 
 export function StatsOverview() {
-  const [stats, setStats] = useState<Stats>({
-    totalApplications: 0,
-    appliedThisWeek: 0,
-    interviewRate: 0,
-    averageResponseTime: 0,
-  })
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchStats()
-  }, [])
-
-  const fetchStats = async () => {
-    try {
-      // Fetch real stats from the analytics API
-      const response = await fetch('/api/analytics/dashboard')
-      const data = await response.json()
-
-      if (data.success) {
-        setStats(data.stats)
-      } else {
-        // Fallback to basic stats if analytics API fails
-        const fallbackStats: Stats = {
-          totalApplications: 0,
-          appliedThisWeek: 0,
-          interviewRate: 0,
-          averageResponseTime: 0,
-        }
-        setStats(fallbackStats)
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error)
-      // Fallback to zero stats on error
-      const fallbackStats: Stats = {
-        totalApplications: 0,
-        appliedThisWeek: 0,
-        interviewRate: 0,
-        averageResponseTime: 0,
-      }
-      setStats(fallbackStats)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { stats, isLoading: loading } = useDashboardStatsData()
 
   if (loading) {
     return (

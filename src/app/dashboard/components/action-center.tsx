@@ -2,23 +2,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useQuery } from '@tanstack/react-query'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ArrowRight, ClipboardList, Sparkles, Target, Bell, Route } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useDashboardStatsData } from '@/hooks/use-dashboard-stats'
 
 export function ActionCenter() {
   const router = useRouter()
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      const res = await fetch('/api/analytics/dashboard')
-      if (!res.ok) return { stats: { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0 } }
-      return res.json()
-    }
-  })
-
-  const stats = data?.stats || { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0 }
+  const { stats, isLoading } = useDashboardStatsData()
 
   const actions = [
     {

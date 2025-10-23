@@ -30,10 +30,12 @@ export default function AIInsights() {
           }
         } catch {}
 
+        // Use cached stats from shared hook instead of fetching again
         const res = await fetch('/api/analytics/dashboard')
         if (res.ok) {
           const data = await res.json()
           const s = data?.stats || { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0 }
+          // TODO: Refactor to use useDashboardStatsData() hook
           const items: Insight[] = [
             { title: 'Focus company outreach', detail: `Interview rate at ${s.interviewRate}% — tailor follow-ups to top targets.` },
             { title: 'Consistency wins', detail: `Apply to at least ${(s.appliedThisWeek || 0) + 3} roles this week to maintain momentum.` },

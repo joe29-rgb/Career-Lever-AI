@@ -3,20 +3,11 @@
 import { Card, CardContent } from '@/components/ui/card'
 import React from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useQuery } from '@tanstack/react-query'
 import { TrendingUp, TrendingDown, Briefcase, Calendar, Target, Clock } from 'lucide-react'
+import { useDashboardStatsData } from '@/hooks/use-dashboard-stats'
 
 export function MetricsHero() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      const res = await fetch('/api/analytics/dashboard')
-      if (!res.ok) return { stats: { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0, averageResponseTime: 0 } }
-      return res.json()
-    }
-  })
-
-  const stats = data?.stats || { totalApplications: 0, appliedThisWeek: 0, interviewRate: 0, averageResponseTime: 0, appliedWeekChangePct: 0 }
+  const { stats, isLoading } = useDashboardStatsData()
 
   const metricCards = [
     {
