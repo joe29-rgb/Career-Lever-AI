@@ -288,8 +288,22 @@ export function UnifiedNavigation() {
 
             {/* USER MENU OR AUTH BUTTONS */}
             {session ? (
-              <div className="flex items-center space-x-2">
-                {/* USER DROPDOWN */}
+              <div className="flex items-center gap-2">
+                {/* MOBILE MENU BUTTON - Show FIRST on mobile for better visibility */}
+                <button
+                  className="flex md:hidden p-2.5 rounded-xl bg-accent/30 hover:bg-accent/50 transition-all border border-border/50 hover:border-primary/30 shadow-sm"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label="Toggle mobile menu"
+                  style={{ minWidth: '44px', minHeight: '44px' }}
+                >
+                  {mobileMenuOpen ? (
+                    <X className="h-6 w-6 text-primary" />
+                  ) : (
+                    <Menu className="h-6 w-6 text-foreground" />
+                  )}
+                </button>
+
+                {/* USER DROPDOWN - Desktop only */}
                 <div className="hidden md:block relative group">
                   <button className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-accent/50 transition-all duration-300">
                     <Avatar className="h-8 w-8 ring-2 ring-border/50 hover:ring-primary/50 transition-all">
@@ -331,19 +345,6 @@ export function UnifiedNavigation() {
                     </button>
                   </div>
                 </div>
-
-                {/* MOBILE MENU BUTTON - More prominent */}
-                <button
-                  className="md:hidden p-2 rounded-xl hover:bg-accent/50 transition-all border-2 border-transparent hover:border-primary/20"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  aria-label="Toggle mobile menu"
-                >
-                  {mobileMenuOpen ? (
-                    <X className="h-6 w-6 text-primary" />
-                  ) : (
-                    <Menu className="h-6 w-6" />
-                  )}
-                </button>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
