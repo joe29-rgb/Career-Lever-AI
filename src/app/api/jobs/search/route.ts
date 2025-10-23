@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       keywords, 
       location, // CRITICAL FIX: No default - use exact value from frontend
       sources, 
-      limit = 50, 
+      limit = 25, 
       remote,
       salaryMin,
       experienceLevel,

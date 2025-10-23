@@ -1016,7 +1016,7 @@ OUTPUT JSON FORMAT:
     try {
       const out = await withRetry(async () => {
         const client = createClient()
-        const prompt = `Find ${options.maxResults || 20} relevant job opportunities in ${location} matching this profile.
+        const prompt = `Find ${options.maxResults || 25} relevant job opportunities in ${location} matching this profile.
 
 RESUME:
 ${resumeText}
@@ -1051,17 +1051,18 @@ REQUIREMENTS:
    - "site:autojobs.com ${options.roleHint || 'jobs'} ${location}"
    - "site:simplyhired.ca ${options.roleHint || 'jobs'} ${location}"
 3. For each board, extract: title, company, location, salary (if shown), URL, posted date
-4. Match skills from resume to job requirements
-5. Calculate skillMatchPercent (0-100) based on overlap
-6. Include salary data when visible (look for "$XX,XXX", "$XX-$XX/hour", "salary range")
-7. Deduplicate across all sources
-8. Rank by: skillMatchPercent → recency → salary
-9. **MUST return AT LEAST 10-15 real job postings with actual URLs**
+4. **CRITICAL - Company Names**: If company is "Confidential" or missing, visit the job URL and extract the REAL company name from the posting page
+5. Match skills from resume to job requirements
+6. Calculate skillMatchPercent (0-100) based on overlap
+7. Include salary data when visible (look for "$XX,XXX", "$XX-$XX/hour", "salary range")
+8. Deduplicate across all sources
+9. Rank by: skillMatchPercent → recency → salary
+10. **MUST return AT LEAST 25 real job postings with actual URLs and REAL company names**
 
 OUTPUT JSON FORMAT:
 [{
   "title": string,
-  "company": string,
+  "company": string (NEVER use "Confidential" - extract real name from job posting URL),
   "location": string,
   "address": string | null,
   "url": string,
@@ -1086,7 +1087,7 @@ OUTPUT JSON FORMAT:
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.15, 
-          maxTokens: Math.min((options.maxResults || 20) * 150, 6000), // INCREASED: More tokens for comprehensive search
+          maxTokens: Math.min((options.maxResults || 25) * 200, 8000), // INCREASED: More tokens for 25+ jobs with company extraction
           model: 'sonar-pro' // Use research model for job analysis
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
@@ -1103,7 +1104,7 @@ OUTPUT JSON FORMAT:
       
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
       console.log('[JOB_MARKET_V2] Parsed jobs:', parsed.length)
-      parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 20) : []
+      parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
       
       // Enhance and normalize
       parsed = parsed.map(j => ({

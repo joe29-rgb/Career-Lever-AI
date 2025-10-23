@@ -95,12 +95,6 @@ export function UnifiedNavigation() {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const { count: notificationCount } = useNotifications()
-  
-  // Don't show navigation on auth or landing pages
-  const isAuthPage = pathname?.startsWith('/auth')
-  const isLandingPage = pathname === '/'
-  
-  if (isAuthPage || isLandingPage) return null
 
   // Handle scroll for glass effect
   useEffect(() => {
@@ -114,7 +108,6 @@ export function UnifiedNavigation() {
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false)
-    setExpandedMenu(null)
   }, [pathname])
 
   // Keyboard shortcuts
@@ -133,6 +126,12 @@ export function UnifiedNavigation() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [mobileMenuOpen])
+  
+  // Don't show navigation on auth or landing pages
+  const isAuthPage = pathname?.startsWith('/auth')
+  const isLandingPage = pathname === '/'
+  
+  if (isAuthPage || isLandingPage) return null
 
   const isItemActive = (item: NavigationItem) => {
     if (item.href && pathname === item.href) return true
