@@ -1696,18 +1696,260 @@ export const dynamic = 'force-dynamic'
 
 ---
 
-## 📝 AUDIT STATUS - SESSION 3 COMPLETE
+## 📝 CONTINUING AUDIT - SESSION 4
 
-**Status:** ✅ Session 3 complete
-**Files Analyzed:** 38 core files
-**Issues Documented:** 38 issues across 9 categories
-**Root Causes Found:** 6 major bugs identified
+---
+
+## 📁 FILE: `src/lib/theme-manager.ts`
+
+### Issues Found:
+1. **GOOD THEME MANAGER**
+   - Lines 9-26: Initializes theme, listens for system changes
+   - Lines 28-33: Toggle function
+   - **Status:** ✅ Well-implemented
+
+2. **USES data-theme ATTRIBUTE**
+   - Line 66: `root.setAttribute('data-theme', theme)`
+   - **Status:** ✅ Correct approach for CSS theming
+
+---
+
+## 📁 FILE: `src/app/layout.tsx` (FULL REVIEW)
+
+### Issues Found:
+1. **IMPORTS ALL 4 CSS FILES**
+   - Line 2: `import './globals.css'`
+   - Line 3: `import './globals.mobile.css'`
+   - Line 4: `import './globals-folder.css'`
+   - Line 5: `import './globals-theme.css'`
+   - **VERIFIED:** All 4 CSS files are intentionally loaded
+
+2. **CSS FILE PURPOSE CLARIFICATION:**
+   - `globals.css` - Has `[data-theme="light"]` selector (line 136)
+   - `globals-theme.css` - NO theme selectors found
+   - `globals.mobile.css` - Has `@media (prefers-color-scheme: dark)` (line 662)
+   - **ISSUE:** Files are NOT organized by light/dark mode
+   - **ISSUE:** They're organized by... unclear purpose?
+
+3. **DUPLICATE MobileNav CONFIRMED**
+   - Line 18: Imports `MobileNav`
+   - Line 70: Renders `<MobileNav />`
+   - **CRITICAL:** This is the duplicate navigation causing issues
+
+4. **UNUSED IMPORTS**
+   - Line 13: `import Link from 'next/link'` - NOT USED
+   - Line 14: `import { Toaster } from 'react-hot-toast'` - NOT USED (rendered in Providers)
+   - Line 15: `import { AnalyticsTracker }` - NOT USED
+   - Line 16: `import { DebugPanel }` - NOT USED
+
+5. **INLINE THEME SCRIPT**
+   - Lines 59-61: Inline script to prevent theme flash
+   - **Status:** ✅ Good for performance
+
+---
+
+## 🔍 CSS FILES ANALYSIS - CORRECTED
+
+After reviewing the actual CSS files and imports:
+
+### **CSS FILE ORGANIZATION:**
+1. **`globals.css`** (1058 lines)
+   - Main styles
+   - Has light theme: `[data-theme="light"]` selector
+   - Has dark theme: Default styles
+   - **Purpose:** Core application styles with theme support
+
+2. **`globals.mobile.css`** (696 lines)
+   - Mobile-specific styles
+   - Has dark mode: `@media (prefers-color-scheme: dark)` (line 662)
+   - **Purpose:** Mobile optimizations
+   - **ISSUE:** Uses `prefers-color-scheme` instead of `data-theme`
+
+3. **`globals-folder.css`** (35 lines)
+   - Job card 3D effects
+   - **Purpose:** Specific component styling
+   - **ISSUE:** Should be in component file or main CSS
+
+4. **`globals-theme.css`** (556 lines)
+   - Loading animations, glassmorphism, toasts
+   - **NO theme selectors** - applies to all themes
+   - **Purpose:** Visual effects and animations
+   - **ISSUE:** Name is misleading (not theme-specific)
+
+### **ACTUAL ISSUES WITH CSS:**
+1. **Inconsistent Theme Approach**
+   - `globals.css` uses `[data-theme="light"]`
+   - `globals.mobile.css` uses `@media (prefers-color-scheme: dark)`
+   - **Result:** Theme toggle won't work for mobile styles
+
+2. **Duplicate Definitions Still Exist**
+   - Button styles in multiple files
+   - Loading spinners in multiple files
+   - Toast styles in multiple files
+   - **Result:** Conflicts and inconsistency
+
+3. **Misleading File Names**
+   - `globals-theme.css` has no theme-specific code
+   - `globals-folder.css` is just job card styles
+   - **Result:** Confusing organization
+
+---
+
+## 📊 AUDIT PROGRESS (v6)
+
+**Files Audited:** 40 of ~450
+**Critical Issues Found:** 5
+**High Priority Issues:** 9
+**Medium Priority Issues:** 15
+**Low Priority Issues:** 13
+
+**Lines of Code Analyzed:** ~10,000 lines
+
+**New Findings:**
+1. ✅ Verified CSS files are NOT for light/dark mode separation
+2. ✅ Found inconsistent theme approach (data-theme vs prefers-color-scheme)
+3. ✅ Found 4 unused imports in layout.tsx
+4. ✅ Confirmed MobileNav duplication is the navigation bug
+
+---
+
+## 🚨 UPDATED CRITICAL ISSUES SUMMARY (v6)
+
+### 1. **INCONSISTENT THEME APPROACH** (CRITICAL)
+- `globals.css` uses `[data-theme="light"]`
+- `globals.mobile.css` uses `@media (prefers-color-scheme: dark)`
+- **Result:** Theme toggle works on desktop, NOT on mobile
+- **Fix:** Use `[data-theme]` consistently across all CSS files
+
+### 2. **DUPLICATE NAVIGATION** (CRITICAL)
+- Line 70 in `layout.tsx` renders `<MobileNav />`
+- `AppShell` also renders `<UnifiedNavigation />`
+- **Result:** TWO navigation systems, neither works properly
+
+### 3. **COVER LETTER VALIDATION** (CRITICAL)
+- Validation before fallback
+- Returns 400 error
+- Feature completely broken
+
+### 4. **EMPTY LOCATION DEFAULT** (HIGH)
+- Causes 400 error from job search API
+- Blocks job searches
+
+### 5. **10-MINUTE PERPLEXITY TIMEOUT** (HIGH)
+- Users wait forever if API is slow
+
+### 6. **EXCESSIVE DEBUG LOGGING** (HIGH)
+- Console spam, performance impact
+
+### 7. **4 UNUSED IMPORTS IN LAYOUT** (MEDIUM)
+- Link, Toaster, AnalyticsTracker, DebugPanel
+- **Result:** Dead code, confusing
+
+### 8. **MISLEADING CSS FILE NAMES** (LOW)
+- `globals-theme.css` has no theme code
+- `globals-folder.css` is just job cards
+- **Result:** Confusing organization
+
+---
+
+## 🔧 UPDATED IMMEDIATE FIXES (v6)
+
+### **CRITICAL (Fix Immediately)** ⚡
+
+#### 1. Remove Duplicate Navigation (1 minute)
+**File:** `src/app/layout.tsx` line 70
+```typescript
+// DELETE THIS LINE:
+<MobileNav />
+```
+
+#### 2. Fix Inconsistent Theme Selectors (5 minutes)
+**File:** `src/app/globals.mobile.css` line 662
+```css
+/* CHANGE FROM: */
+@media (prefers-color-scheme: dark) {
+
+/* CHANGE TO: */
+[data-theme="dark"] {
+```
+
+#### 3. Fix Cover Letter Validation (2 minutes)
+**File:** `src/lib/validators.ts` line 34
+```typescript
+// CHANGE FROM:
+jobDescription: z.string().min(50),
+
+// CHANGE TO:
+jobDescription: z.string().min(1),
+```
+
+#### 4. Fix Empty Location Default (2 minutes)
+**File:** `src/app/career-finder/search/page.tsx` line 36
+```typescript
+// CHANGE FROM:
+location: '',
+
+// CHANGE TO:
+location: 'Canada', // Default fallback
+```
+
+#### 5. Remove Unused Imports (2 minutes)
+**File:** `src/app/layout.tsx`
+```typescript
+// DELETE LINES 13-16:
+import Link from 'next/link'
+import { Toaster } from 'react-hot-toast'
+import { AnalyticsTracker } from '@/components/analytics-tracker'
+import { DebugPanel } from '@/components/debug-panel'
+
+// DELETE LINE 18:
+import { MobileNav } from '@/components/mobile/MobileNav'
+```
+
+### **HIGH PRIORITY (Fix Today)** 🔨
+
+#### 6. Reduce Perplexity Timeout (1 minute)
+**File:** `src/lib/perplexity-service.ts` line 72
+```typescript
+const timer = setTimeout(() => controller.abort(), 60000) // 60 seconds
+```
+
+#### 7. Remove Excessive Console Logging (10 minutes)
+**Files:** Multiple files - wrap console.log in debug checks
+
+#### 8. Make Location Optional in API (3 minutes)
+**File:** `src/app/api/jobs/search/route.ts` lines 72-78
+
+---
+
+## 📈 UPDATED FIX TIME
+
+**Critical Fixes:** 12 minutes (was 6)
+**High Priority:** 14 minutes
+**Medium Priority:** 40 minutes
+**Low Priority:** 20 minutes
+
+**Total Time to Fix All Issues:** ~1.5 hours
+
+---
+
+## 📝 AUDIT STATUS - SESSION 4 COMPLETE
+
+**Status:** ✅ Session 4 complete - CSS analysis corrected
+**Files Analyzed:** 40 core files
+**Issues Documented:** 42 issues across 10 categories
+**Root Causes Found:** 8 major bugs identified
 **Fixes Provided:** Step-by-step fixes for all issues
+
+**Key Correction:**
+- CSS files are NOT organized by light/dark mode
+- They use INCONSISTENT theme approaches
+- This is why theme toggle doesn't work properly
 
 **Next Steps:**
 1. Review this audit report
 2. Prioritize fixes based on impact
-3. Implement critical fixes first (6 minutes)
-4. Test each fix
-5. Continue audit of remaining ~412 files if needed
+3. Implement critical fixes first (12 minutes)
+4. Test theme toggle on mobile after fix
+5. Continue audit of remaining ~410 files if needed
 
