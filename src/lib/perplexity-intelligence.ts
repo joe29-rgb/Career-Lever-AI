@@ -1179,30 +1179,85 @@ OUTPUT JSON FORMAT:
         const { getPerplexityConfig } = await import('./config/perplexity-configs')
         const config = getPerplexityConfig('hiringContacts')
         
-        // CRITICAL: Multi-source search - ONLY REAL DATA, NO FALLBACKS
-        const prompt = `Find hiring contacts for ${companyName}. Return ONLY information you actually find from web searches.
+        // ULTRA-AGGRESSIVE: Multi-platform exhaustive contact scraping
+        const prompt = `Find ALL public hiring contacts for ${companyName} using exhaustive web and social media research.
 
-SEARCH INSTRUCTIONS:
-1. Search: "${companyName} HR email"
-2. Search: "${companyName} careers contact"
-3. Search: site:linkedin.com/in/ "${companyName}" recruiter
-4. Visit ${companyName} official website contact page
+MANDATORY SEARCH LOCATIONS (check ALL of these):
 
-ABSOLUTE RULES:
-- ONLY return emails you find on actual websites
-- ONLY return names you find on LinkedIn profiles with real URLs
-- If you find hr@ricoh.ca, return it exactly as you found it
-- If you find scott.leonard@ricoh.ca, return it with the real LinkedIn URL
-- DO NOT make up any information
-- DO NOT guess email patterns
-- DO NOT create fake names
-- If you cannot find ANY real contacts, return empty array []
+🌐 OFFICIAL WEBSITE:
+1. ${companyName} official website /contact page
+2. ${companyName} official website /careers page
+3. ${companyName} official website /about page
+4. ${companyName} official website /team page
+5. Website footer for contact emails
+6. Look for: careers@, hr@, jobs@, recruiting@, talent@, info@, contact@
 
-Return ONLY valid JSON array:
-[{"name":"Scott Leonard","title":"Director","email":"scott.leonard@ricoh.ca","linkedinUrl":"https://linkedin.com/in/scottleonard","source":"Company Website","confidence":0.9}]
+🔍 GOOGLE SEARCHES:
+- "${companyName} HR email"
+- "${companyName} careers contact"
+- "${companyName} recruiter email"
+- "${companyName} talent acquisition contact"
 
-OR if nothing found:
-[]`
+🔗 LINKEDIN:
+- Search: site:linkedin.com/in/ "${companyName}" recruiter
+- Search: site:linkedin.com/in/ "${companyName}" HR
+- Search: site:linkedin.com/in/ "${companyName}" talent acquisition
+- Company LinkedIn page: linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')}
+- Extract REAL profile URLs of HR employees
+
+🐦 TWITTER/X:
+- Search: site:twitter.com "${companyName}" careers
+- Company Twitter bio for contact info
+
+📘 FACEBOOK:
+- Search: site:facebook.com "${companyName}" jobs
+- Company Facebook page About section
+
+📷 INSTAGRAM:
+- Company Instagram bio for contact email
+
+💼 JOB BOARDS:
+- Search: site:indeed.com "${companyName}" contact
+- Search: site:glassdoor.com "${companyName}" contact
+- Job postings with direct contact info
+
+EXTRACT ONLY VERIFIED PUBLIC INFORMATION:
+✅ Email addresses you SEE on websites (careers@, hr@, jobs@, recruiting@, talent@)
+✅ Direct employee emails found on LinkedIn/website (firstname.lastname@domain)
+✅ Phone numbers for HR/recruiting
+✅ LinkedIn profile URLs of recruiters/HR with REAL names
+✅ Company careers page URL
+
+STRICT RULES:
+🚫 Do NOT infer or generate any email addresses
+🚫 Do NOT guess email patterns
+🚫 ONLY return information you can SEE on public pages
+🚫 Do NOT include personal emails (gmail, yahoo, hotmail)
+🚫 Do NOT make up names or contacts
+
+RETURN FORMAT (JSON array):
+[
+  {
+    "name": "Sarah Johnson",
+    "title": "Senior Recruiter",
+    "email": "sarah.johnson@company.com",
+    "phone": "+1-888-742-6417",
+    "linkedinUrl": "https://linkedin.com/in/sarahjohnson",
+    "source": "LinkedIn profile",
+    "platform": "LinkedIn"
+  },
+  {
+    "name": "HR Department",
+    "title": "Human Resources",
+    "email": "careers@company.com",
+    "source": "Company website",
+    "platform": "Website"
+  }
+]
+
+IF ZERO VERIFIED CONTACTS FOUND, return empty array: []
+
+IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you actually found.`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits + sonar-pro for research
         return client.makeRequest(SYSTEM, prompt, { 
@@ -1276,7 +1331,42 @@ OR if nothing found:
       console.log(`[HIRING_CONTACTS] ✅ Enterprise extraction succeeded after: ${extractionResult.attemptedCleanups.join(', ')}`)
       console.log(`[HIRING_CONTACTS] ✅ Extracted ${parsed.length} contacts for ${companyName}`)
       
-      // Enhance each contact with inferred emails
+      // CRITICAL: Validate and filter contacts - reject fake/personal emails
+      const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'protonmail.com']
+      parsed = parsed.filter(contact => {
+        // Must have at least one contact method
+        if (!contact.email && !contact.phone && !contact.linkedinUrl) {
+          console.warn(`[HIRING_CONTACTS] Rejected contact with no contact method: ${contact.name}`)
+          return false
+        }
+        
+        // Reject inferred/template emails
+        if (contact.email?.includes('[') || 
+            contact.email?.includes('example.') || 
+            contact.email?.includes('domain.') ||
+            contact.email?.includes('VISIT_WEBSITE')) {
+          console.warn(`[HIRING_CONTACTS] Rejected template email: ${contact.email}`)
+          return false
+        }
+        
+        // Reject personal emails
+        if (contact.email && personalDomains.some(d => contact.email!.toLowerCase().endsWith(d))) {
+          console.warn(`[HIRING_CONTACTS] Rejected personal email: ${contact.email}`)
+          return false
+        }
+        
+        // Reject LinkedIn profiles without proper URL
+        if (contact.linkedinUrl && !contact.linkedinUrl.includes('linkedin.com/')) {
+          console.warn(`[HIRING_CONTACTS] Rejected invalid LinkedIn URL: ${contact.linkedinUrl}`)
+          return false
+        }
+        
+        return true
+      })
+      
+      console.log(`[HIRING_CONTACTS] ✅ After validation: ${parsed.length} verified contacts`)
+      
+      // Enhance each contact with metadata
       parsed = parsed.map(c => {
         const domain = `${companyName.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'')}.com`
         const inferred = c.name ? inferEmails(c.name, domain) : []
