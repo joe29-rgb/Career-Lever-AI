@@ -125,7 +125,7 @@ export async function generateCoverLetterPDF(
         info: {
           Title: options.title || 'Cover Letter',
           Author: options.author || 'Career Lever AI',
-          Subject: 'Job Application Cover Letter',
+          Subject: `Job Application Cover Letter (${templateId} template)`,
           Keywords: 'cover letter, job application'
         }
       })
@@ -244,9 +244,5 @@ function parseHTMLSections(html: string): Array<{ header?: string; content: stri
   return sections.length > 0 ? sections : [{ content: stripHtmlTags(html) }]
 }
 
-// Export all functions
-export {
-  generateSimplePDF as generateResumePDF, // Alias for backward compatibility
-  generateStyledResumePDF,
-  generateCoverLetterPDF as generateCoverLetter
-}
+// Export aliases for backward compatibility
+export const generateResumePDF = generateSimplePDF

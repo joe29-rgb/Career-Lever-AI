@@ -17,10 +17,7 @@ export interface ISentEmail extends Document {
   openedAt?: Date
   clickedAt?: Date
   error?: string
-  metadata?: {
-    provider: string
-    [key: string]: any
-  }
+  metadata?: Record<string, unknown>
 }
 
 const SentEmailSchema = new Schema<ISentEmail>({

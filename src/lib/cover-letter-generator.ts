@@ -25,7 +25,7 @@ export interface CoverLetterParams {
   templateId?: string
   tone?: 'professional' | 'conversational' | 'technical'
   length?: 'short' | 'medium' | 'long'
-  psychology?: any // Company psychology data
+  psychology?: Record<string, unknown> // Company psychology data
   yearsExperience?: number
 }
 
@@ -73,7 +73,7 @@ export async function generateCoverLetter(params: CoverLetterParams): Promise<Co
   // Build Perplexity prompt with all context
   const ppx = new PerplexityService()
   
-  const companyPayload: any = {
+  const companyPayload: Record<string, unknown> = {
     ...(psychology || {}),
     yearsExperience: calculatedYears,
     experienceNote: `CRITICAL: Candidate has EXACTLY ${calculatedYears} years of experience. Do NOT exaggerate.`
@@ -131,7 +131,7 @@ export async function generateCoverLetter(params: CoverLetterParams): Promise<Co
  * Build system prompt with template and experience constraints
  */
 function buildSystemPromptWithConstraints(
-  template: any,
+  template: { id: string; name: string },
   yearsExperience: number,
   tone: string
 ): string {
