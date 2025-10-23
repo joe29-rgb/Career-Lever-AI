@@ -49,9 +49,17 @@
 5. Add comprehensive testing guide for Phase 1
 6. Add session summary - Phase 1 complete
 
-### Next Steps (Phase 2)
-- Resume generation (apply same pattern as cover letter)
-- Quiz/onboarding flow (fix dead code, wire to sign-in)
+### Phase 2 Progress (In Progress)
+
+**Resume Generation** ✅ COMPLETE
+- Created `src/lib/resume-generator.ts` - Shared resume generator
+- Fixed: `src/app/api/resume-builder/generate/route.ts` (removed 393 lines of duplicate code)
+- Features: Template integration, job description optimization, ATS scoring, Perplexity Agent API
+- Removed duplicate functions: generateOptimizedResume, optimizeResumeContent, convertTextToStructuredData
+- Single source of truth for resume generation logic
+
+**Next Steps:**
+- Quiz/onboarding flow (fix dead code, wire to sign-in) - IN PROGRESS
 - Calendar integration (Google OAuth, auto-create events)
 - Dashboard optimization (remove duplicate fetching)
 - Styled PDFs (implement @react-pdf/renderer)

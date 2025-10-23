@@ -58,7 +58,13 @@ function SignInInner() {
   // Redirect if already authenticated
   useEffect(() => {
     if (session) {
-      router.push(callbackUrl)
+      // Check if user needs onboarding
+      const user = session.user as any
+      if (user?.profile?.onboardingCompleted === false) {
+        router.push('/onboarding/quiz')
+      } else {
+        router.push(callbackUrl)
+      }
     }
   }, [session, router, callbackUrl])
 

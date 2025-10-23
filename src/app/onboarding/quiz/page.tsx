@@ -120,11 +120,14 @@ export default function OnboardingQuizPage() {
   const handleSuccessComplete = () => {
     // Route based on resume answer
     if (hasResume === false) {
+      // No resume - go to resume builder
       router.push('/resume-builder')
     } else if (hasResume === true) {
-      router.push('/resume-manager')
+      // Has resume - go to career finder to upload it
+      router.push('/career-finder')
     } else {
-      router.push('/career-finder/resume')
+      // Default - go to career finder
+      router.push('/career-finder')
     }
   }
 
