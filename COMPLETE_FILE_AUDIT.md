@@ -65,10 +65,25 @@
 - Quiz redirects to correct routes (resume-builder or career-finder)
 - No more `/resume-manager` 404 errors
 
-**Next Steps:**
-- Calendar integration (Google OAuth, auto-create events) - TODO
-- Dashboard optimization (remove duplicate fetching) - TODO
-- Styled PDFs (implement @react-pdf/renderer) - TODO
+**Dashboard Optimization** ✅ COMPLETE
+- Created `src/hooks/use-dashboard-stats.ts` - Shared data hook with React Query
+- Fixed: `src/app/dashboard/components/metrics-hero.tsx` - Removed duplicate fetch
+- Fixed: `src/app/dashboard/components/stats-overview.tsx` - Removed duplicate fetch
+- Fixed: `src/app/dashboard/components/action-center.tsx` - Removed duplicate fetch
+- Reduced API calls from 4 to 1 (75% reduction)
+- Added caching (30s stale time, 5min cache)
+- Automatic deduplication across all dashboard components
+
+### Phase 2 Summary
+- ✅ Resume Generation (shared generator, template integration, ATS scoring)
+- ✅ Quiz/Onboarding Flow (wired to sign-in, fixed redirects)
+- ✅ Dashboard Optimization (consolidated API calls, React Query caching)
+- **Status:** Phase 2 COMPLETE (3/3 features)
+
+**Future Enhancements (Phase 3):**
+- Calendar integration (Google OAuth, auto-create events)
+- Styled PDFs (implement @react-pdf/renderer)
+- Email automation (scheduled sending, follow-up reminders)
 
 ---
 
