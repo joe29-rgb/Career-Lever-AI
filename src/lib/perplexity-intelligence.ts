@@ -1180,56 +1180,35 @@ OUTPUT JSON FORMAT:
         const config = getPerplexityConfig('hiringContacts')
         
         // CRITICAL: Multi-source search using Perplexity's sonar-pro research capabilities
-        const prompt = `URGENT: Find REAL hiring contacts at ${companyName} using multiple sources. Return ONLY valid JSON, NO explanatory text.
+        const prompt = `Search the web for REAL hiring contacts at ${companyName}. You MUST visit actual websites and extract REAL information. DO NOT make up or guess any information.
 
-SEARCH STRATEGY (use ALL sources in order, be AGGRESSIVE):
-1. **LinkedIn Profiles** (PRIORITY): 
-   - site:linkedin.com/in/ "${companyName}" ("Talent Acquisition" OR "Recruiter" OR "HR Manager" OR "Hiring Manager" OR "People Operations")
-   - site:linkedin.com/in/ "${companyName}" ("Director of HR" OR "VP of People" OR "Head of Talent")
-   - Extract REAL names, titles, and profile URLs
+SEARCH THESE EXACT SOURCES:
+1. Search: "${companyName} HR email" OR "${companyName} careers email" OR "${companyName} recruiting email"
+2. Visit ${companyName} official website and find contact page, careers page, about page
+3. Search: site:linkedin.com/in/ "${companyName}" "recruiter" OR "talent acquisition" OR "HR"
+4. Search: "${companyName} contact" OR "${companyName} hiring manager"
 
-2. **Company Website Deep Scrape**:
-   - site:${companyName.toLowerCase().replace(/\s+/g, '')}.com/careers contact
-   - site:${companyName.toLowerCase().replace(/\s+/g, '')}.com/about team
-   - site:${companyName.toLowerCase().replace(/\s+/g, '')}.com/contact
-   - Look for: careers@, hr@, jobs@, recruiting@, talent@, hiring@, info@, hello@, contact@
-   - Check footer, contact page, careers page, about page
+CRITICAL RULES - READ CAREFULLY:
+❌ DO NOT MAKE UP NAMES - If you cannot find a real person's name from LinkedIn or company website, DO NOT invent one
+❌ DO NOT GUESS EMAILS - Only return emails you actually found on websites or can verify exist
+❌ DO NOT CREATE FAKE LINKEDIN URLS - Only include LinkedIn URLs you actually visited
+❌ DO NOT RETURN PLACEHOLDER DATA - No "Jennifer McNeill", "Chris MacDonald", or other made-up names
+✅ ONLY return information you found from REAL web searches
+✅ If you find hr@company.com or careers@company.com, return that as "General Inbox"
+✅ If you find REAL names on LinkedIn with their actual titles, return those with their real LinkedIn URLs
 
-3. **Social Media Profiles**:
-   - site:twitter.com "${companyName}" (recruiter OR hiring)
-   - site:facebook.com "${companyName}" careers
-   - site:instagram.com "${companyName}" (check bio for contact)
+MANDATORY: You MUST return at least ONE contact. If you cannot find any real people:
+- Return the company's general email (hr@, careers@, info@, contact@)
+- Search "${companyName} email" to find it
+- Visit their website contact page
 
-4. **Job Board Postings**:
-   - site:indeed.com "${companyName}" contact recruiter
-   - site:glassdoor.com "${companyName}" apply contact
-   - site:linkedin.com/jobs "${companyName}" (extract poster info)
+Return ONLY this JSON format with REAL data you found:
+[{"name":"REAL NAME FROM LINKEDIN","title":"REAL TITLE FROM LINKEDIN","email":"REAL EMAIL YOU FOUND","linkedinUrl":"REAL LINKEDIN URL","source":"WHERE YOU FOUND THIS","confidence":0.9}]
 
-5. **Company Directory Sites**:
-   - site:rocketreach.co "${companyName}"
-   - site:hunter.io "${companyName}"
-   - "${companyName}" email format pattern
+OR if no real people found:
+[{"name":"General Inbox","title":"Company Contact","email":"hr@${companyName.toLowerCase().replace(/\s+/g, '')}.com","source":"Company Website","confidence":0.7}]
 
-6. **FALLBACK - General Company Inbox** (if no hiring contacts found):
-   - Find ANY company email: info@, hello@, contact@, support@
-   - This is CRITICAL - app is useless without at least a general inbox
-
-CRITICAL REQUIREMENTS:
-- Extract REAL names from actual profiles/pages (e.g., "Sarah Johnson", "Michael Chen")
-- Find verified email addresses or construct from pattern found on company website
-- Include LinkedIn profile URLs when found
-- If company website shows "firstname.lastname@company.com" pattern, use it with REAL names found
-- DO NOT return fake placeholders like "Pattern Guess" or generic "firstname.lastname"
-- **MANDATORY FALLBACK**: If NO hiring contacts found, you MUST find the company's general inbox email
-  - Check: careers@, hr@, jobs@, info@, hello@, contact@, support@
-  - Return as: {"name":"General Inbox","title":"Company Contact","email":"info@company.com","emailType":"verified","source":"Company Website","confidence":0.7}
-- NEVER return empty array [] - always return at least the general inbox
-
-JSON FORMAT:
-[{"name":"Sarah Johnson","title":"Senior Recruiter","department":"Talent Acquisition","email":"sarah.johnson@company.com","linkedinUrl":"https://linkedin.com/in/sarah-johnson-xyz","emailType":"verified","source":"LinkedIn + Company Website","confidence":0.95}]
-
-Return ONLY the JSON array. If you can't find ANY real people after searching ALL sources, you MUST return the company general inbox:
-[{"name":"General Inbox","title":"Company Contact","email":"info@company.com","emailType":"verified","source":"Company Website","confidence":0.7}]`
+DO NOT HALLUCINATE. ONLY RETURN REAL DATA YOU FOUND FROM WEB SEARCHES.`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits + sonar-pro for research
         return client.makeRequest(SYSTEM, prompt, { 
