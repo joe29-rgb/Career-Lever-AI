@@ -1,4 +1,11 @@
-import * as crypto from 'crypto'
+// FIXED: Universal crypto support (browser + Node.js)
+let crypto: any
+try {
+  crypto = require('crypto')
+} catch {
+  // Browser environment - will use fallback
+  crypto = null
+}
 import { PerplexityService } from './perplexity-service'
 import { 
   CANADIAN_JOB_BOARDS, 
@@ -38,7 +45,20 @@ setInterval(() => {
 
 function makeKey(prefix: string, payload: unknown): string {
   const raw = typeof payload === 'string' ? payload : JSON.stringify(payload)
-  return `${prefix}:${crypto.createHash('sha256').update(raw).digest('hex')}`
+  
+  // Use crypto if available (Node.js), otherwise simple hash (browser)
+  if (crypto && crypto.createHash) {
+    return `${prefix}:${crypto.createHash('sha256').update(raw).digest('hex')}`
+  }
+  
+  // Browser fallback: simple hash
+  let hash = 0
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return `${prefix}:${Math.abs(hash).toString(36)}`
 }
 
 function getCache(key: string): unknown | undefined {
@@ -72,7 +92,11 @@ function createClient(): PerplexityService { return new PerplexityService() }
 
 // ---------- Enhanced helpers (ids, retry, enrichment) ----------
 function generateRequestId(): string {
-  return crypto.randomBytes(8).toString('hex')
+  if (crypto && crypto.randomBytes) {
+    return crypto.randomBytes(8).toString('hex')
+  }
+  // Browser fallback
+  return Math.random().toString(36).substr(2, 16) + Date.now().toString(36)
 }
 
 async function withRetry<T>(
@@ -108,6 +132,9 @@ class PerplexityError extends Error {
   }
 }
 
+// CRITICAL: This generates PATTERN-BASED emails (NOT VERIFIED)
+// These are stored as "alternativeEmails" with emailType: 'pattern' and low confidence
+// NEVER present these as verified contacts - they are guesses based on common patterns
 function inferEmails(name: string, companyDomain: string): string[] {
   if (!name || !companyDomain) return []
   const parts = name.toLowerCase().split(' ').filter(Boolean)
@@ -786,9 +813,14 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
         temperature: 0.2, 
-        maxTokens: Math.min(limit * 250, 16000), // CRITICAL FIX: Increased significantly for 50 jobs
+        maxTokens: Math.min(limit * 300, 20000), // FIXED: Increased token budget to prevent truncation
         model: 'sonar-pro' // Use research model for job search
       })
+      
+      // FIXED: Check for truncation warning
+      if (out.content.length > 18000) {
+        console.warn('[JOB_LISTINGS] Response may be truncated, consider reducing limit or splitting into batches')
+      }
       let text = (out.content || '').trim()
       
       // Extract JSON from response if wrapped in markdown or explanation
@@ -828,20 +860,50 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
       
       const arr = Array.isArray(parsed) ? parsed.slice(0, limit) : []
       
+      // CRITICAL FIX: Filter out confidential companies (NO FAKE/INFERRED DATA)
+      const filtered = arr.filter((job: unknown) => {
+        const jobObj = job as Record<string, unknown>
+        const company = String(jobObj.company || '').toLowerCase()
+        
+        const isConfidential = 
+          company.includes('confidential') ||
+          company.includes('anonymous') ||
+          company.includes('undisclosed') ||
+          company.includes('various') ||
+          company.includes('multiple') ||
+          company.includes('private') ||
+          company.includes('stealth') ||
+          company.includes('hidden') ||
+          company === '' ||
+          company.length < 3
+        
+        if (isConfidential) {
+          console.warn(`[JOB_FILTER] ❌ Rejected confidential: ${jobObj.title} - ${jobObj.company}`)
+          return false
+        }
+        return true
+      })
+      
+      console.log(`[JOB_FILTER] ✅ Filtered ${arr.length - filtered.length} confidential postings. Returning ${filtered.length} verified jobs.`)
+      
       // Enhance with board metadata
-      const enhanced = arr.map((job: unknown) => {
+      const enhanced = filtered.map((job: unknown) => {
         const jobObj = job as Record<string, unknown>
         return {
           ...jobObj,
           metadata: {
             searchedBoards: targetBoards.length,
             canadianPriority: includeCanadianOnly,
-            extractedAt: new Date().toISOString()
+            extractedAt: new Date().toISOString(),
+            confidentialFiltered: arr.length - filtered.length
           }
         }
       })
       
-      setCache(key, enhanced)
+      // FIXED: Only cache if we have valid results
+      if (enhanced.length > 0) {
+        setCache(key, enhanced)
+      }
       return enhanced
     } catch (error) {
       console.error('[PERPLEXITY] Job listings failed:', error)
@@ -1378,23 +1440,32 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
    * Custom query for flexible Perplexity requests
    * Used by enhanced resume analyzer and other advanced features
    */
+  // FIXED: Added error handling and retry logic
   static async customQuery(options: {
     systemPrompt: string
     userPrompt: string
     temperature?: number
     maxTokens?: number
   }): Promise<string> {
-    const client = createClient()
-    const response = await client.makeRequest(
-      options.systemPrompt,
-      options.userPrompt,
-      {
-        temperature: options.temperature || 0.3,
-        maxTokens: options.maxTokens || 1500,
-        model: 'sonar-pro' // Use research model for custom queries
-      }
-    )
-    return response.content || ''
+    try {
+      const client = createClient()
+      const response = await withRetry(
+        () => client.makeRequest(
+          options.systemPrompt,
+          options.userPrompt,
+          {
+            temperature: options.temperature || 0.3,
+            maxTokens: options.maxTokens || 1500,
+            model: 'sonar-pro' // Use research model for custom queries
+          }
+        ),
+        MAX_RETRY_ATTEMPTS
+      )
+      return response.content || ''
+    } catch (error) {
+      console.error('[CUSTOM_QUERY] Error:', error)
+      throw new PerplexityError('Custom query failed', error)
+    }
   }
 
   // Cache utilities
