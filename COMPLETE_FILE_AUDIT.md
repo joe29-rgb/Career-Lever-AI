@@ -58,11 +58,17 @@
 - Removed duplicate functions: generateOptimizedResume, optimizeResumeContent, convertTextToStructuredData
 - Single source of truth for resume generation logic
 
+**Quiz/Onboarding Flow** ✅ COMPLETE
+- Fixed: `src/app/onboarding/quiz/page.tsx` - Fixed broken redirects
+- Fixed: `src/app/auth/signin/page.tsx` - Wired quiz to sign-in flow
+- New users now redirected to quiz after first sign-in
+- Quiz redirects to correct routes (resume-builder or career-finder)
+- No more `/resume-manager` 404 errors
+
 **Next Steps:**
-- Quiz/onboarding flow (fix dead code, wire to sign-in) - IN PROGRESS
-- Calendar integration (Google OAuth, auto-create events)
-- Dashboard optimization (remove duplicate fetching)
-- Styled PDFs (implement @react-pdf/renderer)
+- Calendar integration (Google OAuth, auto-create events) - TODO
+- Dashboard optimization (remove duplicate fetching) - TODO
+- Styled PDFs (implement @react-pdf/renderer) - TODO
 
 ---
 
