@@ -669,56 +669,7 @@ export class PerplexityIntelligenceService {
       return { success: false, data: fb, metadata: { requestId, timestamp: started, duration: Date.now() - started, error: (e as Error).message }, cached: false }
     }
   }
-  static async researchCompany(input: IntelligenceRequest): Promise<IntelligenceResponse> {
-    const key = makeKey('ppx:research', input)
-    const cached = getCache(key) as IntelligenceResponse | undefined
-    if (cached) return cached
-
-    const client = createClient()
-    const user = `Research current intelligence for ${input.company}${input.role ? ` (role: ${input.role})` : ''}${input.geo ? ` in ${input.geo}` : ''}.
-Return a JSON object with: company, freshness (ISO datetime), sources[{title,url}], confidence (0..1), financials[{metric,value,confidence,source}], culture[{point,confidence,source}], salaries[{title,range,currency,geo,source,confidence}], contacts[{name,title,url,source,confidence}], growth[{signal,source,confidence}], summary.`
-    try {
-      const out = await client.makeRequest(SYSTEM, user, { temperature: 0.2, maxTokens: 1400, model: 'sonar-pro' })
-      const text = (out.content || '').trim()
-      const context: PerplexityErrorContext = {
-        requestId: generateRequestId(),
-        prompts: { system: SYSTEM, user },
-        timestamp: Date.now(),
-        endpoint: 'researchCompany'
-      }
-      const parsed = parseAIResponse<IntelligenceResponse>(text, { stripMarkdown: true, extractFirst: true }, context)
-      // Minimal validation
-      parsed.company = parsed.company || input.company
-      parsed.freshness = parsed.freshness || new Date().toISOString()
-      parsed.sources = Array.isArray(parsed.sources) ? parsed.sources.slice(0, 12) : []
-      parsed.confidence = typeof parsed.confidence === 'number' ? parsed.confidence : 0.6
-      setCache(key, parsed)
-      return parsed
-    } catch (e) {
-      // Graceful fallback
-      const fallback: IntelligenceResponse = {
-        company: input.company,
-        freshness: new Date().toISOString(),
-        sources: [],
-        confidence: 0.3,
-        financials: [],
-        culture: [],
-        salaries: [],
-        contacts: [],
-        growth: [],
-        summary: 'No data available',
-        description: 'No description available',
-        size: 'Unknown',
-        revenue: 'Unknown',
-        industry: 'Unknown',
-        founded: 'Unknown',
-        headquarters: 'Unknown',
-        psychology: 'No insights available',
-        marketIntelligence: 'No market data available'
-      }
-      return fallback
-    }
-  }
+  // REMOVED: Old researchCompany - Use researchCompanyV2 instead
 
   static async salaryForRole(role: string, company?: string, geo?: string) {
     const key = makeKey('ppx:salary', { role, company, geo })
@@ -898,53 +849,6 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     }
   }
 
-  static async hiringContacts(companyName: string) {
-    const key = makeKey('ppx:contacts', { companyName })
-    const cached = getCache(key)
-    if (cached) return cached
-    const client = createClient()
-    const SYSTEM_CONTACTS = `You are a Hiring Contacts Finder with real-time web access. Your role is to identify the people responsible for hiring for a given company based on public company websites, LinkedIn pages, Google search, and professional directories.
-
-CRITICAL REQUIREMENTS:
-1. Use only publicly accessible sources (no scraping behind login).
-2. Look for titles containing “HR,” “Talent Acquisition,” “Recruiter,” “Hiring Manager,” “People Operations,” or department leads in that area.
-3. Scrape full name, exact job title, department, LinkedIn URL (if public), and company website email format patterns.
-4. Infer email addresses using common patterns (e.g., first.last@company.com) but label them “inferred.”
-5. Return up to 5 contacts.
-
-OUTPUT JSON FORMAT:
-[
-  {
-    "name": string,
-    "title": string,
-    "department": string,
-    "linkedinUrl": string | null,
-    "email": string | null,
-    "emailType": "public" | "inferred",
-    "source": string
-  }
-]`
-    const USER_CONTACTS = `Identify up to 5 hiring contacts at ${companyName}. Search the company’s official site, LinkedIn company page, Google search, and professional directories. For each contact, return [name, title, department, linkedinUrl, email, emailType, source].`
-    const requestId = generateRequestId()
-    const started = Date.now()
-    try {
-      const out = await client.makeRequest(SYSTEM_CONTACTS, USER_CONTACTS, { temperature: 0.2, maxTokens: 1000, model: 'sonar-pro' })
-      const text = (out.content || '').trim()
-      const context: PerplexityErrorContext = {
-        requestId,
-        prompts: { system: SYSTEM_CONTACTS, user: USER_CONTACTS },
-        timestamp: started,
-        endpoint: 'hiringContacts'
-      }
-      const parsed = parseAIResponse<unknown>(text, { stripMarkdown: true, extractFirst: true }, context)
-      const arr = Array.isArray(parsed) ? parsed.slice(0, 5) : []
-      setCache(key, arr)
-      return arr
-    } catch {
-      return []
-    }
-  }
-
   // Fast SEARCH API for raw listings from specific domains (outside of template strings)
   static async jobQuickSearch(query: string, domains: string[] = [], maxResults: number = 20, recency: 'day'|'week'|'month'|'year' = 'month'): Promise<QuickSearchItem[]> {
     const key = makeKey('ppx:search', { query, domains, maxResults, recency })
@@ -986,9 +890,7 @@ OUTPUT JSON FORMAT:
     }
   }
 
-  static async jobMarketAnalysis(location: string, resumeText: string, roleHint?: string) {
-    return this.jobMarketAnalysisV2(location, resumeText, { roleHint: roleHint || undefined })
-  }
+  // REMOVED: jobMarketAnalysis wrapper - Use jobMarketAnalysisV2 directly
   /**
    * V2: Enhanced job market analysis with options and ranking
    * Now integrated with 25+ Canadian and global job boards
