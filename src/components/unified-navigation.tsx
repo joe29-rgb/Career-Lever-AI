@@ -127,10 +127,12 @@ export function UnifiedNavigation() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [mobileMenuOpen])
   
-  // Don't show navigation on auth pages only (show on landing page)
+  // Only show navigation when user is signed in (not on landing or auth pages)
   const isAuthPage = pathname?.startsWith('/auth')
+  const isLandingPage = pathname === '/'
   
-  if (isAuthPage) return null
+  // Hide navigation if: on auth pages, on landing page, or not signed in
+  if (isAuthPage || isLandingPage || !session) return null
 
   const isItemActive = (item: NavigationItem) => {
     if (item.href && pathname === item.href) return true
