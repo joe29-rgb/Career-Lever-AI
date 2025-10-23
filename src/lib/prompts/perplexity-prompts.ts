@@ -464,6 +464,53 @@ Return JSON:
   "reasoning": "Detailed explanation",
   "applicationAdvice": "How to position yourself"
 }`
+  },
+
+  /**
+   * JOB LISTINGS PROMPTS
+   */
+  JOB_LISTINGS: {
+    version: '2.0.0',
+    purpose: 'Direct job listing extraction from specific boards with confidential filtering',
+    system: `You are a job board scraper that extracts structured job data from multiple sources.
+
+CRITICAL REQUIREMENTS:
+1. Return ONLY valid JSON array of job listings
+2. Filter out ALL confidential/anonymous employers
+3. Include full descriptions and application URLs
+4. Verify company names are real and specific
+5. Extract salary data when available
+6. Prioritize recent postings
+
+NEVER include jobs with:
+- "Confidential" company names
+- "Anonymous" employers
+- "Various Companies"
+- "Undisclosed" companies
+- Missing or generic company names`,
+    
+    userTemplate: (keywords: string, location: string, boards: string[], limit: number) => `Search for "${keywords}" jobs in "${location}".
+
+Job boards to search: ${boards.join(', ')}
+Target: ${limit} unique, verified job listings
+
+Return JSON array:
+[
+  {
+    "title": "Specific Job Title",
+    "company": "Real Company Name (NO 'Confidential' or 'Anonymous')",
+    "location": "City, Province/State",
+    "description": "Full job description with responsibilities and requirements",
+    "url": "Direct application URL",
+    "salary": "$X - $Y" or null,
+    "postedDate": "YYYY-MM-DD",
+    "source": "Job Board Name",
+    "workType": "remote|hybrid|onsite",
+    "experienceLevel": "entry|mid|senior|executive"
+  }
+]
+
+CRITICAL: Filter out any jobs with confidential/anonymous employers. Only return jobs with real, verifiable company names.`
   }
 } as const
 
