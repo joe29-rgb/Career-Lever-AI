@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     // 2) Intelligence service
     try {
       const intel = await PerplexityIntelligenceService.researchCompanyV2({ company: 'Acme Inc' })
-      checks.companyIntel = { ok: true, company: intel.company, sources: intel.sources?.length || 0 }
+      checks.companyIntel = { ok: true, company: intel.data?.company || 'Acme Inc', sources: intel.data?.sources?.length || 0 }
     } catch (e: any) {
       checks.companyIntel = { ok: false, error: (e?.message || '').toString() }
     }
