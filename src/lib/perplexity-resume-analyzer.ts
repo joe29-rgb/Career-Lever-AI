@@ -31,7 +31,7 @@ function generateUUID(): string {
 
 // FIXED: Safe imports with fallbacks for missing dependencies
 let PERPLEXITY_PROMPTS: any
-let parseAIResponse: any
+let parseAIResponse: <T = any>(text: string, options?: any, context?: any) => T
 let validateAIResponse: any
 
 try {
@@ -45,7 +45,7 @@ try {
   parseAIResponse = require('./utils/ai-response-parser').parseAIResponse
 } catch (e) {
   console.warn('[RESUME_ANALYZER] ai-response-parser not found, using JSON.parse')
-  parseAIResponse = (text: string) => JSON.parse(text)
+  parseAIResponse = <T = any>(text: string) => JSON.parse(text) as T
 }
 
 try {
