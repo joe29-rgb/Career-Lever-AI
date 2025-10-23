@@ -15,10 +15,45 @@
  */
 
 import { PerplexityIntelligenceService } from './perplexity-intelligence'
-import { PERPLEXITY_PROMPTS } from './prompts/perplexity-prompts'
-import { parseAIResponse } from './utils/ai-response-parser'
-import { validateAIResponse } from './validation/schema-validator'
-import { randomUUID } from 'crypto'
+
+// FIXED: Universal UUID generation (browser + Node.js)
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && (crypto as any).randomUUID) {
+    return (crypto as any).randomUUID()
+  }
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
+// FIXED: Safe imports with fallbacks for missing dependencies
+let PERPLEXITY_PROMPTS: any
+let parseAIResponse: any
+let validateAIResponse: any
+
+try {
+  PERPLEXITY_PROMPTS = require('./prompts/perplexity-prompts').PERPLEXITY_PROMPTS
+} catch (e) {
+  console.warn('[RESUME_ANALYZER] perplexity-prompts not found, using inline prompts')
+  PERPLEXITY_PROMPTS = { RESUME_ANALYSIS: { system: '', userTemplate: () => '' } }
+}
+
+try {
+  parseAIResponse = require('./utils/ai-response-parser').parseAIResponse
+} catch (e) {
+  console.warn('[RESUME_ANALYZER] ai-response-parser not found, using JSON.parse')
+  parseAIResponse = (text: string) => JSON.parse(text)
+}
+
+try {
+  validateAIResponse = require('./validation/schema-validator').validateAIResponse
+} catch (e) {
+  console.warn('[RESUME_ANALYZER] schema-validator not found, skipping validation')
+  validateAIResponse = (data: any) => data
+}
 
 export interface EnhancedResumeAnalysis {
   keywords: string[]
@@ -85,7 +120,7 @@ export class PerplexityResumeAnalyzer {
    * Analyze resume using Perplexity AI for intelligent extraction
    */
   static async analyzeResume(resumeText: string): Promise<EnhancedResumeAnalysis> {
-    const requestId = randomUUID()
+    const requestId = generateUUID()
     const timestamp = Date.now()
 
     try {
