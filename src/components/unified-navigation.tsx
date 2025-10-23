@@ -89,12 +89,20 @@ const navigationItems: NavigationItem[] = [
 ]
 
 export function UnifiedNavigation() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const { count: notificationCount } = useNotifications()
+
+  // DEBUG: Log session state
+  console.log('[NAV_DEBUG]', {
+    session: !!session,
+    status,
+    pathname,
+    userEmail: session?.user?.email
+  })
 
   // Handle scroll for glass effect
   useEffect(() => {
@@ -131,8 +139,25 @@ export function UnifiedNavigation() {
   const isAuthPage = pathname?.startsWith('/auth')
   const isLandingPage = pathname === '/'
   
-  // Hide navigation if: on auth pages, on landing page, or not signed in
-  if (isAuthPage || isLandingPage || !session) return null
+  // Show loading skeleton while session is loading
+  if (status === 'loading') {
+    return (
+      <header className="sticky top-0 bg-background/95 backdrop-blur-xl border-b border-border shadow-xl" style={{ minHeight: '64px', zIndex: 9999 }}>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <div className="w-32 h-8 bg-muted animate-pulse rounded"></div>
+            <div className="flex gap-2">
+              <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
+              <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
+            </div>
+          </div>
+        </div>
+      </header>
+    )
+  }
+  
+  // Hide navigation if: on auth pages, on landing page, or not authenticated
+  if (isAuthPage || isLandingPage || status === 'unauthenticated') return null
 
   const isItemActive = (item: NavigationItem) => {
     if (item.href && pathname === item.href) return true
@@ -293,9 +318,12 @@ export function UnifiedNavigation() {
                 {/* MOBILE MENU BUTTON - Show FIRST on mobile for better visibility */}
                 <button
                   className="flex md:hidden p-2.5 rounded-xl bg-accent/30 hover:bg-accent/50 transition-all border border-border/50 hover:border-primary/30 shadow-sm"
-                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  onClick={() => {
+                    console.log('[HAMBURGER] Clicked!', { current: mobileMenuOpen, willBe: !mobileMenuOpen })
+                    setMobileMenuOpen(!mobileMenuOpen)
+                  }}
                   aria-label="Toggle mobile menu"
-                  style={{ minWidth: '44px', minHeight: '44px' }}
+                  style={{ minWidth: '44px', minHeight: '44px', zIndex: 10000 }}
                 >
                   {mobileMenuOpen ? (
                     <X className="h-6 w-6 text-primary" />

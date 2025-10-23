@@ -889,7 +889,8 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
       // CRITICAL FIX: Filter out confidential companies (NO FAKE/INFERRED DATA)
       const filtered = arr.filter((job: unknown) => {
         const jobObj = job as Record<string, unknown>
-        const company = String(jobObj.company || '').toLowerCase()
+        const companyRaw = String(jobObj.company || '')
+        const company = companyRaw.toLowerCase().trim()
         
         const isConfidential = 
           company.includes('confidential') ||
@@ -900,11 +901,16 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
           company.includes('private') ||
           company.includes('stealth') ||
           company.includes('hidden') ||
+          company.includes('tbd') ||
+          company.includes('n/a') ||
           company === '' ||
           company.length < 3
         
+        // DEBUG: Log all companies being checked
+        console.log(`[JOB_FILTER] ${isConfidential ? '❌' : '✅'} ${jobObj.title} @ ${companyRaw} (lower: "${company}")`)
+        
         if (isConfidential) {
-          console.warn(`[JOB_FILTER] ❌ Rejected confidential: ${jobObj.title} - ${jobObj.company}`)
+          console.warn(`[JOB_FILTER] ❌ REJECTED: ${jobObj.title} - ${companyRaw}`)
           return false
         }
         return true
