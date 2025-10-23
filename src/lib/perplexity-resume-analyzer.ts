@@ -497,33 +497,48 @@ Industries: ${analysis.industries.join(', ')}
 Skills: ${analysis.topSkills.map(s => s.skill).slice(0, 10).join(', ')}
 AI Risk: ${analysis.futureOutlook.aiReplacementRisk}
 
-Provide job search strategy including specific search terms, companies to target, and networking approaches.`
+Return ONLY this JSON:
+{
+  "searchTerms": ["keyword1", "keyword2", ...],
+  "excludeTerms": ["avoid1", "avoid2", ...],
+  "targetCompanies": ["company1", "company2", ...],
+  "networking": ["strategy1", "strategy2", ...],
+  "timeline": "3-6 months explanation"
+}`
 
     try {
       const response = await PerplexityIntelligenceService.customQuery({
-        systemPrompt: 'You are a career strategist providing actionable job search advice.',
+        systemPrompt: 'You are a career strategist. Return only valid JSON with no markdown.',
         userPrompt: prompt,
         temperature: 0.4,
-        maxTokens: 1000
+        maxTokens: 1500
       })
 
-      // Parse recommendations (implement actual parsing logic)
-      return {
-        searchTerms: analysis.keywords.slice(0, 10),
-        excludeTerms: ['intern', 'junior'],
-        targetCompanies: [],
-        networking: ['LinkedIn groups', 'Industry events', 'Professional associations'],
-        timeline: '3-6 months for optimal results'
+      // FIXED: Actually parse the AI response
+      let content = response.trim().replace(/```(?:json)?\s*/g, '')
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        return {
+          searchTerms: parsed.searchTerms || analysis.keywords.slice(0, 10),
+          excludeTerms: parsed.excludeTerms || [],
+          targetCompanies: parsed.targetCompanies || [],
+          networking: parsed.networking || [],
+          timeline: parsed.timeline || '3-6 months'
+        }
       }
     } catch (error) {
-      console.error('[JOB SEARCH RECOMMENDATIONS] Failed:', error)
-      return {
-        searchTerms: analysis.keywords.slice(0, 10),
-        excludeTerms: [],
-        targetCompanies: [],
-        networking: [],
-        timeline: '3-6 months'
-      }
+      console.error('[JOB_SEARCH_RECOMMENDATIONS] Failed:', error)
+    }
+
+    // Fallback only if AI completely fails
+    return {
+      searchTerms: analysis.keywords.slice(0, 10),
+      excludeTerms: [],
+      targetCompanies: [],
+      networking: [],
+      timeline: '3-6 months'
     }
   }
 
@@ -543,31 +558,45 @@ Experience: ${analysis.experienceLevel}
 Industries: ${analysis.industries.join(', ')}
 Target Roles: ${analysis.targetJobTitles.join(', ')}
 
-Provide current market trends, salary outlook, and strategic recommendations for 2025-2026.`
+Return ONLY this JSON:
+{
+  "marketTrends": ["trend1", "trend2", ...],
+  "salaryTrends": "Salary outlook explanation",
+  "demandForecast": "Demand forecast explanation",
+  "recommendations": ["rec1", "rec2", ...]
+}`
 
     try {
       const response = await PerplexityIntelligenceService.customQuery({
-        systemPrompt: 'You are a market research analyst specializing in employment trends and salary data.',
+        systemPrompt: 'You are a market research analyst. Return only valid JSON with no markdown.',
         userPrompt: prompt,
         temperature: 0.2,
-        maxTokens: 1500
+        maxTokens: 2000
       })
 
-      // Parse market data (implement actual parsing logic)
-      return {
-        marketTrends: ['Remote work increasing', 'AI skills in demand', 'Soft skills valued'],
-        salaryTrends: 'Salaries increasing 3-5% annually in this market',
-        demandForecast: 'Strong demand expected for next 24 months',
-        recommendations: analysis.futureOutlook.recommendations
+      // FIXED: Actually parse AI response
+      let content = response.trim().replace(/```(?:json)?\s*/g, '')
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        return {
+          marketTrends: parsed.marketTrends || [],
+          salaryTrends: parsed.salaryTrends || 'Market data unavailable',
+          demandForecast: parsed.demandForecast || 'Analysis pending',
+          recommendations: parsed.recommendations || analysis.futureOutlook.recommendations
+        }
       }
     } catch (error) {
-      console.error('[MARKET REPORT] Failed:', error)
-      return {
-        marketTrends: [],
-        salaryTrends: 'Market data unavailable',
-        demandForecast: 'Analysis pending',
-        recommendations: []
-      }
+      console.error('[MARKET_REPORT] Failed:', error)
+    }
+
+    // Fallback only if AI completely fails
+    return {
+      marketTrends: ['Remote work increasing', 'AI skills in demand'],
+      salaryTrends: 'Market data unavailable',
+      demandForecast: 'Analysis pending',
+      recommendations: analysis.futureOutlook.recommendations
     }
   }
 
