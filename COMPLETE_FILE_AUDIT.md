@@ -3255,3 +3255,498 @@ function inferEmails(name: string, companyDomain: string): Array<{
 
 **Total: 18 critical issues, all with exact fixes**
 
+---
+
+## 📝 CONTINUING AUDIT - SESSION 9 (DEEP DIVE: CORE FEATURES)
+
+---
+
+## 🔥 CRITICAL DISCOVERY: VALIDATION KILLING FEATURES
+
+### **FILE: `src/lib/validators.ts`**
+
+**SMOKING GUN FOUND:**
+```typescript
+Line 4:  jobDescription: z.string().min(50)
+Line 11: jobDescription: z.string().min(50)
+Line 34: jobDescription: z.string().min(50)
+```
+
+**THE PROBLEM:**
+Your cover letter API (line 187-189) has a **WORKAROUND** for empty job descriptions:
+```typescript
+if (!jobDescription || jobDescription.trim() === '') {
+  jobDescription = `Position at ${companyName} for ${jobTitle} role.`
+}
+```
+
+**BUT** the validation happens **BEFORE** this workaround runs!
+
+**FLOW:**
+1. User submits empty job description
+2. **Validator rejects** (line 34: `min(50)`)
+3. Returns 400 error
+4. **Workaround never runs** (line 187)
+5. User sees "Invalid input" error
+
+---
+
+## 📁 FILE: `src/app/api/cover-letter/generate/route.ts`
+
+### **CRITICAL ISSUES FOUND:**
+
+#### 1. **VALIDATION BLOCKS EMPTY JOB DESCRIPTIONS** ❌
+**Lines 179-183:**
+```typescript
+const parsed = coverLetterRawSchema.safeParse(body);
+if (!parsed.success) {
+  return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
+}
+```
+
+**Lines 187-189 (NEVER REACHED):**
+```typescript
+if (!jobDescription || jobDescription.trim() === '') {
+  jobDescription = `Position at ${companyName} for ${jobTitle} role.`
+}
+```
+
+**Issue:** Validation kills request before fallback can run
+
+#### 2. **EXPERIENCE CALCULATION IS COMPLEX** ⚠️
+**Lines 20-102:** 150+ lines of date parsing logic
+**Issues:**
+- Regex matching multiple date formats
+- Overlap detection
+- Education section filtering
+- Can fail silently on edge cases
+
+**Example edge cases:**
+- "Jan 2020 - Present" vs "January 2020 - Current"
+- Overlapping jobs
+- Contract work with gaps
+- International date formats
+
+#### 3. **SYSTEM PROMPT INJECTION** ⚠️
+**Lines 232-241:** Injects experience constraint into system prompt
+**Issue:** Prompt becomes very long, may hit token limits
+**Better:** Pass as structured data, not prompt injection
+
+---
+
+## 📁 FILE: `src/app/api/outreach/send/route.ts`
+
+### **CRITICAL ISSUES FOUND:**
+
+#### 1. **PDF GENERATION CAN FAIL SILENTLY** ❌
+**Lines 80-92:**
+```typescript
+if (resumeHTML) {
+  try {
+    const resumePDF = await generateResumePDF(resumeHTML)
+    attachments.push({...})
+  } catch (error) {
+    console.error('[OUTREACH_SEND] Resume PDF generation failed:', error)
+    // ❌ CONTINUES WITHOUT RESUME!
+  }
+}
+```
+
+**Issue:** If PDF generation fails, email sends without resume
+**Result:** User thinks resume was sent, but it wasn't
+
+#### 2. **NO VALIDATION OF EMAIL ADDRESSES** ❌
+**Lines 53-58:**
+```typescript
+if (!contact?.email) {
+  return NextResponse.json({ error: 'Contact email is required' }, { status: 400 })
+}
+```
+
+**Issue:** Only checks if email exists, not if it's valid
+**Missing:**
+- Email format validation
+- Domain verification
+- Disposable email detection
+- Company domain matching
+
+#### 3. **RATE LIMIT TOO STRICT** ⚠️
+**Line 32:** `isRateLimited(session.user.id, 'outreach-send')`
+**Comment (line 23):** "Rate limit: 5 emails per hour per user"
+
+**Issue:** 5 emails/hour = 40 emails/day max
+**Reality:** Job seekers need to send 20-50 emails/day
+**Better:** 20 emails/hour or 100 emails/day
+
+---
+
+## 📁 FILE: `src/lib/prompts/perplexity-prompts.ts`
+
+### **CRITICAL ISSUES FOUND:**
+
+#### 1. **PROMPTS ARE TOO GENERIC** ❌
+**Lines 18-33:** Resume analysis prompt
+**Issue:** Says "Use real 2025 market data" but doesn't provide data sources
+
+**Lines 108-129:** Job search prompt
+**Issue:** Lists job boards but doesn't explain HOW to search them
+
+**Missing:**
+- Specific API endpoints
+- Search query formats
+- Data extraction patterns
+- Fallback strategies
+
+#### 2. **NO VALIDATION SCHEMAS IN PROMPTS** ❌
+**Lines 35-99:** Resume analysis template
+**Issue:** Shows JSON structure but doesn't enforce it
+
+**Problem:**
+- Perplexity can return invalid JSON
+- No type checking
+- No required field enforcement
+- Parser fails silently
+
+#### 3. **PROMPTS DON'T MATCH VALIDATORS** ❌
+**Example:**
+- Prompt says: `"jobDescription": "Brief description"`
+- Validator requires: `jobDescription: z.string().min(50)`
+- **Result:** Even if Perplexity returns valid JSON, validator rejects it
+
+---
+
+## 📁 FILE: `src/lib/perplexity-resume-analyzer.ts`
+
+### **CRITICAL ISSUES FOUND:**
+
+#### 1. **FALLBACK TO MISSING DEPENDENCIES** ❌
+**Lines 37-56:**
+```typescript
+try {
+  PERPLEXITY_PROMPTS = require('./prompts/perplexity-prompts').PERPLEXITY_PROMPTS
+} catch (e) {
+  console.warn('[RESUME_ANALYZER] perplexity-prompts not found, using inline prompts')
+  PERPLEXITY_PROMPTS = { RESUME_ANALYSIS: { system: '', userTemplate: () => '' } }
+}
+```
+
+**Issue:** If prompts file missing, uses EMPTY STRINGS
+**Result:** Perplexity gets blank prompts, returns garbage
+
+#### 2. **LEGACY METHOD STILL EXISTS** ⚠️
+**Lines 172-200:** `analyzeLegacy` method with inline prompts
+**Issue:** Two different prompt systems
+**Result:** Inconsistent results depending on which method is called
+
+---
+
+## 🚨 NEW CRITICAL ISSUES FOUND
+
+### 24. **VALIDATION BEFORE FALLBACK** (CRITICAL)
+**File:** `validators.ts` line 34 + `cover-letter/generate/route.ts` line 179
+**Issue:** Validator requires 50+ char job description, but fallback for empty descriptions runs AFTER validation
+**Result:** Cover letter generation fails for jobs without descriptions
+**Fix:** Move validation AFTER fallback, or make jobDescription optional
+
+### 25. **PDF GENERATION FAILS SILENTLY** (CRITICAL)
+**File:** `outreach/send/route.ts` lines 80-92
+**Issue:** If PDF generation fails, email sends without attachments
+**Result:** User thinks resume was sent, recruiter gets empty email
+**Fix:** Return error if PDF generation fails, don't send email
+
+### 26. **NO EMAIL ADDRESS VALIDATION** (HIGH)
+**File:** `outreach/send/route.ts` line 53
+**Issue:** Only checks if email exists, not if it's valid format or real domain
+**Result:** Emails sent to invalid addresses, bounce rate high
+**Fix:** Add email format validation + domain verification
+
+### 27. **RATE LIMIT TOO STRICT** (HIGH)
+**File:** `outreach/send/route.ts` line 32
+**Issue:** 5 emails/hour = only 40 emails/day
+**Result:** Users can't send enough applications
+**Fix:** Increase to 20 emails/hour or 100 emails/day
+
+### 28. **PROMPTS DON'T MATCH VALIDATORS** (HIGH)
+**Files:** `prompts/perplexity-prompts.ts` + `validators.ts`
+**Issue:** Prompts show "brief description" but validators require 50+ chars
+**Result:** Even valid Perplexity responses get rejected
+**Fix:** Align prompt examples with validator requirements
+
+### 29. **EMPTY PROMPT FALLBACK** (CRITICAL)
+**File:** `perplexity-resume-analyzer.ts` lines 37-42
+**Issue:** If prompts file missing, uses empty strings
+**Result:** Perplexity gets blank prompts, returns garbage
+**Fix:** Use inline prompts as fallback, not empty strings
+
+### 30. **EXPERIENCE CALCULATION FRAGILE** (MEDIUM)
+**File:** `cover-letter/generate/route.ts` lines 20-102
+**Issue:** 150+ lines of complex regex date parsing
+**Result:** Can fail on edge cases, returns 0 years
+**Fix:** Use simpler heuristic or AI to extract years
+
+### 31. **DUAL PROMPT SYSTEMS** (MEDIUM)
+**File:** `perplexity-resume-analyzer.ts` lines 172-200
+**Issue:** Two different prompt systems (centralized vs inline)
+**Result:** Inconsistent results
+**Fix:** Remove legacy method, use only centralized prompts
+
+---
+
+## 🔧 ACTIONABLE FIXES (CORE FEATURES)
+
+### **FIX 1: Validation Before Fallback (5 minutes)** ⭐ CRITICAL
+
+**File:** `src/lib/validators.ts` line 34
+
+**CHANGE FROM:**
+```typescript
+export const coverLetterRawSchema = z.object({
+  raw: z.literal(true),
+  jobTitle: z.string().min(2),
+  companyName: z.string().min(2),
+  jobDescription: z.string().min(50), // ❌ BLOCKS EMPTY
+  resumeText: z.string().min(50),
+  ...
+})
+```
+
+**CHANGE TO:**
+```typescript
+export const coverLetterRawSchema = z.object({
+  raw: z.literal(true),
+  jobTitle: z.string().min(2),
+  companyName: z.string().min(2),
+  jobDescription: z.string().optional(), // ✅ ALLOW EMPTY
+  resumeText: z.string().min(50),
+  ...
+})
+```
+
+**Then in `cover-letter/generate/route.ts` line 184:**
+```typescript
+let { jobTitle, companyName, jobDescription, resumeText } = parsed.data as any;
+
+// ✅ Fallback AFTER validation
+if (!jobDescription || jobDescription.trim().length < 50) {
+  jobDescription = `${jobTitle} position at ${companyName}. Seeking qualified candidates with relevant experience and skills.`
+  console.log('[COVER_LETTER] Using fallback job description')
+}
+```
+
+### **FIX 2: PDF Generation Must Succeed (3 minutes)** ⭐ CRITICAL
+
+**File:** `src/app/api/outreach/send/route.ts` lines 80-92
+
+**CHANGE FROM:**
+```typescript
+if (resumeHTML) {
+  try {
+    const resumePDF = await generateResumePDF(resumeHTML)
+    attachments.push({...})
+  } catch (error) {
+    console.error('[OUTREACH_SEND] Resume PDF generation failed:', error)
+    // ❌ CONTINUES
+  }
+}
+```
+
+**CHANGE TO:**
+```typescript
+if (resumeHTML) {
+  try {
+    const resumePDF = await generateResumePDF(resumeHTML)
+    attachments.push({...})
+    console.log('[OUTREACH_SEND] Resume PDF generated successfully')
+  } catch (error) {
+    console.error('[OUTREACH_SEND] Resume PDF generation failed:', error)
+    // ✅ FAIL FAST
+    return NextResponse.json(
+      { 
+        error: 'Failed to generate resume PDF. Please try again.',
+        details: error.message 
+      },
+      { status: 500 }
+    )
+  }
+}
+```
+
+### **FIX 3: Email Validation (10 minutes)**
+
+**File:** `src/app/api/outreach/send/route.ts` line 53
+
+**ADD BEFORE LINE 53:**
+```typescript
+// Validate email format
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+if (!emailRegex.test(contact.email)) {
+  return NextResponse.json(
+    { error: 'Invalid email format' },
+    { status: 400 }
+  )
+}
+
+// Reject personal email domains
+const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com']
+const emailDomain = contact.email.split('@')[1]?.toLowerCase()
+if (personalDomains.includes(emailDomain)) {
+  console.warn('[OUTREACH_SEND] Personal email domain detected:', emailDomain)
+  // Allow but warn
+}
+
+// Reject disposable email domains
+const disposableDomains = ['tempmail.com', '10minutemail.com', 'guerrillamail.com']
+if (disposableDomains.includes(emailDomain)) {
+  return NextResponse.json(
+    { error: 'Disposable email addresses are not allowed' },
+    { status: 400 }
+  )
+}
+```
+
+### **FIX 4: Increase Rate Limit (1 minute)**
+
+**File:** `src/app/api/outreach/send/route.ts` line 32
+
+**CHANGE COMMENT:**
+```typescript
+// OLD: Rate limit: 5 emails per hour per user
+// NEW: Rate limit: 20 emails per hour per user (480/day)
+```
+
+**Then update rate limit config** (wherever `isRateLimited` is defined):
+```typescript
+'outreach-send': { limit: 20, window: 3600 } // 20 per hour
+```
+
+### **FIX 5: Align Prompts with Validators (15 minutes)**
+
+**File:** `src/lib/prompts/perplexity-prompts.ts` line 156
+
+**CHANGE FROM:**
+```typescript
+"description": "Brief description",
+```
+
+**CHANGE TO:**
+```typescript
+"description": "Complete job description with at least 50 characters. Include responsibilities, requirements, and qualifications. If job posting is brief, expand with typical duties for this role.",
+```
+
+### **FIX 6: Empty Prompt Fallback (5 minutes)**
+
+**File:** `src/lib/perplexity-resume-analyzer.ts` lines 37-42
+
+**CHANGE FROM:**
+```typescript
+} catch (e) {
+  console.warn('[RESUME_ANALYZER] perplexity-prompts not found, using inline prompts')
+  PERPLEXITY_PROMPTS = { RESUME_ANALYSIS: { system: '', userTemplate: () => '' } }
+}
+```
+
+**CHANGE TO:**
+```typescript
+} catch (e) {
+  console.warn('[RESUME_ANALYZER] perplexity-prompts not found, using inline fallback')
+  PERPLEXITY_PROMPTS = {
+    RESUME_ANALYSIS: {
+      system: 'You are an expert resume analyzer. Extract structured data from resumes.',
+      userTemplate: (text: string) => `Analyze this resume and return JSON with keywords, location, experience level, salary range, and skills:\n\n${text}`
+    }
+  }
+}
+```
+
+---
+
+## 📊 UPDATED AUDIT SUMMARY
+
+**Files Audited:** 63 of ~450 (14% complete)
+**Total Issues:** 68 documented
+**Lines Analyzed:** ~17,000 lines
+
+**New Issues (Core Features):**
+- **Critical:** 3 (Validation before fallback, PDF fails silently, empty prompt fallback)
+- **High:** 4 (Email validation, rate limit, prompt mismatch, dual prompts)
+- **Medium:** 1 (Experience calculation fragile)
+
+---
+
+## 🎯 UPDATED TOP 15 CRITICAL FIXES
+
+1. **Fix validation before fallback** (5 min) ⭐ NEW #1 PRIORITY
+2. **Fix PDF generation failure** (3 min) ⭐ NEW #2 PRIORITY
+3. **Remove duplicate navigation** (1 min)
+4. **Add response validation** (15 min)
+5. **Add email validation** (10 min) ⭐ NEW
+6. **Fix landing page background** (5 min)
+7. **Fix stats section** (10 min)
+8. **Fix onboarding** (10 min)
+9. **Fix dashboard gradients** (20 min)
+10. **Increase token limits** (2 min)
+11. **Increase rate limit** (1 min) ⭐ NEW
+12. **Mark pattern emails** (5 min)
+13. **Fix mobile theme selector** (5 min)
+14. **Align prompts with validators** (15 min) ⭐ NEW
+15. **Fix empty prompt fallback** (5 min) ⭐ NEW
+
+**Total: 112 minutes (~2 hours) to fix all top 15 critical issues**
+
+---
+
+## 📈 FINAL FIX TIME ESTIMATE (v3)
+
+**Phase 1 - Critical Feature Fixes:** 39 minutes ⭐ NEW (DO THIS FIRST!)
+**Phase 2 - Critical Theme Fixes:** 45 minutes
+**Phase 3 - Navigation & Validation:** 15 minutes
+**Phase 4 - Perplexity Integration:** 22 minutes
+**Phase 5 - Responsive Design:** 45 minutes
+
+**Total Time to Fix All Critical Issues:** ~2 hours 46 minutes
+
+---
+
+## 🎯 PRIORITY ORDER (WHAT TO FIX FIRST)
+
+### **🔥 PHASE 1: MAKE CORE FEATURES WORK (39 min)**
+1. Fix validation before fallback (5 min) - **BLOCKS COVER LETTERS**
+2. Fix PDF generation failure (3 min) - **BLOCKS EMAIL SENDING**
+3. Add email validation (10 min) - **PREVENTS BOUNCES**
+4. Increase rate limit (1 min) - **UNBLOCKS USERS**
+5. Align prompts with validators (15 min) - **FIXES AI RESPONSES**
+6. Fix empty prompt fallback (5 min) - **PREVENTS CRASHES**
+
+**After Phase 1: Cover letters work, emails send, users unblocked**
+
+### **🎨 PHASE 2: FIX UI/UX (45 min)**
+7-10. Theme consistency fixes
+
+### **🔧 PHASE 3: POLISH (82 min)**
+11-15. Navigation, validation, responsive design
+
+---
+
+## ✅ WHAT WE NOW KNOW
+
+**Your app has 3 layers of issues:**
+
+1. **VALIDATION LAYER** (Blocks features before they run)
+   - Validators too strict
+   - Validation before fallbacks
+   - Prompts don't match validators
+
+2. **EXECUTION LAYER** (Features fail silently)
+   - PDF generation fails, continues anyway
+   - Empty prompts used as fallback
+   - No email validation
+
+3. **UI LAYER** (Theme inconsistencies)
+   - Hardcoded colors
+   - Light boxes in dark mode
+   - Dashboard gradients
+
+**Fix order: Validation → Execution → UI**
+
+**The "bazooka" you need: Fix validation layer first, then everything else works**
+
