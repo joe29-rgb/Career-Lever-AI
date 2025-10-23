@@ -170,9 +170,8 @@ export function UnifiedNavigation() {
           </Link>
 
           {/* DESKTOP NAVIGATION - Always visible on desktop */}
-          {session && (
-            <nav className="hidden md:flex items-center space-x-1 flex-1 justify-center max-w-3xl mx-auto">
-              {navigationItems.map((item) => {
+          <nav className="hidden md:flex items-center space-x-1 flex-1 justify-center max-w-3xl mx-auto">
+            {navigationItems.map((item) => {
                 const Icon = item.icon
                 const isActive = isItemActive(item)
                 const hasSubmenu = item.submenu && item.submenu.length > 0
@@ -246,8 +245,7 @@ export function UnifiedNavigation() {
                   </div>
                 )
               })}
-            </nav>
-          )}
+          </nav>
 
           {/* RIGHT SIDE ACTIONS - Always visible */}
           <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
@@ -361,7 +359,7 @@ export function UnifiedNavigation() {
         </div>
 
         {/* MOBILE NAVIGATION PANEL - Enhanced visibility with sections */}
-        {session && mobileMenuOpen && (
+        {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl max-h-[calc(100vh-80px)] overflow-y-auto">
             {/* QUICK ACTIONS SECTION */}
             <div className="px-4 space-y-1">
