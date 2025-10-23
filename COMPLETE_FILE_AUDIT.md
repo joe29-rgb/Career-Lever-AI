@@ -693,3 +693,195 @@ import { Toaster } from 'react-hot-toast'
 
 Checking more API routes and components...
 
+---
+
+## 📁 FILE: `src/app/api/jobs/search/route.ts`
+
+### Issues Found:
+1. **LOCATION VALIDATION TOO STRICT**
+   - Lines 72-78: Requires location with 2+ characters
+   - Returns 400 error if location missing
+   - **Issue:** Blocks searches when location not in resume
+   - **User Impact:** Can't search jobs without location
+
+2. **COMPLEX INDUSTRY WEIGHTING**
+   - Lines 127-198: Career timeline analysis and industry weighting
+   - **Question:** Is this tested? Does it work correctly?
+   - **Possible Issue:** May over-filter results
+
+3. **CACHE MERGE LOGIC**
+   - Lines 91-103: Gets cached jobs, says "will merge"
+   - **Question:** Where is the actual merge happening?
+   - **Possible Issue:** May return only cached jobs, not new ones
+
+4. **MAXDURATION 30 SECONDS**
+   - Line 26: `maxDuration = 30`
+   - **Issue:** Perplexity calls can take longer
+   - **Result:** May timeout before getting results
+
+---
+
+## 📁 FILE: `src/lib/perplexity-intelligence.ts` (Lines 890-989)
+
+### Issues Found:
+1. **JOB FILTER LOOKS CORRECT**
+   - Lines 890-917: Filter logic with `.toLowerCase().trim()`
+   - Checks for all confidential keywords
+   - **Status:** Code is correct
+   - **Question:** Why are confidential jobs still showing?
+
+2. **EXCESSIVE CONSOLE LOGGING**
+   - Line 910: Logs EVERY job being filtered
+   - Line 913: Logs EVERY rejection
+   - **Result:** Console spam, performance impact
+   - **Fix:** Remove or make conditional (debug mode only)
+
+3. **CACHE SUCCESS RATE CHECK**
+   - Lines 935-942: Only caches if 80%+ success rate
+   - **Issue:** If Perplexity returns many confidential jobs, won't cache
+   - **Result:** Repeated slow searches
+
+---
+
+## 📁 FILE: `src/components/breadcrumbs.tsx`
+
+### Issues Found:
+1. **GOOD COMPONENT**
+   - Clean, simple breadcrumb implementation
+   - No issues found
+   - **Status:** ✅ Working correctly
+
+---
+
+## 📊 AUDIT PROGRESS (v3)
+
+**Files Audited:** 18 of ~450
+**Critical Issues Found:** 5
+**High Priority Issues:** 4
+**Medium Priority Issues:** 6
+**Low Priority Issues:** 3
+
+**Lines of Code Analyzed:** ~5,500 lines
+
+**Major Findings:**
+1. ✅ Found root cause of cover letter failure
+2. ✅ Found root cause of navigation issues
+3. ✅ Found root cause of CSS conflicts
+4. ✅ Identified 2,345 lines of duplicate CSS
+5. ✅ Identified 3 navigation systems fighting
+6. ✅ Identified excessive console logging
+7. ✅ Identified strict validation blocking features
+
+---
+
+## 🚨 UPDATED CRITICAL ISSUES SUMMARY (v3)
+
+### 1. **FOUR CSS FILES FIGHTING EACH OTHER** (CRITICAL)
+**Total:** 2,345 lines of CSS with massive duplication
+**Fix:** Consolidate into ONE CSS file
+
+### 2. **NAVIGATION CONFLICTS** (CRITICAL)
+**Components:** 3 navigation systems
+**Fix:** Remove `<MobileNav />` from layout.tsx line 70
+
+### 3. **COVER LETTER VALIDATION** (CRITICAL - ROOT CAUSE FOUND)
+**File:** `src/lib/validators.ts` line 34
+**Issue:** `jobDescription: z.string().min(50)`
+**Fix:** Change to `.min(1)` OR reorder validation
+
+### 4. **EXCESSIVE CONSOLE LOGGING** (MEDIUM - PERFORMANCE)
+**Files:**
+- `perplexity-intelligence.ts` lines 910, 913, 919
+- `unified-navigation.tsx` lines 99-106, 322
+**Issue:** Logs every job, every filter, every click
+**Result:** Console spam, performance impact
+**Fix:** Remove or make conditional
+
+### 5. **LOCATION VALIDATION TOO STRICT** (MEDIUM)
+**File:** `src/app/api/jobs/search/route.ts` lines 72-78
+**Issue:** Requires location, returns 400 if missing
+**Result:** Blocks job searches
+**Fix:** Make location optional OR provide better fallback
+
+### 6. **TOASTER RENDERED BUT LAYOUT IMPORTS IT** (MINOR)
+**Fix:** Remove unused import from layout.tsx line 14
+
+### 7. **AUTOMATIC ERROR TOASTS** (MEDIUM)
+**File:** `providers.tsx` lines 41-45
+**Issue:** May show duplicate/wrong error messages
+**Fix:** Make automatic toasts opt-in
+
+---
+
+## 🔧 IMMEDIATE FIXES NEEDED (v3)
+
+### FIX #1: Remove Duplicate Navigation (1 minute) ⚡
+**File:** `src/app/layout.tsx` line 70
+```typescript
+// DELETE THIS LINE:
+<MobileNav />
+```
+
+### FIX #2: Fix Cover Letter Validation (2 minutes) ⚡
+**File:** `src/lib/validators.ts` line 34
+```typescript
+// CHANGE FROM:
+jobDescription: z.string().min(50),
+
+// CHANGE TO:
+jobDescription: z.string().min(1),
+```
+
+### FIX #3: Remove Excessive Console Logging (5 minutes) ⚡
+**File:** `src/lib/perplexity-intelligence.ts`
+```typescript
+// DELETE OR COMMENT OUT lines 910, 913, 919:
+// console.log(`[JOB_FILTER] ...`)
+// console.warn(`[JOB_FILTER] ...`)
+// console.log(`[JOB_FILTER] ✅ Filtered ...`)
+```
+
+**File:** `src/components/unified-navigation.tsx`
+```typescript
+// DELETE OR COMMENT OUT lines 99-106, 322:
+// console.log('[NAV_DEBUG]', ...)
+// console.log('[HAMBURGER] Clicked!', ...)
+```
+
+### FIX #4: Remove Unused Import (30 seconds) ⚡
+**File:** `src/app/layout.tsx` line 14
+```typescript
+// DELETE THIS LINE:
+import { Toaster } from 'react-hot-toast'
+```
+
+### FIX #5: Make Location Optional (3 minutes) ⚡
+**File:** `src/app/api/jobs/search/route.ts` lines 72-78
+```typescript
+// CHANGE FROM:
+if (!location || location.trim().length < 2) {
+  return NextResponse.json({ error: '...' }, { status: 400 })
+}
+
+// CHANGE TO:
+if (!location || location.trim().length < 2) {
+  location = 'Canada' // Default fallback
+  console.log('[JOB_SEARCH] No location provided, using default: Canada')
+}
+```
+
+### FIX #6: Consolidate CSS Files (30 minutes) 🔨
+**Action:** Merge all 4 CSS files into one
+**Steps:**
+1. Remove duplicate definitions
+2. Use theme variables instead of hardcoded colors
+3. Create single z-index system
+4. Delete the 3 extra files
+5. Update imports in `layout.tsx`
+
+---
+
+## 📋 CONTINUING AUDIT...
+
+Checking more components and models...
+
