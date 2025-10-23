@@ -99,15 +99,26 @@ function generateRequestId(): string {
   return Math.random().toString(36).substr(2, 16) + Date.now().toString(36)
 }
 
+// FIXED: Add timeout protection
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error(`Request timeout after ${ms}ms`)), ms)
+    )
+  ])
+}
+
 async function withRetry<T>(
   operation: () => Promise<T>,
   maxAttempts: number = MAX_RETRY_ATTEMPTS,
-  logger?: { warn?: (message: string, context?: Record<string, unknown>) => void }
+  logger?: { warn?: (message: string, context?: Record<string, unknown>) => void },
+  timeoutMs: number = 30000 // 30 second default timeout
 ): Promise<T> {
   let lastError: unknown
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      return await operation()
+      return await withTimeout(operation(), timeoutMs)
     } catch (err) {
       lastError = err
       if (attempt === maxAttempts) break
@@ -900,9 +911,13 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
         }
       })
       
-      // FIXED: Only cache if we have valid results
-      if (enhanced.length > 0) {
+      // FIXED: Only cache if we have good success rate (at least 80%)
+      const successRate = enhanced.length / limit
+      if (enhanced.length > 0 && successRate >= 0.8) {
         setCache(key, enhanced)
+        console.log(`[CACHE] Cached ${enhanced.length}/${limit} jobs (${Math.round(successRate * 100)}%)`)
+      } else if (enhanced.length > 0) {
+        console.warn(`[CACHE] Skipping cache - only ${enhanced.length}/${limit} jobs (${Math.round(successRate * 100)}%)`)
       }
       return enhanced
     } catch (error) {
@@ -1056,7 +1071,7 @@ OUTPUT JSON FORMAT:
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.15, 
-          maxTokens: Math.min((options.maxResults || 25) * 200, 8000), // INCREASED: More tokens for 25+ jobs with company extraction
+          maxTokens: Math.min((options.maxResults || 25) * 250, 12000), // FIXED: Increased to handle comprehensive job data
           model: 'sonar-pro' // Use research model for job analysis
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
