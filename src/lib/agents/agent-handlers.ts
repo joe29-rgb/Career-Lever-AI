@@ -6,6 +6,7 @@
  */
 
 import { PerplexityIntelligenceService } from '../perplexity-intelligence'
+import { AdvancedScraper } from '../scrapers/advanced-scraper'
 
 export interface ToolResult {
   success: boolean
@@ -72,7 +73,8 @@ export class AgentToolHandlers {
   }
 
   /**
-   * Scrapes a specific job posting URL
+   * Scrapes a specific job posting URL using AdvancedScraper
+   * 3-tier fallback: JSON-LD → Cheerio → Regex
    */
   static async scrape_job_posting(
     url: string,
@@ -81,14 +83,14 @@ export class AgentToolHandlers {
     try {
       console.log(`[TOOL] scrape_job_posting: ${url}`)
 
-      // Use URL scraper from intelligence service
-      // @ts-ignore - accessing private method for agent
-      const description = await PerplexityIntelligenceService['scrapeJobURL'](url)
+      // Use advanced scraper with 3-tier fallback
+      const scraper = new AdvancedScraper()
+      const result = await scraper.scrape(url)
 
-      if (!description || description.length < 50) {
+      if (!result.success || !result.data?.description) {
         return {
           success: false,
-          error: 'Could not extract job description from URL (may be login-gated or JavaScript-rendered)'
+          error: result.error || 'Could not extract job description from URL'
         }
       }
 
@@ -96,9 +98,14 @@ export class AgentToolHandlers {
         success: true,
         data: {
           url,
-          company: company_name,
-          description,
-          description_length: description.length,
+          company: company_name || result.data.company,
+          title: result.data.title,
+          description: result.data.description,
+          requirements: result.data.requirements,
+          salary: result.data.salary,
+          location: result.data.location,
+          scrape_method: result.method,
+          description_length: result.data.description.length,
           extracted_at: new Date().toISOString()
         }
       }
