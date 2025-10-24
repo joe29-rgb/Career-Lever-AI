@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
     console.log('[OUTREACH] Application tracked:', application._id)
 
     return NextResponse.json({
-      success: true,
       ...emailData,
       resumePDFBase64: resumeBase64,
       coverLetterPDFBase64: coverBase64,
