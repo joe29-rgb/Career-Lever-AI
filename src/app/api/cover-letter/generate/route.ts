@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save, psychology } = body;
+    const { jobApplicationId, resumeId, tone = 'professional', length = 'medium', raw, save, psychology: psychologyFromBody } = body;
 
     const rl = await isRateLimited((session.user as any).id, 'cover-letter');
     if (rl) {
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
         hiringContactName: hiringContact,
         templateId: template || 'modern',
         tone,
-        psychology,
+        psychology: psychologyFromBody,
       })
       
       const { coverLetter, authenticity: report, wordCount, preview } = result
