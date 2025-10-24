@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2, Linkedin } from 'lucide-react'
 import { Resume } from '@/types'
 import toast from 'react-hot-toast'
+import { LinkedInImport } from '@/components/linkedin-import'
 
 interface ResumeUploadProps {
   onUploadSuccess: (resume: Resume) => void
@@ -151,6 +152,7 @@ export function ResumeUpload({
   const [error, setError] = useState<string | null>(null)
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
   const [pastedText, setPastedText] = useState('')
+  const [activeTab, setActiveTab] = useState<'upload' | 'linkedin' | 'paste'>('upload')
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
