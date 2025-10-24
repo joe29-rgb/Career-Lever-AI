@@ -23,7 +23,7 @@ interface ResumeUploadProps {
 // PHASE 1: Zero-Friction Automation - Background job search and company research
 const triggerAutopilotFlow = async (resume: Resume) => {
   try {
-    console.log('[AUTOPILOT] Starting background flow...')
+    // Starting autopilot background flow
     
     // Update progress indicator
     const updateProgress = (step: string, status: 'loading' | 'complete') => {
@@ -49,7 +49,7 @@ const triggerAutopilotFlow = async (resume: Resume) => {
         if (profileData.success && profileData.profile) {
           // Cache profile for later use
           localStorage.setItem('cf:profile', JSON.stringify(profileData.profile))
-          console.log('[AUTOPILOT] Smart profile extracted:', profileData.profile.seniority_level, profileData.profile.work_type)
+          // Smart profile extracted and cached
         }
       }
     } catch (err) {
@@ -62,7 +62,7 @@ const triggerAutopilotFlow = async (resume: Resume) => {
     const location = localStorage.getItem('cf:location') || 'Canada'
     const keywords = localStorage.getItem('cf:keywords') || ''
     
-    console.log('[AUTOPILOT] Searching with:', { location, keywords: keywords.slice(0, 50) })
+    // Searching with extracted location and keywords
     
     // Trigger background job search (fire and forget for speed)
     fetch('/api/jobs/search', {
@@ -79,7 +79,7 @@ const triggerAutopilotFlow = async (resume: Resume) => {
         const jobsData = await response.json()
         const jobs = jobsData.data || []
         
-        console.log('[AUTOPILOT] Found', jobs.length, 'jobs')
+        // Jobs found and cached
         
         // Cache results
         localStorage.setItem('cf:jobResults', JSON.stringify(jobs))
@@ -102,7 +102,7 @@ const triggerAutopilotFlow = async (resume: Resume) => {
             })
           }).then(() => {
             researchedCount++
-            console.log('[AUTOPILOT] Researched company', researchedCount, 'of 10:', job.company)
+            // Company research completed
             
             if (researchedCount === topJobs.length) {
               updateProgress('research', 'complete')
@@ -205,7 +205,7 @@ export function ResumeUpload({
 
       const data = await response.json()
 
-      console.log('Extracted signals:', data)
+      // Signals extracted successfully
 
       // Note: Keywords and location are stored in the resume record
       // and can be retrieved from the API response if needed
@@ -245,11 +245,11 @@ export function ResumeUpload({
       const formData = new FormData()
       if (uploadedFile) {
         formData.append('file', uploadedFile) // API expects 'file' not 'resume'
-        console.log('📤 Uploading file:', uploadedFile.name, uploadedFile.size, 'bytes')
+        // Uploading file
       }
       if (pastedText.trim()) {
         formData.append('pastedText', pastedText.trim())
-        console.log('📝 Uploading pasted text:', pastedText.length, 'chars')
+        // Uploading pasted text
       }
 
       const response = await fetch('/api/resume/upload', {
@@ -274,7 +274,7 @@ export function ResumeUpload({
       }
 
       const data = await response.json()
-      console.log('✅ Upload response:', { success: data.success, hasResume: !!data.resume })
+      // Upload successful
       const resume = data.resume
 
       if (!resume) {
@@ -297,7 +297,7 @@ export function ResumeUpload({
       
       // AUTO-SEARCH: Extract keywords and trigger job search
       if (resume.extractedText) {
-        console.log('🤖 Auto-triggering job search with extracted keywords...')
+        // Auto-triggering job search
         try {
           const signalsResp = await fetch('/api/resume/extract-signals', {
             method: 'POST',
@@ -307,7 +307,7 @@ export function ResumeUpload({
           
           if (signalsResp.ok) {
             const signals = await signalsResp.json()
-            console.log('🎯 Extracted signals:', signals)
+            // Signals extracted
             
             // PERPLEXITY FIX: Standardized localStorage keys as per audit
             localStorage.setItem('cf:location', signals.location || '') // Standard key for location
@@ -315,7 +315,7 @@ export function ResumeUpload({
             localStorage.setItem('cf:resume', JSON.stringify(resume)) // Full resume object
             localStorage.setItem('cf:autopilotReady', '1') // Autopilot flag
             
-            console.log('✅ [PERPLEXITY AUDIT FIX] Location stored:', signals.location)
+            // Location stored in localStorage
             
             toast.success('Keywords extracted! Redirecting to job search...')
             
