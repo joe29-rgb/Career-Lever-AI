@@ -1178,6 +1178,9 @@ OUTPUT JSON FORMAT:
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
       
+      // CRITICAL FIX: Validate job listings before processing
+      parsed = this.validateJobListings(parsed, options.maxResults || 25)
+      
       // Enhance and normalize
       parsed = parsed.map(j => ({
         ...j,
@@ -1456,17 +1459,34 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
       
       // Final result prepared
       
-      // CRITICAL: Always cache the result (even if empty array)
-      setCache(key, parsed)
+      // CRITICAL FIX: Validate contacts before returning
+      const validated = this.validateHiringContacts(parsed)
+      
+      // CRITICAL FIX: If no validated contacts, provide company inbox fallback
+      const finalContacts = validated.length > 0 ? validated : [{
+        name: 'Careers Team',
+        title: 'Recruiting',
+        department: 'Human Resources',
+        email: `careers@${companyName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')}.com`,
+        linkedinUrl: `https://linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')}`,
+        emailType: 'inferred' as 'public'|'inferred'|'pattern',
+        source: 'Company domain inference (fallback)',
+        confidence: 0.3,
+        discoveryMethod: 'Fallback - no verified contacts found'
+      }]
+      
+      // CRITICAL: Always cache the result (even if fallback)
+      setCache(key, finalContacts)
       return { 
         success: true, 
-        data: parsed, 
+        data: finalContacts, 
         metadata: { 
           requestId, 
           timestamp: started, 
           duration: Date.now() - started,
-          contactsFound: parsed.length,
-          withEmails: parsed.filter(c => c.email).length
+          contactsFound: finalContacts.length,
+          withEmails: finalContacts.filter(c => c.email).length,
+          usedFallback: validated.length === 0
         }, 
         cached: false 
       }
