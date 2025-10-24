@@ -37,8 +37,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
             const resp = await originalFetch(input, init)
             const reqId = resp.headers.get('x-request-id') || ''
             if (reqId) addRequestBreadcrumb(reqId)
+            
+            // CRITICAL FIX: Only show automatic toasts if NOT explicitly disabled
+            // APIs can set 'x-skip-auto-toast' header to handle their own error messages
+            const skipAutoToast = resp.headers.get('x-skip-auto-toast') === 'true'
+            
             // Minimal default toasts for unhandled auth/rate/server errors
-            if (!resp.ok) {
+            if (!resp.ok && !skipAutoToast) {
               if (resp.status === 401) { toast.error('Session expired. Please sign in.'); }
               else if (resp.status === 429) { toast.error('Rate limit exceeded. Please wait and try again.'); }
               else if (resp.status >= 500) { toast.error('Server error. Please try again later.'); }

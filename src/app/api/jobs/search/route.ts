@@ -69,12 +69,10 @@ export async function POST(request: NextRequest) {
       disableIndustryWeighting // ENTERPRISE: Disable tenure-based weighting
     } = body
     
-    // CRITICAL: Validate location is provided
+    // CRITICAL FIX: Provide fallback location instead of blocking search
     if (!location || location.trim().length < 2) {
-      return NextResponse.json({ 
-        error: 'Location is required. Please ensure your resume contains your location or enter it manually.',
-        hint: 'Add your city and province/state to your resume (e.g., "Edmonton, AB")'
-      }, { status: 400 })
+      location = 'Canada' // Default fallback for broad search
+      console.log('[JOB_SEARCH] No location provided, using default: Canada')
     }
 
     let useResumeMatching = body.useResumeMatching || false
