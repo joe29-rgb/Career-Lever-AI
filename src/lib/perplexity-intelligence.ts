@@ -588,6 +588,57 @@ interface EnhancedCompanyResearchData {
 
 export class PerplexityIntelligenceService {
   /**
+   * CRITICAL FIX: Scrapes job URL to get full description when Perplexity returns incomplete data
+   * Fallback for when descriptions are too short
+   */
+  private static async scrapeJobURL(url: string): Promise<string> {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        signal: AbortSignal.timeout(10000) // 10 second timeout
+      })
+      
+      if (!response.ok) return ''
+      
+      const html = await response.text()
+      
+      // Try multiple common job description selectors
+      const patterns = [
+        /<div[^>]*class="[^"]*description[^"]*"[^>]*>(.*?)<\/div>/is,
+        /<div[^>]*id="[^"]*description[^"]*"[^>]*>(.*?)<\/div>/is,
+        /<section[^>]*class="[^"]*job-description[^"]*"[^>]*>(.*?)<\/section>/is,
+        /<div[^>]*class="[^"]*job-details[^"]*"[^>]*>(.*?)<\/div>/is
+      ]
+      
+      for (const pattern of patterns) {
+        const match = html.match(pattern)
+        if (match && match[1]) {
+          // Strip HTML tags and clean up
+          const cleaned = match[1]
+            .replace(/<script[^>]*>.*?<\/script>/gis, '')
+            .replace(/<style[^>]*>.*?<\/style>/gis, '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+          
+          if (cleaned.length > 150) {
+            return cleaned
+          }
+        }
+      }
+      
+      return ''
+    } catch (error) {
+      if (process.env.PPX_DEBUG === 'true') {
+        console.warn(`[SCRAPE] Failed to scrape ${url}:`, error)
+      }
+      return ''
+    }
+  }
+
+  /**
    * CRITICAL FIX: Validates job listings response from Perplexity
    * Filters out incomplete, fake, or low-quality jobs
    */
@@ -1178,8 +1229,24 @@ OUTPUT JSON FORMAT:
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
       
-      // CRITICAL FIX: Validate job listings before processing
-      parsed = this.validateJobListings(parsed, options.maxResults || 25)
+      // CRITICAL FIX: Enrich jobs with short descriptions by scraping URLs
+      const enriched = await Promise.all(
+        parsed.map(async (job) => {
+          if (job.summary && job.summary.length < 150 && job.url) {
+            if (process.env.PPX_DEBUG === 'true') {
+              console.log(`[ENRICH] Scraping ${job.url} for full description...`)
+            }
+            const fullDescription = await this.scrapeJobURL(job.url)
+            if (fullDescription) {
+              return { ...job, summary: fullDescription }
+            }
+          }
+          return job
+        })
+      )
+      
+      // CRITICAL FIX: Validate job listings after enrichment
+      parsed = this.validateJobListings(enriched, options.maxResults || 25)
       
       // Enhance and normalize
       parsed = parsed.map(j => ({
