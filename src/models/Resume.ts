@@ -26,7 +26,7 @@ export interface IResume extends Document {
     location?: string;
     locations?: string[];
   };
-  comprehensiveResearch?: any; // Full comprehensive research data
+  comprehensiveResearch?: Record<string, unknown>; // Full comprehensive research data
   comprehensiveResearchAt?: Date; // When research was cached
   resumeVariants?: {
     variantA: string;

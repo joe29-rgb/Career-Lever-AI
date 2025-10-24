@@ -402,7 +402,7 @@ export interface JobBoardSubmissionRequest {
   jobBoards: string[];
   resumeId?: string;
   coverLetterId?: string;
-  customizations?: Record<string, any>;
+  customizations?: Record<string, unknown>;
 }
 
 export interface JobBoardSubmissionResult {
