@@ -92,7 +92,7 @@ const triggerAutopilotFlow = async (resume: Resume) => {
         const topJobs = jobs.slice(0, 10)
         let researchedCount = 0
         
-        topJobs.forEach((job: any) => {
+        topJobs.forEach((job: { company: string; title: string }) => {
           fetch('/api/v2/company/deep-research', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -152,13 +152,13 @@ export function ResumeUpload({
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
   const [pastedText, setPastedText] = useState('')
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: Array<{ file: File; errors: Array<{ code: string; message: string }> }>) => {
     // Handle rejected files
     if (rejectedFiles.length > 0) {
       const rejection = rejectedFiles[0]
-      if (rejection.errors.some((error: any) => error.code === 'file-too-large')) {
+      if (rejection.errors.some((error) => error.code === 'file-too-large')) {
         setError(`File size too large. Maximum size is ${maxFileSize / (1024 * 1024)}MB.`)
-      } else if (rejection.errors.some((error: any) => error.code === 'file-invalid-type')) {
+      } else if (rejection.errors.some((error) => error.code === 'file-invalid-type')) {
         setError('Only PDF files are accepted.')
       } else {
         setError('File upload failed. Please try again.')
@@ -267,8 +267,8 @@ export function ResumeUpload({
         try { 
           const errorData = await response.json()
           console.error('❌ Upload API error:', errorData)
-          message = (errorData as any).error || message 
-          details = (errorData as any).details || ''
+          message = (errorData as { error?: string }).error || message 
+          details = (errorData as { details?: string }).details || ''
         } catch {}
         throw new Error(details ? `${message}: ${details}` : message)
       }
@@ -447,7 +447,7 @@ export function ResumeUpload({
                 onChange={(e) => setPastedText(e.target.value)}
                 disabled={isUploading}
               />
-              <div className="text-sm text-muted-foreground font-medium">✨ We'll create a resume record from your pasted text.</div>
+              <div className="text-sm text-muted-foreground font-medium">✨ We&apos;ll create a resume record from your pasted text.</div>
             </div>
 
             {/* VIBRANT Upload Button when using pasted text */}
