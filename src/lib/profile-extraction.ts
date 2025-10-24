@@ -88,15 +88,17 @@ CRITICAL: Use REAL market salary data for their location and role. Do NOT guess 
         maxTokens: 1000
       })
       
-      // Type-safe result validation
-      if (
-        typeof result === 'object' && 
-        result !== null && 
-        'location' in result && 
-        'experience_years' in result &&
-        'salary_min' in result
-      ) {
-        const profile = result as SmartProfile
+      // Parse JSON response
+      try {
+        const parsed = JSON.parse(result.content)
+        if (
+          typeof parsed === 'object' && 
+          parsed !== null && 
+          'location' in parsed && 
+          'experience_years' in parsed &&
+          'salary_min' in parsed
+        ) {
+          const profile = parsed as SmartProfile
         
         console.log('[PROFILE_EXTRACTION] Analysis complete:', {
           location: profile.location,
@@ -107,6 +109,9 @@ CRITICAL: Use REAL market salary data for their location and role. Do NOT guess 
         })
         
         return profile
+        }
+      } catch (parseError) {
+        console.warn('[PROFILE_EXTRACTION] JSON parse error:', parseError)
       }
       
       // If result format is unexpected, use fallback
