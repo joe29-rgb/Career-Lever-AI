@@ -431,7 +431,7 @@ ${htmlContent}
           {TEMPLATES.map(t => (
             <button 
               key={t.id} 
-              className={`group relative border rounded-xl p-5 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl ${template===t.id?'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 border-blue-500 shadow-lg shadow-blue-500/20':'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 bg-white dark:bg-gray-800/50'}`} 
+              className={`group relative border rounded-xl p-5 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl ${template===t.id?'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 border-blue-500 shadow-lg shadow-blue-500/20':'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 bg-card'}`} 
               onClick={()=>handleTemplateChange(t.id)}
             >
               <div className="flex items-start gap-3 mb-3">
@@ -489,7 +489,7 @@ ${htmlContent}
               <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantA); setExpanded('A') }}>Edit</Button>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-900">
+          <div className="bg-card">
             {loading && !variantA ? (
               <div className="p-6">
                 <ResumeSkeleton />
@@ -521,7 +521,7 @@ ${htmlContent}
               <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantB); setExpanded('B') }}>Edit</Button>
             </div>
           </div>
-          <div className="bg-white dark:bg-gray-900">
+          <div className="bg-card">
             {loading && !variantB ? (
               <div className="p-6">
                 <ResumeSkeleton />

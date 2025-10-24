@@ -60,8 +60,10 @@ const triggerAutopilotFlow = async (resume: Resume) => {
     updateProgress('search', 'loading')
     
     // Get location and keywords from localStorage (already extracted by processResumeSignals)
-    const location = localStorage.getItem('cf:location') || 'Canada'
+    const location = localStorage.getItem('cf:location') || ''
     const keywords = localStorage.getItem('cf:keywords') || ''
+    
+    console.log('[AUTOPILOT] Using location:', location, 'keywords:', keywords)
     
     // Searching with extracted location and keywords
     
