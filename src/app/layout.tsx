@@ -1,21 +1,12 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import './globals.mobile.css'
-import './globals-folder.css'
-import './globals-theme.css'
 import { Providers } from '@/components/providers'
-import { ThemeToggle } from '@/components/theme-toggle'
 import { ClientInit } from '@/components/client-init'
 import { AppShell } from '@/components/app-shell'
 import { initSentry } from '@/lib/sentry'
 import { ErrorBoundary } from '@/components/error-boundary'
-import { logger } from '@/lib/logger'
-import Link from 'next/link'
 import { Toaster } from 'react-hot-toast'
-import { AnalyticsTracker } from '@/components/analytics-tracker'
-import { DebugPanel } from '@/components/debug-panel'
 import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
-import { MobileNav } from '@/components/mobile/MobileNav'
 import { CommandPalette } from '@/components/command-palette'
 
 export const metadata: Metadata = {
@@ -64,10 +55,20 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <ErrorBoundary>
           <Providers>
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: 'hsl(var(--background))',
+                  color: 'hsl(var(--foreground))',
+                  border: '1px solid hsl(var(--border))',
+                },
+              }}
+            />
             <OnboardingRedirect />
             <CommandPalette />
             <AppShell>{children}</AppShell>
-            <MobileNav />
           </Providers>
         </ErrorBoundary>
         {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
