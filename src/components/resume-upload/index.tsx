@@ -185,40 +185,6 @@ export function ResumeUpload({
     disabled: isUploading
   })
 
-  const extractPdfClientSide = async (file: File): Promise<string> => {
-    try {
-      // Server-side PDF extraction via API call
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/resume/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
-        console.error('Resume upload API error:', errorData)
-        throw new Error(errorData.error || 'PDF upload failed')
-      }
-
-      const result = await response.json()
-      console.log('✅ Resume upload successful:', { 
-        hasResume: !!result.resume, 
-        hasExtractedText: !!result.resume?.extractedText,
-        textLength: result.resume?.extractedText?.length || 0
-      })
-      
-      // The API returns { success, resume, ... } where resume contains extractedText
-      return result.resume?.extractedText || result.extractedText || ''
-    } catch (error: unknown) {
-      console.error('❌ PDF extraction failed:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      toast.error(`Upload failed: ${errorMessage}`)
-      return ''
-    }
-  }
-
   const processResumeSignals = async (resumeText: string) => {
     try {
       const response = await fetch('/api/resume/signals', {
