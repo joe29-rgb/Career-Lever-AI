@@ -57,8 +57,13 @@ class DatabaseService {
       })
 
       this.connection.on('disconnected', () => {
-        console.warn('MongoDB disconnected')
+        console.warn('MongoDB disconnected - attempting reconnection')
         this.connection = null
+        // Attempt reconnection after 5 seconds
+        setTimeout(() => {
+          console.log('Attempting to reconnect to MongoDB...')
+          this.connect().catch(err => console.error('Reconnection failed:', err))
+        }, 5000)
       })
 
       console.log('Connected to MongoDB')
@@ -84,7 +89,7 @@ class DatabaseService {
       options: {
         bufferCommands: false,
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 15000, // Increased from 5s to 15s for cold starts
         socketTimeoutMS: 45000,
         family: 4,
         retryWrites: true,

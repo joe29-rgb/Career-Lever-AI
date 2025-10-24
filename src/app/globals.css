@@ -227,9 +227,9 @@
   .z-dropdown { z-index: 1050; }
   .z-sidebar { z-index: 90; }
   
-  /* Modal & Overlay Layers */
-  .z-modal-backdrop { z-index: 1000; }
-  .z-modal { z-index: 1001; }
+  /* Modal & Overlay Layers - Higher than navigation */
+  .z-modal-backdrop { z-index: 1050; }
+  .z-modal { z-index: 1051; }
   .z-tooltip { z-index: 1100; }
   .z-popover { z-index: 200; }
   .z-toast { z-index: 1200; }
@@ -344,13 +344,7 @@
     @apply border-b border-border/50;
   }
   
-  /* Buttons */
-  .btn-primary {
-    @apply bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold;
-    @apply shadow-lg shadow-primary/30;
-    @apply transition-all duration-300;
-    @apply hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5;
-  }
+  /* Buttons - using enhanced definition below at line 427 */
   
   .btn-gradient {
     @apply px-6 py-3 rounded-xl font-semibold;
