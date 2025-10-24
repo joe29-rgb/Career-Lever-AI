@@ -404,7 +404,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         boards,
-        totalBoards: boards.totalBoards
+        totalBoards: boards.length
       })
     }
 
