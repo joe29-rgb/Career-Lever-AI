@@ -996,3 +996,76 @@
 .rounded-lg { border-radius: var(--radius-lg); }
 .rounded-xl { border-radius: var(--radius-xl); }
 .rounded-full { border-radius: var(--radius-full); }
+
+/* ===================================================================
+   RESPONSIVE BREAKPOINTS - MOBILE OPTIMIZATIONS
+   =================================================================== */
+
+/* Mobile devices (max-width: 768px) */
+@media (max-width: 768px) {
+  /* Increase touch targets for mobile */
+  .btn, button {
+    min-height: 48px !important;
+    padding: 12px 20px !important;
+  }
+  
+  /* Adjust font sizes for mobile readability */
+  h1 { font-size: 2rem !important; }
+  h2 { font-size: 1.5rem !important; }
+  h3 { font-size: 1.25rem !important; }
+  
+  /* Reduce padding on cards for mobile */
+  .card, .modern-card, .glass-card {
+    padding: 1rem !important;
+  }
+  
+  /* Stack navigation items vertically */
+  .nav-container {
+    padding: 0.5rem !important;
+  }
+  
+  /* Adjust modal sizing */
+  .z-modal {
+    max-width: 95vw !important;
+    margin: 1rem !important;
+  }
+  
+  /* Improve form inputs on mobile */
+  .modern-input, input, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    min-height: 48px !important;
+  }
+  
+  /* Adjust spacing */
+  .dashboard-container {
+    padding: 1rem !important;
+  }
+}
+
+/* Small mobile devices (max-width: 480px) */
+@media (max-width: 480px) {
+  /* Further reduce font sizes */
+  h1 { font-size: 1.75rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  
+  /* Increase button padding */
+  .btn {
+    padding: 14px 24px !important;
+  }
+  
+  /* Full width buttons on small screens */
+  .btn-primary, .btn-secondary {
+    width: 100%;
+  }
+}
+
+/* Tablet devices (min-width: 769px and max-width: 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .dashboard-container {
+    padding: 2rem !important;
+  }
+  
+  .card, .modern-card {
+    padding: 1.5rem !important;
+  }
+}
