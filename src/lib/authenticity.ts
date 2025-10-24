@@ -6,6 +6,7 @@ export type AuthenticityReport = {
 }
 
 const AI_TRIGGER_PHRASES = [
+  // Generic buzzwords
   'dynamic',
   'results-driven',
   'progressive experience',
@@ -14,7 +15,62 @@ const AI_TRIGGER_PHRASES = [
   'end-to-end solutions',
   'customer-centric approach',
   'excited to apply',
-  'resonates with my values'
+  'resonates with my values',
+  
+  // Common AI phrases
+  'passionate about',
+  'proven track record',
+  'detail-oriented',
+  'team player',
+  'go-getter',
+  'self-starter',
+  'think outside the box',
+  'hit the ground running',
+  'wear many hats',
+  'synergy',
+  'paradigm shift',
+  'game-changer',
+  'best practices',
+  'core competencies',
+  'value-added',
+  'strategic thinker',
+  'proactive',
+  'results-oriented',
+  'highly motivated',
+  'excellent communication skills',
+  
+  // Corporate jargon
+  'circle back',
+  'touch base',
+  'low-hanging fruit',
+  'move the needle',
+  'deep dive',
+  'drill down',
+  'take it offline',
+  'bandwidth',
+  'actionable insights',
+  'key takeaways',
+  'stakeholder engagement',
+  'cross-functional collaboration',
+  'deliverables',
+  'seamless integration',
+  'scalable solutions',
+  
+  // Overused phrases
+  'innovative solutions',
+  'cutting-edge',
+  'world-class',
+  'industry-leading',
+  'best-in-class',
+  'state-of-the-art',
+  'next-generation',
+  'revolutionary',
+  'transformative',
+  'disruptive',
+  'robust',
+  'comprehensive',
+  'holistic approach',
+  'value proposition'
 ]
 
 const COMMON_TOOLS = [
