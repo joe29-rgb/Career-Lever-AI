@@ -186,13 +186,15 @@ export async function POST(request: NextRequest) {
             primaryIndustry: effectivePrimaryIndustry.name,
             primaryPercentage: `${effectivePrimaryIndustry.percentage}%`,
             adjustedLimit: industryWeightedLimit,
-            keywords: effectivePrimaryIndustry.keywords.join(', '),
+            keywords: effectivePrimaryIndustry.keywords?.join(', ') || 'none',
             isSwitching: !!targetIndustry
           })
           
-          // Boost keywords from target/primary industry
-          const industryKeywords = effectivePrimaryIndustry.keywords.slice(0, 5).join(', ')
-          keywords = `${industryKeywords}, ${keywords}`.trim()
+          // Boost keywords from target/primary industry (if available)
+          if (effectivePrimaryIndustry.keywords && Array.isArray(effectivePrimaryIndustry.keywords) && effectivePrimaryIndustry.keywords.length > 0) {
+            const industryKeywords = effectivePrimaryIndustry.keywords.slice(0, 5).join(', ')
+            keywords = `${industryKeywords}, ${keywords}`.trim()
+          }
         }
 
         // Use enhanced jobMarketAnalysisV2 with 25+ boards
@@ -229,7 +231,7 @@ export async function POST(request: NextRequest) {
         jobs = result.data
         
         // POST-PROCESSING: Re-rank jobs by industry tenure (respects user preferences)
-        if (effectivePrimaryIndustry && !disableIndustryWeighting) {
+        if (effectivePrimaryIndustry && !disableIndustryWeighting && effectivePrimaryIndustry.keywords && Array.isArray(effectivePrimaryIndustry.keywords)) {
           const primaryKeywords = effectivePrimaryIndustry.keywords.map((k: string) => k.toLowerCase())
           
           jobs = jobs.map((job: any) => {
