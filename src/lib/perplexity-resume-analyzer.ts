@@ -143,7 +143,7 @@ export class PerplexityResumeAnalyzer {
         timestamp
       }
 
-      const parsed = parseAIResponse<EnhancedResumeAnalysis>(result, {
+      const parsed = parseAIResponse<EnhancedResumeAnalysis>(result.content, {
         stripMarkdown: true,
         extractFirst: true,
         throwOnError: true
