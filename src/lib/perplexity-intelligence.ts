@@ -2503,4 +2503,33 @@ Return ONLY valid JSON:
     }
     return cleared
   }
+
+  /**
+   * Get cache statistics (admin utility)
+   * @returns Cache stats including size, hit counts, and breakdown by prefix
+   */
+  static getCacheStats(): {
+    totalEntries: number
+    totalHits: number
+    breakdown: Record<string, { count: number; hits: number }>
+  } {
+    const breakdown: Record<string, { count: number; hits: number }> = {}
+    let totalHits = 0
+
+    for (const [key, record] of cache.entries()) {
+      const prefix = key.split(':')[0] || 'unknown'
+      if (!breakdown[prefix]) {
+        breakdown[prefix] = { count: 0, hits: 0 }
+      }
+      breakdown[prefix].count++
+      breakdown[prefix].hits += record.metadata.hitCount
+      totalHits += record.metadata.hitCount
+    }
+
+    return {
+      totalEntries: cache.size,
+      totalHits,
+      breakdown
+    }
+  }
 }
