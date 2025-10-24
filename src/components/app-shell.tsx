@@ -22,13 +22,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // App pages: Single navigation with breadcrumbs
   return (
     <div className="min-h-screen bg-background">
-      {/* UNIFIED NAVIGATION */}
+      {/* UNIFIED NAVIGATION (includes sidebar) */}
       <UnifiedNavigation />
       
-      {/* MAIN CONTENT WITH BREADCRUMBS */}
-      <main id="main-content" role="main" className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Breadcrumbs />
-        {children}
+      {/* MAIN CONTENT WITH BREADCRUMBS - Add top padding for fixed header */}
+      <main 
+        id="main-content" 
+        role="main" 
+        className="pt-20 px-4 sm:px-6 lg:px-8 py-6 transition-all duration-300"
+        style={{ 
+          marginLeft: '0', // Sidebar handles its own positioning
+        }}
+      >
+        <div className="container mx-auto">
+          <Breadcrumbs />
+          {children}
+        </div>
       </main>
     </div>
   )

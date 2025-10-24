@@ -4,26 +4,29 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useNotifications } from '@/hooks/use-notifications'
-import { 
-  Menu, 
-  X, 
-  Home, 
-  FileText, 
-  Briefcase, 
-  Settings,
-  User,
-  LogOut,
-  Search,
+import {
+  Home,
+  FileText,
+  Briefcase,
   Users,
+  Settings,
+  LogOut,
+  User,
+  Menu,
+  X,
+  Search,
   ChevronDown,
+  ChevronRight,
   Bell,
   Mail,
   BarChart3,
-  Target
+  Target,
+  PanelLeftClose,
+  PanelLeft
 } from 'lucide-react'
 
 interface NavigationItem {
@@ -73,8 +76,7 @@ const navigationItems: NavigationItem[] = [
   { 
     name: 'Network', 
     href: '/network', 
-    icon: Users,
-    badge: 0
+    icon: Users 
   },
   {
     name: 'Settings',
@@ -82,6 +84,8 @@ const navigationItems: NavigationItem[] = [
     submenu: [
       { name: 'Profile', href: '/settings/profile' },
       { name: 'Preferences', href: '/settings/preferences' },
+      { name: 'Alerts', href: '/settings/alerts' },
+      { name: 'Privacy', href: '/settings/privacy' },
       { name: 'Integrations', href: '/settings/integrations' },
       { name: 'Job Boards', href: '/settings/job-boards' }
     ]
@@ -92,17 +96,10 @@ export function UnifiedNavigation() {
   const { data: session, status } = useSession()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true) // Desktop sidebar state
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const { count: notificationCount } = useNotifications()
-
-  // DEBUG: Log session state
-  console.log('[NAV_DEBUG]', {
-    session: !!session,
-    status,
-    pathname,
-    userEmail: session?.user?.email
-  })
 
   // Handle scroll for glass effect
   useEffect(() => {
@@ -126,6 +123,11 @@ export function UnifiedNavigation() {
         e.preventDefault()
         window.location.href = '/career-finder/search'
       }
+      // Cmd/Ctrl + B to toggle sidebar
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault()
+        setSidebarOpen(!sidebarOpen)
+      }
       // Escape to close mobile menu
       if (e.key === 'Escape' && mobileMenuOpen) {
         setMobileMenuOpen(false)
@@ -133,7 +135,7 @@ export function UnifiedNavigation() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [mobileMenuOpen])
+  }, [mobileMenuOpen, sidebarOpen])
   
   // Only show navigation when user is signed in (not on landing or auth pages)
   const isAuthPage = pathname?.startsWith('/auth')
@@ -142,14 +144,12 @@ export function UnifiedNavigation() {
   // Show loading skeleton while session is loading
   if (status === 'loading') {
     return (
-      <header className="sticky top-0 bg-background/95 backdrop-blur-xl border-b border-border shadow-xl" style={{ minHeight: '64px', zIndex: 9999 }}>
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="w-32 h-8 bg-muted animate-pulse rounded"></div>
-            <div className="flex gap-2">
-              <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
-              <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
-            </div>
+      <header className="fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-xl border-b border-border shadow-xl" style={{ height: '64px', zIndex: 1000 }}>
+        <div className="h-full px-4 flex items-center justify-between">
+          <div className="w-32 h-8 bg-muted animate-pulse rounded"></div>
+          <div className="flex gap-2">
+            <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
+            <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
           </div>
         </div>
       </header>
@@ -172,252 +172,222 @@ export function UnifiedNavigation() {
   }
 
   return (
-    <header 
-      className={`sticky top-0 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-xl' 
-          : 'bg-background/90 backdrop-blur-lg border-b border-border/50 shadow-md'
-      }`}
-      style={{ minHeight: '64px', zIndex: 9999, position: 'sticky' }}
-    >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* LOGO WITH GRADIENT - Always visible */}
-          <Link 
-            href={session ? '/dashboard' : '/'} 
-            className="flex items-center gap-2 sm:gap-3 group shrink-0 z-10"
-          >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 shrink-0">
-              CL
-            </div>
-            <span className="gradient-text font-bold text-lg sm:text-xl hidden xs:inline-block whitespace-nowrap">
-              Career Lever AI
-            </span>
-          </Link>
+    <>
+      {/* TOP BAR - Minimal, just logo and actions */}
+      <header 
+        className={`fixed top-0 left-0 right-0 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-xl' 
+            : 'bg-background/90 backdrop-blur-lg border-b border-border/50 shadow-md'
+        }`}
+        style={{ height: '64px', zIndex: 1000 }}
+      >
+        <div className="h-full px-4 flex items-center justify-between">
+          {/* LEFT: Sidebar toggle + Logo */}
+          <div className="flex items-center gap-3">
+            {/* Desktop Sidebar Toggle */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hidden md:flex p-2 rounded-lg hover:bg-accent/50 transition-all"
+              aria-label="Toggle sidebar"
+            >
+              {sidebarOpen ? (
+                <PanelLeftClose className="w-5 h-5" />
+              ) : (
+                <PanelLeft className="w-5 h-5" />
+              )}
+            </button>
 
-          {/* DESKTOP NAVIGATION - Always visible on desktop */}
-          <nav className="hidden md:flex items-center space-x-1 flex-1 justify-center max-w-3xl mx-auto">
-            {navigationItems.map((item) => {
-                const Icon = item.icon
-                const isActive = isItemActive(item)
-                const hasSubmenu = item.submenu && item.submenu.length > 0
-                
-                return (
-                  <div key={item.name} className="relative group">
-                    {hasSubmenu ? (
-                      <>
-                        <button
-                          onClick={() => toggleSubmenu(item.name)}
-                          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                            isActive
-                              ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-md'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                          }`}
-                        >
-                          <Icon className="w-4 h-4" />
-                          <span>{item.name}</span>
-                          <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${
-                            expandedMenu === item.name ? 'rotate-180' : ''
-                          }`} />
-                          {item.badge && item.badge > 0 && (
-                            <span className="ml-1 px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm">
-                              {item.badge}
-                            </span>
-                          )}
-                        </button>
-                        
-                        {/* SUBMENU DROPDOWN */}
-                        {expandedMenu === item.name && (
-                          <div className="absolute top-full left-0 mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden z-dropdown">
-                            {item.submenu?.map((subItem) => (
-                              <Link
-                                key={subItem.href}
-                                href={subItem.href}
-                                className={`flex items-center justify-between px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                                  pathname === subItem.href
-                                    ? 'bg-primary/10 text-primary'
-                                    : 'text-foreground hover:bg-accent/50'
-                                }`}
-                              >
-                                <span>{subItem.name}</span>
-                                {subItem.badge && subItem.badge > 0 && (
-                                  <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
-                                    {subItem.badge}
-                                  </span>
-                                )}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <Link
-                        href={item.href || '#'}
-                        className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                          isActive
-                            ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-md'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:scale-105'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{item.name}</span>
-                        {item.badge && item.badge > 0 && (
-                          <span className="ml-1 px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm">
-                            {item.badge}
-                          </span>
-                        )}
-                      </Link>
-                    )}
-                  </div>
-                )
-              })}
-          </nav>
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-accent/50 transition-all"
+              aria-label="Toggle mobile menu"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
 
-          {/* RIGHT SIDE ACTIONS - Always visible */}
-          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
-            {/* QUICK ACTIONS - Search, Notifications & Messages */}
-            {session && (
-              <>
-                <Link 
-                  href="/career-finder/search"
-                  className="hidden lg:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
-                  title="Quick Search"
-                >
-                  <Search className="w-5 h-5" />
-                </Link>
-                <Link 
-                  href="/notifications"
-                  className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
-                  title="Notifications"
-                >
-                  <Bell className="w-5 h-5" />
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-lg">
-                      {notificationCount > 9 ? '9+' : notificationCount}
-                    </span>
-                  )}
-                </Link>
-                <Link 
-                  href="/messages"
-                  className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
-                  title="Messages"
-                >
-                  <Mail className="w-5 h-5" />
-                </Link>
-              </>
-            )}
+            {/* Logo */}
+            <Link 
+              href={session ? '/dashboard' : '/'} 
+              className="flex items-center gap-2 group"
+            >
+              <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                CL
+              </div>
+              <span className="gradient-text font-bold text-lg hidden sm:inline-block">
+                Career Lever AI
+              </span>
+            </Link>
+          </div>
 
-            {/* THEME TOGGLE - Visible on tablet+ */}
+          {/* RIGHT: Actions */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <Link
+              href="/career-finder/search"
+              className="hidden sm:flex p-2 rounded-lg hover:bg-accent/50 transition-all"
+              title="Search Jobs (⌘K)"
+            >
+              <Search className="w-5 h-5" />
+            </Link>
+
+            {/* Notifications */}
+            <Link
+              href="/notifications"
+              className="relative p-2 rounded-lg hover:bg-accent/50 transition-all"
+              title="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+              {notificationCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </Link>
+
+            {/* Theme Toggle */}
             <div className="hidden md:block">
               <ThemeToggle />
             </div>
 
-            {/* USER MENU OR AUTH BUTTONS */}
-            {session ? (
-              <div className="flex items-center gap-2">
-                {/* MOBILE MENU BUTTON - Show FIRST on mobile for better visibility */}
-                <button
-                  className="flex md:hidden p-2.5 rounded-xl bg-accent/30 hover:bg-accent/50 transition-all border border-border/50 hover:border-primary/30 shadow-sm"
-                  onClick={() => {
-                    console.log('[HAMBURGER] Clicked!', { current: mobileMenuOpen, willBe: !mobileMenuOpen })
-                    setMobileMenuOpen(!mobileMenuOpen)
-                  }}
-                  aria-label="Toggle mobile menu"
-                  style={{ minWidth: '44px', minHeight: '44px', zIndex: 10000 }}
-                >
-                  {mobileMenuOpen ? (
-                    <X className="h-6 w-6 text-primary" />
-                  ) : (
-                    <Menu className="h-6 w-6 text-foreground" />
-                  )}
+            {/* User Menu */}
+            {session && (
+              <div className="hidden md:block relative group">
+                <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-accent/50 transition-all">
+                  <Avatar className="h-8 w-8 ring-2 ring-border/50">
+                    <AvatarImage src={session.user?.image || ''} />
+                    <AvatarFallback className="bg-gradient-primary text-white font-bold text-sm">
+                      {session.user?.name?.[0]?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="w-3 h-3" />
                 </button>
-
-                {/* USER DROPDOWN - Desktop only */}
-                <div className="hidden md:block relative group">
-                  <button className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-accent/50 transition-all duration-300">
-                    <Avatar className="h-8 w-8 ring-2 ring-border/50 hover:ring-primary/50 transition-all">
-                      <AvatarImage src={session.user?.image || ''} />
-                      <AvatarFallback className="bg-gradient-primary text-white font-bold text-sm">
-                        {session.user?.name?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-semibold hidden xl:inline">{session.user?.name}</span>
-                    <ChevronDown className="w-3 h-3" />
-                  </button>
-                  
-                  {/* USER DROPDOWN MENU */}
-                  <div className="absolute right-0 top-full mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-dropdown">
-                    <div className="px-4 py-3 border-b border-border/50">
-                      <p className="text-sm font-semibold">{session.user?.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{session.user?.email}</p>
-                    </div>
-                    <Link
-                      href="/settings/profile"
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent/50 transition-all"
-                    >
-                      <User className="w-4 h-4" />
-                      <span>Profile</span>
-                    </Link>
-                    <Link
-                      href="/settings"
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent/50 transition-all"
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>Settings</span>
-                    </Link>
-                    <button
-                      onClick={() => signOut({ callbackUrl: '/' })}
-                      className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Sign Out</span>
-                    </button>
+                
+                {/* User Dropdown */}
+                <div className="absolute right-0 top-full mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                  <div className="px-4 py-3 border-b border-border/50">
+                    <p className="text-sm font-semibold">{session.user?.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{session.user?.email}</p>
                   </div>
+                  <Link
+                    href="/settings/profile"
+                    className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 transition-all"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Profile</span>
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 transition-all"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span>Settings</span>
+                  </Link>
+                  <button
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" asChild className="rounded-xl">
-                  <Link href="/auth/signin">Sign In</Link>
-                </Button>
-                <Button asChild className="rounded-xl bg-gradient-primary text-white hover:opacity-90">
-                  <Link href="/auth/signup">Sign Up</Link>
-                </Button>
               </div>
             )}
           </div>
         </div>
+      </header>
 
-        {/* MOBILE NAVIGATION PANEL - Enhanced visibility with sections */}
-        {mobileMenuOpen && (
-          <div className="md:hidden py-4 space-y-3 border-t border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl max-h-[calc(100vh-80px)] overflow-y-auto">
-            {/* QUICK ACTIONS SECTION */}
-            <div className="px-4 space-y-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Quick Actions</p>
-              <Link
-                href="/career-finder/search"
-                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-accent/50 transition-all"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Search className="w-5 h-5" />
-                <span>Job Search</span>
-              </Link>
-              <Link
-                href="/notifications"
-                className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-accent/50 transition-all"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <div className="flex items-center space-x-3">
-                  <Bell className="w-5 h-5" />
-                  <span>Notifications</span>
-                </div>
-                <span className="w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
-              </Link>
-            </div>
+      {/* DESKTOP SIDEBAR - Pull-out menu */}
+      <aside
+        className={`hidden md:block fixed left-0 top-16 bottom-0 bg-background/95 backdrop-blur-xl border-r border-border shadow-xl transition-all duration-300 overflow-y-auto ${
+          sidebarOpen ? 'w-64' : 'w-0'
+        }`}
+        style={{ zIndex: 999 }}
+      >
+        <div className={`p-4 space-y-2 ${sidebarOpen ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
+          {navigationItems.map((item) => {
+            const Icon = item.icon
+            const isActive = isItemActive(item)
+            const hasSubmenu = item.submenu && item.submenu.length > 0
+            
+            return (
+              <div key={item.name}>
+                {hasSubmenu ? (
+                  <>
+                    <button
+                      onClick={() => toggleSubmenu(item.name)}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary'
+                          : 'text-foreground hover:bg-accent/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5" />
+                        <span>{item.name}</span>
+                      </div>
+                      <ChevronRight className={`w-4 h-4 transition-transform ${
+                        expandedMenu === item.name ? 'rotate-90' : ''
+                      }`} />
+                    </button>
+                    
+                    {/* Submenu */}
+                    {expandedMenu === item.name && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        {item.submenu?.map((subItem) => (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm transition-all ${
+                              pathname === subItem.href
+                                ? 'bg-primary/10 text-primary font-medium'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
+                            }`}
+                          >
+                            <span>{subItem.name}</span>
+                            {subItem.badge && subItem.badge > 0 && (
+                              <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
+                                {subItem.badge}
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Link
+                    href={item.href || '#'}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                      isActive
+                        ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary'
+                        : 'text-foreground hover:bg-accent/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-5 h-5" />
+                      <span>{item.name}</span>
+                    </div>
+                    {item.badge && item.badge > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </aside>
 
-            {/* MAIN NAVIGATION SECTION */}
-            <div className="px-4 space-y-1">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Navigation</p>
+      {/* MOBILE NAVIGATION PANEL */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-16 bg-background/95 backdrop-blur-xl z-50 overflow-y-auto">
+          <div className="p-4 space-y-2">
             {navigationItems.map((item) => {
               const Icon = item.icon
               const isActive = isItemActive(item)
@@ -435,37 +405,29 @@ export function UnifiedNavigation() {
                             : 'text-foreground hover:bg-accent/50'
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center gap-3">
                           <Icon className="w-5 h-5" />
                           <span>{item.name}</span>
-                          {item.badge && item.badge > 0 && (
-                            <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
-                              {item.badge}
-                            </span>
-                          )}
                         </div>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${
-                          expandedMenu === item.name ? 'rotate-180' : ''
+                        <ChevronRight className={`w-4 h-4 transition-transform ${
+                          expandedMenu === item.name ? 'rotate-90' : ''
                         }`} />
                       </button>
+                      
                       {expandedMenu === item.name && (
                         <div className="ml-4 mt-1 space-y-1">
                           {item.submenu?.map((subItem) => (
                             <Link
                               key={subItem.href}
                               href={subItem.href}
-                              className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                              className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm transition-all ${
                                 pathname === subItem.href
-                                  ? 'bg-primary/10 text-primary'
-                                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                                  ? 'bg-primary/10 text-primary font-medium'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/30'
                               }`}
+                              onClick={() => setMobileMenuOpen(false)}
                             >
                               <span>{subItem.name}</span>
-                              {subItem.badge && subItem.badge > 0 && (
-                                <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
-                                  {subItem.badge}
-                                </span>
-                              )}
                             </Link>
                           ))}
                         </div>
@@ -474,7 +436,7 @@ export function UnifiedNavigation() {
                   ) : (
                     <Link
                       href={item.href || '#'}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                         isActive
                           ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary'
                           : 'text-foreground hover:bg-accent/50'
@@ -483,39 +445,28 @@ export function UnifiedNavigation() {
                     >
                       <Icon className="w-5 h-5" />
                       <span>{item.name}</span>
-                      {item.badge && item.badge > 0 && (
-                        <span className="ml-auto px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
-                          {item.badge}
-                        </span>
-                      )}
                     </Link>
                   )}
                 </div>
               )
             })}
-            </div>
             
-            {/* MOBILE FOOTER ACTIONS */}
-            <div className="px-4 pt-4 mt-4 border-t border-border/50 space-y-1">
+            {/* Mobile Footer */}
+            <div className="pt-4 mt-4 border-t border-border/50 space-y-2">
               <ThemeToggle />
-              <Link
-                href="/settings"
-                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-all"
-              >
-                <Settings className="w-5 h-5" />
-                <span>Settings</span>
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Sign Out</span>
-              </button>
+              {session && (
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>Sign Out</span>
+                </button>
+              )}
             </div>
           </div>
-        )}
-      </div>
-    </header>
+        </div>
+      )}
+    </>
   )
 }
