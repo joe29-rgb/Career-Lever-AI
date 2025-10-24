@@ -152,13 +152,13 @@ export function ResumeUpload({
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
   const [pastedText, setPastedText] = useState('')
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: Array<{ file: File; errors: Array<{ code: string; message: string }> }>) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
     if (rejectedFiles.length > 0) {
       const rejection = rejectedFiles[0]
-      if (rejection.errors.some((error) => error.code === 'file-too-large')) {
+      if (rejection.errors.some((error: any) => error.code === 'file-too-large')) {
         setError(`File size too large. Maximum size is ${maxFileSize / (1024 * 1024)}MB.`)
-      } else if (rejection.errors.some((error) => error.code === 'file-invalid-type')) {
+      } else if (rejection.errors.some((error: any) => error.code === 'file-invalid-type')) {
         setError('Only PDF files are accepted.')
       } else {
         setError('File upload failed. Please try again.')
