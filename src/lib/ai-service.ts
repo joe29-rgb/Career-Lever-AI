@@ -1403,12 +1403,13 @@ Geo: ${geo || 'n/a'}`)
       // Lightweight signals: competition and timing via internal endpoints
       let competition: any = null
       let timing: any = null
+      const baseUrl = process.env.NEXTAUTH_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
       try {
-        const compRes = await fetch('http://localhost:3000/api/insights/competition', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription: input.jobDescription, jobUrl: input.jobUrl, resumeText: input.resumeText }) } as any)
+        const compRes = await fetch(`${baseUrl}/api/insights/competition`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobDescription: input.jobDescription, jobUrl: input.jobUrl, resumeText: input.resumeText }) } as any)
         if (compRes.ok) { const cj = await compRes.json(); competition = cj.competition }
       } catch {}
       try {
-        const timRes = await fetch('http://localhost:3000/api/insights/timing', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ urgency: input.urgencyHint, jobTitle: '', companyName: '', location: '' }) } as any)
+        const timRes = await fetch(`${baseUrl}/api/insights/timing`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ urgency: input.urgencyHint, jobTitle: '', companyName: '', location: '' }) } as any)
         if (timRes.ok) { const tj = await timRes.json(); timing = tj.timing }
       } catch {}
       let score = base.score
