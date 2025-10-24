@@ -1,0 +1,7 @@
+# Railway Build Trigger
+# This file forces a fresh build by changing content
+
+Build: 96
+Timestamp: 2025-10-24T15:51:00Z
+Commit: fd841a4
+Status: getRecommendedBoards method added
