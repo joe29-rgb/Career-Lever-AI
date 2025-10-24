@@ -45,20 +45,20 @@ export async function POST(request: NextRequest) {
 
     console.log('[CAREER_TIMELINE_API] Success:', {
       industries: timeline.industries.length,
-      currentIndustry: timeline.currentIndustry,
-      totalWorkYears: timeline.totalWorkYears
+      currentIndustry: timeline.primaryIndustry,
+      totalWorkYears: timeline.totalYears
     });
 
     return NextResponse.json({
       success: true,
       timeline: {
         industries: timeline.industries,
-        totalWorkYears: timeline.totalWorkYears,
-        totalEducationYears: timeline.totalEducationYears,
-        currentIndustry: timeline.currentIndustry,
-        careerTransition: timeline.careerTransition,
+        totalWorkYears: timeline.totalYears,
+        totalEducationYears: 0, // Not provided by extractCareerTimeline
+        currentIndustry: timeline.primaryIndustry,
+        careerTransition: false, // Not provided by extractCareerTimeline
         // Computed field: Primary industry (longest tenure)
-        primaryIndustry: timeline.industries[0]?.name || 'Unknown'
+        primaryIndustry: timeline.primaryIndustry
       }
     });
   } catch (error) {
