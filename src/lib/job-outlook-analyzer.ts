@@ -146,8 +146,8 @@ Return ONLY this JSON:
         maxTokens: 3000
       })
 
-      // Extract JSON
-      let text = response.trim()
+      // Extract JSON from response.content
+      let text = response.content.trim()
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       if (jsonMatch) {
         text = jsonMatch[0]
@@ -202,7 +202,7 @@ Return JSON:
         maxTokens: 300
       })
 
-      const data = JSON.parse(response.match(/\{[\s\S]*\}/)![0])
+      const data = JSON.parse(response.content.match(/\{[\s\S]*\}/)![0])
       return data
     } catch {
       return {
