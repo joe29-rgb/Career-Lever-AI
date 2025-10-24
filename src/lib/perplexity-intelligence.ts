@@ -1462,23 +1462,15 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
       // CRITICAL FIX: Validate contacts before returning
       const validated = this.validateHiringContacts(parsed)
       
-      // CRITICAL FIX: If no validated contacts, provide company inbox fallback
-      const finalContacts = validated.length > 0 ? validated : [{
-        name: 'Careers Team',
-        title: 'Recruiting',
-        department: 'Human Resources',
-        email: `careers@${companyName.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')}.com`,
-        linkedinUrl: `https://linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')}`,
-        emailType: 'inferred' as 'public'|'inferred'|'pattern',
-        source: 'Company domain inference (fallback)',
-        confidence: 0.3,
-        discoveryMethod: 'Fallback - no verified contacts found'
-      }]
+      // CRITICAL FIX: NO INFERRED EMAILS - return empty if none verified
+      // User should visit company website or use LinkedIn instead of contacting fake emails
+      const finalContacts = validated
       
-      // CRITICAL: Always cache the result (even if fallback)
+      // Cache the result (even if empty)
       setCache(key, finalContacts)
+      
       return { 
-        success: true, 
+        success: validated.length > 0, 
         data: finalContacts, 
         metadata: { 
           requestId, 
@@ -1486,7 +1478,9 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
           duration: Date.now() - started,
           contactsFound: finalContacts.length,
           withEmails: finalContacts.filter(c => c.email).length,
-          usedFallback: validated.length === 0
+          error: validated.length === 0 
+            ? `No verified hiring contacts found for ${companyName}. Visit company website or use LinkedIn InMail.` 
+            : undefined
         }, 
         cached: false 
       }
