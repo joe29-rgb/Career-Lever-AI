@@ -769,24 +769,7 @@
   top: 6px;
 }
 
-/* Theme toggle positioning */
-.theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  z-index: 999;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 50%;
-  padding: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.theme-toggle:hover {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
+/* Duplicate theme-toggle removed - using .theme-toggle-fixed at line 332 */
 
 /* Modal overlay and content */
 .modal-overlay {
@@ -807,24 +790,7 @@
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* ===================================================================
-   LOADING ANIMATIONS
-   =================================================================== */
-
-/* Loading spinner */
-.loading-spinner {
-  animation: spin 1s linear infinite;
-  border: 2px solid #f3f4f6;
-  border-top: 2px solid #3b82f6;
-  border-radius: 50%;
-  width: 2rem;
-  height: 2rem;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* Duplicate loading-spinner removed - using definition at line 579 */
 
 /* Pulse animation for loading states */
 @keyframes pulse {
@@ -836,26 +802,7 @@
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* ===================================================================
-   BUTTON ENHANCEMENTS
-   =================================================================== */
-
-/* Primary button with hover effects */
-.btn-primary-enhanced {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  border: none;
-  color: white;
-  font-weight: 500;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.btn-primary-enhanced:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
+/* Duplicate button styles removed - using definitions earlier in file */
 
 .btn-primary-enhanced:active {
   transform: translateY(0);
