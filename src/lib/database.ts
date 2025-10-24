@@ -44,6 +44,11 @@ class DatabaseService {
     if (!config.uri) {
       throw new Error('MONGODB_URI not configured')
     }
+    
+    // Validate MongoDB URI format
+    if (!config.uri.startsWith('mongodb://') && !config.uri.startsWith('mongodb+srv://')) {
+      throw new Error('Invalid MONGODB_URI format - must start with mongodb:// or mongodb+srv://')
+    }
 
     this.isConnecting = true
 
