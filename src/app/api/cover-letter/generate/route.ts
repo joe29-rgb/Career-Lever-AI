@@ -296,14 +296,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get company research data
-    let psychology = null;
+    let companyPsychology: Record<string, unknown> | undefined = undefined;
     if (jobApplication.companyResearch) {
       const companyData = await CompanyData.findById(jobApplication.companyResearch);
-      if (companyData) psychology = companyData;
+      if (companyData) companyPsychology = companyData;
     }
     // Merge stored context (psychology) if present
-    if (!psychology && jobApplication.context?.companyData) {
-      psychology = jobApplication.context.companyData;
+    if (!companyPsychology && jobApplication.context?.companyData) {
+      companyPsychology = jobApplication.context.companyData;
     }
 
     // Get candidate info
@@ -320,7 +320,7 @@ export async function POST(request: NextRequest) {
       hiringContactName,
       templateId: (body.template as string) || 'modern',
       tone,
-      psychology,
+      psychology: companyPsychology,
     })
     
     const { coverLetter, authenticity: report, wordCount, preview: preview2 } = result2
