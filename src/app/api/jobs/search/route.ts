@@ -23,7 +23,7 @@ import { jobSearchCacheService } from '@/services/job-search-cache.service'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
-export const maxDuration = 30 // Reduced from 60s - faster timeout for better UX
+export const maxDuration = 60 // Increased to handle Perplexity API calls which can take longer
 
 interface JobSearchRequest {
   keywords: string
