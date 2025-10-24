@@ -1177,12 +1177,14 @@ CANADIAN ATS PLATFORMS - Check these tech companies:
 
 REQUIREMENTS:
 1. **CRITICAL**: Use real-time web search to find ACTUAL job postings from MULTIPLE boards
-2. Search EACH board separately: "site:indeed.ca", "site:linkedin.com/jobs", "site:glassdoor.ca", etc.
-3. Extract: title, company, location, URL, summary, posted date
-4. **MANDATORY**: Return AT LEAST 25-30 jobs. If you find fewer, search MORE boards.
-5. **IMPORTANT**: Include jobs even if some fields are missing (use null for missing data)
-6. Match resume skills to job requirements (estimate 0-100%)
-7. If company is "Confidential", try to find real name from posting
+2. **PRIORITIZE LINKEDIN**: Search "site:linkedin.com/jobs ${options.roleHint || 'jobs'} ${location}" FIRST and get at least 15-20 LinkedIn jobs
+3. Search other boards: "site:indeed.${isCanadian ? 'ca' : 'com'}", "site:glassdoor.${isCanadian ? 'ca' : 'com'}", etc.
+4. Extract: title, company, location, URL (MUST be actual job posting URL), summary (at least 100 chars), posted date
+5. **MANDATORY**: Return AT LEAST 30-40 jobs total. LinkedIn should be 40-50% of results.
+6. **IMPORTANT**: Include jobs even if some fields are missing (use null for missing data)
+7. Match resume skills to job requirements (estimate 0-100%)
+8. If company is "Confidential", try to find real name from posting
+9. **LINKEDIN URLS**: Must be format "https://www.linkedin.com/jobs/view/[job-id]" or "https://linkedin.com/jobs/collections/recommended/?currentJobId=[id]"
 
 OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
 [{
