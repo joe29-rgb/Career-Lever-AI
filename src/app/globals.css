@@ -69,35 +69,10 @@
     --font-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
     
     /* ============================================
-       DRIBBLE THEME - ADDITIONAL VARIABLES
+       THEME VARIABLES - HSL ONLY
        ============================================ */
     
-    /* Extended Color Palette */
-    --primary-hex: #667eea;
-    --primary-dark-hex: #5a67d8;
-    --primary-light-hex: #7c8ef5;
-    --secondary-hex: #764ba2;
-    --accent-hex: #f093fb;
-    --accent-glow-hex: #4facfe;
-    
-    /* Background Colors (Hex for compatibility) */
-    --bg-primary-hex: #ffffff;
-    --bg-secondary-hex: #f7fafc;
-    --bg-tertiary-hex: #edf2f7;
-    --bg-dark-hex: #1a202c;
-    --bg-card-hex: #1f2937;
-    
-    /* Text Colors (Hex) */
-    --text-primary-hex: #e5e7eb;
-    --text-secondary-hex: #9ca3af;
-    --text-muted-hex: #6b7280;
-    --text-light-hex: #e2e8f0;
-    
-    /* Border Colors (Hex) */
-    --border-color-hex: #374151;
-    --border-focus-hex: #667eea;
-    --border-error-hex: #f56565;
-    --border-success-hex: #48bb78;
+    /* Note: Removed hex color duplicates - use HSL variables above */
     
     /* Enhanced Shadows */
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);

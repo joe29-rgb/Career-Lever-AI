@@ -134,20 +134,35 @@ export function validateAuthenticityLetter(original: string, letter: string): Au
 
 export function sanitizeCoverLetter(original: string, letter: string): string {
   let out = letter
-  // Remove numbers not in original
+  // Replace numbers not in original with placeholder
   const genNums = extractNumbers(letter)
   const origNums = extractNumbers(original)
   for (const n of genNums) {
     if (!origNums.includes(n)) {
-      out = out.replace(new RegExp(n.replace(/([$^*+?.()|\[\]{}])/g, '\\$1'), 'g'), '')
+      // Replace with placeholder instead of removing
+      out = out.replace(new RegExp(n.replace(/([$^*+?.()|\[\]{}])/g, '\\$1'), 'g'), '[X]')
     }
   }
-  // Remove AI trigger phrases
-  for (const p of AI_TRIGGER_PHRASES) {
-    const re = new RegExp(p.replace(/([$^*+?.()|\[\]{}])/g, '\\$1'), 'gi')
-    out = out.replace(re, '')
+  // Replace AI trigger phrases with more natural alternatives
+  const phraseReplacements: Record<string, string> = {
+    'dynamic': 'adaptable',
+    'results-driven': 'focused on outcomes',
+    'leveraging synergies': 'working together',
+    'passionate about': 'interested in',
+    'proven track record': 'experience with',
+    'detail-oriented': 'thorough',
+    'team player': 'collaborative',
+    'go-getter': 'motivated',
+    'self-starter': 'independent'
   }
-  // Remove fabricated tools
+  
+  for (const p of AI_TRIGGER_PHRASES) {
+    const replacement = phraseReplacements[p.toLowerCase()] || ''
+    const re = new RegExp(p.replace(/([$^*+?.()|\[\]{}])/g, '\\$1'), 'gi')
+    out = out.replace(re, replacement)
+  }
+  
+  // Replace fabricated tools with generic term
   const tools = extractMentionedTools(letter)
   for (const t of tools) {
     if (!new RegExp(`\\b${t}\\b`, 'i').test(original)) {
