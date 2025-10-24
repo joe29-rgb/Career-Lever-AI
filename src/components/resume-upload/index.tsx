@@ -147,10 +147,10 @@ export function ResumeUpload({
   maxFileSize = 10 * 1024 * 1024 // 10MB
 }: ResumeUploadProps) {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [uploadedResume, setUploadedResume] = useState<Resume | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const [pastedText, setPastedText] = useState('')
   const [activeTab, setActiveTab] = useState<'upload' | 'linkedin' | 'paste'>('upload')
 
@@ -396,6 +396,43 @@ export function ResumeUpload({
   return (
     <Card className="w-full border-0 shadow-none">
       <CardContent className="space-y-4 p-0">
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('upload')}
+            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+              activeTab === 'upload'
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            <Upload className="inline-block w-4 h-4 mr-2" />
+            Upload PDF
+          </button>
+          <button
+            onClick={() => setActiveTab('linkedin')}
+            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+              activeTab === 'linkedin'
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            <Linkedin className="inline-block w-4 h-4 mr-2" />
+            LinkedIn
+          </button>
+          <button
+            onClick={() => setActiveTab('paste')}
+            className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+              activeTab === 'paste'
+                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            <FileText className="inline-block w-4 h-4 mr-2" />
+            Paste Text
+          </button>
+        </div>
+
         {/* Error Alert - VIBRANT */}
         {error && (
           <div className="bg-gradient-to-r from-red-50 to-pink-50 border-2 border-red-200 rounded-2xl p-4">
@@ -408,42 +445,61 @@ export function ResumeUpload({
           </div>
         )}
 
-        {/* VIBRANT Upload Area */}
-        {!uploadedFile ? (
-          <>
-            <div
-              {...getRootProps()}
-              className={`border-3 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${
-                isDragActive
-                  ? 'border-primary gradient-card-blue scale-105'
-                  : 'border-border hover:border-primary hover:gradient-card-blue'
-              } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              <input {...getInputProps()} />
-              {/* Modern upload icon */}
-              <div className="w-20 h-20 mx-auto mb-6 gradient-primary rounded-3xl flex items-center justify-center shadow-lg">
-                <Upload className="h-10 w-10 text-white" />
-              </div>
-              <div className="space-y-3">
-                <p className="text-2xl font-bold text-foreground">
-                  {isDragActive ? '📥 Drop it here!' : '📄 Upload Your Resume'}
-                </p>
-                <p className="text-base text-muted-foreground font-medium">
-                  Drag and drop your PDF file here, or click to browse
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Maximum file size: {maxFileSize / (1024 * 1024)}MB
-                </p>
-              </div>
+        {/* Upload Tab */}
+        {activeTab === 'upload' && !uploadedFile && (
+          <div
+            {...getRootProps()}
+            className={`border-3 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 ${
+              isDragActive
+                ? 'border-primary gradient-card-blue scale-105'
+                : 'border-border hover:border-primary hover:gradient-card-blue'
+            } ${isUploading ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            <input {...getInputProps()} />
+            <div className="w-20 h-20 mx-auto mb-6 gradient-primary rounded-3xl flex items-center justify-center shadow-lg">
+              <Upload className="h-10 w-10 text-white" />
             </div>
+            <div className="space-y-3">
+              <p className="text-2xl font-bold text-foreground">
+                {isDragActive ? '📥 Drop it here!' : '📄 Upload Your Resume'}
+              </p>
+              <p className="text-base text-muted-foreground font-medium">
+                Drag and drop your PDF file here, or click to browse
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Maximum file size: {maxFileSize / (1024 * 1024)}MB
+              </p>
+            </div>
+          </div>
+        )}
 
-            {/* VIBRANT Paste Text Area */}
-            <div className="space-y-3 mt-6">
+        {/* LinkedIn Tab */}
+        {activeTab === 'linkedin' && !uploadedFile && (
+          <LinkedInImport
+            onImport={async (resumeData) => {
+              try {
+                // The LinkedIn import component already uploaded to the API
+                // Just trigger the success callback
+                onUploadSuccess(resumeData)
+                setUploadedResume(resumeData)
+                toast.success('LinkedIn resume imported successfully!')
+              } catch (error) {
+                console.error('LinkedIn import error:', error)
+                toast.error('Failed to import LinkedIn resume')
+              }
+            }}
+          />
+        )}
+
+        {/* Paste Tab */}
+        {activeTab === 'paste' && !uploadedFile && (
+          <div className="space-y-4">
+            <div className="space-y-3">
               <label className="text-base font-bold text-foreground flex items-center gap-2">
-                ✍️ Or paste your resume text
+                ✍️ Paste your resume text
               </label>
               <textarea
-                className="modern-input w-full h-40 resize-none text-sm"
+                className="modern-input w-full h-64 resize-none text-sm"
                 placeholder="Paste your resume here if your PDF is scanned or not readable..."
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
@@ -452,27 +508,22 @@ export function ResumeUpload({
               <div className="text-sm text-muted-foreground font-medium">✨ We&apos;ll create a resume record from your pasted text.</div>
             </div>
 
-            {/* VIBRANT Upload Button when using pasted text */}
-            {(pastedText.trim()) && !isUploading && !uploadedResume && (
-              <div className="mt-6 flex gap-3">
+            {pastedText.trim() && !isUploading && !uploadedResume && (
+              <div className="flex gap-3">
                 <Button 
                   onClick={handleUpload} 
                   className="flex-1 btn-gradient py-4 text-base border-0"
                 >
                   🚀 Upload Resume
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={clearFile}
-                  className="border-2 border-gray-300 rounded-2xl font-bold hover:border-red-500 hover:text-red-500 transition-colors py-4 px-6"
-                >
+                <Button variant="outline" onClick={clearFile}>
                   Cancel
                 </Button>
               </div>
             )}
 
             {isUploading && (
-              <div className="mt-6 flex gap-3">
+              <div className="flex gap-3">
                 <Button disabled className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white font-bold py-4 rounded-2xl border-0 text-base">
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Uploading...
@@ -482,8 +533,11 @@ export function ResumeUpload({
                 </Button>
               </div>
             )}
-          </>
-        ) : (
+          </div>
+        )}
+
+        {/* File Preview (shown when file is uploaded) */}
+        {uploadedFile && (
           /* File Preview */
           <div className="border rounded-lg p-4">
             <div className="flex items-center justify-between">
