@@ -2532,4 +2532,29 @@ Return ONLY valid JSON:
       breakdown
     }
   }
+
+  /**
+   * Custom query to Perplexity API (flexible utility)
+   * @param options - Query options including prompts and parameters
+   * @returns API response content
+   */
+  static async customQuery(options: {
+    systemPrompt: string
+    userPrompt: string
+    temperature?: number
+    maxTokens?: number
+    model?: 'sonar' | 'sonar-pro'
+  }): Promise<{ content: string }> {
+    const client = createClient()
+    const response = await client.makeRequest(
+      options.systemPrompt,
+      options.userPrompt,
+      {
+        temperature: options.temperature || 0.2,
+        maxTokens: options.maxTokens || 4000,
+        model: options.model || 'sonar-pro'
+      }
+    )
+    return { content: response.content }
+  }
 }
