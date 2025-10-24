@@ -5,14 +5,14 @@
  * These are the "hands" of the agent - they do the actual work
  */
 
-import { PerplexityIntelligenceService } from '../perplexity-intelligence'
+import { PerplexityIntelligenceService, HiringContact } from '../perplexity-intelligence'
 import { AdvancedScraper } from '../scrapers/advanced-scraper'
 
 export interface ToolResult {
   success: boolean
-  data?: any
+  data?: unknown
   error?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export class AgentToolHandlers {
@@ -45,14 +45,14 @@ export class AgentToolHandlers {
       }
 
       // Return URLs + basic info for agent to decide which to scrape
-      const jobs = result.data.map((job: any) => ({
+      const jobs = result.data.map((job: { title: string; company: string; location: string; url: string; source?: string; postedDate?: string; summary?: string }) => ({
         title: job.title,
         company: job.company,
         location: job.location,
         url: job.url,
         source: job.source,
         posted_date: job.postedDate,
-        has_description: job.summary?.length > 150,
+        has_description: (job.summary?.length || 0) > 150,
         summary_preview: job.summary?.substring(0, 200)
       }))
 
@@ -141,7 +141,7 @@ export class AgentToolHandlers {
       }
 
       // Filter to only profiles matching role keywords
-      const filtered = result.data.filter((contact: any) => {
+      const filtered = result.data.filter((contact: HiringContact) => {
         const titleLower = contact.title?.toLowerCase() || ''
         return role_keywords.some(keyword => titleLower.includes(keyword.toLowerCase()))
       })
@@ -150,13 +150,13 @@ export class AgentToolHandlers {
         return {
           success: false,
           error: `Found ${result.data.length} contacts but none matched roles: ${role_keywords.join(', ')}`,
-          data: result.data.map((c: any) => ({ name: c.name, title: c.title }))
+          data: result.data.map((c: HiringContact) => ({ name: c.name, title: c.title }))
         }
       }
 
       return {
         success: true,
-        data: filtered.map((contact: any) => ({
+        data: filtered.map((contact: HiringContact) => ({
           name: contact.name,
           title: contact.title,
           linkedin_url: contact.linkedinUrl,

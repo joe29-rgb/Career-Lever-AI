@@ -320,6 +320,8 @@ export type RequestMetadata = {
   attemptedCleanups?: string[]
   contactsFound?: number
   withEmails?: number
+  agent_iterations?: number
+  tools_used?: string[]
 }
 export type EnhancedResponse<T> = { success: boolean; data: T; metadata: RequestMetadata; cached: boolean }
 
@@ -699,7 +701,7 @@ export class PerplexityIntelligenceService {
       // ❌ REJECT: Personal email domains (if email exists)
       if (contact.email) {
         const personalDomains = ['gmail', 'yahoo', 'hotmail', 'outlook', 'aol', 'icloud', 'protonmail']
-        if (personalDomains.some(d => contact.email.toLowerCase().includes(d))) {
+        if (personalDomains.some(d => contact.email!.toLowerCase().includes(d))) {
           if (process.env.PPX_DEBUG === 'true') {
             console.warn(`[VALIDATE] Rejecting ${contact.email} - personal domain`)
           }
