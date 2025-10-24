@@ -42,8 +42,7 @@ const navigationItems: NavigationItem[] = [
   { 
     name: 'Dashboard', 
     href: '/dashboard', 
-    icon: Home,
-    badge: 0
+    icon: Home
   },
   {
     name: 'Career Finder',
@@ -65,8 +64,7 @@ const navigationItems: NavigationItem[] = [
   { 
     name: 'Applications', 
     href: '/career-finder/applications', 
-    icon: Briefcase,
-    badge: 0
+    icon: Briefcase
   },
   { 
     name: 'Analytics', 
@@ -98,6 +96,22 @@ export function UnifiedNavigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true) // Desktop sidebar state
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detect screen size and auto-collapse sidebar on small screens
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 1024 // lg breakpoint
+      setIsMobile(mobile)
+      if (mobile) {
+        setSidebarOpen(false) // Auto-collapse on mobile
+      }
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
   const [scrolled, setScrolled] = useState(false)
   const { count: notificationCount } = useNotifications()
 
@@ -300,12 +314,21 @@ export function UnifiedNavigation() {
         </div>
       </header>
 
-      {/* DESKTOP SIDEBAR - Pull-out menu */}
+      {/* Mobile Backdrop */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Overlay on mobile, fixed on desktop */}
       <aside
-        className={`hidden md:block fixed left-0 top-16 bottom-0 bg-background/95 backdrop-blur-xl border-r border-border shadow-xl transition-all duration-300 overflow-y-auto ${
-          sidebarOpen ? 'w-64' : 'w-0'
+        className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-card/95 backdrop-blur-xl border-r border-border/50 transition-all duration-300 overflow-y-auto ${
+          isMobile 
+            ? `${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-50 w-64`
+            : `${sidebarOpen ? 'w-64' : 'w-0'} z-30`
         }`}
-        style={{ zIndex: 999 }}
       >
         <div className={`p-4 space-y-2 ${sidebarOpen ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
           {navigationItems.map((item) => {
@@ -334,13 +357,13 @@ export function UnifiedNavigation() {
                       }`} />
                     </button>
                     
-                    {/* Submenu */}
                     {expandedMenu === item.name && (
                       <div className="ml-4 mt-1 space-y-1">
                         {item.submenu?.map((subItem) => (
                           <Link
                             key={subItem.href}
                             href={subItem.href}
+                            onClick={() => isMobile && setSidebarOpen(false)}
                             className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-sm transition-all ${
                               pathname === subItem.href
                                 ? 'bg-primary/10 text-primary font-medium'
@@ -348,11 +371,6 @@ export function UnifiedNavigation() {
                             }`}
                           >
                             <span>{subItem.name}</span>
-                            {subItem.badge && subItem.badge > 0 && (
-                              <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
-                                {subItem.badge}
-                              </span>
-                            )}
                           </Link>
                         ))}
                       </div>
@@ -360,22 +378,16 @@ export function UnifiedNavigation() {
                   </>
                 ) : (
                   <Link
-                    href={item.href || '#'}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    href={item.href!}
+                    onClick={() => isMobile && setSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                       isActive
                         ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary'
                         : 'text-foreground hover:bg-accent/50'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className="w-5 h-5" />
-                      <span>{item.name}</span>
-                    </div>
-                    {item.badge && item.badge > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
-                        {item.badge}
-                      </span>
-                    )}
+                    <Icon className="w-5 h-5" />
+                    <span>{item.name}</span>
                   </Link>
                 )}
               </div>
