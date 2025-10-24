@@ -1232,14 +1232,37 @@ OUTPUT JSON FORMAT:
       })
 
       console.log('[JOB_SEARCH_V2] Parsing response...')
-      let parsed = JSON.parse(out.content.trim()) as JobListing[]
-      console.log('[JOB_SEARCH_V2] Parsed jobs:', {
-        isArray: Array.isArray(parsed),
-        count: Array.isArray(parsed) ? parsed.length : 0,
-        firstJob: parsed[0] ? { title: parsed[0].title, company: parsed[0].company } : null
-      })
+      let parsed: JobListing[] = []
+      
+      try {
+        const rawContent = out.content.trim()
+        console.log('[JOB_SEARCH_V2] Raw content preview:', rawContent.slice(0, 200))
+        
+        parsed = JSON.parse(rawContent) as JobListing[]
+        
+        console.log('[JOB_SEARCH_V2] Parsed jobs:', {
+          isArray: Array.isArray(parsed),
+          count: Array.isArray(parsed) ? parsed.length : 0,
+          firstJob: parsed[0] ? { title: parsed[0].title, company: parsed[0].company } : null
+        })
+      } catch (parseError) {
+        console.error('[JOB_SEARCH_V2] JSON parse error:', {
+          error: (parseError as Error).message,
+          contentPreview: out.content.slice(0, 500)
+        })
+        // Return empty array on parse error
+        parsed = []
+      }
       
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
+      
+      if (parsed.length === 0) {
+        console.warn('[JOB_SEARCH_V2] ⚠️ WARNING: Perplexity returned 0 jobs. This might indicate:')
+        console.warn('  1. No jobs found for this search')
+        console.warn('  2. Perplexity did not perform web search')
+        console.warn('  3. Response format is incorrect')
+        console.warn('  Content received:', out.content.slice(0, 1000))
+      }
       
       // CRITICAL FIX: Enrich jobs with short descriptions by scraping URLs
       const enriched = await Promise.all(
