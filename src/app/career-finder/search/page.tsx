@@ -1,6 +1,6 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
+// Note: force-dynamic doesn't work on client components, removed
 
 import { useState, useEffect } from 'react'
 import { MagnifyingGlassIcon, FunnelIcon, MapPinIcon, SparklesIcon } from '@heroicons/react/24/outline'
@@ -33,7 +33,7 @@ export default function SearchPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<JobListing[]>([])
   const [filters, setFilters] = useState({ 
-    location: '', // CRITICAL: Empty by default - will be populated from resume or user input
+    location: 'Canada', // Default location to prevent API errors, will be overridden by resume data
     salaryMin: '', 
     salaryMax: '', 
     workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'part-time',
