@@ -84,7 +84,7 @@ export interface ResumeGenerationResult {
   suggestions: string[]
   preview?: {
     thumbnail: string | null
-    summary: string
+    summary: string | null
   }
 }
 
