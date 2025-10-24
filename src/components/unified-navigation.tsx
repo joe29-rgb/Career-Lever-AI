@@ -29,7 +29,7 @@ import {
 interface NavigationItem {
   name: string
   href?: string
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   badge?: number
   submenu?: { name: string; href: string; badge?: number }[]
 }
@@ -61,7 +61,7 @@ const navigationItems: NavigationItem[] = [
   },
   { 
     name: 'Applications', 
-    href: '/applications', 
+    href: '/career-finder/applications', 
     icon: Briefcase,
     badge: 0
   },
