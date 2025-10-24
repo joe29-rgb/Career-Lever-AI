@@ -916,7 +916,7 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await client.makeRequest(SYSTEM_JOBS, USER_JOBS, { 
         temperature: 0.2, 
-        maxTokens: Math.min(limit * 300, 20000), // FIXED: Increased token budget to prevent truncation
+        maxTokens: Math.min(limit * 500, 30000), // CRITICAL FIX: Increased from 300 to 500 tokens per job for full descriptions
         model: 'sonar-pro' // Use research model for job search
       })
       
@@ -1165,7 +1165,7 @@ OUTPUT JSON FORMAT:
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.15, 
-          maxTokens: Math.min((options.maxResults || 25) * 250, 12000), // FIXED: Increased to handle comprehensive job data
+          maxTokens: Math.min((options.maxResults || 25) * 400, 16000), // CRITICAL FIX: Increased from 250 to 400 tokens per job
           model: 'sonar-pro' // Use research model for job analysis
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
