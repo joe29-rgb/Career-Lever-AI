@@ -3,7 +3,6 @@ import Redis from 'ioredis'
 type Counter = { count: number; resetAt: number };
 
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS || 60 * 60 * 1000); // 1 hour
-const MAX = Number(process.env.RATE_LIMIT_MAX || 20);
 
 // In-memory fallback store
 const store: Map<string, Counter> = new Map();
