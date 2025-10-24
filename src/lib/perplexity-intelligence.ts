@@ -2601,4 +2601,105 @@ Return ONLY valid JSON:
       'RemoteOK (Remote)'
     ]
   }
+
+  /**
+   * Get list of available job boards
+   * @returns Array of job board objects with name and URL
+   */
+  static getAvailableJobBoards(): Array<{ name: string; url: string; region: string }> {
+    return [
+      { name: 'Indeed', url: 'https://www.indeed.com', region: 'Global' },
+      { name: 'LinkedIn', url: 'https://www.linkedin.com/jobs', region: 'Global' },
+      { name: 'Glassdoor', url: 'https://www.glassdoor.com', region: 'Global' },
+      { name: 'Monster', url: 'https://www.monster.com', region: 'Global' },
+      { name: 'CareerBuilder', url: 'https://www.careerbuilder.com', region: 'US' },
+      { name: 'ZipRecruiter', url: 'https://www.ziprecruiter.com', region: 'US' },
+      { name: 'SimplyHired', url: 'https://www.simplyhired.com', region: 'US' },
+      { name: 'Dice', url: 'https://www.dice.com', region: 'US (Tech)' },
+      { name: 'Indeed Canada', url: 'https://ca.indeed.com', region: 'Canada' },
+      { name: 'Workopolis', url: 'https://www.workopolis.com', region: 'Canada' },
+      { name: 'Job Bank', url: 'https://www.jobbank.gc.ca', region: 'Canada' },
+      { name: 'Eluta', url: 'https://www.eluta.ca', region: 'Canada' },
+      { name: 'AngelList', url: 'https://angel.co/jobs', region: 'Startups' },
+      { name: 'RemoteOK', url: 'https://remoteok.com', region: 'Remote' },
+      { name: 'We Work Remotely', url: 'https://weworkremotely.com', region: 'Remote' }
+    ]
+  }
+
+  /**
+   * Extract career timeline from resume
+   * @param resumeText - Resume text content
+   * @returns Career timeline with industries and experience
+   */
+  static async extractCareerTimeline(resumeText: string): Promise<{
+    industries: Array<{ name: string; percentage: number; years: number }>
+    totalYears: number
+    primaryIndustry: string
+  }> {
+    const client = createClient()
+    const prompt = `Analyze this resume and extract the career timeline:
+
+${resumeText.slice(0, 3000)}
+
+Return ONLY valid JSON with this structure:
+{
+  "industries": [
+    { "name": "Industry Name", "percentage": 40, "years": 5 },
+    { "name": "Another Industry", "percentage": 30, "years": 3 }
+  ],
+  "totalYears": 8,
+  "primaryIndustry": "Most relevant industry"
+}
+
+Rules:
+- List all industries worked in
+- Calculate percentage of time in each
+- Count years of experience per industry
+- Identify primary/dominant industry`
+
+    const response = await client.makeRequest(
+      'You are a career analyst. Extract career timeline data. Return ONLY valid JSON.',
+      prompt,
+      { temperature: 0.2, maxTokens: 1000, model: 'sonar-pro' }
+    )
+
+    try {
+      const parsed = parseAIResponse<{
+        industries: Array<{ name: string; percentage: number; years: number }>
+        totalYears: number
+        primaryIndustry: string
+      }>(response.content)
+
+      return {
+        industries: parsed.industries || [],
+        totalYears: parsed.totalYears || 0,
+        primaryIndustry: parsed.primaryIndustry || (parsed.industries?.[0]?.name || 'Unknown')
+      }
+    } catch {
+      // Fallback if parsing fails
+      return {
+        industries: [{ name: 'General', percentage: 100, years: 0 }],
+        totalYears: 0,
+        primaryIndustry: 'General'
+      }
+    }
+  }
+
+  /**
+   * Enhanced company research with comprehensive data
+   * @param params - Company name, job title, location
+   * @returns Enhanced company research data
+   */
+  static async enhancedCompanyResearch(params: {
+    companyName: string
+    jobTitle?: string
+    location?: string
+  }): Promise<EnhancedResponse<IntelligenceResponse>> {
+    // Use existing researchCompanyV2 as the base
+    return await this.researchCompanyV2({
+      company: params.companyName,
+      role: params.jobTitle,
+      geo: params.location
+    })
+  }
 }
