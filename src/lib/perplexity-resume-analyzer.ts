@@ -282,7 +282,7 @@ Return ONLY this JSON structure:
       })
 
       // Extract JSON from response (handle Perplexity's text wrapping)
-      let text = response.trim()
+      let text = response.content.trim()
       
       // Remove markdown code blocks if present
       text = text.replace(/```json\s*|\s*```/g, '')
@@ -515,7 +515,7 @@ Return ONLY this JSON:
       })
 
       // FIXED: Actually parse the AI response
-      let content = response.trim().replace(/```(?:json)?\s*/g, '')
+      let content = response.content.trim().replace(/```(?:json)?\s*/g, '')
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       
       if (jsonMatch) {
@@ -575,7 +575,7 @@ Return ONLY this JSON:
       })
 
       // FIXED: Actually parse AI response
-      let content = response.trim().replace(/```(?:json)?\s*/g, '')
+      let content = response.content.trim().replace(/```(?:json)?\s*/g, '')
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       
       if (jsonMatch) {
