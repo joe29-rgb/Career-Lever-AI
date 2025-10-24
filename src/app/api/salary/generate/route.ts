@@ -65,7 +65,7 @@ Use real market data from 2024-2025. Be specific to the location and seniority l
 
     let salaryData
     try {
-      salaryData = JSON.parse(response)
+      salaryData = JSON.parse(response.content)
     } catch {
       // Fallback with estimated data
       const baseMin = 60000
