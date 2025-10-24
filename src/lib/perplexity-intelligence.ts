@@ -2557,4 +2557,48 @@ Return ONLY valid JSON:
     )
     return { content: response.content }
   }
+
+  /**
+   * Get recommended job boards based on location
+   * @param location - User's location (e.g., "Toronto", "Canada", "USA")
+   * @returns Array of recommended job board names
+   */
+  static getRecommendedBoards(location: string): string[] {
+    const lowerLocation = location.toLowerCase()
+    const isCanadian = lowerLocation.includes('canada') || 
+                       lowerLocation.includes('toronto') || 
+                       lowerLocation.includes('vancouver') || 
+                       lowerLocation.includes('montreal') ||
+                       lowerLocation.includes('calgary') ||
+                       lowerLocation.includes('ottawa')
+
+    if (isCanadian) {
+      return [
+        'Indeed Canada',
+        'Workopolis',
+        'Job Bank (Canada)',
+        'LinkedIn',
+        'Glassdoor',
+        'Monster Canada',
+        'CareerBuilder Canada',
+        'Eluta.ca',
+        'CharityVillage (Non-profit)',
+        'TechTO (Tech jobs)'
+      ]
+    }
+
+    // Default US/International boards
+    return [
+      'Indeed',
+      'LinkedIn',
+      'Glassdoor',
+      'Monster',
+      'CareerBuilder',
+      'ZipRecruiter',
+      'SimplyHired',
+      'Dice (Tech)',
+      'AngelList (Startups)',
+      'RemoteOK (Remote)'
+    ]
+  }
 }
