@@ -1148,10 +1148,11 @@ Checking more API routes and components...
    - **Question:** Where is the actual merge happening?
    - **Possible Issue:** May return only cached jobs, not new ones
 
-4. **MAXDURATION 30 SECONDS**
+4. ✅ **MAXDURATION 30 SECONDS** - FIXED
    - Line 26: `maxDuration = 30`
    - **Issue:** Perplexity calls can take longer
    - **Result:** May timeout before getting results
+   - **Fix:** ✅ FIXED - Increased to 60 seconds
 
 ---
 
@@ -1398,10 +1399,11 @@ Checking more components and models...
    - Line 86: `maxPoolSize: 10`
    - **Status:** Good for production
 
-3. **SHORT TIMEOUTS**
+3. ✅ **SHORT TIMEOUTS** - FIXED
    - Line 87: `serverSelectionTimeoutMS: 5000` (5 seconds)
    - Line 88: `socketTimeoutMS: 45000` (45 seconds)
    - **Possible Issue:** May timeout on slow connections
+   - **Fix:** ✅ FIXED - Increased to 15 seconds for cold starts
 
 ---
 
@@ -1575,11 +1577,12 @@ export const maxDuration = 60
 ## 📁 FILE: `src/lib/rate-limit.ts`
 
 ### Issues Found:
-1. **IN-MEMORY STORE**
+1. ✅ **IN-MEMORY STORE** - FIXED
    - Line 6: `const store: Map<string, Counter> = new Map()`
    - **Issue:** Rate limits stored in memory
-   - **Result:** Resets on server restart, doesn't work across multiple instances
-   - **Fix:** Use Redis or database for distributed rate limiting
+   - **Result:** Rate limits reset on server restart
+   - **Result:** Won't work in multi-instance deployments
+   - **Fix:** ✅ FIXED - Added Redis with in-memory fallback
 
 2. **VERY HIGH LIMITS**
    - Lines 25-27: 5000 requests per hour for file uploads
