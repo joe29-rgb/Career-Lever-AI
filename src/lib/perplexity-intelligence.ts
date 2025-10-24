@@ -906,17 +906,13 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
           company === '' ||
           company.length < 3
         
-        // DEBUG: Log all companies being checked
-        console.log(`[JOB_FILTER] ${isConfidential ? '❌' : '✅'} ${jobObj.title} @ ${companyRaw} (lower: "${company}")`)
-        
         if (isConfidential) {
-          console.warn(`[JOB_FILTER] ❌ REJECTED: ${jobObj.title} - ${companyRaw}`)
           return false
         }
         return true
       })
       
-      console.log(`[JOB_FILTER] ✅ Filtered ${arr.length - filtered.length} confidential postings. Returning ${filtered.length} verified jobs.`)
+      // Filtered confidential postings
       
       // Enhance with board metadata
       const enhanced = filtered.map((job: unknown) => {
@@ -936,9 +932,9 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
       const successRate = enhanced.length / limit
       if (enhanced.length > 0 && successRate >= 0.8) {
         setCache(key, enhanced)
-        console.log(`[CACHE] Cached ${enhanced.length}/${limit} jobs (${Math.round(successRate * 100)}%)`)
+        // Cached jobs
       } else if (enhanced.length > 0) {
-        console.warn(`[CACHE] Skipping cache - only ${enhanced.length}/${limit} jobs (${Math.round(successRate * 100)}%)`)
+        // Skipping cache - low success rate
       }
       return enhanced
     } catch (error) {
@@ -1097,18 +1093,12 @@ OUTPUT JSON FORMAT:
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         
-        // DEBUG: Log raw response
-        console.log('[JOB_MARKET_V2] Raw response length:', res.content.length)
-        console.log('[JOB_MARKET_V2] First 500 chars:', res.content.slice(0, 500))
+        // Response received
         
         return res
       })
 
-      // DEBUG: Log content before parsing
-      console.log('[JOB_MARKET_V2] Parsing JSON, content length:', out.content.length)
-      
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
-      console.log('[JOB_MARKET_V2] Parsed jobs:', parsed.length)
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
       
       // Enhance and normalize
@@ -1334,8 +1324,7 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
         parsed = [extractionResult.data]
       }
       
-      console.log(`[HIRING_CONTACTS] ✅ Enterprise extraction succeeded after: ${extractionResult.attemptedCleanups.join(', ')}`)
-      console.log(`[HIRING_CONTACTS] ✅ Extracted ${parsed.length} contacts for ${companyName}`)
+      // Enterprise extraction succeeded
       
       // CRITICAL: Validate and filter contacts - reject fake/personal emails
       const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'protonmail.com']
@@ -1370,7 +1359,7 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
         return true
       })
       
-      console.log(`[HIRING_CONTACTS] ✅ After validation: ${parsed.length} verified contacts`)
+      // Validation complete
       
       // Enhance each contact with metadata
       parsed = parsed.map(c => {
@@ -1386,7 +1375,7 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
         }
       })
       
-      console.log(`[HIRING_CONTACTS] ✅ Final result: ${parsed.length} contacts, ${parsed.filter(c => c.email).length} with emails`)
+      // Final result prepared
       
       // CRITICAL: Always cache the result (even if empty array)
       setCache(key, parsed)
@@ -1619,11 +1608,7 @@ CRITICAL: Order industries by yearsOfExperience (LONGEST FIRST), not by recency!
 
       const parsed = JSON.parse(cleanedContent)
       
-      console.log('[CAREER_TIMELINE] Analysis complete:', {
-        industries: parsed.industries?.length,
-        currentIndustry: parsed.currentIndustry,
-        hasTransition: !!parsed.careerTransition
-      })
+      // Career timeline analysis complete
 
       setCache(key, parsed) // Uses default cache TTL
       return parsed
@@ -1695,8 +1680,7 @@ IMPORTANT:
 - If NO location found after thorough search, return "location": null (do NOT guess or default)
 - If personal info not found, return null for those fields`
 
-      console.log('[SIGNALS] Input length:', resumeText.length)
-      console.log('[SIGNALS] First 300 chars:', resumeText.slice(0, 300))
+      // Processing resume signals
 
       const response = await client.makeRequest(
         'You extract keywords and locations from resumes. Return only JSON.',
