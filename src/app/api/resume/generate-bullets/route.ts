@@ -54,13 +54,13 @@ Return ONLY a JSON array of 5 bullet points:
 
     let bullets
     try {
-      bullets = JSON.parse(response)
+      bullets = JSON.parse(response.content)
       if (!Array.isArray(bullets)) {
         throw new Error('Response is not an array')
       }
     } catch {
       // Fallback: extract bullets from text
-      const lines = response.split('\n').filter(line => 
+      const lines = response.content.split('\n').filter(line => 
         line.trim().length > 10 && 
         (line.trim().startsWith('-') || line.trim().startsWith('•') || line.match(/^\d+\./))
       )
