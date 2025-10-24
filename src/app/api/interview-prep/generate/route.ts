@@ -70,7 +70,7 @@ Make questions realistic and specific to the role and company.`
 
     let prepData
     try {
-      prepData = JSON.parse(response)
+      prepData = JSON.parse(response.content)
     } catch {
       // Fallback if JSON parsing fails
       prepData = {
