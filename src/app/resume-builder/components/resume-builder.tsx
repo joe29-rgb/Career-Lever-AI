@@ -32,9 +32,11 @@ import {
   Briefcase,
   BookOpen,
   FileText,
-  Lightbulb
+  Lightbulb,
+  Linkedin
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { LinkedInImport } from '@/components/linkedin-import'
 
 interface ResumeData {
   personalInfo: {
@@ -138,6 +140,7 @@ interface ResumeBuilderProps {
 
 export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('modern')
+  const [showLinkedInImport, setShowLinkedInImport] = useState(false)
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       fullName: '',
@@ -555,7 +558,21 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
             {TEMPLATES.map((template) => (
               <div
                 key={template.id}
-                onClick={() => setSelectedTemplate(template.id)}
+                onClick={() => {
+                  setSelectedTemplate(template.id)
+                  // Auto-select matching tone
+                  const toneMap: Record<string, 'professional' | 'conversational' | 'technical'> = {
+                    'modern': 'professional',
+                    'professional': 'professional',
+                    'creative': 'conversational',
+                    'minimal': 'professional',
+                    'executive': 'professional',
+                    'technical': 'technical'
+                  }
+                  const matchingTone = toneMap[template.id] || 'professional'
+                  setTone(matchingTone)
+                  toast.success(`Template changed to ${template.name} - Tone set to ${matchingTone}`)
+                }}
                 className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
                   selectedTemplate === template.id
                     ? 'border-blue-500 bg-blue-50'
@@ -587,12 +604,40 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Resume Content</CardTitle>
-              <CardDescription>
-                Build your resume section by section. Completeness: {completeness}%
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Resume Content</CardTitle>
+                  <CardDescription>
+                    Build your resume section by section. Completeness: {completeness}%
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => setShowLinkedInImport(!showLinkedInImport)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  Import from LinkedIn
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              {/* LinkedIn Import Section */}
+              {showLinkedInImport && (
+                <div className="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50/50">
+                  <LinkedInImport
+                    onImport={(importedData) => {
+                      // Auto-populate resume fields from LinkedIn data
+                      if (importedData) {
+                        setResumeData(importedData)
+                        toast.success('LinkedIn data imported! Resume fields auto-populated.')
+                        setShowLinkedInImport(false)
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              
               {/* Target Job Description (for AI tailoring) */}
               <div className="space-y-2">
                 <Label htmlFor="jobDescription">Target Job Description (for AI tailoring)</Label>
@@ -606,7 +651,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                 <p className="text-xs text-muted-foreground">Optional but recommended. At least 20 characters to enable AI tailoring.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                   <div>
-                    <Label className="text-xs">Tone guidance</Label>
+                    <Label className="text-xs">Tone guidance <span className="text-muted-foreground">(auto-selected)</span></Label>
                     <Select value={tone} onValueChange={(v)=>setTone(v as any)}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>

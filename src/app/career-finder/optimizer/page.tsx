@@ -286,11 +286,27 @@ export default function CareerFinderOptimizerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeText])
   
+  // Template to tone mapping
+  const templateToToneMap: Record<string, 'professional' | 'conversational' | 'technical'> = {
+    'modern': 'professional',
+    'professional': 'professional',
+    'creative': 'conversational',
+    'minimal': 'professional',
+    'executive': 'professional',
+    'technical': 'technical'
+  }
+
   // Manual regeneration when user changes template
   const handleTemplateChange = (newTemplate: string) => {
     setTemplate(newTemplate)
+    
+    // Auto-select matching tone
+    const matchingTone = templateToToneMap[newTemplate] || 'professional'
+    setTone(matchingTone)
+    console.log('[OPTIMIZER] Template changed to', newTemplate, '- auto-selected tone:', matchingTone)
+    
     if (resumeText) {
-      console.log('[OPTIMIZER] Template changed, regenerating variants')
+      console.log('[OPTIMIZER] Regenerating variants with new template and tone')
       // CRITICAL: Clear cache BEFORE regeneration
       localStorage.removeItem('cf:resumeVariants')
       console.log('[OPTIMIZER] 🔄 Cache cleared, regenerating variants...')
@@ -463,7 +479,7 @@ ${htmlContent}
           <textarea className="w-full border rounded p-2 h-24" placeholder="Paste to override uploaded resume text for this optimization only" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
         </div>
         <div>
-          <div className="mb-1 text-foreground">Tone</div>
+          <div className="mb-1 text-foreground">Tone <span className="text-xs text-muted-foreground">(auto-selected based on template)</span></div>
           <select className="w-full border rounded p-2 bg-background text-foreground" value={tone} onChange={(e)=>setTone(e.target.value as 'professional' | 'conversational' | 'technical')}>
             <option value="professional">Professional</option>
             <option value="conversational">Conversational</option>
