@@ -1176,45 +1176,32 @@ CANADIAN ATS PLATFORMS - Check these tech companies:
 ` : ''}
 
 REQUIREMENTS:
-1. **CRITICAL**: Use your real-time web search to find ACTUAL job postings on these boards
-2. Search queries like: 
-   - "site:jobbank.gc.ca ${options.roleHint || 'jobs'} ${location}"
-   - "site:autojobs.com ${options.roleHint || 'jobs'} ${location}"
-   - "site:simplyhired.ca ${options.roleHint || 'jobs'} ${location}"
-3. For each board, extract: title, company, location, salary (if shown), URL, posted date
-4. **CRITICAL - Company Names**: If company is "Confidential" or missing, visit the job URL and extract the REAL company name from the posting page
-5. Match skills from resume to job requirements
-6. Calculate skillMatchPercent (0-100) based on overlap
-7. Include salary data when visible (look for "$XX,XXX", "$XX-$XX/hour", "salary range")
-8. Deduplicate across all sources
-9. Rank by: skillMatchPercent → recency → salary
-10. **MUST return AT LEAST 25 real job postings with actual URLs and REAL company names**
+1. **CRITICAL**: Use real-time web search to find ACTUAL job postings
+2. Search each board with queries like: "site:indeed.ca ${options.roleHint} ${location}"
+3. Extract: title, company, location, URL, brief summary, posted date
+4. If company name is "Confidential", try to find real name from posting
+5. Match resume skills to job requirements (estimate 0-100%)
+6. Include salary if visible
+7. Return AT LEAST 20-30 jobs (more is better)
+8. **IMPORTANT**: Even if some fields are missing, STILL INCLUDE THE JOB
 
-OUTPUT JSON FORMAT:
+OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
 [{
-  "title": string,
-  "company": string (NEVER use "Confidential" - extract real name from job posting URL),
-  "location": string,
-  "address": string | null,
-  "url": string,
-  "source": string (job board name),
-  "summary": string (100-150 words),
-  "postedDate": "YYYY-MM-DD",
-  "salary": string | null,
-  "skillMatchPercent": number (0-100),
-  "skills": string[],
-  "workType": "remote" | "hybrid" | "onsite",
-  "experienceLevel": "entry" | "mid" | "senior" | "executive",
-  "contacts": {
-    "hrEmail": string | null,
-    "hiringManagerEmail": string | null,
-    "generalEmail": string | null,
-    "phone": string | null,
-    "linkedinProfiles": string[]
-  },
-  "benefits": string[],
-  "requirements": string[]
-}]`
+  "title": "Job Title",
+  "company": "Company Name",
+  "location": "${location}",
+  "url": "https://...",
+  "source": "indeed",
+  "summary": "Brief description",
+  "postedDate": "2025-10-24",
+  "salary": "$50,000-$70,000" or null,
+  "skillMatchPercent": 75,
+  "skills": ["skill1", "skill2"],
+  "workType": "remote" or "hybrid" or "onsite",
+  "experienceLevel": "mid"
+}]
+
+**Return the JSON array directly. Do NOT wrap in markdown code blocks.**`
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.15, 
@@ -1235,8 +1222,17 @@ OUTPUT JSON FORMAT:
       let parsed: JobListing[] = []
       
       try {
-        const rawContent = out.content.trim()
+        let rawContent = out.content.trim()
         console.log('[JOB_SEARCH_V2] Raw content preview:', rawContent.slice(0, 200))
+        
+        // CRITICAL FIX: Strip markdown code blocks
+        rawContent = rawContent.replace(/^```json\s*/i, '').replace(/```\s*$/i, '')
+        
+        // Try to extract JSON array if wrapped in object
+        const jsonMatch = rawContent.match(/\[[\s\S]*\]/)
+        if (jsonMatch) {
+          rawContent = jsonMatch[0]
+        }
         
         parsed = JSON.parse(rawContent) as JobListing[]
         

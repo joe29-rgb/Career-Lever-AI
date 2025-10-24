@@ -98,11 +98,14 @@ export async function POST(request: NextRequest) {
     const allPhones = Array.from(new Set([...siteContacts.phones, ...perplexityPhones]))
 
     // Enhance with confidence (Perplexity sources + validation)
+    // ONLY include REAL emails found via Perplexity or site scraping - NO inferred emails
     const validatedContacts = allEmails.map(email => ({
       email,
       confidence: perplexityEmails.includes(email) ? 85 : 60, // Higher for Perplexity
       sources: perplexityEmails.includes(email) ? ['Perplexity', 'LinkedIn'] : ['Site Scrape']
     }))
+    
+    console.log('[COMPANY] Found', validatedContacts.length, 'REAL verified contacts (no inferred emails)')
 
     // Save to profile for reuse
     await Profile.findOneAndUpdate(
