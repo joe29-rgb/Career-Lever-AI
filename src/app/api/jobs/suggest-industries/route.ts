@@ -116,10 +116,10 @@ RETURN STRICT JSON (no markdown):
 
     return NextResponse.json({
       success: true,
-      currentIndustry: timeline.currentIndustry,
+      currentIndustry: timeline.primaryIndustry,
       careerHistory: timeline.industries.map((i: any) => ({
         name: i.name,
-        years: i.yearsOfExperience,
+        years: i.years,
         percentage: i.percentage
       })),
       suggestions: suggestions.suggestedIndustries || [],
