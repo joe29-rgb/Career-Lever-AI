@@ -304,11 +304,27 @@ ${name}`
       const result = await response.json()
 
       if (!response.ok) {
-        // If email service not configured, fall back to mailto
+        // If email service not configured, open Gmail compose
         if (result.mailto_fallback) {
-          console.log('[OUTREACH] Email service not configured, using mailto fallback')
-          window.location.href = result.mailto_fallback
-          setSuccess('Opening your email client...')
+          console.log('[OUTREACH] Email service not configured, opening Gmail compose')
+          
+          // Create Gmail compose URL (works better than mailto for attachments)
+          const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(currentEmail)}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+          
+          // Open in new tab
+          window.open(gmailUrl, '_blank')
+          
+          setSuccess(`Opening Gmail to send to ${currentEmail}. Please attach your resume and cover letter manually.`)
+          
+          // Also provide mailto as backup
+          const mailtoLink = document.createElement('a')
+          mailtoLink.href = result.mailto_fallback
+          mailtoLink.style.display = 'none'
+          document.body.appendChild(mailtoLink)
+          
+          setTimeout(() => {
+            setSuccess('Email draft opened in Gmail. Click "Send via Email Client" if Gmail didn\'t open.')
+          }, 2000)
         } else {
           throw new Error(result.error || 'Failed to send email')
         }

@@ -1176,14 +1176,13 @@ CANADIAN ATS PLATFORMS - Check these tech companies:
 ` : ''}
 
 REQUIREMENTS:
-1. **CRITICAL**: Use real-time web search to find ACTUAL job postings
-2. Search each board with queries like: "site:indeed.ca ${options.roleHint} ${location}"
-3. Extract: title, company, location, URL, brief summary, posted date
-4. If company name is "Confidential", try to find real name from posting
-5. Match resume skills to job requirements (estimate 0-100%)
-6. Include salary if visible
-7. Return AT LEAST 20-30 jobs (more is better)
-8. **IMPORTANT**: Even if some fields are missing, STILL INCLUDE THE JOB
+1. **CRITICAL**: Use real-time web search to find ACTUAL job postings from MULTIPLE boards
+2. Search EACH board separately: "site:indeed.ca", "site:linkedin.com/jobs", "site:glassdoor.ca", etc.
+3. Extract: title, company, location, URL, summary, posted date
+4. **MANDATORY**: Return AT LEAST 25-30 jobs. If you find fewer, search MORE boards.
+5. **IMPORTANT**: Include jobs even if some fields are missing (use null for missing data)
+6. Match resume skills to job requirements (estimate 0-100%)
+7. If company is "Confidential", try to find real name from posting
 
 OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
 [{
@@ -1201,12 +1200,12 @@ OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
   "experienceLevel": "mid"
 }]
 
-**Return the JSON array directly. Do NOT wrap in markdown code blocks.**`
+**CRITICAL**: Return the JSON array directly. Do NOT wrap in markdown. Return AT LEAST 25 jobs.`
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
-          temperature: 0.15, 
-          maxTokens: Math.min((options.maxResults || 25) * 400, 16000), // CRITICAL FIX: Increased from 250 to 400 tokens per job
-          model: 'sonar-pro' // Use research model for job analysis
+          temperature: 0.2, // Slightly higher for more variety
+          maxTokens: 20000, // Increased to allow more jobs
+          model: 'sonar' // Use faster model for job search
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         
