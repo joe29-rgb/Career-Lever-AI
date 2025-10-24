@@ -1,35 +1,54 @@
 /**
  * Server-Side PDF Generation
  * Converts HTML to PDF Buffer for email attachments
- * Uses simple text-based PDF generation (no puppeteer needed)
+ * Uses pdfkit for real PDF generation
  */
+
+import PDFDocument from 'pdfkit'
 
 /**
- * Convert HTML to plain text PDF
- * Simple implementation that doesn't require puppeteer
+ * Convert HTML to real PDF using pdfkit
  */
 export async function htmlToSimplePDF(html: string, title: string): Promise<Buffer> {
-  try {
-    // Strip HTML tags and convert to plain text
-    const text = stripHtmlTags(html)
-    
-    // Create a simple PDF-like structure
-    // For production, you'd use a library like pdfkit or puppeteer
-    // For now, we'll create a text representation
-    const pdfContent = `
-${title}
-${'='.repeat(title.length)}
-
-${text}
-    `.trim()
-    
-    // Convert to buffer
-    return Buffer.from(pdfContent, 'utf-8')
-    
-  } catch (error) {
-    console.error('[PDF-GENERATOR] Error:', error)
-    throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
+  return new Promise((resolve, reject) => {
+    try {
+      // Strip HTML tags and convert to plain text
+      const text = stripHtmlTags(html)
+      
+      // Create PDF document
+      const doc = new PDFDocument({
+        size: 'LETTER',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      })
+      
+      // Collect PDF chunks
+      const chunks: Buffer[] = []
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', reject)
+      
+      // Add title
+      doc.fontSize(20)
+         .font('Helvetica-Bold')
+         .text(title, { align: 'center' })
+         .moveDown(1.5)
+      
+      // Add content
+      doc.fontSize(11)
+         .font('Helvetica')
+         .text(text, {
+           align: 'left',
+           lineGap: 2
+         })
+      
+      // Finalize PDF
+      doc.end()
+      
+    } catch (error) {
+      console.error('[PDF-GENERATOR] Error:', error)
+      reject(new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`))
+    }
+  })
 }
 
 /**

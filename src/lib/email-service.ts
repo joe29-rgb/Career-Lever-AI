@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer-core'
+import { Resend } from 'resend'
+import { generateResumePDF, generateCoverLetterPDF } from './server-pdf-generator'
 
 interface EmailOptions {
   recipient: string
@@ -8,66 +9,105 @@ interface EmailOptions {
   coverText: string
   company: string
   jobTitle: string
+  senderEmail?: string
+  senderName?: string
 }
 
-export async function composeEmail(options: EmailOptions) {
-  console.log('[EMAIL] Composing for:', options.recipient)
+interface SendEmailResult {
+  success: boolean
+  messageId?: string
+  error?: string
+  mailtoUrl: string // Fallback for environments without Resend
+}
 
-  // Generate subject (pick first or random)
+/**
+ * Send email using Resend API with PDF attachments
+ */
+export async function sendJobApplicationEmail(options: EmailOptions): Promise<SendEmailResult> {
+  console.log('[EMAIL] Sending to:', options.recipient)
+
+  // Generate subject and body
   const subject = options.subjects[0] || `Application for ${options.jobTitle} at ${options.company}`
-
-  // Generate intro (pick first)
   const intro = options.intros[0] || `Dear Hiring Manager,`
-
-  // Simple body
+  
   const body = `${intro}
 
-I am excited to apply for the ${options.jobTitle} position at ${options.company}. [Brief intro from Perplexity]
+I am excited to apply for the ${options.jobTitle} position at ${options.company}.
 
 Please find my resume and cover letter attached.
 
 Best regards,
-[Your Name]`
+${options.senderName || '[Your Name]'}`
 
-  // Generate PDF attachments
-  const browser = await puppeteer.launch({ headless: true })
-  const [resumePDF, coverPDF] = await Promise.all([
-    generatePDF(options.resumeText, 'resume', browser),
-    generatePDF(options.coverText, 'cover-letter', browser)
-  ])
-  await browser.close()
+  // Create mailto fallback URL
+  const mailtoUrl = `mailto:${options.recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
 
-  // mailto URL (attachments via blob for client-side)
-  const mailto = `mailto:${options.recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  // Check if Resend API key is configured
+  const resendApiKey = process.env.RESEND_API_KEY
+  if (!resendApiKey) {
+    console.warn('[EMAIL] RESEND_API_KEY not configured, returning mailto fallback')
+    return {
+      success: false,
+      error: 'Email service not configured. Use mailto link as fallback.',
+      mailtoUrl
+    }
+  }
 
-  console.log('[EMAIL] Composed mailto:', mailto)
-  return {
-    mailtoUrl: mailto,
-    attachments: { resume: resumePDF, cover: coverPDF },
-    subject,
-    intro
+  try {
+    // Generate PDF attachments
+    const [resumePDF, coverLetterPDF] = await Promise.all([
+      generateResumePDF(options.resumeText),
+      generateCoverLetterPDF(options.coverText)
+    ])
+
+    // Initialize Resend
+    const resend = new Resend(resendApiKey)
+
+    // Send email with attachments
+    const result = await resend.emails.send({
+      from: options.senderEmail || 'noreply@careerlever.ai',
+      to: options.recipient,
+      subject: subject,
+      text: body,
+      attachments: [
+        {
+          filename: 'resume.pdf',
+          content: resumePDF
+        },
+        {
+          filename: 'cover-letter.pdf',
+          content: coverLetterPDF
+        }
+      ]
+    })
+
+    console.log('[EMAIL] Sent successfully:', result.data?.id)
+    return {
+      success: true,
+      messageId: result.data?.id,
+      mailtoUrl
+    }
+
+  } catch (error) {
+    console.error('[EMAIL] Failed to send:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      mailtoUrl
+    }
   }
 }
 
-async function generatePDF(htmlContent: string, type: 'resume' | 'cover-letter', browser: any): Promise<Buffer> {
-  const page = await browser.newPage()
-  const html = `
-    <html>
-      <head>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 1in; line-height: 1.4; }
-          h1, h2 { color: #333; }
-          .resume { max-width: 8.5in; }
-          .cover { max-width: 8.5in; }
-        </style>
-      </head>
-      <body class="${type}">
-        ${htmlContent}
-      </body>
-    </html>
-  `
-  await page.setContent(html)
-  const pdf = await page.pdf({ format: 'A4', printBackground: true })
-  await page.close()
-  return pdf
+/**
+ * Legacy function for backward compatibility
+ */
+export async function composeEmail(options: EmailOptions) {
+  const result = await sendJobApplicationEmail(options)
+  return {
+    mailtoUrl: result.mailtoUrl,
+    success: result.success,
+    messageId: result.messageId,
+    error: result.error
+  }
 }
+
