@@ -114,9 +114,14 @@ Return JSON:
         maxTokens: 200
       })
       
-      // Type-safe parsing of result
-      if (typeof result === 'object' && result !== null && 'valid' in result) {
-        return result as { valid: boolean; confidence: number; reasoning: string }
+      // Parse the JSON response
+      try {
+        const parsed = JSON.parse(result.content)
+        if (typeof parsed === 'object' && parsed !== null && 'valid' in parsed) {
+          return parsed as { valid: boolean; confidence: number; reasoning: string }
+        }
+      } catch {
+        // JSON parsing failed, continue to fallback
       }
       
       // Fallback if result is unexpected format
@@ -216,14 +221,19 @@ Return JSON:
         maxTokens: 300
       })
       
-      // Type-safe result handling
-      if (typeof result === 'object' && result !== null && 'communication_style' in result) {
-        return result as {
-          communication_style: 'direct' | 'formal' | 'casual';
-          best_contact_days: string[];
-          preferred_approach: string;
-          response_likelihood: number;
+      // Parse the JSON response
+      try {
+        const parsed = JSON.parse(result.content)
+        if (typeof parsed === 'object' && parsed !== null && 'communication_style' in parsed) {
+          return parsed as {
+            communication_style: 'direct' | 'formal' | 'casual';
+            best_contact_days: string[];
+            preferred_approach: string;
+            response_likelihood: number;
+          }
         }
+      } catch {
+        // JSON parsing failed, continue to fallback
       }
       
       // Fallback if unexpected format
