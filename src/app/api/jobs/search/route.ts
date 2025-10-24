@@ -372,6 +372,15 @@ export async function POST(request: NextRequest) {
 
     console.log(`[JOB_SEARCH] Processed ${jobs.length} jobs, ${processedJobs.filter((j: any) => j.isConfidential).length} marked as confidential, ${processedJobs.length} total kept`)
 
+    // CRITICAL FIX: Merge cached jobs with new results (remove duplicates by URL)
+    let finalJobs = [...processedJobs]
+    if (cachedJobs && cachedJobs.length > 0) {
+      const newJobUrls = new Set(processedJobs.map((j: any) => j.url).filter(Boolean))
+      const uniqueCachedJobs = cachedJobs.filter((cj: any) => !newJobUrls.has(cj.url))
+      finalJobs = [...processedJobs, ...uniqueCachedJobs]
+      console.log(`[JOB_CACHE] Merged ${uniqueCachedJobs.length} unique cached jobs with ${processedJobs.length} new jobs = ${finalJobs.length} total`)
+    }
+
     // 🚀 NEW: Cache the search results for 3 weeks
     if (processedJobs.length > 0) {
       await jobSearchCacheService.cacheSearchResults(
@@ -393,19 +402,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       query: { keywords, location, sources },
-      totalResults: processedJobs.length,
-      returnedResults: processedJobs.length,
-      jobs: processedJobs.slice(0, limit),
+      totalResults: finalJobs.length,
+      returnedResults: Math.min(finalJobs.length, limit),
+      jobs: finalJobs.slice(0, limit),
       metadata: {
         ...metadata,
         searchedAt: new Date().toISOString(),
-        cachedResults: result?.cached || false
+        cachedResults: cachedJobs ? cachedJobs.length : 0,
+        newResults: processedJobs.length,
+        totalMerged: finalJobs.length
       },
       recommendations: {
         priorityBoards: recommendedBoards.slice(0, 5),
         reasoning: `Recommended job boards for ${location || 'your location'}`
       },
-      sources: [...new Set(jobs.map((j: any) => j.source || 'Unknown'))]
+      sources: [...new Set(finalJobs.map((j: any) => j.source || 'Unknown'))]
     })
 
   } catch (error) {

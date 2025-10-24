@@ -98,20 +98,26 @@ export function UnifiedNavigation() {
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
 
-  // Detect screen size and auto-collapse sidebar on small screens
+  // Detect screen size and auto-adjust sidebar
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 1024 // lg breakpoint
+      const wasMobile = isMobile
+      
       setIsMobile(mobile)
-      if (mobile) {
-        setSidebarOpen(false) // Auto-collapse on mobile
+      
+      // Auto-collapse on mobile, auto-open on desktop
+      if (mobile && !wasMobile) {
+        setSidebarOpen(false) // Switched to mobile - close sidebar
+      } else if (!mobile && wasMobile) {
+        setSidebarOpen(true) // Switched to desktop - open sidebar
       }
     }
     
     checkScreenSize()
     window.addEventListener('resize', checkScreenSize)
     return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
+  }, [isMobile])
   const [scrolled, setScrolled] = useState(false)
   const { count: notificationCount } = useNotifications()
 
