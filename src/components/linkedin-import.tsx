@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { signIn, useSession } from 'next-auth/react'
 import { Upload, Linkedin, FileText, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
 interface LinkedInImportProps {
@@ -9,10 +10,49 @@ interface LinkedInImportProps {
 }
 
 export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps) {
+  const { data: session } = useSession()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [linkedInUrl, setLinkedInUrl] = useState('')
+
+  const handleLinkedInOAuth = async () => {
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // Sign in with LinkedIn OAuth
+      const result = await signIn('linkedin', {
+        redirect: false,
+        callbackUrl: window.location.href
+      })
+
+      if (result?.error) {
+        throw new Error('Failed to sign in with LinkedIn')
+      }
+
+      // After successful sign-in, fetch the profile
+      const response = await fetch('/api/linkedin/profile')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch LinkedIn profile')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setSuccess(true)
+        onImport(data.resumeData)
+        setTimeout(() => setSuccess(false), 3000)
+      } else {
+        throw new Error(data.error || 'Failed to import LinkedIn data')
+      }
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   const handleLinkedInPDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -140,41 +180,34 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* LinkedIn URL Input - PRIMARY METHOD */}
-      <div className="border-2 border-solid border-blue-500 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+      {/* LinkedIn OAuth Sign-In - PRIMARY METHOD */}
+      <div className="border-2 border-solid border-blue-600 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg">
         <div className="flex items-center gap-3 mb-4">
-          <Linkedin className="w-8 h-8 text-blue-600" />
+          <Linkedin className="w-10 h-10 text-blue-600" />
           <div>
-            <h3 className="font-bold text-gray-900 text-lg">Auto-Import from LinkedIn</h3>
-            <p className="text-sm text-gray-600">Enter your LinkedIn profile URL to automatically import your data</p>
+            <h3 className="font-bold text-gray-900 text-xl">Sign in with LinkedIn</h3>
+            <p className="text-sm text-gray-600">Securely connect your LinkedIn account to automatically import your profile</p>
           </div>
         </div>
-        <div className="space-y-3">
-          <input
-            type="url"
-            value={linkedInUrl}
-            onChange={(e) => setLinkedInUrl(e.target.value)}
-            placeholder="https://www.linkedin.com/in/your-profile"
-            disabled={isProcessing}
-            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
-          />
-          <button
-            onClick={handleLinkedInUrlScrape}
-            disabled={isProcessing || !linkedInUrl.trim()}
-            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold text-base flex items-center justify-center gap-2"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Importing from LinkedIn...
-              </>
-            ) : (
-              <>
-                <Linkedin className="w-5 h-5" />
-                Import My LinkedIn Profile
-              </>
-            )}
-          </button>
+        <button
+          onClick={handleLinkedInOAuth}
+          disabled={isProcessing}
+          className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold text-lg flex items-center justify-center gap-3 shadow-md hover:shadow-xl"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="w-6 h-6 animate-spin" />
+              Connecting to LinkedIn...
+            </>
+          ) : (
+            <>
+              <Linkedin className="w-6 h-6" />
+              Sign in with LinkedIn
+            </>
+          )}
+        </button>
+        <div className="mt-3 text-xs text-gray-500 text-center">
+          ✓ Secure OAuth 2.0 • ✓ Official LinkedIn API • ✓ No password sharing
         </div>
       </div>
 

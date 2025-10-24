@@ -3,6 +3,7 @@ import { MongoDBAdapter } from '@auth/mongodb-adapter';
 import clientPromise from './mongodb-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
+import LinkedInProvider from 'next-auth/providers/linkedin';
 import bcrypt from 'bcryptjs';
 import connectToDatabase from './mongodb';
 import User from '@/models/User';
@@ -22,6 +23,28 @@ export const authOptions: NextAuthOptions = {
                 access_type: 'offline',
                 prompt: 'consent',
                 scope: 'openid email profile'
+              }
+            }
+          }),
+        ]
+      : []),
+    ...(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET
+      ? [
+          LinkedInProvider({
+            clientId: process.env.LINKEDIN_CLIENT_ID,
+            clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+            authorization: {
+              params: {
+                scope: 'openid profile email w_member_social' // Request profile access
+              }
+            },
+            profile(profile) {
+              return {
+                id: profile.sub,
+                name: profile.name,
+                email: profile.email,
+                image: profile.picture,
+                linkedInProfile: profile // Store full LinkedIn profile
               }
             }
           }),
