@@ -196,6 +196,14 @@ export async function POST(request: NextRequest) {
         }
 
         // Use enhanced jobMarketAnalysisV2 with 25+ boards
+        console.log('[JOB_SEARCH] Calling jobMarketAnalysisV2 with:', {
+          location,
+          resumeLength: extractedText.length,
+          roleHint: keywords,
+          workType: workType || (remote ? 'remote' : 'any'),
+          maxResults: limit
+        })
+        
         result = await PerplexityIntelligenceService.jobMarketAnalysisV2(
           location,
           extractedText,
@@ -208,6 +216,15 @@ export async function POST(request: NextRequest) {
             boards: sources
           }
         )
+
+        console.log('[JOB_SEARCH] jobMarketAnalysisV2 result:', {
+          success: result.success,
+          dataType: typeof result.data,
+          dataIsArray: Array.isArray(result.data),
+          dataLength: Array.isArray(result.data) ? result.data.length : 0,
+          cached: result.cached,
+          error: result.metadata?.error
+        })
 
         jobs = result.data
         
@@ -272,17 +289,33 @@ export async function POST(request: NextRequest) {
 
     // Option 2: Standard job listing search (25+ boards)
     if (!useResumeMatching || jobs.length === 0) {
-      console.log(`[JOB_SEARCH] Using standard search across 25+ boards`)
+      console.log(`[JOB_SEARCH] Using standard search across 25+ boards`, {
+        keywords,
+        location,
+        limit,
+        workType: workType || (remote ? 'remote' : undefined)
+      })
 
       const jobsResult = await PerplexityIntelligenceService.jobListings(
         keywords,
         location,
         {
-          boards: sources,
           limit,
-          includeCanadianOnly: location.toLowerCase().includes('canada')
+          workType: workType || (remote ? 'remote' : undefined),
+          sources
         }
       )
+
+      console.log(`[JOB_SEARCH] jobListings returned:`, {
+        type: typeof jobsResult,
+        isArray: Array.isArray(jobsResult),
+        length: Array.isArray(jobsResult) ? jobsResult.length : 0,
+        sample: Array.isArray(jobsResult) && jobsResult[0] ? {
+          title: jobsResult[0].title,
+          company: jobsResult[0].company,
+          hasUrl: !!jobsResult[0].url
+        } : null
+      })
 
       jobs = Array.isArray(jobsResult) ? jobsResult : []
       console.log(`[JOB_SEARCH] Standard search returned type: ${typeof jobsResult}, isArray: ${Array.isArray(jobsResult)}, length: ${jobs.length}`)
