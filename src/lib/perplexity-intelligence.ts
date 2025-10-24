@@ -1223,12 +1223,22 @@ OUTPUT JSON FORMAT:
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         
-        // Response received
+        console.log('[JOB_SEARCH_V2] Perplexity response received:', {
+          contentLength: res.content.length,
+          preview: res.content.slice(0, 500)
+        })
         
         return res
       })
 
+      console.log('[JOB_SEARCH_V2] Parsing response...')
       let parsed = JSON.parse(out.content.trim()) as JobListing[]
+      console.log('[JOB_SEARCH_V2] Parsed jobs:', {
+        isArray: Array.isArray(parsed),
+        count: Array.isArray(parsed) ? parsed.length : 0,
+        firstJob: parsed[0] ? { title: parsed[0].title, company: parsed[0].company } : null
+      })
+      
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
       
       // CRITICAL FIX: Enrich jobs with short descriptions by scraping URLs
@@ -1289,6 +1299,14 @@ OUTPUT JSON FORMAT:
         cached: false 
       }
     } catch (e) {
+      console.error('[JOB_SEARCH_ERROR] Job search failed:', {
+        error: (e as Error).message,
+        stack: (e as Error).stack,
+        location,
+        roleHint: options.roleHint,
+        boards: targetBoards.slice(0, 5)
+      })
+      
       return { 
         success: false, 
         data: [], 
