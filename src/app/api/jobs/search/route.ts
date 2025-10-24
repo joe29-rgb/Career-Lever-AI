@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get recommended boards for this location
-    const recommendations = PerplexityIntelligenceService.getRecommendedBoards(location)
+    const recommendedBoards = PerplexityIntelligenceService.getRecommendedBoards(location)
 
     return NextResponse.json({
       success: true,
@@ -368,8 +368,8 @@ export async function POST(request: NextRequest) {
         cachedResults: result?.cached || false
       },
       recommendations: {
-        priorityBoards: recommendations.priority.slice(0, 5),
-        reasoning: recommendations.reasoning
+        priorityBoards: recommendedBoards.slice(0, 5),
+        reasoning: `Recommended job boards for ${location || 'your location'}`
       },
       sources: [...new Set(jobs.map((j: any) => j.source || 'Unknown'))]
     })
