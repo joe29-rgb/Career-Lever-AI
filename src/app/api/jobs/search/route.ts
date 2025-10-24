@@ -301,8 +301,7 @@ export async function POST(request: NextRequest) {
         location,
         {
           limit,
-          workType: workType || (remote ? 'remote' : undefined),
-          sources
+          boards: sources
         }
       )
 
