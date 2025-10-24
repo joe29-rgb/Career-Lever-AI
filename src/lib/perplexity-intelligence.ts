@@ -587,6 +587,90 @@ interface EnhancedCompanyResearchData {
 }
 
 export class PerplexityIntelligenceService {
+  /**
+   * CRITICAL FIX: Validates job listings response from Perplexity
+   * Filters out incomplete, fake, or low-quality jobs
+   */
+  private static validateJobListings(jobs: JobListing[], minRequired: number): JobListing[] {
+    const validated = jobs.filter((job: JobListing) => {
+      // ❌ REJECT: Empty or short descriptions
+      if (!job.summary || job.summary.trim().length < 150) {
+        if (process.env.PPX_DEBUG === 'true') {
+          console.warn(`[VALIDATE] Rejecting ${job.title} - description too short (${job.summary?.length || 0} chars)`)
+        }
+        return false
+      }
+      
+      // ❌ REJECT: Confidential companies
+      const confidentialKeywords = ['confidential', 'various', 'tbd', 'multiple', 'undisclosed', 'anonymous', 'private', 'stealth', 'hidden']
+      const company = String(job.company || '').toLowerCase().trim()
+      if (confidentialKeywords.some(kw => company.includes(kw)) || company.length < 3) {
+        if (process.env.PPX_DEBUG === 'true') {
+          console.warn(`[VALIDATE] Rejecting ${job.title} - confidential company: ${job.company}`)
+        }
+        return false
+      }
+      
+      // ❌ REJECT: No valid URL
+      if (!job.url || !job.url.includes('http')) {
+        if (process.env.PPX_DEBUG === 'true') {
+          console.warn(`[VALIDATE] Rejecting ${job.title} - invalid URL: ${job.url}`)
+        }
+        return false
+      }
+      
+      // ✅ ACCEPT
+      return true
+    })
+    
+    // Warn if too many filtered out
+    if (validated.length < minRequired * 0.5 && process.env.PPX_DEBUG === 'true') {
+      console.warn(`[VALIDATE] Only ${validated.length}/${minRequired} jobs passed validation (${Math.round(validated.length/minRequired*100)}%)`)
+    }
+    
+    return validated
+  }
+
+  /**
+   * CRITICAL FIX: Validates hiring contacts response from Perplexity
+   * Filters out fake emails, personal domains, pattern-based guesses
+   */
+  private static validateHiringContacts(contacts: HiringContact[]): HiringContact[] {
+    const validated = contacts.filter((contact: HiringContact) => {
+      // ❌ REJECT: No email and no LinkedIn
+      if (!contact.email && !contact.linkedinUrl) {
+        if (process.env.PPX_DEBUG === 'true') {
+          console.warn(`[VALIDATE] Rejecting ${contact.name} - no contact method`)
+        }
+        return false
+      }
+      
+      // ❌ REJECT: Personal email domains (if email exists)
+      if (contact.email) {
+        const personalDomains = ['gmail', 'yahoo', 'hotmail', 'outlook', 'aol', 'icloud', 'protonmail']
+        if (personalDomains.some(d => contact.email.toLowerCase().includes(d))) {
+          if (process.env.PPX_DEBUG === 'true') {
+            console.warn(`[VALIDATE] Rejecting ${contact.email} - personal domain`)
+          }
+          return false
+        }
+        
+        // ❌ REJECT: Template/placeholder emails
+        if (contact.email.includes('[') || contact.email.includes('VISIT') || contact.email.includes('example') || contact.email.includes('domain.')) {
+          if (process.env.PPX_DEBUG === 'true') {
+            console.warn(`[VALIDATE] Rejecting ${contact.email} - template email`)
+          }
+          return false
+        }
+      }
+      
+      // ✅ ACCEPT
+      return true
+    })
+    
+    return validated
+  }
+
   // V2: Enhanced company research with retries and metadata
   static async researchCompanyV2(input: IntelligenceRequest): Promise<EnhancedResponse<IntelligenceResponse>> {
     const requestId = generateRequestId()
