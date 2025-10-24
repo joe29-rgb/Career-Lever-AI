@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Upload, Linkedin, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Upload, Linkedin, FileText, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
 interface LinkedInImportProps {
   onImport: (resumeData: any) => void
@@ -12,6 +12,7 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [linkedInUrl, setLinkedInUrl] = useState('')
 
   const handleLinkedInPDFUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -59,6 +60,50 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
     }
   }
 
+  const handleLinkedInUrlScrape = async () => {
+    if (!linkedInUrl.trim()) {
+      setError('Please enter your LinkedIn profile URL')
+      return
+    }
+
+    // Validate LinkedIn URL
+    if (!linkedInUrl.includes('linkedin.com/in/')) {
+      setError('Please enter a valid LinkedIn profile URL (e.g., https://linkedin.com/in/yourname)')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+    setSuccess(false)
+
+    try {
+      const response = await fetch('/api/resume/scrape-linkedin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: linkedInUrl })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to scrape LinkedIn profile')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setSuccess(true)
+        onImport(data.resumeData)
+        setTimeout(() => setSuccess(false), 3000)
+      } else {
+        throw new Error(data.error || 'Failed to import LinkedIn data')
+      }
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   const handleLinkedInTextPaste = async (text: string) => {
     if (!text.trim()) return
 
@@ -95,8 +140,56 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
 
   return (
     <div className={`space-y-4 ${className}`}>
-      {/* LinkedIn PDF Upload */}
-      <div className="border-2 border-dashed border-blue-300 rounded-lg p-6 bg-blue-50/50 hover:bg-blue-50 transition-colors">
+      {/* LinkedIn URL Input - PRIMARY METHOD */}
+      <div className="border-2 border-solid border-blue-500 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100">
+        <div className="flex items-center gap-3 mb-4">
+          <Linkedin className="w-8 h-8 text-blue-600" />
+          <div>
+            <h3 className="font-bold text-gray-900 text-lg">Auto-Import from LinkedIn</h3>
+            <p className="text-sm text-gray-600">Enter your LinkedIn profile URL to automatically import your data</p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <input
+            type="url"
+            value={linkedInUrl}
+            onChange={(e) => setLinkedInUrl(e.target.value)}
+            placeholder="https://www.linkedin.com/in/your-profile"
+            disabled={isProcessing}
+            className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+          />
+          <button
+            onClick={handleLinkedInUrlScrape}
+            disabled={isProcessing || !linkedInUrl.trim()}
+            className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold text-base flex items-center justify-center gap-2"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Importing from LinkedIn...
+              </>
+            ) : (
+              <>
+                <Linkedin className="w-5 h-5" />
+                Import My LinkedIn Profile
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300"></div>
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">Or use alternative methods</span>
+        </div>
+      </div>
+
+      {/* LinkedIn PDF Upload - ALTERNATIVE */}
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50/50 hover:bg-gray-50 transition-colors">
         <label className="cursor-pointer block">
           <input
             type="file"
