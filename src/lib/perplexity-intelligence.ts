@@ -2481,4 +2481,26 @@ Return ONLY valid JSON:
       return await this.hiringContactsV2(companyName)
     }
   }
+
+  /**
+   * Clear cache entries (admin utility)
+   * @param prefix - Optional prefix to clear specific cache entries
+   * @returns Number of entries cleared
+   */
+  static clearCache(prefix?: string): number {
+    if (!prefix) {
+      const size = cache.size
+      cache.clear()
+      return size
+    }
+    
+    let cleared = 0
+    for (const key of cache.keys()) {
+      if (key.startsWith(prefix)) {
+        cache.delete(key)
+        cleared++
+      }
+    }
+    return cleared
+  }
 }
