@@ -207,11 +207,8 @@ export default function SearchPage() {
     console.log('  - hasResume:', !!resumeData)
     console.log('  - hasKeywords:', !!savedKeywords)
     
-    // CRITICAL: Pre-populate location from localStorage if available
-    if (savedLocation && !filters.location) {
-      setFilters(prev => ({ ...prev, location: savedLocation }))
-      console.log('[PERPLEXITY AUDIT FIX] Pre-populated location:', savedLocation)
-    }
+    // REMOVED: Don't auto-populate location - let user enter their own
+    // Location from resume might be outdated or wrong
     
     // ✅ FIX #6: Show search prompt if cached resume exists but no search performed
     if (resumeData && !autopilotReady && jobs.length === 0) {
@@ -520,13 +517,33 @@ export default function SearchPage() {
                    'Curated opportunities just for you'}
                 </p>
               </div>
-              <button 
-                onClick={toggleSidebar} 
-                className="lg:hidden btn-primary flex items-center gap-2"
-              >
-                <FunnelIcon className="w-5 h-5" />
-                Filters
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    // Clear all cache
+                    localStorage.removeItem('cf:jobResults')
+                    localStorage.removeItem('cf:jobResultsTime')
+                    localStorage.removeItem('cf:location')
+                    localStorage.removeItem('cf:keywords')
+                    localStorage.removeItem('cf:autopilotReady')
+                    setJobs([])
+                    setSearchQuery('')
+                    setFilters({ location: '', salaryMin: '', salaryMax: '', workType: 'all', experienceLevel: '' })
+                    console.log('[CACHE] All cache cleared')
+                    window.location.reload()
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm font-medium"
+                >
+                  🗑️ Clear Cache
+                </button>
+                <button 
+                  onClick={toggleSidebar} 
+                  className="lg:hidden btn-primary flex items-center gap-2"
+                >
+                  <FunnelIcon className="w-5 h-5" />
+                  Filters
+                </button>
+              </div>
             </div>
 
             {/* Search Metadata */}
