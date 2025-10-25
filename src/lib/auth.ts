@@ -33,20 +33,32 @@ export const authOptions: NextAuthOptions = {
           LinkedInProvider({
             clientId: process.env.LINKEDIN_CLIENT_ID,
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-            issuer: 'https://www.linkedin.com/oauth', // Fix: Explicitly set issuer
-            checks: ['state'], // Fix: Only check state, not PKCE
+            client: {
+              token_endpoint_auth_method: 'client_secret_post'
+            },
+            issuer: 'https://www.linkedin.com',
+            wellKnown: 'https://www.linkedin.com/oauth/.well-known/openid-configuration',
             authorization: {
+              url: 'https://www.linkedin.com/oauth/v2/authorization',
               params: {
-                scope: 'openid profile email' // Simplified scope for OAuth 2.0
+                scope: 'profile email openid',
+                response_type: 'code'
               }
             },
+            token: {
+              url: 'https://www.linkedin.com/oauth/v2/accessToken'
+            },
+            userinfo: {
+              url: 'https://api.linkedin.com/v2/userinfo'
+            },
+            jwks_endpoint: 'https://www.linkedin.com/oauth/openid/jwks',
             profile(profile) {
               return {
                 id: profile.sub,
                 name: profile.name,
                 email: profile.email,
                 image: profile.picture,
-                linkedInProfile: profile // Store full LinkedIn profile
+                linkedInProfile: profile
               }
             }
           }),
