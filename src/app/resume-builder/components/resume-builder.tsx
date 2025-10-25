@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { LinkedInImport } from '@/components/linkedin-import'
+import { ResumeAnalyzer } from '@/components/resume-builder/resume-analyzer'
 
 interface ResumeData {
   personalInfo: {
@@ -1330,6 +1331,9 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Resume Analyzer */}
+          <ResumeAnalyzer resumeData={resumeData} />
 
           {/* Tips */}
           <Card>
