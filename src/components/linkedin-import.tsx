@@ -350,7 +350,7 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
+          <div className="w-full border-t border-border"></div>
         </div>
         <div className="relative flex justify-center text-sm">
           <span className="px-2 bg-card text-gray-500">Or use alternative methods</span>
@@ -358,7 +358,7 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
       </div>
 
       {/* LinkedIn PDF Upload - ALTERNATIVE */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+      <div className="border-2 border-dashed border-border rounded-lg p-6 bg-muted/50 hover:bg-muted transition-colors">
         <label className="cursor-pointer block">
           <input
             type="file"
@@ -390,14 +390,14 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
       </div>
 
       {/* LinkedIn Text Paste */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50/50">
+      <div className="border-2 border-dashed border-border rounded-lg p-6 bg-muted/50">
         <div className="flex items-start gap-3">
           <FileText className="w-5 h-5 text-gray-600 mt-1" />
           <div className="flex-1">
             <p className="font-semibold text-foreground mb-2">Or paste LinkedIn profile text</p>
             <textarea
               placeholder="Copy your LinkedIn profile text and paste it here..."
-              className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full h-32 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-background text-foreground"
               disabled={isProcessing}
               onPaste={(e) => {
                 e.preventDefault()
