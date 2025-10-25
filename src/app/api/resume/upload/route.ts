@@ -53,94 +53,140 @@ async function extractTextWithAI(buffer: Buffer): Promise<string> {
 }
 
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
-  console.log('[PDF_PARSE] Starting extraction, buffer size:', buffer.length, 'bytes')
+  console.log('[PDF_PARSE] ==========================================')
+  console.log('[PDF_PARSE] Starting extraction')
+  console.log('[PDF_PARSE] Buffer size:', buffer.length, 'bytes')
+  console.log('[PDF_PARSE] Buffer type:', typeof buffer)
+  console.log('[PDF_PARSE] Is Buffer:', Buffer.isBuffer(buffer))
+  console.log('[PDF_PARSE] ==========================================')
   
-  // Try Method 1: pdf-parse-debugging-disabled
+  // Try Method 1: pdf-parse-debugging-disabled (MOST RELIABLE)
   try {
-    console.log('[PDF_PARSE] Attempting Method 1: pdf-parse-debugging-disabled')
+    console.log('[PDF_PARSE] 🔄 Method 1: pdf-parse-debugging-disabled')
     const pdfParse = await import('pdf-parse-debugging-disabled')
-    const data = await pdfParse.default(buffer, { max: 0 })
+    console.log('[PDF_PARSE] Module loaded:', !!pdfParse, 'default:', !!pdfParse.default)
     
-    console.log('[PDF_PARSE] pdf-parse result:', {
+    const data = await pdfParse.default(buffer, { 
+      max: 0, // Parse all pages
+      version: 'v2.0.550' // Specify version
+    })
+    
+    console.log('[PDF_PARSE] Raw result:', {
       hasData: !!data,
       hasText: !!data?.text,
       textLength: data?.text?.length || 0,
-      numpages: data?.numpages
+      numpages: data?.numpages,
+      numrender: data?.numrender,
+      info: data?.info,
+      metadata: data?.metadata
     })
     
-    if (data && data.text && data.text.length > 50) {
+    if (data?.text) {
+      console.log('[PDF_PARSE] Raw text preview (first 500 chars):', data.text.slice(0, 500))
+      console.log('[PDF_PARSE] Raw text preview (last 200 chars):', data.text.slice(-200))
+      
       const cleanedText = cleanExtractedText(data.text)
-      console.log('[PDF_PARSE] ✅ Method 1 SUCCESS:', {
+      console.log('[PDF_PARSE] After cleaning:', {
         rawLength: data.text.length,
         cleanedLength: cleanedText.length,
-        preview: cleanedText.slice(0, 200)
+        preview: cleanedText.slice(0, 300)
       })
-      const confidence = cleanedText.length >= MIN_VALID_PDF_TEXT_LENGTH ? 0.9 : 0.5
-      return {
-        text: cleanedText,
-        method: 'pdf-parse',
-        confidence
+      
+      if (cleanedText.length >= 50) {
+        const confidence = cleanedText.length >= MIN_VALID_PDF_TEXT_LENGTH ? 0.95 : 0.6
+        console.log('[PDF_PARSE] ✅✅✅ Method 1 SUCCESS - confidence:', confidence)
+        return {
+          text: cleanedText,
+          method: 'pdf-parse',
+          confidence
+        }
+      } else {
+        console.log('[PDF_PARSE] ⚠️ Method 1 extracted text but too short:', cleanedText.length, 'chars')
       }
+    } else {
+      console.log('[PDF_PARSE] ⚠️ Method 1 returned no text')
     }
-    console.log('[PDF_PARSE] Method 1 text too short, trying fallback')
-  } catch (error) {
-    console.error('[PDF_PARSE] ❌ Method 1 failed:', error)
+  } catch (error: any) {
+    console.error('[PDF_PARSE] ❌ Method 1 FAILED')
+    console.error('[PDF_PARSE] Error type:', error?.constructor?.name)
+    console.error('[PDF_PARSE] Error message:', error?.message)
+    console.error('[PDF_PARSE] Error stack:', error?.stack)
   }
 
-  // Try Method 2: pdfjs-dist fallback
+  // Try Method 2: pdfjs-dist fallback (BETTER for complex PDFs)
   try {
-    console.log('[PDF_PARSE] Attempting Method 2: pdfjs-dist')
+    console.log('[PDF_PARSE] 🔄 Method 2: pdfjs-dist')
     const pdfjsLib = await import('pdfjs-dist')
+    console.log('[PDF_PARSE] pdfjs-dist module loaded')
     
     // Load the PDF document with proper TypeScript types
     const loadingTask = pdfjsLib.getDocument({
-      data: buffer,
+      data: new Uint8Array(buffer),
       verbosity: 0,
-      useSystemFonts: false,
-      disableFontFace: true
+      useSystemFonts: true,
+      disableFontFace: false,
+      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/standard_fonts/'
     })
     
     const pdfDoc = await loadingTask.promise
-    console.log('[PDF_PARSE] pdfjs-dist loaded document, pages:', pdfDoc.numPages)
+    console.log('[PDF_PARSE] Document loaded successfully')
+    console.log('[PDF_PARSE] Pages:', pdfDoc.numPages)
+    console.log('[PDF_PARSE] Fingerprints:', pdfDoc.fingerprints)
     
     let fullText = ''
+    let totalChars = 0
     
     // Extract text from each page
     for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-      const page = await pdfDoc.getPage(pageNum)
-      const textContent = await page.getTextContent()
-      
-      const pageText = textContent.items
-        .map((item: any) => {
-          if ('str' in item) {
-            return item.str
-          }
-          return ''
-        })
-        .join(' ')
-      
-      fullText += pageText + '\n'
-      console.log(`[PDF_PARSE] Page ${pageNum}/${pdfDoc.numPages}: ${pageText.length} chars`)
+      try {
+        const page = await pdfDoc.getPage(pageNum)
+        const textContent = await page.getTextContent()
+        
+        // Better text extraction with spacing
+        const pageText = textContent.items
+          .map((item: any) => {
+            if ('str' in item && item.str) {
+              return item.str
+            }
+            return ''
+          })
+          .filter(Boolean)
+          .join(' ')
+        
+        fullText += pageText + '\n\n'
+        totalChars += pageText.length
+        console.log(`[PDF_PARSE] Page ${pageNum}/${pdfDoc.numPages}: ${pageText.length} chars (total: ${totalChars})`)
+      } catch (pageError) {
+        console.error(`[PDF_PARSE] Error on page ${pageNum}:`, pageError)
+      }
     }
     
+    console.log('[PDF_PARSE] Raw extraction complete:', fullText.length, 'chars')
+    console.log('[PDF_PARSE] Raw text preview:', fullText.slice(0, 500))
+    
     const cleanedText = cleanExtractedText(fullText.trim())
-    console.log('[PDF_PARSE] Method 2 cleanup:', {
+    console.log('[PDF_PARSE] After cleaning:', {
       rawLength: fullText.length,
       cleanedLength: cleanedText.length,
-      preview: cleanedText.slice(0, 200)
+      preview: cleanedText.slice(0, 300)
     })
     
-    if (cleanedText.length >= MIN_VALID_PDF_TEXT_LENGTH) {
-      console.log('[PDF_PARSE] ✅ Method 2 SUCCESS')
+    if (cleanedText.length >= 50) {
+      const confidence = cleanedText.length >= MIN_VALID_PDF_TEXT_LENGTH ? 0.9 : 0.6
+      console.log('[PDF_PARSE] ✅✅✅ Method 2 SUCCESS - confidence:', confidence)
       return {
         text: cleanedText,
         method: 'pdfjs-dist',
-        confidence: 0.85
+        confidence
       }
+    } else {
+      console.log('[PDF_PARSE] ⚠️ Method 2 extracted text but too short:', cleanedText.length, 'chars')
     }
-    console.log('[PDF_PARSE] Method 2 text too short')
-  } catch (error) {
-    console.error('[PDF_PARSE] ❌ Method 2 failed:', error)
+  } catch (error: any) {
+    console.error('[PDF_PARSE] ❌ Method 2 FAILED')
+    console.error('[PDF_PARSE] Error type:', error?.constructor?.name)
+    console.error('[PDF_PARSE] Error message:', error?.message)
+    console.error('[PDF_PARSE] Error stack:', error?.stack)
   }
 
   // Try Method 3: AI-based extraction (BEST for scanned/image PDFs)
