@@ -2424,7 +2424,6 @@ Return ONLY valid JSON:
 
     try {
       const { AgentOrchestrator } = await import('./agents/agent-orchestrator')
-      const { AgentTask } = await import('./agents/base-agent')
       
       const orchestrator = new AgentOrchestrator()
 
