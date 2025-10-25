@@ -154,7 +154,7 @@ export function ResumeUpload({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [pastedText, setPastedText] = useState('')
-  const [activeTab, setActiveTab] = useState<'upload' | 'linkedin' | 'paste'>('upload')
+  const [activeTab, setActiveTab] = useState<'upload' | 'linkedin' | 'paste'>('paste')
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     // Handle rejected files
@@ -401,15 +401,15 @@ export function ResumeUpload({
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setActiveTab('upload')}
+            onClick={() => setActiveTab('paste')}
             className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-              activeTab === 'upload'
-                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+              activeTab === 'paste'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            <Upload className="inline-block w-4 h-4 mr-2" />
-            Upload PDF
+            <FileText className="inline-block w-4 h-4 mr-2" />
+            ✅ Paste Text (BEST)
           </button>
           <button
             onClick={() => setActiveTab('linkedin')}
@@ -423,15 +423,15 @@ export function ResumeUpload({
             LinkedIn
           </button>
           <button
-            onClick={() => setActiveTab('paste')}
+            onClick={() => setActiveTab('upload')}
             className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-              activeTab === 'paste'
-                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg'
+              activeTab === 'upload'
+                ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            <FileText className="inline-block w-4 h-4 mr-2" />
-            Paste Text
+            <Upload className="inline-block w-4 h-4 mr-2" />
+            ⚠️ PDF (Unreliable)
           </button>
         </div>
 

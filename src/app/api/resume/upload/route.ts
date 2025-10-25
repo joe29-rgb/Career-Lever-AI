@@ -23,6 +23,35 @@ function cleanExtractedText(text: string): string {
 
 const MIN_VALID_PDF_TEXT_LENGTH = Number(process.env.RESUME_MIN_TEXT_LENGTH || 150)
 const ASCII_FALLBACK_CONFIDENCE = 0.3
+
+// AI-based OCR fallback using base64 encoding
+async function extractTextWithAI(buffer: Buffer): Promise<string> {
+  try {
+    console.log('[PDF_PARSE] Attempting AI-based extraction')
+    const { PerplexityIntelligenceService } = await import('@/lib/perplexity-intelligence')
+    
+    // Convert PDF to base64
+    const base64 = buffer.toString('base64')
+    
+    const result = await PerplexityIntelligenceService.customQuery({
+      systemPrompt: 'You are a resume text extractor. Extract ALL text from the provided PDF resume. Return ONLY the extracted text, no formatting, no markdown, no explanations.',
+      userPrompt: `Extract all text from this PDF resume (base64 encoded, first 1000 chars): ${base64.slice(0, 1000)}...\n\nReturn the complete resume text.`,
+      temperature: 0.1,
+      maxTokens: 4000
+    })
+    
+    if (result.content && result.content.length > MIN_VALID_PDF_TEXT_LENGTH) {
+      console.log('[PDF_PARSE] ✅ AI extraction SUCCESS:', result.content.length, 'chars')
+      return result.content
+    }
+    
+    throw new Error('AI extraction returned insufficient text')
+  } catch (error) {
+    console.error('[PDF_PARSE] ❌ AI extraction failed:', error)
+    throw error
+  }
+}
+
 async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; method: string; confidence?: number }> {
   console.log('[PDF_PARSE] Starting extraction, buffer size:', buffer.length, 'bytes')
   
@@ -114,36 +143,19 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; metho
     console.error('[PDF_PARSE] ❌ Method 2 failed:', error)
   }
 
-  // Try Method 3: ASCII extraction as last resort
+  // Try Method 3: AI-based extraction (BEST for scanned/image PDFs)
   try {
-    console.log('[PDF_PARSE] Attempting Method 3: ASCII fallback (DANGEROUS)')
-    const asciiText = buffer
-      .toString('utf8')
-      .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
+    console.log('[PDF_PARSE] Attempting Method 3: AI extraction')
+    const aiText = await extractTextWithAI(buffer)
     
-    console.log('[PDF_PARSE] ASCII extraction result:', {
-      length: asciiText.length,
-      preview: asciiText.slice(0, 200)
-    })
-    
-    if (asciiText.length >= MIN_VALID_PDF_TEXT_LENGTH) {
-      const cleanedText = cleanExtractedText(asciiText)
-      console.log('[PDF_PARSE] ⚠️ Method 3 SUCCESS (ASCII fallback - LOW QUALITY):', cleanedText.length, 'chars')
-      console.warn('[PDF_PARSE] WARNING: Using ASCII fallback may corrupt company names and other data')
+    if (aiText && aiText.length >= MIN_VALID_PDF_TEXT_LENGTH) {
+      const cleanedText = cleanExtractedText(aiText)
+      console.log('[PDF_PARSE] ✅ Method 3 SUCCESS (AI extraction):', cleanedText.length, 'chars')
       
       return {
         text: cleanedText,
-        method: 'ascii-fallback',
-        confidence: ASCII_FALLBACK_CONFIDENCE
-      }
-    } else {
-      console.log('[PDF_PARSE] Method 3 text too short, rejecting ASCII fallback')
-      return {
-        text: '',
-        method: 'ascii-fallback',
-        confidence: 0
+        method: 'ai-extraction',
+        confidence: 0.8
       }
     }
   } catch (error) {
