@@ -440,26 +440,47 @@ console.log(JSON.stringify(results, null, 2))
 
 ## 🐛 **TROUBLESHOOTING**
 
-### **Error: "unexpected iss value, expected undefined, got: https://www.linkedin.com/oauth"**
+### **Error: "jwks_uri must be configured on the issuer"**
 
-**Cause**: NextAuth LinkedIn provider needs explicit issuer configuration.
+**Cause**: LinkedIn OAuth requires explicit endpoint configuration including JWKS endpoint.
 
-**Solution**: Already fixed in `src/lib/auth.ts`:
+**Solution**: ✅ **FIXED** in `src/lib/auth.ts`:
 ```typescript
 LinkedInProvider({
   clientId: process.env.LINKEDIN_CLIENT_ID,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-  issuer: 'https://www.linkedin.com/oauth', // ✅ Fix
-  checks: ['state'], // ✅ Only check state, not PKCE
+  client: {
+    token_endpoint_auth_method: 'client_secret_post'
+  },
+  issuer: 'https://www.linkedin.com',
+  wellKnown: 'https://www.linkedin.com/oauth/.well-known/openid-configuration',
   authorization: {
+    url: 'https://www.linkedin.com/oauth/v2/authorization',
     params: {
-      scope: 'openid profile email'
+      scope: 'profile email openid',
+      response_type: 'code'
+    }
+  },
+  token: {
+    url: 'https://www.linkedin.com/oauth/v2/accessToken'
+  },
+  userinfo: {
+    url: 'https://api.linkedin.com/v2/userinfo'
+  },
+  jwks_endpoint: 'https://www.linkedin.com/oauth/openid/jwks', // ✅ Key fix
+  profile(profile) {
+    return {
+      id: profile.sub,
+      name: profile.name,
+      email: profile.email,
+      image: profile.picture,
+      linkedInProfile: profile
     }
   }
 })
 ```
 
-**Status**: ✅ **FIXED** - Deploy to production to apply.
+**Status**: ✅ **FIXED** - Deployed to production.
 
 ---
 
