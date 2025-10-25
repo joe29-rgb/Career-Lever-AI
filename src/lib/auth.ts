@@ -160,6 +160,15 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // Store LinkedIn access token for API calls
+      if (account && account.provider === 'linkedin') {
+        token.linkedInAccessToken = account.access_token
+        token.linkedInProfile = account.profile
+        if (account.expires_at) {
+          token.linkedInAccessTokenExpires = account.expires_at * 1000
+        }
+      }
+
       // Refresh Google access token if expired and refresh token is available
       const needsRefresh = token.googleAccessToken && token.googleAccessTokenExpires && Date.now() > (token.googleAccessTokenExpires as number - 60000)
       if (needsRefresh && token.googleRefreshToken && process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
