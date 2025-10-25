@@ -28,6 +28,7 @@ export async function generateSimplePDF(
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     try {
+      // Use Courier which is built-in and doesn't require external files
       const doc = new PDFDocument({
         size: 'LETTER',
         margins: { top: 50, bottom: 50, left: 50, right: 50 },
@@ -45,23 +46,24 @@ export async function generateSimplePDF(
       doc.on('end', () => resolve(Buffer.concat(chunks)))
       doc.on('error', reject)
 
-      // Add title
-      doc.fontSize(20)
-         .font('Helvetica-Bold')
+      // Add title using Courier-Bold (built-in, no external files needed)
+      doc.font('Courier-Bold')
+         .fontSize(16)
          .text(title, { align: 'center' })
          .moveDown()
 
-      // Strip HTML and add content
+      // Strip HTML and add content using Courier (built-in)
       const text = stripHtmlTags(html)
-      doc.fontSize(11)
-         .font('Helvetica')
+      doc.font('Courier')
+         .fontSize(10)
          .text(text, {
            align: 'left',
-           lineGap: 5
+           lineGap: 4
          })
 
       doc.end()
     } catch (error) {
+      console.error('[PDF] Generation error:', error)
       reject(error)
     }
   })
@@ -182,17 +184,17 @@ function renderHTMLToPDF(doc: PDFKit.PDFDocument, html: string, templateName: st
     
     // Section header
     if (section.header) {
-      doc.fontSize(14)
+      doc.font('Courier-Bold')
+         .fontSize(12)
          .fillColor('#000')
-         .font('Helvetica-Bold')
          .text(section.header.toUpperCase())
          .moveDown(0.5)
     }
 
     // Section content
-    doc.fontSize(10)
+    doc.font('Courier')
+       .fontSize(9)
        .fillColor('#333')
-       .font('Helvetica')
        .text(section.content, {
          lineGap: 3
        })
@@ -209,12 +211,12 @@ function renderCoverLetterToPDF(doc: PDFKit.PDFDocument, html: string) {
   paragraphs.forEach((paragraph, index) => {
     if (index > 0) doc.moveDown(1)
     
-    doc.fontSize(11)
+    doc.font('Courier')
+       .fontSize(10)
        .fillColor('#000')
-       .font('Helvetica')
        .text(paragraph.trim(), {
          align: 'left',
-         lineGap: 5
+         lineGap: 4
        })
   })
 }

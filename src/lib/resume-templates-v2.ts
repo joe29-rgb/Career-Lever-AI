@@ -195,7 +195,7 @@ const modernTemplate: ResumeTemplate = {
       display: flex;
       min-height: 100vh;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: white;
+      background: transparent;
     }
     
     .sidebar {
@@ -506,8 +506,8 @@ const professionalTemplate: ResumeTemplate = {
       margin: 0 auto;
       padding: 0.75in;
       font-family: 'Times New Roman', Times, serif;
-      background: white;
-      color: #000;
+      background: transparent;
+      color: inherit;
       line-height: 1.5;
     }
     
@@ -750,7 +750,7 @@ const creativeTemplate: ResumeTemplate = {
       text-align: center;
       margin-bottom: 2rem;
       padding: 2rem;
-      background: white;
+      background: transparent;
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
@@ -797,7 +797,7 @@ const creativeTemplate: ResumeTemplate = {
     }
     
     .section-creative {
-      background: white;
+      background: transparent;
       padding: 1.5rem;
       border-radius: 12px;
       margin-bottom: 1.5rem;
@@ -953,7 +953,7 @@ const creativeTemplate: ResumeTemplate = {
     
     @media print {
       .resume-creative {
-        background: white;
+        background: transparent;
       }
       .section-creative {
         box-shadow: none;
@@ -1252,8 +1252,8 @@ const techTemplate: ResumeTemplate = {
     
     @media print {
       .resume-tech {
-        background: white;
-        color: #1e293b;
+        background: transparent;
+        color: inherit;
       }
       .header-tech {
         border-bottom-color: #1e293b;
@@ -1350,8 +1350,8 @@ const minimalTemplate: ResumeTemplate = {
       margin: 0 auto;
       padding: 1in;
       font-family: Arial, Helvetica, sans-serif;
-      background: white;
-      color: #000;
+      background: transparent;
+      color: inherit;
       line-height: 1.5;
     }
     
@@ -1577,8 +1577,8 @@ const executiveTemplate: ResumeTemplate = {
       margin: 0 auto;
       padding: 0.75in;
       font-family: 'Garamond', 'Georgia', serif;
-      background: white;
-      color: #1a1a1a;
+      background: transparent;
+      color: inherit;
     }
     
     .header-executive {
@@ -1971,8 +1971,8 @@ const cvTemplate: ResumeTemplate = {
       margin: 0 auto;
       padding: 1in;
       font-family: 'Computer Modern', 'Times New Roman', serif;
-      background: white;
-      color: #000;
+      background: transparent;
+      color: inherit;
       line-height: 1.6;
     }
     

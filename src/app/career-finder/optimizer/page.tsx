@@ -435,9 +435,9 @@ ${htmlContent}
       )}
       
       {/* Template Selection - Modern Card */}
-      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-6 shadow-lg">
+      <div className="bg-gradient-to-br from-card to-card/50 border border-border rounded-2xl p-6 mb-6 shadow-lg dark:bg-background">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl">🎨</div>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-xl">🎨</div>
           <div>
             <h2 className="text-xl font-bold text-foreground">Choose Resume Template</h2>
             <p className="text-xs text-muted-foreground">Select a style that matches your industry</p>
@@ -447,7 +447,7 @@ ${htmlContent}
           {TEMPLATES.map(t => (
             <button 
               key={t.id} 
-              className={`group relative border rounded-xl p-5 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl ${template===t.id?'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/50 dark:to-purple-950/50 border-blue-500 shadow-lg shadow-blue-500/20':'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 bg-card'}`} 
+              className={`group relative border rounded-xl p-5 text-left transition-all duration-300 hover:scale-105 hover:shadow-2xl ${template===t.id?'bg-gradient-to-br from-blue-950/50 to-purple-950/50 border-blue-500 shadow-lg shadow-blue-500/20':'border-border hover:border-blue-700 bg-card'}`} 
               onClick={()=>handleTemplateChange(t.id)}
             >
               <div className="flex items-start gap-3 mb-3">
@@ -462,7 +462,7 @@ ${htmlContent}
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
                 {t.bestFor.map((industry) => (
-                  <span key={industry} className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full">
+                  <span key={industry} className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 rounded-full">
                     {industry}
                   </span>
                 ))}
@@ -476,7 +476,7 @@ ${htmlContent}
         <div className="flex items-center gap-2"><input id="highlights" type="checkbox" checked={highlights} onChange={(e)=>setHighlights(e.target.checked)} /><label htmlFor="highlights">Live keyword highlights</label></div>
         <div>
           <div className="mb-1">Optional: Override Resume Text</div>
-          <textarea className="w-full border rounded p-2 h-24" placeholder="Paste to override uploaded resume text for this optimization only" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
+          <textarea className="w-full border border-border rounded p-2 h-24 bg-background text-foreground" placeholder="Paste to override uploaded resume text for this optimization only" value={overrideText} onChange={(e)=>setOverrideText(e.target.value)} />
         </div>
         <div>
           <div className="mb-1 text-foreground">Tone <span className="text-xs text-muted-foreground">(auto-selected based on template)</span></div>
@@ -500,7 +500,7 @@ ${htmlContent}
             </div>
             <div className="flex items-center gap-2">
               {selected === 'A' && (
-                <span className="px-3 py-1 bg-blue-500 text-white text-xs rounded-full font-semibold">Selected</span>
+                <span className="px-3 py-1 bg-blue-500 text-xs rounded-full font-semibold">Selected</span>
               )}
               <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantA); setExpanded('A') }}>Edit</Button>
             </div>
@@ -532,7 +532,7 @@ ${htmlContent}
             </div>
             <div className="flex items-center gap-2">
               {selected === 'B' && (
-                <span className="px-3 py-1 bg-purple-500 text-white text-xs rounded-full font-semibold">Selected</span>
+                <span className="px-3 py-1 bg-purple-500 text-xs rounded-full font-semibold">Selected</span>
               )}
               <Button variant="outline" size="sm" onClick={(e)=>{ e.stopPropagation(); setEditorHtml(variantB); setExpanded('B') }}>Edit</Button>
             </div>
@@ -563,7 +563,7 @@ ${htmlContent}
             {selected === 'none' ? 'Select a variant to continue' : `Variant ${selected} selected`}
           </div>
           <Link 
-            className={`px-8 py-3 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl ${selected==='none'?'pointer-events-none opacity-50 cursor-not-allowed':''}`}
+            className={`px-8 py-3 rounded-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-xl ${selected==='none'?'pointer-events-none opacity-50 cursor-not-allowed':''}`}
             href="/career-finder/cover-letter" 
             onClick={saveSelection}
           >
