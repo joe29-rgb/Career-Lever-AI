@@ -7,9 +7,10 @@ import { Upload, Linkedin, FileText, AlertCircle, CheckCircle2, Loader2 } from '
 interface LinkedInImportProps {
   onImport: (resumeData: any) => void
   className?: string
+  mode?: 'structured' | 'upload' // structured = return ResumeData, upload = create Resume record
 }
 
-export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps) {
+export function LinkedInImport({ onImport, className = '', mode = 'upload' }: LinkedInImportProps) {
   const { data: session, status } = useSession()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,29 +41,36 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
       const data = await response.json()
       
       if (data.success && data.resumeData) {
-        // Convert resumeData to resume text
-        const resumeText = convertResumeDataToText(data.resumeData)
-        
-        // Upload to API to create Resume record
-        const uploadResponse = await fetch('/api/resume/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: resumeText,
-            source: 'linkedin-oauth',
-            fileName: 'LinkedIn Profile.txt'
+        if (mode === 'structured') {
+          // Resume Builder mode: Return structured data directly
+          setSuccess(true)
+          onImport(data.resumeData)
+          setTimeout(() => setSuccess(false), 3000)
+        } else {
+          // Career Finder mode: Convert to text and upload to create Resume record
+          const resumeText = convertResumeDataToText(data.resumeData)
+          
+          // Upload to API to create Resume record
+          const uploadResponse = await fetch('/api/resume/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: resumeText,
+              source: 'linkedin-oauth',
+              fileName: 'LinkedIn Profile.txt'
+            })
           })
-        })
 
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to save LinkedIn profile')
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to save LinkedIn profile')
+          }
+
+          const uploadData = await uploadResponse.json()
+          
+          setSuccess(true)
+          onImport(uploadData.resume) // Pass the Resume object with _id and extractedText
+          setTimeout(() => setSuccess(false), 3000)
         }
-
-        const uploadData = await uploadResponse.json()
-        
-        setSuccess(true)
-        onImport(uploadData.resume) // Pass the Resume object with _id and extractedText
-        setTimeout(() => setSuccess(false), 3000)
       } else {
         throw new Error(data.error || 'Failed to import LinkedIn data')
       }

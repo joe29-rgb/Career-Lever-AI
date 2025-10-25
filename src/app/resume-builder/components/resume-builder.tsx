@@ -626,6 +626,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
               {showLinkedInImport && (
                 <div className="mb-6 p-4 border-2 border-blue-200 rounded-lg bg-blue-50/50">
                   <LinkedInImport
+                    mode="structured"
                     onImport={(importedData) => {
                       // Auto-populate resume fields from LinkedIn data
                       if (importedData) {
