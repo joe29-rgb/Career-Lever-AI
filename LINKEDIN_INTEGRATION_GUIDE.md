@@ -438,6 +438,31 @@ console.log(JSON.stringify(results, null, 2))
 
 ---
 
+## 🐛 **TROUBLESHOOTING**
+
+### **Error: "unexpected iss value, expected undefined, got: https://www.linkedin.com/oauth"**
+
+**Cause**: NextAuth LinkedIn provider needs explicit issuer configuration.
+
+**Solution**: Already fixed in `src/lib/auth.ts`:
+```typescript
+LinkedInProvider({
+  clientId: process.env.LINKEDIN_CLIENT_ID,
+  clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+  issuer: 'https://www.linkedin.com/oauth', // ✅ Fix
+  checks: ['state'], // ✅ Only check state, not PKCE
+  authorization: {
+    params: {
+      scope: 'openid profile email'
+    }
+  }
+})
+```
+
+**Status**: ✅ **FIXED** - Deploy to production to apply.
+
+---
+
 ## 🎯 **NEXT STEPS**
 
 ### **Immediate (Today):**
