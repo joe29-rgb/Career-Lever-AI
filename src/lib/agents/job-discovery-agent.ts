@@ -153,14 +153,46 @@ START YOUR SEARCH NOW using web_search tool!`
     try {
       const response = await this.think(prompt, { maxTokens: 8000, temperature: 0.1 })
       
-      // Extract JSON from response
-      const jsonMatch = response.match(/\[[\s\S]*?\]/)?.[0]
-      if (!jsonMatch) {
-        this.log('⚠️ No JSON found in Perplexity response', 'warn')
-        throw new Error('No JSON found in agent response')
+      // Try multiple JSON extraction methods
+      let jobs: JobListing[] = []
+      
+      // Method 1: Find JSON array with proper brackets
+      const jsonMatch = response.match(/\[\s*\{[\s\S]*?\}\s*\]/)?.[0]
+      if (jsonMatch) {
+        try {
+          jobs = JSON.parse(jsonMatch)
+          this.log(`✅ Extracted JSON using method 1`)
+        } catch (e) {
+          this.log(`⚠️ Method 1 failed: ${(e as Error).message}`, 'warn')
+        }
       }
       
-      const jobs = JSON.parse(jsonMatch) as JobListing[]
+      // Method 2: Try to find and fix common JSON errors
+      if (jobs.length === 0) {
+        try {
+          // Remove markdown code blocks
+          let cleaned = response.replace(/```json\s*/g, '').replace(/```\s*/g, '')
+          // Find array
+          const arrayMatch = cleaned.match(/\[\s*\{[\s\S]*?\}\s*\]/)
+          if (arrayMatch) {
+            // Fix common issues: trailing commas, missing commas, etc.
+            let fixed = arrayMatch[0]
+              .replace(/,\s*}/g, '}')  // Remove trailing commas before }
+              .replace(/,\s*\]/g, ']')  // Remove trailing commas before ]
+              .replace(/}\s*{/g, '},{') // Add missing commas between objects
+            
+            jobs = JSON.parse(fixed)
+            this.log(`✅ Extracted JSON using method 2 (with fixes)`)
+          }
+        } catch (e) {
+          this.log(`⚠️ Method 2 failed: ${(e as Error).message}`, 'warn')
+        }
+      }
+      
+      if (jobs.length === 0) {
+        this.log('❌ No valid JSON found in Perplexity response', 'error')
+        throw new Error('No valid JSON found in agent response')
+      }
       
       // Validate and clean jobs
       const validated = this.validateJobs(jobs, maxResults)

@@ -1,12 +1,15 @@
 /**
- * Advanced Web Scraper with 3-Tier Fallback Strategy
+ * Advanced Web Scraper with 4-Tier Fallback Strategy
  * 
  * Strategy 1: JSON-LD Structured Data (fastest, most reliable)
- * Strategy 2: Cheerio HTML Parsing (fast, reliable)
- * Strategy 3: Regex Extraction (last resort)
+ * Strategy 2: Cheerio HTML Parsing (fast, reliable for static sites)
+ * Strategy 3: Puppeteer Browser (for JavaScript-heavy sites)
+ * Strategy 4: Regex Extraction (last resort)
  */
 
 import * as cheerio from 'cheerio'
+import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 
 export interface ScrapeResult {
   success: boolean
@@ -19,7 +22,7 @@ export interface ScrapeResult {
     location?: string
     postedDate?: string
   }
-  method?: 'structured' | 'cheerio' | 'regex'
+  method?: 'structured' | 'cheerio' | 'puppeteer' | 'regex'
   error?: string
 }
 
@@ -54,7 +57,7 @@ export class AdvancedScraper {
       }
     }
 
-    // Strategy 2: Cheerio HTML parsing - fast and reliable
+    // Strategy 2: Cheerio HTML parsing - fast and reliable for static sites
     try {
       const cheerioResult = await this.tryCheerioScraping(url)
       if (cheerioResult.success && cheerioResult.data?.description && cheerioResult.data.description.length > 100) {
@@ -69,7 +72,22 @@ export class AdvancedScraper {
       }
     }
 
-    // Strategy 3: Regex extraction - last resort
+    // Strategy 3: Puppeteer browser - for JavaScript-heavy sites (Indeed, LinkedIn, etc.)
+    try {
+      const puppeteerResult = await this.tryPuppeteerScraping(url)
+      if (puppeteerResult.success && puppeteerResult.data?.description && puppeteerResult.data.description.length > 100) {
+        if (process.env.PPX_DEBUG === 'true') {
+          console.log('[SCRAPER] ✓ Puppeteer scraping succeeded')
+        }
+        return { ...puppeteerResult, method: 'puppeteer' }
+      }
+    } catch (e) {
+      if (process.env.PPX_DEBUG === 'true') {
+        console.log('[SCRAPER] Puppeteer failed:', (e as Error).message)
+      }
+    }
+
+    // Strategy 4: Regex extraction - last resort
     try {
       const regex = await this.tryRegexExtraction(url)
       if (regex.success && regex.data?.description && regex.data.description.length > 100) {
@@ -86,7 +104,7 @@ export class AdvancedScraper {
 
     return {
       success: false,
-      error: 'All scraping strategies failed - page may require login or use heavy JavaScript'
+      error: 'All 4 scraping strategies failed - page may require login or CAPTCHA'
     }
   }
 
@@ -208,7 +226,162 @@ export class AdvancedScraper {
   }
 
   /**
-   * Strategy 3: Regex extraction (last resort)
+   * Strategy 3: Puppeteer browser scraping (for JavaScript-heavy sites)
+   * Handles Indeed, LinkedIn, Glassdoor, and other dynamic job boards
+   */
+  private async tryPuppeteerScraping(url: string): Promise<ScrapeResult> {
+    let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null
+    try {
+      // Launch headless browser with optimized settings
+      const args = [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-blink-features=AutomationControlled'
+      ]
+
+      const executablePath = process.env.CHROMIUM_PATH || await chromium.executablePath()
+
+      browser = await puppeteer.launch({
+        args,
+        executablePath,
+        headless: true,
+        timeout: 30000
+      })
+
+      const page = await browser.newPage()
+
+      // Set realistic user agent and viewport
+      const userAgent = this.USER_AGENTS[Math.floor(Math.random() * this.USER_AGENTS.length)]
+      await page.setUserAgent(userAgent)
+      await page.setViewport({ width: 1920, height: 1080 })
+
+      // Navigate to page and wait for content
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 30000
+      })
+
+      // Wait for job description to load (common selectors)
+      await page.waitForSelector('body', { timeout: 5000 }).catch(() => {})
+
+      // Extract job data using page.evaluate
+      const data = await page.evaluate(() => {
+        // Helper to clean text
+        const cleanText = (text: string) => text.replace(/\s+/g, ' ').trim()
+
+        // Extract title
+        const titleSelectors = [
+          'h1[class*="title"]',
+          'h1[class*="jobTitle"]',
+          'h1[class*="job-title"]',
+          '[data-testid="jobTitle"]',
+          '.job-title',
+          'h1'
+        ]
+        let title = ''
+        for (const sel of titleSelectors) {
+          const el = document.querySelector(sel)
+          if (el?.textContent) {
+            title = cleanText(el.textContent)
+            break
+          }
+        }
+
+        // Extract description
+        const descSelectors = [
+          '[class*="jobDescriptionText"]',
+          '[class*="job-description"]',
+          '[id*="jobDescriptionText"]',
+          '[data-testid="jobDescription"]',
+          '.description',
+          'article',
+          'main'
+        ]
+        let description = ''
+        for (const sel of descSelectors) {
+          const el = document.querySelector(sel)
+          if (el?.textContent && el.textContent.length > description.length) {
+            description = cleanText(el.textContent)
+          }
+        }
+
+        // Extract company
+        const companySelectors = [
+          '[class*="companyName"]',
+          '[data-testid="companyName"]',
+          '[class*="company-name"]',
+          '.company'
+        ]
+        let company = ''
+        for (const sel of companySelectors) {
+          const el = document.querySelector(sel)
+          if (el?.textContent) {
+            company = cleanText(el.textContent)
+            break
+          }
+        }
+
+        // Extract location
+        const locationSelectors = [
+          '[class*="location"]',
+          '[data-testid="location"]',
+          '[class*="job-location"]'
+        ]
+        let location = ''
+        for (const sel of locationSelectors) {
+          const el = document.querySelector(sel)
+          if (el?.textContent) {
+            location = cleanText(el.textContent)
+            break
+          }
+        }
+
+        // Extract salary
+        const salarySelectors = [
+          '[class*="salary"]',
+          '[data-testid="salary"]',
+          '[class*="compensation"]'
+        ]
+        let salary = ''
+        for (const sel of salarySelectors) {
+          const el = document.querySelector(sel)
+          if (el?.textContent) {
+            salary = cleanText(el.textContent)
+            break
+          }
+        }
+
+        return { title, description, company, location, salary }
+      })
+
+      await browser.close()
+
+      return {
+        success: data.description.length > 100,
+        data: {
+          title: data.title,
+          description: data.description,
+          company: data.company,
+          location: data.location,
+          salary: data.salary || undefined
+        }
+      }
+    } catch (error) {
+      if (browser) {
+        try { await browser.close() } catch {}
+      }
+      throw error
+    }
+  }
+
+  /**
+   * Strategy 4: Regex extraction (last resort)
    * Works when HTML structure is non-standard
    */
   private async tryRegexExtraction(url: string): Promise<ScrapeResult> {
