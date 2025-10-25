@@ -33,9 +33,11 @@ export const authOptions: NextAuthOptions = {
           LinkedInProvider({
             clientId: process.env.LINKEDIN_CLIENT_ID,
             clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+            issuer: 'https://www.linkedin.com/oauth', // Fix: Explicitly set issuer
+            checks: ['state'], // Fix: Only check state, not PKCE
             authorization: {
               params: {
-                scope: 'openid profile email w_member_social' // Request profile access
+                scope: 'openid profile email' // Simplified scope for OAuth 2.0
               }
             },
             profile(profile) {
