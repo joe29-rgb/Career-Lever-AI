@@ -38,6 +38,7 @@ import {
 import toast from 'react-hot-toast'
 import { LinkedInImport } from '@/components/linkedin-import'
 import { ResumeAnalyzer } from '@/components/resume-builder/resume-analyzer'
+import { ATSScore } from '@/components/resume-builder/ats-score'
 
 interface ResumeData {
   personalInfo: {
@@ -1334,6 +1335,9 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
 
           {/* Resume Analyzer */}
           <ResumeAnalyzer resumeData={resumeData} />
+
+          {/* ATS Score */}
+          <ATSScore resumeData={resumeData} selectedTemplate={selectedTemplate} />
 
           {/* Tips */}
           <Card>
