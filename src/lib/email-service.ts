@@ -24,7 +24,16 @@ interface SendEmailResult {
  * Send email using Resend API with PDF attachments
  */
 export async function sendJobApplicationEmail(options: EmailOptions): Promise<SendEmailResult> {
-  console.log('[EMAIL] Sending to:', options.recipient)
+  console.log('📧 [EMAIL] ==========================================')
+  console.log('[EMAIL] Sending application email')
+  console.log('[EMAIL] Recipient:', options.recipient)
+  console.log('[EMAIL] Company:', options.company)
+  console.log('[EMAIL] Job Title:', options.jobTitle)
+  console.log('[EMAIL] Sender Name:', options.senderName)
+  console.log('[EMAIL] Sender Email:', options.senderEmail)
+  console.log('[EMAIL] Resume Text Length:', options.resumeText?.length || 0)
+  console.log('[EMAIL] Cover Letter Length:', options.coverText?.length || 0)
+  console.log('[EMAIL] ==========================================')
 
   // Generate subject and body
   const subject = options.subjects[0] || `Application for ${options.jobTitle} at ${options.company}`
@@ -55,15 +64,37 @@ ${options.senderName || '[Your Name]'}`
 
   try {
     // Generate PDF attachments
+    console.log('[EMAIL] 📄 Generating PDF attachments...')
+    console.log('[EMAIL] Resume text to convert:', options.resumeText.slice(0, 200) + '...')
+    console.log('[EMAIL] Cover letter to convert:', options.coverText.slice(0, 200) + '...')
+    
     const [resumePDF, coverLetterPDF] = await Promise.all([
       generateResumePDF(options.resumeText),
       generateCoverLetterPDF(options.coverText)
     ])
+    
+    console.log('[EMAIL] ✅ PDFs generated successfully')
+    console.log('[EMAIL] Resume PDF size:', resumePDF?.length || 0, 'bytes')
+    console.log('[EMAIL] Cover Letter PDF size:', coverLetterPDF?.length || 0, 'bytes')
+
+    if (!resumePDF || resumePDF.length === 0) {
+      throw new Error('Resume PDF generation failed - empty or null')
+    }
+    
+    if (!coverLetterPDF || coverLetterPDF.length === 0) {
+      throw new Error('Cover Letter PDF generation failed - empty or null')
+    }
 
     // Initialize Resend
+    console.log('[EMAIL] 📨 Initializing Resend...')
     const resend = new Resend(resendApiKey)
 
     // Send email with attachments
+    console.log('[EMAIL] 🚀 Sending email with attachments...')
+    console.log('[EMAIL] From:', options.senderEmail || 'noreply@careerlever.ai')
+    console.log('[EMAIL] To:', options.recipient)
+    console.log('[EMAIL] Subject:', subject)
+    
     const result = await resend.emails.send({
       from: options.senderEmail || 'noreply@careerlever.ai',
       to: options.recipient,
@@ -81,15 +112,24 @@ ${options.senderName || '[Your Name]'}`
       ]
     })
 
-    console.log('[EMAIL] Sent successfully:', result.data?.id)
+    console.log('[EMAIL] ✅✅✅ Email sent successfully!')
+    console.log('[EMAIL] Message ID:', result.data?.id)
+    console.log('[EMAIL] Result:', result)
+    
     return {
       success: true,
       messageId: result.data?.id,
       mailtoUrl
     }
 
-  } catch (error) {
-    console.error('[EMAIL] Failed to send:', error)
+  } catch (error: any) {
+    console.error('❌❌❌ [EMAIL] CRITICAL ERROR ❌❌❌')
+    console.error('[EMAIL] Error type:', error?.constructor?.name)
+    console.error('[EMAIL] Error message:', error?.message)
+    console.error('[EMAIL] Error stack:', error?.stack)
+    console.error('[EMAIL] Recipient:', options.recipient)
+    console.error('[EMAIL] Company:', options.company)
+    
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

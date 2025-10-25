@@ -1760,7 +1760,7 @@ OUTPUT FORMAT (Valid JSON ONLY):
     "headquarters": "city, state/country",
     "website": "https://company.com",
     "marketPosition": "market leader|challenger|niche player",
-    "generalEmail": "careers@company.com or hr@company.com or info@company.com",
+    "generalEmail": "ONLY include if found on company website or LinkedIn - DO NOT GUESS. Leave empty if not found.",
     "careersPage": "https://company.com/careers"
   },
   "companyPsychology": {
@@ -1771,15 +1771,16 @@ OUTPUT FORMAT (Valid JSON ONLY):
   },
   "hiringContacts": [
     {
-      "name": "Real Person Name",
+      "name": "Real Person Name - ONLY if found on LinkedIn or company website",
       "title": "Talent Acquisition Manager",
       "department": "Human Resources",
-      "email": "real.email@company.com",
-      "linkedinUrl": "https://linkedin.com/in/person",
+      "email": "ONLY include if verified from LinkedIn or company website - DO NOT GUESS. Leave empty if not found.",
+      "linkedinUrl": "https://linkedin.com/in/person - ONLY if found",
       "authority": "decision maker",
       "confidence": 0.9
     }
   ],
+  "CRITICAL_INSTRUCTION": "DO NOT GUESS EMAILS. Only include emails that are explicitly found on the company website, LinkedIn profiles, or other verified sources. If no email is found, leave the field empty or set to null. NEVER construct emails like info@company.com or careers@company.com unless they are explicitly listed on official sources.",
   "marketIntelligence": {
     "competitivePosition": "how company compares to competitors",
     "industryTrends": "relevant industry trends affecting this role",

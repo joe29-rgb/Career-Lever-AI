@@ -351,7 +351,7 @@ export async function POST(request: NextRequest) {
     }
 
     // IMPROVED: Mark confidential jobs instead of filtering them out
-    const processedJobs = jobs.map((job: any) => {
+    let processedJobs = jobs.map((job: any) => {
       const company = (job.company || '').toLowerCase().trim()
       const title = (job.title || '').toLowerCase().trim()
       
@@ -370,13 +370,35 @@ export async function POST(request: NextRequest) {
       }
     }).filter((job: any) => !job.isCompletelyInvalid) // Only filter completely invalid
 
-    console.log(`[JOB_SEARCH] Processed ${jobs.length} jobs, ${processedJobs.filter((j: any) => j.isConfidential).length} marked as confidential, ${processedJobs.length} total kept`)
+    // 🚫 CRITICAL: REMOVE ALL CONFIDENTIAL JOBS - DO NOT SHOW THEM AT ALL
+    const confidentialCount = processedJobs.filter((j: any) => j.isConfidential).length
+    processedJobs = processedJobs.filter((j: any) => {
+      const isConfidential = j.isConfidential || 
+        j.title?.toLowerCase().includes('confidential') ||
+        j.company?.toLowerCase().includes('confidential') ||
+        j.company?.toLowerCase() === 'confidential'
+      
+      if (isConfidential) {
+        console.log(`[JOB_SEARCH] 🚫 REJECTED CONFIDENTIAL JOB: "${j.title}" at "${j.company}"`)
+      }
+      
+      return !isConfidential
+    })
+    
+    console.log(`[JOB_SEARCH] Processed ${jobs.length} jobs, REJECTED ${confidentialCount} confidential jobs, ${processedJobs.length} valid jobs kept`)
 
     // CRITICAL FIX: Merge cached jobs with new results (remove duplicates by URL)
     let finalJobs = [...processedJobs]
     if (cachedJobs && cachedJobs.length > 0) {
       const newJobUrls = new Set(processedJobs.map((j: any) => j.url).filter(Boolean))
-      const uniqueCachedJobs = cachedJobs.filter((cj: any) => !newJobUrls.has(cj.url))
+      // Also filter confidential from cached jobs
+      const uniqueCachedJobs = cachedJobs.filter((cj: any) => {
+        const isConfidential = cj.isConfidential || 
+          cj.title?.toLowerCase().includes('confidential') ||
+          cj.company?.toLowerCase().includes('confidential') ||
+          cj.company?.toLowerCase() === 'confidential'
+        return !newJobUrls.has(cj.url) && !isConfidential
+      })
       finalJobs = [...processedJobs, ...uniqueCachedJobs]
       console.log(`[JOB_CACHE] Merged ${uniqueCachedJobs.length} unique cached jobs with ${processedJobs.length} new jobs = ${finalJobs.length} total`)
     }
@@ -419,11 +441,19 @@ export async function POST(request: NextRequest) {
       sources: [...new Set(finalJobs.map((j: any) => j.source || 'Unknown'))]
     })
 
-  } catch (error) {
-    console.error('[JOB_SEARCH] Search failed:', error)
+  } catch (error: any) {
+    console.error('❌❌❌ [JOB_SEARCH] CRITICAL ERROR ❌❌❌')
+    console.error('[JOB_SEARCH] Error type:', error?.constructor?.name)
+    console.error('[JOB_SEARCH] Error message:', error?.message)
+    console.error('[JOB_SEARCH] Error stack:', error?.stack)
+    console.error('[JOB_SEARCH] Request params:', { keywords, location, sources, limit, remote, salaryMin, experienceLevel, workType })
+    console.error('[JOB_SEARCH] User ID:', session?.user?.id)
+    
     return NextResponse.json({ 
       error: 'Job search failed', 
-      details: (error as Error).message 
+      details: error?.message || 'Unknown error',
+      errorType: error?.constructor?.name,
+      timestamp: new Date().toISOString()
     }, { status: 500 })
   }
 }
