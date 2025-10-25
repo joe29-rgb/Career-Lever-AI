@@ -21,111 +21,55 @@ export function TemplatePreview({
   onSelect,
   recommended = false
 }: TemplatePreviewProps) {
-  // Generate mini preview based on template type
-  const getPreviewContent = () => {
+  // FIX: Simple, reliable visual indicators instead of complex mini-layouts
+  const getPreviewVisual = () => {
+    const baseClasses = "w-full h-32 rounded-lg flex items-center justify-center text-4xl transition-all";
+    
     switch (id) {
       case 'modern':
         return (
-          <div className="w-full h-full bg-white p-2 text-[4px] leading-tight">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-4 rounded-t mb-1"></div>
-            <div className="space-y-0.5">
-              <div className="h-1 bg-gray-800 w-3/4 rounded"></div>
-              <div className="h-0.5 bg-gray-400 w-1/2 rounded"></div>
-              <div className="h-0.5 bg-gray-400 w-2/3 rounded mt-1"></div>
-              <div className="grid grid-cols-3 gap-0.5 mt-1">
-                <div className="h-3 bg-gray-100 rounded"></div>
-                <div className="h-3 bg-gray-100 rounded"></div>
-                <div className="h-3 bg-gray-100 rounded"></div>
-              </div>
-            </div>
+          <div className={`${baseClasses} bg-gradient-to-br from-blue-500 to-purple-600 text-white`}>
+            🎨
           </div>
-        )
+        );
       case 'professional':
         return (
-          <div className="w-full h-full bg-white p-2 text-[4px] leading-tight">
-            <div className="text-center mb-1">
-              <div className="h-1 bg-gray-900 w-2/3 mx-auto rounded mb-0.5"></div>
-              <div className="h-0.5 bg-gray-600 w-1/2 mx-auto rounded"></div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="h-0.5 bg-gray-800 w-1/3 rounded"></div>
-              <div className="h-2 bg-gray-100 rounded"></div>
-              <div className="h-0.5 bg-gray-800 w-1/3 rounded mt-1"></div>
-              <div className="h-2 bg-gray-100 rounded"></div>
-            </div>
+          <div className={`${baseClasses} bg-gradient-to-br from-gray-700 to-gray-900 text-white`}>
+            💼
           </div>
-        )
+        );
       case 'creative':
         return (
-          <div className="w-full h-full bg-gradient-to-br from-pink-50 to-orange-50 p-2 text-[4px] leading-tight">
-            <div className="bg-gradient-to-r from-pink-500 to-orange-500 h-3 rounded-lg mb-1"></div>
-            <div className="grid grid-cols-3 gap-0.5">
-              <div className="col-span-2 space-y-0.5">
-                <div className="h-1 bg-gray-800 w-full rounded"></div>
-                <div className="h-2 bg-white rounded"></div>
-                <div className="h-2 bg-white rounded"></div>
-              </div>
-              <div className="space-y-0.5">
-                <div className="h-4 bg-white rounded"></div>
-              </div>
-            </div>
+          <div className={`${baseClasses} bg-gradient-to-br from-pink-500 to-orange-500 text-white`}>
+            🎭
           </div>
-        )
+        );
       case 'tech':
         return (
-          <div className="w-full h-full bg-gray-900 p-2 text-[4px] leading-tight">
-            <div className="border-l-2 border-green-500 pl-1 mb-1">
-              <div className="h-1 bg-green-400 w-2/3 rounded mb-0.5"></div>
-              <div className="h-0.5 bg-gray-400 w-1/2 rounded"></div>
-            </div>
-            <div className="space-y-0.5">
-              <div className="h-0.5 bg-green-500 w-1/4 rounded"></div>
-              <div className="h-2 bg-gray-800 rounded border border-green-900"></div>
-              <div className="flex gap-0.5">
-                <div className="h-1 bg-green-900 rounded flex-1"></div>
-                <div className="h-1 bg-green-900 rounded flex-1"></div>
-                <div className="h-1 bg-green-900 rounded flex-1"></div>
-              </div>
-            </div>
+          <div className={`${baseClasses} bg-gradient-to-br from-green-500 to-teal-600 text-white`}>
+            💻
           </div>
-        )
+        );
       case 'minimal':
         return (
-          <div className="w-full h-full bg-white p-2 text-[4px] leading-tight">
-            <div className="space-y-1">
-              <div className="h-1 bg-gray-900 w-1/2 rounded"></div>
-              <div className="h-0.5 bg-gray-500 w-1/3 rounded"></div>
-              <div className="border-t border-gray-300 my-0.5"></div>
-              <div className="space-y-0.5">
-                <div className="h-0.5 bg-gray-700 w-1/4 rounded"></div>
-                <div className="h-1.5 bg-gray-50 rounded"></div>
-                <div className="h-0.5 bg-gray-700 w-1/4 rounded"></div>
-                <div className="h-1.5 bg-gray-50 rounded"></div>
-              </div>
-            </div>
+          <div className={`${baseClasses} bg-gradient-to-br from-gray-400 to-gray-600 text-white`}>
+            📄
           </div>
-        )
+        );
       case 'executive':
         return (
-          <div className="w-full h-full bg-gradient-to-br from-indigo-50 to-purple-50 p-2 text-[4px] leading-tight">
-            <div className="bg-gradient-to-r from-indigo-900 to-purple-900 h-5 rounded-t mb-1 flex items-end p-1">
-              <div className="h-1 bg-white w-2/3 rounded"></div>
-            </div>
-            <div className="grid grid-cols-4 gap-0.5">
-              <div className="col-span-3 space-y-0.5">
-                <div className="h-2 bg-white rounded shadow-sm"></div>
-                <div className="h-2 bg-white rounded shadow-sm"></div>
-              </div>
-              <div className="space-y-0.5">
-                <div className="h-3 bg-indigo-100 rounded"></div>
-              </div>
-            </div>
+          <div className={`${baseClasses} bg-gradient-to-br from-indigo-600 to-purple-700 text-white`}>
+            👔
           </div>
-        )
+        );
       default:
-        return null
+        return (
+          <div className={`${baseClasses} bg-gradient-to-br from-blue-500 to-purple-600 text-white`}>
+            📝
+          </div>
+        );
     }
-  }
+  };
 
   return (
     <button
@@ -157,9 +101,9 @@ export function TemplatePreview({
           </div>
         )}
 
-        {/* Template Preview */}
+        {/* Template Preview - FIXED: Simple, reliable visual */}
         <div className="relative w-full aspect-[8.5/11] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-          {getPreviewContent()}
+          {getPreviewVisual()}
           
           {/* Hover Overlay */}
           <div className={`absolute inset-0 bg-blue-500/10 transition-opacity ${

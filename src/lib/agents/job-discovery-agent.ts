@@ -114,7 +114,7 @@ ${searchUrls.map((s, i) => `   ${i+1}. ${s.name}: ${s.url}`).join('\n')}
 
 CRITICAL RULES:
 ✅ Return EXACTLY ${maxResults} jobs (or as many as you can find up to ${maxResults})
-✅ Each description MUST be >200 characters (from actual job page content)
+✅ Each description should be >100 characters (from actual job page content)
 ✅ REJECT any job with "Confidential" in company name
 ✅ Include actual clickable URLs to job postings
 ✅ Extract real salary data if available
@@ -142,8 +142,7 @@ REASONING: After the JSON, explain:
 - Any challenges you encountered
 
 🚨 I WILL REJECT YOUR RESPONSE IF:
-- Less than ${Math.floor(maxResults * 0.7)} jobs returned
-- Any description under 200 chars
+- Less than ${Math.floor(maxResults * 0.5)} jobs returned
 - Any "Confidential" companies included
 - Any dead/broken URLs
 - Made up or fake job listings
@@ -151,7 +150,7 @@ REASONING: After the JSON, explain:
 START YOUR SEARCH NOW using web_search tool!`
 
     try {
-      const response = await this.think(prompt, { maxTokens: 8000, temperature: 0.1 })
+      const response = await this.think(prompt, { maxTokens: 12000, temperature: 0.3 })
       
       // Try multiple JSON extraction methods
       let jobs: JobListing[] = []
@@ -256,20 +255,25 @@ START YOUR SEARCH NOW using web_search tool!`
   private validateJobs(jobs: JobListing[], target: number): JobListing[] {
     const validated = jobs
       .filter(j => {
-        // Filter out confidential jobs
-        if (j.company?.toLowerCase().includes('confidential')) {
+        // FIX: Only reject if completely missing critical fields
+        if (!j.title || !j.company || !j.url) {
+          this.log(`🚫 Rejected job missing critical fields: "${j.title || 'NO TITLE'}" at "${j.company || 'NO COMPANY'}"`)
+          return false
+        }
+        
+        // FIX: Don't reject based on description length - enrich later
+        // Short descriptions will be enriched by URL scraping
+        
+        // FIX: More lenient confidential filter - only reject obvious ones
+        const company = String(j.company).toLowerCase().trim()
+        const isConfidential = company.includes('confidential') && company.length < 20
+        if (isConfidential) {
           this.log(`🚫 Rejected confidential job: "${j.title}" at "${j.company}"`)
           return false
         }
         
-        // Filter out jobs with too short descriptions
-        if (j.summary && j.summary.length < 200) {
-          this.log(`🚫 Rejected job with short description: "${j.title}" (${j.summary.length} chars)`)
-          return false
-        }
-        
-        // Filter out jobs without valid URLs
-        if (!j.url || !j.url.startsWith('http')) {
+        // FIX: Accept any valid HTTP URL
+        if (!j.url.startsWith('http')) {
           this.log(`🚫 Rejected job with invalid URL: "${j.title}"`)
           return false
         }
