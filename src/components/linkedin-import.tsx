@@ -21,10 +21,18 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
   // Auto-fetch profile if user is already signed in
   useEffect(() => {
     if (session?.user && status === 'authenticated' && !autoFetched) {
+      console.log('[LINKEDIN_IMPORT] Auto-fetching profile for authenticated user, mode:', mode)
       setAutoFetched(true)
       fetchLinkedInProfile()
+    } else {
+      console.log('[LINKEDIN_IMPORT] Not auto-fetching:', { 
+        hasSession: !!session?.user, 
+        status, 
+        autoFetched,
+        mode 
+      })
     }
-  }, [session, status, autoFetched])
+  }, [session, status, autoFetched, mode])
 
   const fetchLinkedInProfile = async () => {
     setIsProcessing(true)
@@ -39,10 +47,12 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
       }
 
       const data = await response.json()
+      console.log('[LINKEDIN_IMPORT] Profile API response:', { success: data.success, hasResumeData: !!data.resumeData })
       
       if (data.success && data.resumeData) {
         if (mode === 'structured') {
           // Resume Builder mode: Return structured data directly
+          console.log('[LINKEDIN_IMPORT] Structured mode - returning resumeData:', data.resumeData)
           setSuccess(true)
           onImport(data.resumeData)
           setTimeout(() => setSuccess(false), 3000)
@@ -76,8 +86,9 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
       }
     } catch (err) {
       const errorMessage = (err as Error).message
-      // Only show error if it's not about missing token (user might not have signed in with LinkedIn)
-      if (!errorMessage.includes('No LinkedIn access token')) {
+      console.error('[LINKEDIN_IMPORT] Error:', errorMessage)
+      // Show all errors in structured mode (resume builder needs to know)
+      if (mode === 'structured' || !errorMessage.includes('No LinkedIn access token')) {
         setError(errorMessage)
       }
     } finally {
@@ -293,6 +304,18 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {/* Status Indicator */}
+      {session?.user && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <span className="text-green-900 font-medium">
+              {isProcessing ? 'Importing LinkedIn profile...' : 'Signed in - Click button below to import'}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* LinkedIn OAuth Sign-In - PRIMARY METHOD */}
       <div className="border-2 border-solid border-blue-600 rounded-lg p-6 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg">
         <div className="flex items-center gap-3 mb-4">
