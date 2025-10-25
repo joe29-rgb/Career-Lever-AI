@@ -762,7 +762,7 @@ export default function CompanyResearch({ initialCompanyName, onResearchComplete
       {/* Intro Email Composer Modal */}
       {composeOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-2xl p-4 space-y-3">
+          <div className="bg-card rounded-lg w-full max-w-2xl p-4 space-y-3">
             <div className="text-sm font-medium">Compose Introduction Email</div>
             <div className="grid grid-cols-1 gap-2 text-sm">
               <div>

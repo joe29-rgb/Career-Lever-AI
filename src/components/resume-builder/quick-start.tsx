@@ -55,7 +55,7 @@ export function QuickStart({ onResumeImported }: QuickStartProps) {
   return (
     <div className="max-w-5xl mx-auto">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">
+        <h2 className="text-3xl font-bold text-foreground mb-3">
           How would you like to start?
         </h2>
         <p className="text-lg text-gray-600">
@@ -65,7 +65,7 @@ export function QuickStart({ onResumeImported }: QuickStartProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Option 1: Upload Resume */}
-        <div className="relative bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer group">
+        <div className="relative bg-card rounded-2xl p-8 border-2 border-border hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer group">
           <input
             type="file"
             accept=".pdf,.doc,.docx"
@@ -83,7 +83,7 @@ export function QuickStart({ onResumeImported }: QuickStartProps) {
               )}
             </div>
             
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Upload Your Resume</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">Upload Your Resume</h3>
             <p className="text-sm text-gray-600 mb-4">
               Have a resume? We'll import it and make it better
             </p>
@@ -118,7 +118,7 @@ export function QuickStart({ onResumeImported }: QuickStartProps) {
             disabled={linkedinConnecting}
             className="w-full text-center"
           >
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-white/30 transition-colors">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-card/30 transition-colors">
               {linkedinConnecting ? (
                 <Loader2 className="w-8 h-8 text-white animate-spin" />
               ) : (
@@ -149,13 +149,13 @@ export function QuickStart({ onResumeImported }: QuickStartProps) {
         </div>
 
         {/* Option 3: AI-Guided Build */}
-        <div className="relative bg-white rounded-2xl p-8 border-2 border-gray-200 hover:border-purple-500 hover:shadow-xl transition-all cursor-pointer group">
+        <div className="relative bg-card rounded-2xl p-8 border-2 border-border hover:border-purple-500 hover:shadow-xl transition-all cursor-pointer group">
           <button onClick={handleAIStart} className="w-full text-center">
             <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500 transition-colors">
               <Wand2 className="w-8 h-8 text-purple-600 group-hover:text-white" />
             </div>
             
-            <h3 className="text-xl font-bold text-gray-900 mb-2">AI-Guided Resume</h3>
+            <h3 className="text-xl font-bold text-foreground mb-2">AI-Guided Resume</h3>
             <p className="text-sm text-gray-600 mb-4">
               Starting fresh? AI will help you write everything
             </p>

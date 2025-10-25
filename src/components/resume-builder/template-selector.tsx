@@ -61,8 +61,8 @@ interface TemplateSelectorProps {
 
 export function TemplateSelector({ selectedTemplate, onSelectTemplate }: TemplateSelectorProps) {
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
-      <h3 className="text-xl font-bold text-gray-900 mb-4">Choose Your Template</h3>
+    <div className="bg-card rounded-xl border-2 border-border p-6">
+      <h3 className="text-xl font-bold text-foreground mb-4">Choose Your Template</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {TEMPLATES.map((template) => (
@@ -97,7 +97,7 @@ export function TemplateSelector({ selectedTemplate, onSelectTemplate }: Templat
             </div>
 
             {/* Template Info */}
-            <h4 className="font-bold text-gray-900 mb-1">{template.name}</h4>
+            <h4 className="font-bold text-foreground mb-1">{template.name}</h4>
             <p className="text-sm text-gray-600">{template.description}</p>
           </button>
         ))}

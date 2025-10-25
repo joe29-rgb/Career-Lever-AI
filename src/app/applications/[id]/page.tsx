@@ -255,7 +255,7 @@ export default function ApplicationDetailsPage() {
         <CardContent className="space-y-4">
           <div>
             <Label>Job Description</Label>
-            <div className="border rounded p-2 text-sm bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(application.jobDescription || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
+            <div className="border rounded p-2 text-sm bg-card" dangerouslySetInnerHTML={{ __html: highlightKeywords(application.jobDescription || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
           </div>
 
           <div>
@@ -313,7 +313,7 @@ export default function ApplicationDetailsPage() {
           {followEmail ? (
             <div className="space-y-2 text-sm">
               <div><span className="font-medium">Subject:</span> {followEmail.subject}</div>
-              <pre className="whitespace-pre-wrap border rounded p-2 bg-white">{followEmail.body}</pre>
+              <pre className="whitespace-pre-wrap border rounded p-2 bg-card">{followEmail.body}</pre>
               {followDates && followDates.length > 0 && (
                 <div className="text-xs text-gray-600">Suggested dates: {followDates.map(d => d.toLocaleDateString()).join(', ')}</div>
               )}
@@ -341,7 +341,7 @@ export default function ApplicationDetailsPage() {
           {insights ? (
             <div className="space-y-6">
               <div>
-                <div className="text-sm font-medium text-gray-900 mb-2">Key Values & Culture Signals</div>
+                <div className="text-sm font-medium text-foreground mb-2">Key Values & Culture Signals</div>
                 {insights.keyValues && insights.keyValues.length > 0 ? (
                   <ul className="space-y-1">
                     {insights.keyValues.map((v, i) => (
@@ -354,7 +354,7 @@ export default function ApplicationDetailsPage() {
               </div>
 
               <div>
-                <div className="text-sm font-medium text-gray-900 mb-2">Talking Points (Tailor your pitch)</div>
+                <div className="text-sm font-medium text-foreground mb-2">Talking Points (Tailor your pitch)</div>
                 {insights.talkingPoints && insights.talkingPoints.length > 0 ? (
                   <ol className="space-y-2 list-decimal pl-5">
                     {insights.talkingPoints.map((p, i) => (
@@ -367,7 +367,7 @@ export default function ApplicationDetailsPage() {
               </div>
 
               <div>
-                <div className="text-sm font-medium text-gray-900 mb-2">Culture Fit Angles</div>
+                <div className="text-sm font-medium text-foreground mb-2">Culture Fit Angles</div>
                 {insights.cultureFit && insights.cultureFit.length > 0 ? (
                   <ul className="space-y-1">
                     {insights.cultureFit.map((c, i) => (
@@ -405,7 +405,7 @@ export default function ApplicationDetailsPage() {
               {/* Profile */}
               {fullResearch.profile && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Company Profile</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Company Profile</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div><span className="text-gray-500">Name:</span> {fullResearch.profile.companyName || 'Unknown'}</div>
                     <div><span className="text-gray-500">Website:</span> {fullResearch.profile.website || 'Unknown'}</div>
@@ -419,7 +419,7 @@ export default function ApplicationDetailsPage() {
               {/* Culture */}
               {fullResearch.culture && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Culture & Benefits</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Culture & Benefits</div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Values</div>
@@ -446,7 +446,7 @@ export default function ApplicationDetailsPage() {
               {/* Reviews */}
               {fullResearch.reviewsSummary && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Reviews Summary</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Reviews Summary</div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <div><span className="text-gray-500">Glassdoor Rating:</span> {fullResearch.reviewsSummary.glassdoorRating ?? 'Unknown'}</div>
                     <div><span className="text-gray-500">Reviews:</span> {fullResearch.reviewsSummary.glassdoorReviews ?? 'Unknown'}</div>
@@ -467,7 +467,7 @@ export default function ApplicationDetailsPage() {
               {/* News */}
               {fullResearch.news && fullResearch.news.items && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Recent News</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Recent News</div>
                   <ul className="space-y-2">
                     {fullResearch.news.items.map((n: any, i: number) => (
                       <li key={i} className="text-sm">
@@ -483,7 +483,7 @@ export default function ApplicationDetailsPage() {
               {/* Contacts */}
               {fullResearch.hiringContacts && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Hiring Contacts</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Hiring Contacts</div>
                   <ul className="space-y-1">
                     {fullResearch.hiringContacts.map((p: any, i: number) => (
                       <li key={i} className="text-sm">
@@ -496,7 +496,7 @@ export default function ApplicationDetailsPage() {
 
               {fullResearch.contactInfo && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Contact Info</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Contact Info</div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Emails</div>
@@ -517,7 +517,7 @@ export default function ApplicationDetailsPage() {
               {/* Role Relevance */}
               {fullResearch.roleRelevance && (
                 <div>
-                  <div className="text-sm font-medium text-gray-900 mb-2">Role Relevance</div>
+                  <div className="text-sm font-medium text-foreground mb-2">Role Relevance</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <div className="text-xs text-gray-500 mb-1">Why This Company</div>
@@ -559,7 +559,7 @@ export default function ApplicationDetailsPage() {
                 <a href={resume.original.fileUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">Download original upload</a>
               )}
             </div>
-            <div className="border rounded p-2 text-sm bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
+            <div className="border rounded p-2 text-sm bg-card" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
           </div>
           <div className="space-y-2">
             <Label>Tailored Versions</Label>
@@ -577,11 +577,11 @@ export default function ApplicationDetailsPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                           <div className="text-xs">
                             <div className="text-gray-500 mb-1">Original</div>
-                            <div className="border rounded p-2 bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
+                            <div className="border rounded p-2 bg-card" dangerouslySetInnerHTML={{ __html: highlightKeywords(resume?.original?.extractedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
                           </div>
                           <div className="text-xs">
                             <div className="text-gray-500 mb-1">Tailored</div>
-                            <div className="border rounded p-2 bg-white" dangerouslySetInnerHTML={{ __html: highlightKeywords(v.customizedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
+                            <div className="border rounded p-2 bg-card" dangerouslySetInnerHTML={{ __html: highlightKeywords(v.customizedText || '', (application.analysis?.keyRequirements || []).concat(application.analysis?.preferredSkills || [])) }} />
                           </div>
                         </div>
                       </details>

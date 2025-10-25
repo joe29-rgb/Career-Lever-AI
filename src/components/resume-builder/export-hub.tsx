@@ -208,8 +208,8 @@ export function ExportHub({ resume }: ExportHubProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl border-2 border-gray-200 p-6">
-      <h3 className="text-xl font-bold text-gray-900 mb-4">📤 Download Your Resume</h3>
+    <div className="bg-card rounded-xl border-2 border-border p-6">
+      <h3 className="text-xl font-bold text-foreground mb-4">📤 Download Your Resume</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* PDF Export */}
@@ -219,7 +219,7 @@ export function ExportHub({ resume }: ExportHubProps) {
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900">PDF</h4>
+              <h4 className="font-bold text-foreground">PDF</h4>
               <p className="text-xs text-gray-600">Best for applications</p>
             </div>
           </div>
@@ -259,7 +259,7 @@ export function ExportHub({ resume }: ExportHubProps) {
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900">Word (DOCX)</h4>
+              <h4 className="font-bold text-foreground">Word (DOCX)</h4>
               <p className="text-xs text-gray-600">Editable for recruiters</p>
             </div>
           </div>
@@ -293,13 +293,13 @@ export function ExportHub({ resume }: ExportHubProps) {
         </div>
 
         {/* Plain Text */}
-        <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-2 border-gray-200">
+        <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-2 border-border">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-12 h-12 bg-gray-500 rounded-xl flex items-center justify-center">
               <Copy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900">Plain Text</h4>
+              <h4 className="font-bold text-foreground">Plain Text</h4>
               <p className="text-xs text-gray-600">For online forms</p>
             </div>
           </div>
@@ -343,7 +343,7 @@ export function ExportHub({ resume }: ExportHubProps) {
               <Link2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900">Shareable Link</h4>
+              <h4 className="font-bold text-foreground">Shareable Link</h4>
               <p className="text-xs text-gray-600">Online portfolio version</p>
             </div>
           </div>

@@ -47,7 +47,7 @@ export function ProgressTracker({ resume }: ProgressTrackerProps) {
     <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border-2 border-green-200 p-6">
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="font-bold text-lg text-gray-900">Resume Completeness</h4>
+          <h4 className="font-bold text-lg text-foreground">Resume Completeness</h4>
           <span className="text-2xl font-bold text-green-600">{progress}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-3">

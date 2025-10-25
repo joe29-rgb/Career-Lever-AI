@@ -46,7 +46,7 @@ export function StatsOverview() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-card/10 transition-colors">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                 <Briefcase className="h-4 w-4 text-white" />
@@ -56,7 +56,7 @@ export function StatsOverview() {
             <Badge className="bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400 border-blue-500/30 hover:from-blue-500/30 hover:to-cyan-500/30">{stats.totalApplications}</Badge>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-card/10 transition-colors">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
                 <Calendar className="h-4 w-4 text-white" />
@@ -66,7 +66,7 @@ export function StatsOverview() {
             <Badge className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border-green-500/30 hover:from-green-500/30 hover:to-emerald-500/30">{stats.appliedThisWeek}</Badge>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-card/10 transition-colors">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <Target className="h-4 w-4 text-white" />
@@ -76,7 +76,7 @@ export function StatsOverview() {
             <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border-purple-500/30 hover:from-purple-500/30 hover:to-pink-500/30">{stats.interviewRate}%</Badge>
           </div>
 
-          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+          <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 hover:bg-card/10 transition-colors">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-white" />
@@ -107,7 +107,7 @@ export function StatsOverview() {
                   {stats.appliedThisWeek}/5
                 </span>
               </div>
-              <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-card/10 rounded-full h-2.5 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full transition-all duration-500 shadow-lg shadow-blue-500/50"
                   style={{ width: `${Math.max(0, Math.min(100, (stats.appliedThisWeek / 5) * 100))}%` }}
@@ -120,7 +120,7 @@ export function StatsOverview() {
                 <span className="text-sm font-medium text-foreground">Network connections</span>
                 <span className="text-sm font-bold text-primary">2/3</span>
               </div>
-              <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-card/10 rounded-full h-2.5 overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-green-500 to-emerald-500 h-2.5 rounded-full transition-all duration-500 shadow-lg shadow-green-500/50"
                   style={{ width: '67%' }}

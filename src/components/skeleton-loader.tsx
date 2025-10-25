@@ -58,7 +58,7 @@ export function SkeletonLoader({
  */
 export function ResumeSkeleton() {
   return (
-    <div className="animate-pulse space-y-6 p-6 bg-white dark:bg-gray-900 rounded-xl border">
+    <div className="animate-pulse space-y-6 p-6 bg-card rounded-xl border">
       {/* Header */}
       <div className="space-y-2">
         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
@@ -85,7 +85,7 @@ export function ResumeSkeleton() {
  */
 export function CoverLetterSkeleton() {
   return (
-    <div className="animate-pulse space-y-4 p-6 bg-white dark:bg-gray-900 rounded-xl border">
+    <div className="animate-pulse space-y-4 p-6 bg-card rounded-xl border">
       {/* Header */}
       <div className="space-y-2">
         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
@@ -117,7 +117,7 @@ export function CoverLetterSkeleton() {
  */
 export function EmailSkeleton() {
   return (
-    <div className="animate-pulse space-y-4 p-6 bg-white dark:bg-gray-900 rounded-xl border">
+    <div className="animate-pulse space-y-4 p-6 bg-card rounded-xl border">
       {/* Subject */}
       <div className="space-y-2">
         <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
@@ -143,13 +143,13 @@ export function JobAnalysisSkeleton() {
   return (
     <div className="animate-pulse space-y-6">
       {/* Match Score */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border p-6">
+      <div className="bg-card rounded-xl border p-6">
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
         <div className="h-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
       </div>
       
       {/* Skills */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border p-6">
+      <div className="bg-card rounded-xl border p-6">
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
         <div className="flex flex-wrap gap-2">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -159,7 +159,7 @@ export function JobAnalysisSkeleton() {
       </div>
       
       {/* Recommendations */}
-      <div className="bg-white dark:bg-gray-900 rounded-xl border p-6">
+      <div className="bg-card rounded-xl border p-6">
         <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (

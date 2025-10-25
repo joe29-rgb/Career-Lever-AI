@@ -33,7 +33,7 @@ function InterviewPrepSkeleton() {
   return (
     <div className="space-y-8">
       {/* Job Selection Skeleton */}
-      <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+      <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
         <div className="w-48 h-6 bg-gray-200 rounded mb-4"></div>
         <div className="w-full h-12 bg-gray-200 rounded mb-4"></div>
         <div className="w-32 h-10 bg-gray-200 rounded"></div>
@@ -43,7 +43,7 @@ function InterviewPrepSkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+            <div key={i} className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
               <div className="w-32 h-6 bg-gray-200 rounded mb-4"></div>
               <div className="space-y-3">
                 <div className="w-full h-4 bg-gray-200 rounded"></div>
@@ -54,7 +54,7 @@ function InterviewPrepSkeleton() {
         </div>
         <div className="space-y-6">
           {[...Array(2)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+            <div key={i} className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
               <div className="w-24 h-6 bg-gray-200 rounded mb-4"></div>
               <div className="w-full h-20 bg-gray-200 rounded"></div>
             </div>

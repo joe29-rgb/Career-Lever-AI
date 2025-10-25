@@ -20,7 +20,7 @@ export const VibrantPageHeader: React.FC<PageHeaderProps> = ({
       {/* Gradient Background */}
       <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-red-500 px-6 py-12">
         {/* Decorative Elements */}
-        <div className="absolute top-4 right-4 w-20 h-20 bg-white bg-opacity-10 rounded-full blur-xl"></div>
+        <div className="absolute top-4 right-4 w-20 h-20 bg-card bg-opacity-10 rounded-full blur-xl"></div>
         <div className="absolute bottom-4 left-4 w-12 h-12 bg-yellow-400 bg-opacity-20 rounded-2xl blur-lg"></div>
         
         {/* Content */}
@@ -39,7 +39,7 @@ export const VibrantPageHeader: React.FC<PageHeaderProps> = ({
                 <span className="text-white text-sm font-medium">Progress</span>
                 <span className="text-white text-sm font-bold">{progress}%</span>
               </div>
-              <div className="w-full bg-white bg-opacity-20 rounded-full h-3 overflow-hidden">
+              <div className="w-full bg-card bg-opacity-20 rounded-full h-3 overflow-hidden">
                 <div 
                   className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
                   style={{ width: `${progress}%` }}

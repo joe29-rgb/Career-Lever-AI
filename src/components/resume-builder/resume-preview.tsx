@@ -46,12 +46,12 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
   const handleZoomOut = () => setZoom(Math.max(zoom - 10, 50))
 
   return (
-    <div className="sticky top-4 bg-white rounded-xl border-2 border-gray-200 shadow-lg">
+    <div className="sticky top-4 bg-card rounded-xl border-2 border-border shadow-lg">
       {/* Preview Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-gray-50 rounded-t-xl">
         <div className="flex items-center gap-2">
           <Eye className="w-5 h-5 text-gray-600" />
-          <h3 className="font-bold text-gray-900">Live Preview</h3>
+          <h3 className="font-bold text-foreground">Live Preview</h3>
         </div>
         
         <div className="flex items-center gap-2">
@@ -85,7 +85,7 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
       {/* Preview Content */}
       <div className="p-6 bg-gray-100 max-h-[calc(100vh-12rem)] overflow-y-auto">
         <div
-          className="bg-white shadow-xl mx-auto transition-transform"
+          className="bg-card shadow-xl mx-auto transition-transform"
           style={{
             transform: `scale(${zoom / 100})`,
             transformOrigin: 'top center',
@@ -123,7 +123,7 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
               {/* Summary */}
               {resume.personalInfo.summary && (
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 border-b-2 border-blue-600 pb-2 mb-3">
+                  <h2 className="text-xl font-bold text-foreground border-b-2 border-blue-600 pb-2 mb-3">
                     Professional Summary
                   </h2>
                   <p className="text-gray-700 leading-relaxed">
@@ -135,7 +135,7 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
               {/* Experience */}
               {resume.experience.length > 0 && (
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 border-b-2 border-blue-600 pb-2 mb-3">
+                  <h2 className="text-xl font-bold text-foreground border-b-2 border-blue-600 pb-2 mb-3">
                     Professional Experience
                   </h2>
                   <div className="space-y-4">
@@ -143,7 +143,7 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
                       <div key={i}>
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <h3 className="font-bold text-gray-900">{exp.position}</h3>
+                            <h3 className="font-bold text-foreground">{exp.position}</h3>
                             <p className="text-gray-700">{exp.company} • {exp.location}</p>
                           </div>
                           <span className="text-sm text-gray-600 whitespace-nowrap">
@@ -166,7 +166,7 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
               {/* Education */}
               {resume.education.length > 0 && (
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 border-b-2 border-blue-600 pb-2 mb-3">
+                  <h2 className="text-xl font-bold text-foreground border-b-2 border-blue-600 pb-2 mb-3">
                     Education
                   </h2>
                   <div className="space-y-3">
@@ -174,7 +174,7 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
                       <div key={i}>
                         <div className="flex justify-between items-start">
                           <div>
-                            <h3 className="font-bold text-gray-900">{edu.degree} in {edu.field}</h3>
+                            <h3 className="font-bold text-foreground">{edu.degree} in {edu.field}</h3>
                             <p className="text-gray-700">{edu.institution}</p>
                           </div>
                           <span className="text-sm text-gray-600">{edu.graduationDate}</span>
@@ -188,18 +188,18 @@ export function ResumePreview({ resume, template = 'modern' }: ResumePreviewProp
               {/* Skills */}
               {(resume.skills.technical.length > 0 || resume.skills.soft.length > 0) && (
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 border-b-2 border-blue-600 pb-2 mb-3">
+                  <h2 className="text-xl font-bold text-foreground border-b-2 border-blue-600 pb-2 mb-3">
                     Skills
                   </h2>
                   {resume.skills.technical.length > 0 && (
                     <div className="mb-2">
-                      <span className="font-semibold text-gray-900">Technical: </span>
+                      <span className="font-semibold text-foreground">Technical: </span>
                       <span className="text-gray-700">{resume.skills.technical.join(' • ')}</span>
                     </div>
                   )}
                   {resume.skills.soft.length > 0 && (
                     <div>
-                      <span className="font-semibold text-gray-900">Soft Skills: </span>
+                      <span className="font-semibold text-foreground">Soft Skills: </span>
                       <span className="text-gray-700">{resume.skills.soft.join(' • ')}</span>
                     </div>
                   )}

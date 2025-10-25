@@ -69,7 +69,7 @@ export function BulletPointGenerator({ role, company, achievements, onAddBullet 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-600" />
-          <h4 className="font-bold text-lg text-gray-900">AI Bullet Point Generator</h4>
+          <h4 className="font-bold text-lg text-foreground">AI Bullet Point Generator</h4>
         </div>
         <button
           onClick={generateBullets}
@@ -97,13 +97,13 @@ export function BulletPointGenerator({ role, company, achievements, onAddBullet 
             <button
               key={i}
               onClick={() => onAddBullet(bullet)}
-              className="w-full text-left p-4 bg-white rounded-lg border-2 border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-all group"
+              className="w-full text-left p-4 bg-card rounded-lg border-2 border-border hover:border-purple-500 hover:bg-purple-50 transition-all group"
             >
               <div className="flex items-start gap-3">
                 <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-bold group-hover:bg-purple-600 group-hover:text-white transition-colors">
                   {i + 1}
                 </span>
-                <span className="flex-1 text-gray-700 group-hover:text-gray-900">{bullet}</span>
+                <span className="flex-1 text-gray-700 group-hover:text-foreground">{bullet}</span>
                 <Plus className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors" />
               </div>
             </button>
@@ -117,7 +117,7 @@ export function BulletPointGenerator({ role, company, achievements, onAddBullet 
             placeholder="Or describe what you did in plain English... AI will transform it into a powerful achievement bullet!"
             value={customInput}
             onChange={(e) => setCustomInput(e.target.value)}
-            className="w-full p-4 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all resize-none"
+            className="w-full p-4 border-2 border-border rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all resize-none"
             rows={3}
           />
         </div>

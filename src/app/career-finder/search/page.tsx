@@ -392,8 +392,8 @@ export default function SearchPage() {
       {/* Hero Search Section */}
       <section className="gradient-hero px-4 py-16 rounded-b-[3rem] shadow-2xl relative overflow-hidden">
         {/* Animated background blobs */}
-        <div className="absolute top-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-0 left-0 w-72 h-72 bg-card/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-card/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2"></div>
         
         <div className="max-w-4xl mx-auto relative z-10">
           <div className="mb-4">
@@ -448,7 +448,7 @@ export default function SearchPage() {
                       setSearchQuery('')
                       console.log('[SEARCH] Cache cleared, ready for new search')
                     }}
-                    className="btn btn-secondary bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className="btn btn-secondary bg-white/20 hover:bg-card/30 text-white border-white/30"
                     disabled={loading}
                   >
                     🔄 New Search

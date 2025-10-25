@@ -60,8 +60,8 @@ export default function ApplicationsPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
-            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="bg-card p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
             <div className="text-sm text-gray-600">Total</div>
           </div>
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-blue-200">
@@ -91,9 +91,9 @@ export default function ApplicationsPage() {
         </div>
 
         {/* Applications List */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-          <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-900">Applications</h2>
+        <div className="bg-card rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+          <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-border flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-foreground">Applications</h2>
             <Link 
               href="/career-finder/search"
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
@@ -105,7 +105,7 @@ export default function ApplicationsPage() {
           {applications.length === 0 ? (
             <div className="p-12 text-center">
               <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Applications Yet</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">No Applications Yet</h3>
               <p className="text-gray-600 mb-6">Start applying to jobs to track your progress</p>
               <Link 
                 href="/career-finder/resume"
@@ -139,14 +139,14 @@ export default function ApplicationsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-gray-200">
                   {applications.map((app) => (
                     <tr key={app.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{app.jobTitle}</div>
+                        <div className="text-sm font-medium text-foreground">{app.jobTitle}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{app.company}</div>
+                        <div className="text-sm text-foreground">{app.company}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-500">{formatDate(app.appliedAt)}</div>

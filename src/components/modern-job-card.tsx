@@ -115,9 +115,9 @@ export function ModernJobCard({
             </div>
             {/* Skeleton Lines */}
             <div className="w-48 space-y-2 animate-pulse">
-              <div className="h-2 bg-white/20 rounded"></div>
-              <div className="h-2 bg-white/15 rounded w-3/4"></div>
-              <div className="h-2 bg-white/10 rounded w-1/2"></div>
+              <div className="h-2 bg-card/20 rounded"></div>
+              <div className="h-2 bg-card/15 rounded w-3/4"></div>
+              <div className="h-2 bg-card/10 rounded w-1/2"></div>
             </div>
           </div>
         </div>
@@ -272,11 +272,10 @@ export function ModernJobCard({
         </Link>
       </div>
 
-      {/* White footer section (Folder Paper) */}
+      {/* Footer section (Folder Paper) */}
       <div 
-        className="card-content relative px-4 py-4"
+        className="card-content relative px-4 py-4 bg-card"
         style={{
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,1) 100%)',
           borderRadius: '0 0 21px 25px'
         }}
       >
@@ -289,13 +288,13 @@ export function ModernJobCard({
         />
         <div className="flex items-center justify-between">
           {/* Posted date */}
-          <div className="flex items-center gap-1 text-xs text-black font-medium">
-            <Clock className="w-4 h-4 text-black" />
+          <div className="flex items-center gap-1 text-xs text-foreground font-medium">
+            <Clock className="w-4 h-4 text-foreground" />
             <span>{postedDate}</span>
           </div>
 
           {/* Salary */}
-          <div className="text-lg font-bold text-black">
+          <div className="text-lg font-bold text-foreground">
             {salaryDisplay}
           </div>
         </div>

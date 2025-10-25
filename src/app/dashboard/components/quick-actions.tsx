@@ -102,7 +102,7 @@ export function QuickActions() {
               
               {/* Content */}
               <div className="relative p-6 flex items-center gap-4">
-                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-card/20 backdrop-blur-sm flex items-center justify-center">
                   <action.icon className="h-7 w-7 text-white" />
                 </div>
                 <div className="flex-1">

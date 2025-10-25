@@ -105,7 +105,7 @@ export function SuccessAnimation({
           stiffness: 200, 
           damping: 20 
         }}
-        className="bg-white dark:bg-gray-800 rounded-3xl p-8 mx-4 max-w-sm w-full shadow-2xl"
+        className="bg-card rounded-3xl p-8 mx-4 max-w-sm w-full shadow-2xl"
       >
         {/* Success icon */}
         <motion.div

@@ -162,7 +162,7 @@ function InboxStatusChips() {
         </span>
       )}
       {state.last && !state.syncing && (
-        <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/5 text-muted-foreground border border-white/10">
+        <span className="px-3 py-1.5 rounded-lg text-xs font-medium bg-card/5 text-muted-foreground border border-white/10">
           Last sync: {state.last}
         </span>
       )}

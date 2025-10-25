@@ -23,7 +23,7 @@ export const SearchHeroSection: React.FC<SearchHeroProps> = ({ onSearch, onFilte
       <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-red-500 p-8 relative">
         {/* Floating Elements */}
         <div className="absolute top-4 right-4 w-32 h-32 bg-yellow-400 bg-opacity-20 rounded-full animate-bounce blur-xl" style={{ animationDelay: '0s', animationDuration: '3s' }}></div>
-        <div className="absolute bottom-4 left-4 w-20 h-20 bg-white bg-opacity-10 rounded-2xl animate-bounce blur-lg" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
+        <div className="absolute bottom-4 left-4 w-20 h-20 bg-card bg-opacity-10 rounded-2xl animate-bounce blur-lg" style={{ animationDelay: '1s', animationDuration: '4s' }}></div>
         <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-red-400 bg-opacity-15 rounded-full animate-bounce blur-lg" style={{ animationDelay: '2s', animationDuration: '5s' }}></div>
 
         <div className="relative z-10 text-center mb-8">
@@ -37,7 +37,7 @@ export const SearchHeroSection: React.FC<SearchHeroProps> = ({ onSearch, onFilte
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="relative z-10 max-w-4xl mx-auto">
-          <div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
+          <div className="bg-card bg-opacity-95 backdrop-blur-sm rounded-2xl p-6 shadow-2xl">
             <div className="flex flex-col md:flex-row gap-4">
               {/* Job Title Search */}
               <div className="flex-1 relative">
@@ -47,7 +47,7 @@ export const SearchHeroSection: React.FC<SearchHeroProps> = ({ onSearch, onFilte
                   placeholder="Job title or keyword"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-0 focus:outline-none transition-colors"
+                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border-2 border-border rounded-xl text-foreground placeholder-gray-500 focus:border-blue-500 focus:ring-0 focus:outline-none transition-colors"
                 />
               </div>
 
@@ -58,7 +58,7 @@ export const SearchHeroSection: React.FC<SearchHeroProps> = ({ onSearch, onFilte
                   placeholder="Location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-4 py-4 bg-gray-50 border-2 border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-0 focus:outline-none transition-colors"
+                  className="w-full px-4 py-4 bg-gray-50 border-2 border-border rounded-xl text-foreground placeholder-gray-500 focus:border-blue-500 focus:ring-0 focus:outline-none transition-colors"
                 />
               </div>
 

@@ -227,7 +227,7 @@ export default function OnboardingQuizPage() {
           nextDisabled={!isStepComplete()}
         >
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="bg-card rounded-xl p-6 shadow-lg">
               <div className="text-center mb-6">
                 <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
                   {answers.yearsOfExperience}
@@ -453,7 +453,7 @@ export default function OnboardingQuizPage() {
                 value={answers.preferredLocation || ''}
                 onChange={(e) => setAnswers({ ...answers, preferredLocation: e.target.value })}
                 placeholder="e.g., Edmonton, AB or New York, NY"
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-card text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all"
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                 💡 Leave blank if you selected &quot;Remote&quot; only

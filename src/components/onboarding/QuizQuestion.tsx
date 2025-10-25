@@ -55,7 +55,7 @@ export function QuizQuestion({
           {showBack && onBack && (
             <button
               onClick={onBack}
-              className="px-6 py-3 rounded-xl font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all min-h-[44px]"
+              className="px-6 py-3 rounded-xl font-medium text-gray-700 dark:text-gray-300 bg-card border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all min-h-[44px]"
             >
               ← Back
             </button>

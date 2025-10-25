@@ -186,7 +186,7 @@ export default function ResumeBuilderV2Page() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            <h1 className="text-5xl font-bold text-foreground mb-4">
               ✨ AI-Powered Resume Builder
             </h1>
             <p className="text-xl text-gray-600">
@@ -213,11 +213,11 @@ export default function ResumeBuilderV2Page() {
             <Button
               onClick={() => setStep('quick-start')}
               variant="outline"
-              className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+              className="bg-white/10 border-white/30 text-white hover:bg-card/20"
             >
               ← Start Over
             </Button>
-            <Button className="bg-white text-blue-600 hover:bg-blue-50">
+            <Button className="bg-card text-blue-600 hover:bg-blue-50">
               <Save className="w-4 h-4 mr-2" />
               Save Resume
             </Button>
@@ -239,7 +239,7 @@ export default function ResumeBuilderV2Page() {
           {/* Left: Editor (2 columns) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Section Tabs */}
-            <div className="bg-white rounded-xl border-2 border-gray-200 p-2 flex gap-2">
+            <div className="bg-card rounded-xl border-2 border-border p-2 flex gap-2">
               {(['personal', 'experience', 'education', 'skills'] as const).map((section) => (
                 <button
                   key={section}
@@ -257,8 +257,8 @@ export default function ResumeBuilderV2Page() {
 
             {/* Personal Info Section */}
             {activeSection === 'personal' && (
-              <div className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">
-                <h3 className="text-xl font-bold text-gray-900">Personal Information</h3>
+              <div className="bg-card rounded-xl border-2 border-border p-6 space-y-4">
+                <h3 className="text-xl font-bold text-foreground">Personal Information</h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -354,9 +354,9 @@ export default function ResumeBuilderV2Page() {
             {activeSection === 'experience' && (
               <div className="space-y-6">
                 {resume.experience.map((exp, index) => (
-                  <div key={exp.id} className="bg-white rounded-xl border-2 border-gray-200 p-6 space-y-4">
+                  <div key={exp.id} className="bg-card rounded-xl border-2 border-border p-6 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-lg font-bold text-gray-900">
+                      <h4 className="text-lg font-bold text-foreground">
                         Experience #{index + 1}
                       </h4>
                       <Button
@@ -448,7 +448,7 @@ export default function ResumeBuilderV2Page() {
                     {/* Achievements List */}
                     {exp.achievements.length > 0 && (
                       <div>
-                        <h5 className="font-semibold text-gray-900 mb-2">Achievements:</h5>
+                        <h5 className="font-semibold text-foreground mb-2">Achievements:</h5>
                         <ul className="space-y-2">
                           {exp.achievements.map((achievement, achIndex) => (
                             <li key={achIndex} className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">

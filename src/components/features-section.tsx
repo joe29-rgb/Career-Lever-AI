@@ -100,28 +100,28 @@ export function FeaturesSection() {
                 <li className="flex items-start">
                   <span className="text-red-500 font-bold mr-3">❌</span>
                   <div>
-                    <div className="font-semibold text-gray-900">50+ applications = 2 interviews</div>
+                    <div className="font-semibold text-foreground">50+ applications = 2 interviews</div>
                     <div className="text-sm text-gray-600">4% response rate</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <span className="text-red-500 font-bold mr-3">❌</span>
                   <div>
-                    <div className="font-semibold text-gray-900">4 hours per application</div>
+                    <div className="font-semibold text-foreground">4 hours per application</div>
                     <div className="text-sm text-gray-600">200+ hours wasted</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <span className="text-red-500 font-bold mr-3">❌</span>
                   <div>
-                    <div className="font-semibold text-gray-900">Generic resumes ignored</div>
+                    <div className="font-semibold text-foreground">Generic resumes ignored</div>
                     <div className="text-sm text-gray-600">15% ATS pass rate</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <span className="text-red-500 font-bold mr-3">❌</span>
                   <div>
-                    <div className="font-semibold text-gray-900">Missed follow-ups</div>
+                    <div className="font-semibold text-foreground">Missed follow-ups</div>
                     <div className="text-sm text-gray-600">Lost opportunities</div>
                   </div>
                 </li>
@@ -145,28 +145,28 @@ export function FeaturesSection() {
                 <li className="flex items-start">
                   <span className="text-green-600 font-bold mr-3">✅</span>
                   <div>
-                    <div className="font-semibold text-gray-900">15 applications = 8 interviews</div>
+                    <div className="font-semibold text-foreground">15 applications = 8 interviews</div>
                     <div className="text-sm text-gray-600">53% response rate (13x better!)</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-600 font-bold mr-3">✅</span>
                   <div>
-                    <div className="font-semibold text-gray-900">20 minutes per application</div>
+                    <div className="font-semibold text-foreground">20 minutes per application</div>
                     <div className="text-sm text-gray-600">5 hours total (12x faster!)</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-600 font-bold mr-3">✅</span>
                   <div>
-                    <div className="font-semibold text-gray-900">ATS-optimized resumes</div>
+                    <div className="font-semibold text-foreground">ATS-optimized resumes</div>
                     <div className="text-sm text-gray-600">85% ATS pass rate (5.6x better!)</div>
                   </div>
                 </li>
                 <li className="flex items-start">
                   <span className="text-green-600 font-bold mr-3">✅</span>
                   <div>
-                    <div className="font-semibold text-gray-900">Automated follow-ups</div>
+                    <div className="font-semibold text-foreground">Automated follow-ups</div>
                     <div className="text-sm text-gray-600">Never miss opportunities</div>
                   </div>
                 </li>
@@ -176,7 +176,7 @@ export function FeaturesSection() {
         </div>
 
         <div className="mx-auto max-w-3xl text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Everything you need to land your dream job
           </h2>
           <p className="mt-4 text-lg text-gray-600">
@@ -215,7 +215,7 @@ export function FeaturesSection() {
             <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 mb-4">
               📱 Mobile Apps
             </Badge>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
               Job Search on the Go
             </h2>
             <p className="text-lg text-gray-600">
@@ -227,7 +227,7 @@ export function FeaturesSection() {
             <Card className="border-2 border-blue-100 hover:border-blue-300 transition-colors">
               <CardContent className="p-6 text-center">
                 <div className="text-4xl mb-4">📸</div>
-                <h3 className="font-bold text-gray-900 mb-2">Scan Job Postings</h3>
+                <h3 className="font-bold text-foreground mb-2">Scan Job Postings</h3>
                 <p className="text-sm text-gray-600">Take a photo of any job posting and instantly apply with AI-optimized resume</p>
               </CardContent>
             </Card>
@@ -235,7 +235,7 @@ export function FeaturesSection() {
             <Card className="border-2 border-purple-100 hover:border-purple-300 transition-colors">
               <CardContent className="p-6 text-center">
                 <div className="text-4xl mb-4">🔔</div>
-                <h3 className="font-bold text-gray-900 mb-2">Push Notifications</h3>
+                <h3 className="font-bold text-foreground mb-2">Push Notifications</h3>
                 <p className="text-sm text-gray-600">Get instant alerts for interview prep, follow-ups, and application updates</p>
               </CardContent>
             </Card>
@@ -243,7 +243,7 @@ export function FeaturesSection() {
             <Card className="border-2 border-green-100 hover:border-green-300 transition-colors">
               <CardContent className="p-6 text-center">
                 <div className="text-4xl mb-4">📍</div>
-                <h3 className="font-bold text-gray-900 mb-2">Location-Based Jobs</h3>
+                <h3 className="font-bold text-foreground mb-2">Location-Based Jobs</h3>
                 <p className="text-sm text-gray-600">Find and apply to local opportunities while commuting or traveling</p>
               </CardContent>
             </Card>
@@ -251,7 +251,7 @@ export function FeaturesSection() {
             <Card className="border-2 border-orange-100 hover:border-orange-300 transition-colors">
               <CardContent className="p-6 text-center">
                 <div className="text-4xl mb-4">💾</div>
-                <h3 className="font-bold text-gray-900 mb-2">Offline Mode</h3>
+                <h3 className="font-bold text-foreground mb-2">Offline Mode</h3>
                 <p className="text-sm text-gray-600">Edit resumes and prepare applications even without internet connection</p>
               </CardContent>
             </Card>
@@ -261,7 +261,7 @@ export function FeaturesSection() {
         {/* PRICING PREVIEW - NEW! */}
         <div className="mx-auto max-w-5xl mt-32 mb-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
               Simple, Transparent Pricing
             </h2>
             <p className="text-lg text-gray-600">
@@ -271,11 +271,11 @@ export function FeaturesSection() {
           
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* FREE TIER */}
-            <Card className="border-2 border-gray-200 hover:shadow-xl transition-all">
+            <Card className="border-2 border-border hover:shadow-xl transition-all">
               <CardHeader className="bg-gray-50 pb-4">
                 <div className="text-center">
                   <CardTitle className="text-2xl mb-2">Free Forever</CardTitle>
-                  <div className="text-4xl font-bold text-gray-900 mb-2">$0</div>
+                  <div className="text-4xl font-bold text-foreground mb-2">$0</div>
                   <p className="text-sm text-gray-600">Perfect for getting started</p>
                 </div>
               </CardHeader>

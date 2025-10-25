@@ -173,7 +173,7 @@ function SignInInner() {
         )}
 
         {/* Sign In Form */}
-        <Card className="bg-white/5 border-white/10 backdrop-blur-xl">
+        <Card className="bg-card/5 border-white/10 backdrop-blur-xl">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center text-white">Sign In</CardTitle>
             <CardDescription className="text-center text-white/60">
@@ -251,7 +251,7 @@ function SignInInner() {
                     placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                    className="pl-10 bg-card/10 border-white/20 text-white placeholder:text-white/40"
                     required
                     disabled={isLoading}
                     autoComplete="email"
@@ -269,7 +269,7 @@ function SignInInner() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-12 bg-white/10 border-white/20 text-white placeholder:text-white/40"
+                    className="pl-10 pr-12 bg-card/10 border-white/20 text-white placeholder:text-white/40"
                     required
                     disabled={isLoading}
                     autoComplete="current-password"

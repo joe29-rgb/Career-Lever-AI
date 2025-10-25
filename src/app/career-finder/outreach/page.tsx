@@ -389,7 +389,7 @@ ${name}`
         <div className="lg:col-span-1 space-y-6">
           {/* Hiring Contacts */}
           {contacts.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="bg-card rounded-xl shadow-sm border p-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-blue-600" />
                 Hiring Contacts
@@ -405,7 +405,7 @@ ${name}`
                         : 'border-gray-200 hover:border-blue-300'
                     }`}
                   >
-                    <p className="font-semibold text-gray-900">{contact.name}</p>
+                    <p className="font-semibold text-foreground">{contact.name}</p>
                     <p className="text-sm text-gray-600">{contact.title}</p>
                     {contact.department && (
                       <p className="text-xs text-gray-500 mt-1">{contact.department}</p>
@@ -446,7 +446,7 @@ ${name}`
                 We couldn't find specific hiring contacts for this company. Try these options:
               </p>
               <div className="space-y-3">
-                <div className="bg-white p-3 rounded border">
+                <div className="bg-card p-3 rounded border">
                   <p className="text-xs text-gray-600 mb-1">Suggested Email Addresses:</p>
                   <div className="space-y-1">
                     {jobData?.company && (
@@ -467,7 +467,7 @@ ${name}`
 
           {/* Official Channels */}
           {officialChannels && (
-            <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="bg-card rounded-xl shadow-sm border p-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-purple-600" />
                 Official Channels
@@ -518,7 +518,7 @@ ${name}`
         {/* Right Column: Email Draft */}
         <div className="lg:col-span-2 space-y-6">
           {/* Email Preview */}
-          <div className="bg-white rounded-xl shadow-sm border p-6">
+          <div className="bg-card rounded-xl shadow-sm border p-6">
             <h3 className="text-xl font-bold mb-4">Your Outreach Email</h3>
 
             {/* To Field */}
@@ -529,7 +529,7 @@ ${name}`
                   type="email"
                   value={currentEmail || 'No email found'}
                   disabled
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-900"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-foreground"
                 />
                 {currentEmail && (
                   <Button
@@ -551,7 +551,7 @@ ${name}`
                   type="text"
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-foreground bg-card"
                 />
                 <Button
                   onClick={() => copyToClipboard(emailSubject, 'subject')}
@@ -571,7 +571,7 @@ ${name}`
                   value={emailBody}
                   onChange={(e) => setEmailBody(e.target.value)}
                   rows={16}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-gray-900 bg-white"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm text-foreground bg-card"
                 />
                 <Button
                   onClick={() => copyToClipboard(emailBody, 'body')}
@@ -624,7 +624,7 @@ ${name}`
 
           {/* Additional Contact Options */}
           {selectedContact && (
-            <div className="bg-white rounded-xl shadow-sm border p-6">
+            <div className="bg-card rounded-xl shadow-sm border p-6">
               <h3 className="text-lg font-bold mb-4">Additional Contact Methods</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedContact.linkedinUrl && (
@@ -636,7 +636,7 @@ ${name}`
                   >
                     <Linkedin className="w-6 h-6 text-blue-600" />
                     <div>
-                      <p className="font-semibold text-gray-900">Connect on LinkedIn</p>
+                      <p className="font-semibold text-foreground">Connect on LinkedIn</p>
                       <p className="text-sm text-gray-600">Send a connection request</p>
                     </div>
                   </a>
@@ -648,7 +648,7 @@ ${name}`
                   >
                     <Phone className="w-6 h-6 text-purple-600" />
                     <div>
-                      <p className="font-semibold text-gray-900">Call {selectedContact.name}</p>
+                      <p className="font-semibold text-foreground">Call {selectedContact.name}</p>
                       <p className="text-sm text-gray-600">{selectedContact.phone}</p>
                     </div>
                   </a>

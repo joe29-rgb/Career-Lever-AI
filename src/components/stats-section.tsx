@@ -30,7 +30,7 @@ export function StatsSection() {
     <section className="py-24 bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Trusted by job seekers worldwide
           </h2>
           <p className="mt-4 text-lg text-gray-600">
@@ -45,7 +45,7 @@ export function StatsSection() {
                 <div className="text-4xl font-bold text-blue-600 sm:text-5xl">
                   {stat.number}
                 </div>
-                <div className="mt-4 text-lg font-semibold text-gray-900">
+                <div className="mt-4 text-lg font-semibold text-foreground">
                   {stat.label}
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
@@ -58,11 +58,11 @@ export function StatsSection() {
 
         {/* Testimonial */}
         <div className="mx-auto mt-16 max-w-3xl text-center">
-          <blockquote className="text-lg font-medium text-gray-900">
+          <blockquote className="text-lg font-medium text-foreground">
             "Career Lever AI completely transformed my job search. I went from getting no responses to having multiple interviews within two weeks. The AI resume customization is incredible!"
           </blockquote>
           <div className="mt-6">
-            <div className="font-semibold text-gray-900">Sarah Johnson</div>
+            <div className="font-semibold text-foreground">Sarah Johnson</div>
             <div className="text-sm text-gray-600">Software Engineer at Google</div>
           </div>
         </div>

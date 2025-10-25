@@ -575,7 +575,7 @@ ${htmlContent}
       {/* Expand/Edit Modal */}
       {expanded !== 'none' && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={()=>setExpanded('none')}>
-          <div className="bg-white rounded shadow-xl w-full max-w-5xl p-3 space-y-2" onClick={(e)=>e.stopPropagation()}>
+          <div className="bg-card rounded shadow-xl w-full max-w-5xl p-3 space-y-2" onClick={(e)=>e.stopPropagation()}>
             <div className="flex items-center justify-between text-sm">
               <div className="font-medium">Edit Variant {expanded}</div>
               <div className="flex gap-2">

@@ -185,7 +185,7 @@ const DefaultErrorFallback = ({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
-      <div className="max-w-2xl w-full bg-white shadow-2xl rounded-xl overflow-hidden">
+      <div className="max-w-2xl w-full bg-card shadow-2xl rounded-xl overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-red-500 to-red-600 p-6 text-white">
           <div className="flex items-start gap-4">
@@ -214,7 +214,7 @@ const DefaultErrorFallback = ({
           </div>
 
           {/* Error ID */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="bg-gray-50 border border-border rounded-lg p-4">
             <h3 className="text-xs font-semibold text-gray-600 mb-1">Error ID (for support)</h3>
             <code className="text-xs text-gray-800 font-mono select-all">
               {errorId}

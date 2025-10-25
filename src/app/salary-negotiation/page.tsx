@@ -33,7 +33,7 @@ function SalaryNegotiationSkeleton() {
   return (
     <div className="space-y-8">
       {/* Input Form Skeleton */}
-      <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+      <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
         <div className="w-48 h-6 bg-gray-200 rounded mb-4"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div className="w-full h-12 bg-gray-200 rounded"></div>
@@ -46,11 +46,11 @@ function SalaryNegotiationSkeleton() {
 
       {/* Results Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+        <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
           <div className="w-32 h-6 bg-gray-200 rounded mb-4"></div>
           <div className="w-full h-32 bg-gray-200 rounded"></div>
         </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+        <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
           <div className="w-32 h-6 bg-gray-200 rounded mb-4"></div>
           <div className="w-full h-32 bg-gray-200 rounded"></div>
         </div>

@@ -35,7 +35,7 @@ export const ModernResumeUpload: React.FC<ResumeUploadProps> = ({
         <div className="w-16 h-16 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl">
           <CheckCircleIcon className="w-8 h-8 text-white" />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Resume Uploaded!</h3>
+        <h3 className="text-xl font-bold text-foreground mb-2">Resume Uploaded!</h3>
         <p className="text-gray-600 mb-4">{fileName}</p>
         <button 
           {...getRootProps()} 
@@ -50,7 +50,7 @@ export const ModernResumeUpload: React.FC<ResumeUploadProps> = ({
   return (
     <div className="dribbble-card p-8">
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">📄 Upload Resume</h3>
+        <h3 className="text-2xl font-bold text-foreground mb-2">📄 Upload Resume</h3>
         <p className="text-gray-600">Upload your PDF resume for AI-powered optimization</p>
       </div>
 
@@ -77,7 +77,7 @@ export const ModernResumeUpload: React.FC<ResumeUploadProps> = ({
           </div>
         ) : (
           <div>
-            <p className="text-xl font-semibold text-gray-900 mb-2">
+            <p className="text-xl font-semibold text-foreground mb-2">
               Drag & drop your resume here
             </p>
             <p className="text-gray-500 mb-4">Or click to browse files</p>

@@ -48,7 +48,7 @@ export function HeroSection() {
               </Link>
               <Link
                 href={`/auth/signup${email ? `?email=${encodeURIComponent(email)}` : ''}`}
-                className="btn btn-secondary text-white border-white/20 hover:bg-white/20"
+                className="btn btn-secondary text-white border-white/20 hover:bg-card/20"
               >
                 Sign up
               </Link>
@@ -57,7 +57,7 @@ export function HeroSection() {
         </div>
         <div className="mx-auto max-w-3xl text-center">
           {/* Badge */}
-          <div className="badge badge-accent mb-8 bg-white/10 text-white hover:bg-white/20">
+          <div className="badge badge-accent mb-8 bg-white/10 text-white hover:bg-card/20">
             <Sparkles className="mr-2 h-4 w-4" />
             AI-Powered Job Application Assistant
           </div>
@@ -141,7 +141,7 @@ export function HeroSection() {
             <div className="space-y-3">
               <button
                 onClick={handleGoogle}
-                className="btn btn-secondary w-full bg-white text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3"
+                className="btn btn-secondary w-full bg-card text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -186,7 +186,7 @@ export function HeroSection() {
 
           {/* Feature Cards */}
           <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-6 sm:grid-cols-3">
-            <div className="card bg-white/10 border-white/20 backdrop-blur-sm">
+            <div className="card bg-card/10 border-white/20 backdrop-blur-sm">
               <div className="text-center">
                 <Target className="mx-auto h-8 w-8 text-yellow-400" />
                 <h3 className="mt-4 text-sm font-semibold text-white">Smart Resume Tailoring</h3>
@@ -196,7 +196,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="card bg-white/10 border-white/20 backdrop-blur-sm">
+            <div className="card bg-card/10 border-white/20 backdrop-blur-sm">
               <div className="text-center">
                 <Zap className="mx-auto h-8 w-8 text-yellow-400" />
                 <h3 className="mt-4 text-sm font-semibold text-white">Instant Company Research</h3>
@@ -206,7 +206,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="card bg-white/10 border-white/20 backdrop-blur-sm">
+            <div className="card bg-card/10 border-white/20 backdrop-blur-sm">
               <div className="text-center">
                 <Users className="mx-auto h-8 w-8 text-yellow-400" />
                 <h3 className="mt-4 text-sm font-semibold text-white">Application Tracking</h3>

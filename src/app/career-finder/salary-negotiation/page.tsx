@@ -281,7 +281,7 @@ export default function SalaryNegotiationPage() {
                   <div className="gradient-border-card">
                     <h3 className="text-xl font-bold mb-4">Market Salary Range</h3>
                     {chartData && (
-                      <div className="bg-white p-4 rounded-lg">
+                      <div className="bg-card p-4 rounded-lg">
                         <Bar data={chartData} options={chartOptions} />
                       </div>
                     )}

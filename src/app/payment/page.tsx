@@ -35,7 +35,7 @@ function PaymentContent() {
       <div className="max-w-4xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-5xl font-bold text-foreground mb-4">
             🚀 Career Lever AI Pro
           </h1>
           <p className="text-xl text-gray-600">
@@ -52,14 +52,14 @@ function PaymentContent() {
         )}
 
         {/* Pricing Card */}
-        <div className="bg-white rounded-2xl shadow-2xl p-8 border-4 border-blue-500 relative overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-2xl p-8 border-4 border-blue-500 relative overflow-hidden">
           {/* Popular Badge */}
           <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-bl-2xl font-bold">
             LAUNCH SPECIAL
           </div>
 
           <div className="text-center mb-8 mt-4">
-            <div className="text-6xl font-bold text-gray-900 mb-2">
+            <div className="text-6xl font-bold text-foreground mb-2">
               $4.99
               <span className="text-2xl text-gray-600 font-normal">/week</span>
             </div>
@@ -68,7 +68,7 @@ function PaymentContent() {
 
           {/* Features */}
           <div className="space-y-4 mb-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">What's Included:</h3>
+            <h3 className="text-xl font-bold text-foreground mb-4">What's Included:</h3>
             
             {[
               'AI-Powered Resume Builder with 6 templates',
@@ -134,27 +134,27 @@ function PaymentContent() {
         </div>
 
         {/* FAQ */}
-        <div className="mt-12 bg-white rounded-xl p-6 shadow-lg">
-          <h3 className="text-xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h3>
+        <div className="mt-12 bg-card rounded-xl p-6 shadow-lg">
+          <h3 className="text-xl font-bold text-foreground mb-4">Frequently Asked Questions</h3>
           
           <div className="space-y-4">
             <div>
-              <h4 className="font-semibold text-gray-900 mb-1">Can I cancel anytime?</h4>
+              <h4 className="font-semibold text-foreground mb-1">Can I cancel anytime?</h4>
               <p className="text-gray-600">Yes! Cancel anytime from your account settings. No questions asked.</p>
             </div>
             
             <div>
-              <h4 className="font-semibold text-gray-900 mb-1">Is there a free trial?</h4>
+              <h4 className="font-semibold text-foreground mb-1">Is there a free trial?</h4>
               <p className="text-gray-600">We offer a 7-day money-back guarantee. Try it risk-free!</p>
             </div>
             
             <div>
-              <h4 className="font-semibold text-gray-900 mb-1">What payment methods do you accept?</h4>
+              <h4 className="font-semibold text-foreground mb-1">What payment methods do you accept?</h4>
               <p className="text-gray-600">We accept all major credit cards through Stripe's secure payment system.</p>
             </div>
             
             <div>
-              <h4 className="font-semibold text-gray-900 mb-1">How does billing work?</h4>
+              <h4 className="font-semibold text-foreground mb-1">How does billing work?</h4>
               <p className="text-gray-600">You'll be charged $4.99 every week. You can cancel anytime before your next billing date.</p>
             </div>
           </div>

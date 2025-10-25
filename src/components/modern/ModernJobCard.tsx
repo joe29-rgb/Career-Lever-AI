@@ -46,7 +46,7 @@ export const ModernJobCard: React.FC<JobCardProps> = ({ job, onApply }) => {
 
       {/* Job Info */}
       <div className="mb-4">
-        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+        <h3 className="text-xl font-bold text-foreground mb-2 group-hover:text-blue-600 transition-colors">
           {job.title}
         </h3>
         <p className="text-gray-600 font-medium text-lg">{job.company}</p>

@@ -156,13 +156,13 @@ export default function JobDetailsPage() {
           </div>
 
           {/* White footer */}
-          <div className="bg-white px-4 py-4 rounded-b-3xl">
+          <div className="bg-card px-4 py-4 rounded-b-3xl">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 text-xs text-black font-medium">
+              <div className="flex items-center gap-1 text-xs text-foreground font-medium">
                 <Clock className="w-4 h-4" />
                 <span>{job.postedDate}</span>
               </div>
-              <div className="text-lg font-bold text-black">
+              <div className="text-lg font-bold text-foreground">
                 ${job.salary}/mo
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function JobDetailsPage() {
         {/* Job Description */}
         <div className="bg-[#2B2B2B] rounded-3xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-card/10 flex items-center justify-center">
               <Edit className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-lg font-bold text-white">Job Description</h2>
@@ -188,7 +188,7 @@ export default function JobDetailsPage() {
         {/* Skills & Requirements */}
         <div className="bg-[#2B2B2B] rounded-3xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-card/10 flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-lg font-bold text-white">Skills & Requirements</h2>
@@ -206,7 +206,7 @@ export default function JobDetailsPage() {
         {/* Your Role */}
         <div className="bg-[#2B2B2B] rounded-3xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-card/10 flex items-center justify-center">
               <User className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-lg font-bold text-white">Your Role</h2>
@@ -219,7 +219,7 @@ export default function JobDetailsPage() {
         {/* Benefits */}
         <div className="bg-[#2B2B2B] rounded-3xl p-5">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-lg bg-card/10 flex items-center justify-center">
               <Gift className="w-6 h-6 text-white" />
             </div>
             <h2 className="text-lg font-bold text-white">Benefits</h2>
@@ -238,13 +238,13 @@ export default function JobDetailsPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border/50 p-6 z-50">
         <div className="container mx-auto flex items-center gap-3 relative">
           {/* Background progress bar */}
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 bg-white rounded-full -z-10" />
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-2 bg-card rounded-full -z-10" />
 
           {/* Save button */}
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center justify-center px-6 py-3 bg-white text-black font-medium text-base rounded-full transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 z-10"
+            className="flex items-center justify-center px-6 py-3 bg-card text-foreground font-medium text-base rounded-full transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 z-10"
           >
             Save
           </button>

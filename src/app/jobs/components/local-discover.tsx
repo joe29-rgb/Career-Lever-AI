@@ -114,7 +114,7 @@ export function LocalDiscover() {
           {results.map((r, i) => {
             const scored = ranked.find(x => x.url === r.url)
             return (
-            <div key={`${r.url}-${i}`} className="border rounded p-3 bg-white dark:bg-gray-900">
+            <div key={`${r.url}-${i}`} className="border rounded p-3 bg-card">
               <div className="text-sm text-muted-foreground mb-1">{r.source}</div>
               <a href={r.url} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-700 dark:text-blue-300 line-clamp-2">{r.title || r.url}</a>
               {r.snippet && <div className="text-sm text-foreground dark:text-gray-300 mt-1 line-clamp-3">{r.snippet}</div>}

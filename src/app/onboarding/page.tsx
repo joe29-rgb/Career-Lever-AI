@@ -69,7 +69,7 @@ export default function OnboardingPage() {
         </div>
 
         {step === 'welcome' && (
-          <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
+          <div className="space-y-4 bg-card/70 backdrop-blur rounded-lg p-6 border">
             <div className="text-sm text-foreground">Start by uploading a resume or build one.</div>
             <div className="flex gap-3">
               <button className="px-4 py-2 border rounded" onClick={() => setStep('upload')}>Upload Resume</button>
@@ -80,7 +80,7 @@ export default function OnboardingPage() {
         )}
 
         {step === 'upload' && (
-          <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
+          <div className="space-y-4 bg-card/70 backdrop-blur rounded-lg p-6 border">
             <div className="text-sm text-foreground">Upload PDF resume. Well extract keywords and location automatically.</div>
             <form className="space-y-3" onSubmit={async (e) => {
               e.preventDefault(); setLoading(true); setMessage('Uploading resume…')
@@ -100,7 +100,7 @@ export default function OnboardingPage() {
         )}
 
         {step === 'autopilot' && (
-          <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
+          <div className="space-y-4 bg-card/70 backdrop-blur rounded-lg p-6 border">
             <div className="text-sm text-foreground">Were finding public listings that match your resume.</div>
             <button onClick={startAutopilot} disabled={loading} className="px-4 py-2 border rounded">{loading ? 'Searching…' : 'Start Search'}</button>
             {loading && (
@@ -115,7 +115,7 @@ export default function OnboardingPage() {
         )}
 
         {step === 'review' && (
-          <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border">
+          <div className="space-y-4 bg-card/70 backdrop-blur rounded-lg p-6 border">
             <div className="text-sm text-foreground">Select a job to proceed through Analyze → Research → Customize.</div>
             <div className="max-h-96 overflow-y-auto space-y-2">
               {jobs.map((j, idx) => (
@@ -140,7 +140,7 @@ export default function OnboardingPage() {
         )}
 
         {step === 'done' && (
-          <div className="space-y-4 bg-white/70 backdrop-blur rounded-lg p-6 border text-center">
+          <div className="space-y-4 bg-card/70 backdrop-blur rounded-lg p-6 border text-center">
             <div className="text-sm text-foreground">Great! Lets analyze the job next.</div>
             <Link className="px-4 py-2 border rounded" href="/create-application?step=analyze">Go to Analyze</Link>
           </div>

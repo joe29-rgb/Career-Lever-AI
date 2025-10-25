@@ -33,7 +33,7 @@ function SkillAnalysisSkeleton() {
   return (
     <div className="space-y-8">
       {/* Input Section Skeleton */}
-      <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+      <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
         <div className="w-48 h-6 bg-gray-200 rounded mb-4"></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="w-full h-12 bg-gray-200 rounded"></div>
@@ -45,7 +45,7 @@ function SkillAnalysisSkeleton() {
 
       {/* Results Skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+        <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
           <div className="w-32 h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
@@ -60,7 +60,7 @@ function SkillAnalysisSkeleton() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+        <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
           <div className="w-32 h-6 bg-gray-200 rounded mb-4"></div>
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
@@ -77,7 +77,7 @@ function SkillAnalysisSkeleton() {
       </div>
 
       {/* Career Path Skeleton */}
-      <div className="bg-white rounded-lg p-6 shadow-sm animate-pulse">
+      <div className="bg-card rounded-lg p-6 shadow-sm animate-pulse">
         <div className="w-40 h-6 bg-gray-200 rounded mb-6"></div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (

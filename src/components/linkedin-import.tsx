@@ -321,7 +321,7 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
         <div className="flex items-center gap-3 mb-4">
           <Linkedin className="w-10 h-10 text-blue-600" />
           <div>
-            <h3 className="font-bold text-gray-900 text-xl">Sign in with LinkedIn</h3>
+            <h3 className="font-bold text-foreground text-xl">Sign in with LinkedIn</h3>
             <p className="text-sm text-gray-600">Securely connect your LinkedIn account to automatically import your profile</p>
           </div>
         </div>
@@ -353,7 +353,7 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
           <div className="w-full border-t border-gray-300"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or use alternative methods</span>
+          <span className="px-2 bg-card text-gray-500">Or use alternative methods</span>
         </div>
       </div>
 
@@ -373,7 +373,7 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
               <Upload className="w-5 h-5 text-blue-600" />
             </div>
             <div className="text-center">
-              <p className="font-semibold text-gray-900">Import from LinkedIn PDF</p>
+              <p className="font-semibold text-foreground">Import from LinkedIn PDF</p>
               <p className="text-sm text-gray-600 mt-1">
                 Download your profile as PDF from LinkedIn, then upload it here
               </p>
@@ -394,7 +394,7 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
         <div className="flex items-start gap-3">
           <FileText className="w-5 h-5 text-gray-600 mt-1" />
           <div className="flex-1">
-            <p className="font-semibold text-gray-900 mb-2">Or paste LinkedIn profile text</p>
+            <p className="font-semibold text-foreground mb-2">Or paste LinkedIn profile text</p>
             <textarea
               placeholder="Copy your LinkedIn profile text and paste it here..."
               className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
