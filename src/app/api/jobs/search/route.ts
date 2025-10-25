@@ -197,34 +197,31 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Use enhanced jobMarketAnalysisV2 with 25+ boards
-        console.log('[JOB_SEARCH] Calling jobMarketAnalysisV2 with:', {
+        // Use NEW AGENT SYSTEM with Perplexity web_search + Cheerio fallback
+        console.log('[JOB_SEARCH] 🤖 Calling NEW AGENT SYSTEM jobListingsWithAgent with:', {
+          jobTitle: keywords,
           location,
-          resumeLength: extractedText.length,
-          roleHint: keywords,
           workType: workType || (remote ? 'remote' : 'any'),
           maxResults: limit
         })
         
-        result = await PerplexityIntelligenceService.jobMarketAnalysisV2(
+        result = await PerplexityIntelligenceService.jobListingsWithAgent(
+          keywords,
           location,
-          extractedText,
           {
-            roleHint: keywords,
-            workType: workType || (remote ? 'remote' : 'any'),
-            salaryMin,
-            experienceLevel,
             maxResults: limit,
-            boards: sources
+            workType: workType || (remote ? 'remote' : 'any')
           }
         )
 
-        console.log('[JOB_SEARCH] jobMarketAnalysisV2 result:', {
+        console.log('[JOB_SEARCH] 🤖 Agent system result:', {
           success: result.success,
           dataType: typeof result.data,
           dataIsArray: Array.isArray(result.data),
           dataLength: Array.isArray(result.data) ? result.data.length : 0,
           cached: result.cached,
+          method: result.metadata?.method,
+          confidence: result.metadata?.confidence,
           error: result.metadata?.error
         })
 
