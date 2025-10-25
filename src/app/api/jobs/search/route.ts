@@ -446,7 +446,9 @@ export async function POST(request: NextRequest) {
     console.error('[JOB_SEARCH] Error type:', error?.constructor?.name)
     console.error('[JOB_SEARCH] Error message:', error?.message)
     console.error('[JOB_SEARCH] Error stack:', error?.stack)
-    console.error('[JOB_SEARCH] Request params:', { keywords, location, sources, limit, remote, salaryMin, experienceLevel, workType })
+    
+    // Get session for error logging
+    const session = await getServerSession(authOptions)
     console.error('[JOB_SEARCH] User ID:', session?.user?.id)
     
     return NextResponse.json({ 
