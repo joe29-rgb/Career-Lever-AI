@@ -39,9 +39,29 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
 
       const data = await response.json()
       
-      if (data.success) {
+      if (data.success && data.resumeData) {
+        // Convert resumeData to resume text
+        const resumeText = convertResumeDataToText(data.resumeData)
+        
+        // Upload to API to create Resume record
+        const uploadResponse = await fetch('/api/resume/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: resumeText,
+            source: 'linkedin-oauth',
+            fileName: 'LinkedIn Profile.txt'
+          })
+        })
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to save LinkedIn profile')
+        }
+
+        const uploadData = await uploadResponse.json()
+        
         setSuccess(true)
-        onImport(data.resumeData)
+        onImport(uploadData.resume) // Pass the Resume object with _id and extractedText
         setTimeout(() => setSuccess(false), 3000)
       } else {
         throw new Error(data.error || 'Failed to import LinkedIn data')
@@ -55,6 +75,65 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  // Helper function to convert structured resume data to text
+  const convertResumeDataToText = (resumeData: any): string => {
+    let text = ''
+    
+    // Personal Info
+    if (resumeData.personalInfo) {
+      const p = resumeData.personalInfo
+      text += `${p.fullName || ''}\n`
+      if (p.email) text += `${p.email}\n`
+      if (p.phone) text += `${p.phone}\n`
+      if (p.location) text += `${p.location}\n`
+      if (p.linkedin) text += `${p.linkedin}\n`
+      if (p.website) text += `${p.website}\n`
+      if (p.summary) text += `\n${p.summary}\n`
+      text += '\n'
+    }
+    
+    // Experience
+    if (resumeData.experience && resumeData.experience.length > 0) {
+      text += 'WORK EXPERIENCE\n\n'
+      resumeData.experience.forEach((exp: any) => {
+        text += `${exp.position || ''}\n`
+        text += `${exp.company || ''} | ${exp.location || ''}\n`
+        text += `${exp.startDate || ''} - ${exp.endDate || 'Present'}\n`
+        if (exp.description) text += `${exp.description}\n`
+        if (exp.achievements && exp.achievements.length > 0) {
+          exp.achievements.forEach((ach: string) => text += `• ${ach}\n`)
+        }
+        text += '\n'
+      })
+    }
+    
+    // Education
+    if (resumeData.education && resumeData.education.length > 0) {
+      text += 'EDUCATION\n\n'
+      resumeData.education.forEach((edu: any) => {
+        text += `${edu.degree || ''} in ${edu.field || ''}\n`
+        text += `${edu.institution || ''}\n`
+        if (edu.graduationDate) text += `Graduated: ${edu.graduationDate}\n`
+        if (edu.gpa) text += `GPA: ${edu.gpa}\n`
+        text += '\n'
+      })
+    }
+    
+    // Skills
+    if (resumeData.skills) {
+      const allSkills = [
+        ...(resumeData.skills.technical || []),
+        ...(resumeData.skills.soft || [])
+      ]
+      if (allSkills.length > 0) {
+        text += 'SKILLS\n\n'
+        text += allSkills.join(', ') + '\n\n'
+      }
+    }
+    
+    return text
   }
 
   const handleLinkedInOAuth = async () => {

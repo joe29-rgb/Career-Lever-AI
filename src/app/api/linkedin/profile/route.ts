@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         fullName: profile.name || `${profile.given_name || ''} ${profile.family_name || ''}`.trim(),
         email: email || '',
         phone: '',
-        location: profile.locale ? profile.locale.replace('_', ', ') : '',
+        location: (profile.locale && typeof profile.locale === 'string') ? profile.locale.replace('_', ', ') : '',
         linkedin: linkedinUrl,
         website: '',
         summary: '' // User will need to add this manually
