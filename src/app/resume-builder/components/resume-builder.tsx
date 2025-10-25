@@ -39,6 +39,7 @@ import toast from 'react-hot-toast'
 import { LinkedInImport } from '@/components/linkedin-import'
 import { ResumeAnalyzer } from '@/components/resume-builder/resume-analyzer'
 import { ATSScore } from '@/components/resume-builder/ats-score'
+import { TemplateSelector } from '@/components/resume-builder/template-selector'
 
 interface ResumeData {
   personalInfo: {
@@ -89,51 +90,6 @@ interface ResumeData {
     endDate: string
   }>
 }
-
-const TEMPLATES = [
-  {
-    id: 'modern',
-    name: 'Modern',
-    description: 'Clean, contemporary design with subtle colors',
-    preview: '🎨 Modern gradient header with clean typography',
-    color: 'from-blue-500 to-purple-600'
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'Traditional layout perfect for corporate roles',
-    preview: '📋 Classic format with serif typography',
-    color: 'from-gray-700 to-gray-900'
-  },
-  {
-    id: 'creative',
-    name: 'Creative',
-    description: 'Bold design for creative and marketing roles',
-    preview: '✨ Colorful accents with creative layout',
-    color: 'from-red-500 to-pink-600'
-  },
-  {
-    id: 'tech',
-    name: 'Tech-Focused',
-    description: 'Optimized for technology and engineering roles',
-    preview: '💻 Code-friendly with technical emphasis',
-    color: 'from-green-500 to-teal-600'
-  },
-  {
-    id: 'minimal',
-    name: 'Minimal',
-    description: 'Clean, distraction-free design',
-    preview: '🎯 Simple and elegant layout',
-    color: 'from-gray-500 to-gray-700'
-  },
-  {
-    id: 'executive',
-    name: 'Executive',
-    description: 'Sophisticated design for senior leadership',
-    preview: '🏆 Premium layout for executive positions',
-    color: 'from-indigo-600 to-purple-800'
-  }
-]
 
 interface ResumeBuilderProps {
   userId: string
@@ -545,59 +501,24 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
     <div className="space-y-8">
       {/* Template Selection */}
       {mode === 'full' && (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Palette className="h-5 w-5" />
-            Choose Template
-          </CardTitle>
-          <CardDescription>
-            Select a professional template that matches your style and industry
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TEMPLATES.map((template) => (
-              <div
-                key={template.id}
-                onClick={() => {
-                  setSelectedTemplate(template.id)
-                  // Auto-select matching tone
-                  const toneMap: Record<string, 'professional' | 'conversational' | 'technical'> = {
-                    'modern': 'professional',
-                    'professional': 'professional',
-                    'creative': 'conversational',
-                    'minimal': 'professional',
-                    'executive': 'professional',
-                    'technical': 'technical'
-                  }
-                  const matchingTone = toneMap[template.id] || 'professional'
-                  setTone(matchingTone)
-                  toast.success(`Template changed to ${template.name} - Tone set to ${matchingTone}`)
-                }}
-                className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
-                  selectedTemplate === template.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className={`w-full h-20 bg-gradient-to-br ${template.color} rounded mb-3 flex items-center justify-center`}>
-                  <span className="text-foreground font-semibold">{template.name}</span>
-                </div>
-                <h4 className="font-medium mb-1">{template.name}</h4>
-                <p className="text-sm text-muted-foreground mb-2">{template.description}</p>
-                <p className="text-xs text-muted-foreground">{template.preview}</p>
-                {selectedTemplate === template.id && (
-                  <Badge className="mt-2 bg-blue-100 text-blue-800">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Selected
-                  </Badge>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+        <TemplateSelector
+          selectedTemplate={selectedTemplate}
+          onSelectTemplate={(templateId) => {
+            setSelectedTemplate(templateId)
+            // Auto-select matching tone
+            const toneMap: Record<string, 'professional' | 'conversational' | 'technical'> = {
+              'modern': 'professional',
+              'professional': 'professional',
+              'creative': 'conversational',
+              'minimal': 'professional',
+              'executive': 'professional',
+              'tech': 'technical'
+            }
+            const matchingTone = toneMap[templateId] || 'professional'
+            setTone(matchingTone)
+            toast.success(`Template changed - Tone set to ${matchingTone}`)
+          }}
+        />
       )}
 
       {/* Builder Interface */}
