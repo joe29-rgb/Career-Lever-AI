@@ -374,17 +374,20 @@ export function LinkedInImport({ onImport, className = '', mode = 'upload' }: Li
             </div>
             <div className="text-center">
               <p className="font-semibold text-foreground">Import from LinkedIn PDF</p>
-              <p className="text-sm text-gray-600 mt-1">
-                Download your profile as PDF from LinkedIn, then upload it here
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Go to LinkedIn → Your Profile → Resources → Download Profile as PDF
               </p>
             </div>
-            <button
-              type="button"
-              disabled={isProcessing}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isProcessing ? 'Processing...' : 'Choose LinkedIn PDF'}
-            </button>
+            <div className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold">
+              {isProcessing ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </div>
+              ) : (
+                'Click to Choose LinkedIn PDF'
+              )}
+            </div>
           </div>
         </label>
       </div>
