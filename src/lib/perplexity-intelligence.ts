@@ -322,6 +322,10 @@ export type RequestMetadata = {
   withEmails?: number
   agent_iterations?: number
   tools_used?: string[]
+  reasoning?: string
+  confidence?: number
+  method?: string
+  sources?: number
 }
 export type EnhancedResponse<T> = { success: boolean; data: T; metadata: RequestMetadata; cached: boolean }
 
@@ -2403,8 +2407,8 @@ Return ONLY valid JSON:
 
   /**
    * AGENT-POWERED: Job search with 95%+ reliability
-   * Uses function calling to guarantee tool execution
-   * Falls back to standard method if agent fails
+   * Uses NEW orchestrator-based agent system with Perplexity web_search + Cheerio fallback
+   * Searches 15+ job boards in parallel
    */
   static async jobListingsWithAgent(
     jobTitle: string,
@@ -2414,23 +2418,32 @@ Return ONLY valid JSON:
     const started = Date.now()
     const requestId = generateRequestId()
 
+    console.log('🤖 [INTELLIGENCE] Starting NEW agent-powered job search...')
+    console.log(`📋 [INTELLIGENCE] Job: "${jobTitle}" in "${location}"`)
+    console.log(`🎯 [INTELLIGENCE] Max results: ${options?.maxResults || 30}`)
+
     try {
-      const { PerplexityCareerAgent } = await import('./agents/perplexity-career-agent')
-      const agent = new PerplexityCareerAgent(process.env.PERPLEXITY_API_KEY!)
+      const { AgentOrchestrator } = await import('./agents/agent-orchestrator')
+      const { AgentTask } = await import('./agents/base-agent')
+      
+      const orchestrator = new AgentOrchestrator()
 
-      const result = await agent.run(`
-        Find ${options?.maxResults || 30} job listings for "${jobTitle}" in "${location}".
-        
-        Requirements:
-        - Company must NOT be Confidential
-        - Extract FULL job descriptions (>150 chars)
-        - Include salary if available
-        - Filter by work type: ${options?.workType || 'any'}
-        - Return structured JSON with jobs array
-      `)
+      const task = {
+        id: requestId,
+        type: 'job_search' as const,
+        input: { 
+          jobTitle, 
+          location, 
+          maxResults: options?.maxResults || 30,
+          workType: options?.workType
+        },
+        priority: 1 as const
+      }
 
-      if (!result.success || !result.data.jobs) {
-        console.warn('[AGENT] Failed or no jobs, using standard method')
+      const result = await orchestrator.executeTask(task)
+
+      if (!result.success || !result.data || result.data.length === 0) {
+        console.warn('⚠️ [INTELLIGENCE] Agent found no jobs, using fallback method')
         return await this.jobMarketAnalysisV2(location, '', {
           roleHint: jobTitle,
           maxResults: options?.maxResults,
@@ -2438,20 +2451,27 @@ Return ONLY valid JSON:
         })
       }
 
+      console.log(`✅ [INTELLIGENCE] Agent found ${result.data.length} jobs`)
+      console.log(`📊 [INTELLIGENCE] Confidence: ${result.confidence}, Method: ${result.method}`)
+
       return {
         success: true,
-        data: result.data.jobs || [],
+        data: result.data,
         metadata: {
           requestId,
           timestamp: started,
-          duration: Date.now() - started,
-          agent_iterations: result.iterations,
-          tools_used: result.tools_used
+          duration: result.duration,
+          reasoning: result.reasoning,
+          confidence: result.confidence,
+          method: result.method,
+          sources: result.sources.length
         },
         cached: false
       }
     } catch (error) {
-      console.error('[AGENT_ERROR]', error)
+      console.error('❌ [INTELLIGENCE] Agent system failed:', error)
+      console.log('🔄 [INTELLIGENCE] Falling back to standard method...')
+      
       return await this.jobMarketAnalysisV2(location, '', {
         roleHint: jobTitle,
         maxResults: options?.maxResults,
@@ -2462,61 +2482,73 @@ Return ONLY valid JSON:
 
   /**
    * AGENT-POWERED: Hiring contacts with 95%+ reliability
-   * Uses function calling to guarantee verified contacts only
-   * Returns empty array if no verified contacts (NO INFERRED)
+   * Uses NEW orchestrator-based agent system with Perplexity + Hunter.io verification
+   * Returns empty array if no verified contacts (NO GUESSING)
    */
   static async hiringContactsWithAgent(
-    companyName: string
+    companyName: string,
+    companyDomain?: string
   ): Promise<EnhancedResponse<HiringContact[]>> {
     const started = Date.now()
     const requestId = generateRequestId()
 
+    console.log('🤖 [INTELLIGENCE] Starting NEW agent-powered contact research...')
+    console.log(`🏢 [INTELLIGENCE] Company: "${companyName}"`)
+    console.log(`🌐 [INTELLIGENCE] Domain: ${companyDomain || 'auto-detect'}`)
+
     try {
-      const { PerplexityCareerAgent } = await import('./agents/perplexity-career-agent')
-      const agent = new PerplexityCareerAgent(process.env.PERPLEXITY_API_KEY!)
+      const { AgentOrchestrator } = await import('./agents/agent-orchestrator')
+      
+      const orchestrator = new AgentOrchestrator()
 
-      const result = await agent.run(`
-        Find verified hiring contacts at "${companyName}".
-        
-        Requirements:
-        - Search LinkedIn for recruiters/HR/talent acquisition
-        - Verify emails on company domain
-        - NO personal emails (gmail, yahoo, etc)
-        - NO inferred/pattern emails
-        - Return structured JSON with contacts array
-        - If NO verified contacts found, return empty array
-      `)
+      const task = {
+        id: requestId,
+        type: 'contact_research' as const,
+        input: { 
+          companyName,
+          companyDomain
+        },
+        priority: 1 as const
+      }
 
-      if (!result.success || !result.data.contacts || result.data.contacts.length === 0) {
+      const result = await orchestrator.executeTask(task)
+
+      if (!result.success || !result.data || result.data.length === 0) {
+        console.warn('⚠️ [INTELLIGENCE] No verified contacts found')
         return {
           success: false,
           data: [],
           metadata: {
             requestId,
             timestamp: started,
-            duration: Date.now() - started,
+            duration: result.duration,
             error: `No verified hiring contacts found for ${companyName}. Visit company website or use LinkedIn InMail.`,
-            agent_iterations: result.iterations,
-            tools_used: result.tools_used
+            reasoning: result.reasoning
           },
           cached: false
         }
       }
 
+      console.log(`✅ [INTELLIGENCE] Found ${result.data.length} verified contacts`)
+      console.log(`📊 [INTELLIGENCE] Confidence: ${result.confidence}`)
+
       return {
         success: true,
-        data: result.data.contacts,
+        data: result.data,
         metadata: {
           requestId,
           timestamp: started,
-          duration: Date.now() - started,
-          agent_iterations: result.iterations,
-          tools_used: result.tools_used
+          duration: result.duration,
+          reasoning: result.reasoning,
+          confidence: result.confidence,
+          method: result.method,
+          sources: result.sources.length
         },
         cached: false
       }
     } catch (error) {
-      console.error('[AGENT_ERROR]', error)
+      console.error('❌ [INTELLIGENCE] Contact agent system failed:', error)
+      console.log('🔄 [INTELLIGENCE] Falling back to standard method...')
       return await this.hiringContactsV2(companyName)
     }
   }
