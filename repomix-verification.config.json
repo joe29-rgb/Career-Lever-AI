@@ -1,0 +1,20 @@
+{
+  "output": {
+    "filePath": "perplexity-verification-pack.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/agents/job-discovery-agent.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/components/resume-builder/template-preview.tsx",
+    "src/components/resume-builder/template-selector.tsx",
+    "CRITICAL_ISSUES_SUMMARY.md"
+  ],
+  "ignore": {
+    "customPatterns": [
+      "*.test.*",
+      "*.spec.*"
+    ]
+  }
+}
