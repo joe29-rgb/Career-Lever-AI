@@ -647,29 +647,33 @@ export class PerplexityIntelligenceService {
   /**
    * CRITICAL FIX: Validates job listings response from Perplexity
    * Filters out incomplete, fake, or low-quality jobs
+   * UPDATED: Relaxed validation to accept more jobs
    */
   private static validateJobListings(jobs: JobListing[], minRequired: number): JobListing[] {
     const validated = jobs.filter((job: JobListing) => {
-      // ❌ REJECT: Empty or short descriptions
-      if (!job.summary || job.summary.trim().length < 150) {
+      // FIX: Only reject if completely missing critical fields
+      if (!job.title || !job.company || !job.url) {
         if (process.env.PPX_DEBUG === 'true') {
-          console.warn(`[VALIDATE] Rejecting ${job.title} - description too short (${job.summary?.length || 0} chars)`)
+          console.warn(`[VALIDATE] Rejecting job - missing critical fields: title=${!!job.title}, company=${!!job.company}, url=${!!job.url}`)
         }
         return false
       }
       
-      // ❌ REJECT: Confidential companies
-      const confidentialKeywords = ['confidential', 'various', 'tbd', 'multiple', 'undisclosed', 'anonymous', 'private', 'stealth', 'hidden']
+      // FIX: Don't reject based on description length - will be enriched later
+      // Short descriptions are acceptable and will be scraped from URLs
+      
+      // FIX: More lenient confidential filter - only reject obvious ones
       const company = String(job.company || '').toLowerCase().trim()
-      if (confidentialKeywords.some(kw => company.includes(kw)) || company.length < 3) {
+      const isConfidential = company.includes('confidential') && company.length < 20
+      if (isConfidential) {
         if (process.env.PPX_DEBUG === 'true') {
-          console.warn(`[VALIDATE] Rejecting ${job.title} - confidential company: ${job.company}`)
+          console.warn(`[VALIDATE] Rejecting ${job.title} - obvious confidential company: ${job.company}`)
         }
         return false
       }
       
       // ❌ REJECT: No valid URL
-      if (!job.url || !job.url.includes('http')) {
+      if (!job.url.includes('http')) {
         if (process.env.PPX_DEBUG === 'true') {
           console.warn(`[VALIDATE] Rejecting ${job.title} - invalid URL: ${job.url}`)
         }
@@ -1230,10 +1234,15 @@ OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
         let rawContent = out.content.trim()
         console.log('[JOB_SEARCH_V2] Raw content preview:', rawContent.slice(0, 200))
         
-        // CRITICAL FIX: Strip markdown code blocks
-        rawContent = rawContent.replace(/^```json\s*/i, '').replace(/```\s*$/i, '')
+        // CRITICAL FIX: Remove ALL markdown formatting
+        rawContent = rawContent
+          .replace(/```json\s*/gi, '')
+          .replace(/```\s*/g, '')
+          .replace(/^Here.*?:\s*/i, '')
+          .replace(/^I found.*?:\s*/i, '')
+          .replace(/^Results.*?:\s*/i, '')
         
-        // Try to extract JSON array if wrapped in object
+        // Extract JSON array if wrapped in explanatory text
         const jsonMatch = rawContent.match(/\[[\s\S]*\]/)
         if (jsonMatch) {
           rawContent = jsonMatch[0]

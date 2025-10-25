@@ -448,12 +448,18 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     console.error('[JOB_SEARCH] User ID:', session?.user?.id)
     
+    // FIX: Return 200 status with helpful error message (frontend expects 200)
     return NextResponse.json({ 
-      error: 'Job search failed', 
-      details: error?.message || 'Unknown error',
+      success: false,
+      jobs: [],
+      totalResults: 0,
+      returnedResults: 0,
+      error: 'Job search temporarily unavailable. Please try again in a moment.',
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined,
       errorType: error?.constructor?.name,
-      timestamp: new Date().toISOString()
-    }, { status: 500 })
+      timestamp: new Date().toISOString(),
+      suggestion: 'Try different search terms or check your spelling'
+    }, { status: 200 }) // Frontend expects 200 status
   }
 }
 
