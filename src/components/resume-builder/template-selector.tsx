@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { Check } from 'lucide-react'
+import { TemplatePreview } from './template-preview'
 
 const TEMPLATES = [
   {
@@ -66,45 +65,20 @@ export function TemplateSelector({ selectedTemplate, onSelectTemplate }: Templat
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {TEMPLATES.map((template) => (
-          <button
+          <TemplatePreview
             key={template.id}
-            onClick={() => onSelectTemplate(template.id)}
-            className={`relative p-6 rounded-xl border-2 transition-all text-left ${
-              selectedTemplate === template.id
-                ? 'border-blue-500 bg-blue-50 shadow-lg scale-105'
-                : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
-            }`}
-          >
-            {/* Selected Checkmark */}
-            {selectedTemplate === template.id && (
-              <div className="absolute top-3 right-3 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                <Check className="w-4 h-4 text-white" />
-              </div>
-            )}
-
-            {/* Recommended Badge */}
-            {template.recommended && (
-              <div className="absolute top-3 left-3">
-                <span className="px-2 py-1 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">
-                  Recommended
-                </span>
-              </div>
-            )}
-
-            {/* Template Preview */}
-            <div className={`w-full h-32 bg-gradient-to-br ${template.color} rounded-lg mb-4 flex items-center justify-center text-6xl`}>
-              {template.preview}
-            </div>
-
-            {/* Template Info */}
-            <h4 className="font-bold text-foreground mb-1">{template.name}</h4>
-            <p className="text-sm text-gray-600">{template.description}</p>
-          </button>
+            id={template.id}
+            name={template.name}
+            description={template.description}
+            isSelected={selectedTemplate === template.id}
+            onSelect={() => onSelectTemplate(template.id)}
+            recommended={template.recommended}
+          />
         ))}
       </div>
 
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-sm text-blue-800">
+      <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p className="text-sm text-blue-800 dark:text-blue-300">
           <strong>💡 Tip:</strong> All templates are ATS-compatible. Choose based on your industry and personal style!
         </p>
       </div>
