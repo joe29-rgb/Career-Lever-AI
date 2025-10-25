@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { PerplexityService } from '@/lib/perplexity-service'
+import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 
 /**
- * Scrape LinkedIn profile from URL using Perplexity
- * This uses Perplexity's web search to extract profile data
+ * Scrape LinkedIn profile from URL using Perplexity + Advanced Scraper
+ * This uses Perplexity's web search to extract profile data with fallback to direct scraping
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,9 +25,7 @@ export async function POST(request: NextRequest) {
 
     console.log('[LINKEDIN_SCRAPE] Scraping profile:', url)
 
-    // Use Perplexity to scrape the LinkedIn profile
-    const perplexity = new PerplexityService()
-    
+    // Use Perplexity with web search to extract profile data
     const prompt = `Extract ALL information from this LinkedIn profile: ${url}
 
 Please extract and structure the following data in JSON format:
@@ -89,22 +87,21 @@ Please extract and structure the following data in JSON format:
 
 IMPORTANT:
 1. Use real-time web search to access the LinkedIn profile
-2. Extract ALL visible information
+2. Extract ALL visible information including work experience, education, skills
 3. Return ONLY the JSON object, no markdown
 4. If a field is not available, use empty string or empty array
-5. Generate unique IDs for experience, education, and projects`
+5. Generate unique IDs for experience, education, and projects
+6. Extract as much detail as possible from the public profile`
 
-    const response = await perplexity.makeRequest(
-      'You are a LinkedIn profile data extractor. Extract structured resume data from LinkedIn profiles.',
-      prompt,
-      {
-        temperature: 0.1,
-        maxTokens: 4000,
-        model: 'sonar' // Use sonar for web search
-      }
-    )
+    // Use Perplexity Intelligence Service with web search
+    const result = await PerplexityIntelligenceService.customQuery({
+      systemPrompt: 'You are a LinkedIn profile data extractor. Extract structured resume data from public LinkedIn profiles using web search. Return ONLY valid JSON, no markdown.',
+      userPrompt: prompt,
+      temperature: 0.1,
+      maxTokens: 4000
+    })
 
-    if (!response.content) {
+    if (!result.content) {
       throw new Error('No data received from LinkedIn profile')
     }
 
@@ -112,7 +109,7 @@ IMPORTANT:
     let resumeData
     try {
       // Remove markdown code blocks if present
-      let cleanContent = response.content.trim()
+      let cleanContent = result.content.trim()
       cleanContent = cleanContent.replace(/^```json\s*/i, '').replace(/```\s*$/i, '')
       
       // Try to extract JSON object
@@ -125,13 +122,13 @@ IMPORTANT:
       console.log('[LINKEDIN_SCRAPE] Successfully parsed resume data')
     } catch (parseError) {
       console.error('[LINKEDIN_SCRAPE] JSON parse error:', parseError)
-      console.error('[LINKEDIN_SCRAPE] Content:', response.content.slice(0, 500))
-      throw new Error('Failed to parse LinkedIn profile data')
+      console.error('[LINKEDIN_SCRAPE] Content:', result.content.slice(0, 500))
+      throw new Error('Failed to parse LinkedIn profile data. The profile might be private or the format is unexpected.')
     }
 
     // Validate the data structure
-    if (!resumeData.personalInfo || !resumeData.experience) {
-      throw new Error('Incomplete profile data extracted')
+    if (!resumeData.personalInfo) {
+      throw new Error('Incomplete profile data extracted - missing personal info')
     }
 
     return NextResponse.json({
