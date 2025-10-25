@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { signIn, useSession } from 'next-auth/react'
 import { Upload, Linkedin, FileText, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
@@ -10,32 +10,31 @@ interface LinkedInImportProps {
 }
 
 export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [linkedInUrl, setLinkedInUrl] = useState('')
+  const [autoFetched, setAutoFetched] = useState(false)
 
-  const handleLinkedInOAuth = async () => {
+  // Auto-fetch profile if user is already signed in
+  useEffect(() => {
+    if (session?.user && status === 'authenticated' && !autoFetched) {
+      setAutoFetched(true)
+      fetchLinkedInProfile()
+    }
+  }, [session, status, autoFetched])
+
+  const fetchLinkedInProfile = async () => {
     setIsProcessing(true)
     setError(null)
 
     try {
-      // Sign in with LinkedIn OAuth
-      const result = await signIn('linkedin', {
-        redirect: false,
-        callbackUrl: window.location.href
-      })
-
-      if (result?.error) {
-        throw new Error('Failed to sign in with LinkedIn')
-      }
-
-      // After successful sign-in, fetch the profile
       const response = await fetch('/api/linkedin/profile')
       
       if (!response.ok) {
-        throw new Error('Failed to fetch LinkedIn profile')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch LinkedIn profile')
       }
 
       const data = await response.json()
@@ -48,8 +47,35 @@ export function LinkedInImport({ onImport, className = '' }: LinkedInImportProps
         throw new Error(data.error || 'Failed to import LinkedIn data')
       }
     } catch (err) {
-      setError((err as Error).message)
+      const errorMessage = (err as Error).message
+      // Only show error if it's not about missing token (user might not have signed in with LinkedIn)
+      if (!errorMessage.includes('No LinkedIn access token')) {
+        setError(errorMessage)
+      }
     } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleLinkedInOAuth = async () => {
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      // If already signed in, just fetch the profile
+      if (session?.user) {
+        await fetchLinkedInProfile()
+        return
+      }
+
+      // Sign in with LinkedIn OAuth (will redirect)
+      await signIn('linkedin', {
+        callbackUrl: window.location.href
+      })
+
+      // Note: After redirect, the page will reload and auto-fetch will handle profile import
+    } catch (err) {
+      setError((err as Error).message)
       setIsProcessing(false)
     }
   }
