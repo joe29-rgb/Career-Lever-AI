@@ -361,8 +361,8 @@ ${name}`
     return (
       <div className="container mx-auto px-6 py-8">
         <CareerFinderBackButton />
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mt-4">
-          <p className="text-red-600">{error}</p>
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 mt-4">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       </div>
     )
@@ -401,8 +401,8 @@ ${name}`
                     onClick={() => selectContact(contact, jobData, CareerFinderStorage.getJobAnalysis(), CareerFinderStorage.getResume()?.extractedText || '')}
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedContact === contact
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-300'
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-border hover:border-blue-300'
                     }`}
                   >
                     <p className="font-semibold text-foreground">{contact.name}</p>
@@ -437,7 +437,7 @@ ${name}`
               </div>
             </div>
           ) : (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
               <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <User className="w-5 h-5 text-yellow-600" />
                 No Specific Contacts Found
@@ -506,9 +506,9 @@ ${name}`
 
           {/* Strategy Recommendations */}
           {companyData?.strategicRecommendations?.contactStrategy && (
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-200 p-6">
-              <h3 className="text-lg font-bold mb-3 text-blue-900">💡 Contact Strategy</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">
+            <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/30 p-6">
+              <h3 className="text-lg font-bold mb-3 text-blue-600 dark:text-blue-400">💡 Contact Strategy</h3>
+              <p className="text-sm text-foreground leading-relaxed">
                 {companyData.strategicRecommendations.contactStrategy}
               </p>
             </div>
@@ -529,7 +529,7 @@ ${name}`
                   type="email"
                   value={currentEmail || 'No email found'}
                   disabled
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-foreground"
+                  className="flex-1 px-4 py-2 border border-border rounded-lg bg-muted text-foreground"
                 />
                 {currentEmail && (
                   <Button
@@ -586,13 +586,13 @@ ${name}`
 
             {/* Success/Error Messages */}
             {success && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-700 text-sm font-medium">{success}</p>
+              <div className="mb-4 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+                <p className="text-green-600 dark:text-green-400 text-sm font-medium">{success}</p>
               </div>
             )}
             {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm font-medium">{error}</p>
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                <p className="text-red-600 dark:text-red-400 text-sm font-medium">{error}</p>
               </div>
             )}
 
@@ -632,7 +632,7 @@ ${name}`
                     href={selectedContact.linkedinUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-4 border-2 border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all"
+                    className="flex items-center gap-3 p-4 border-2 border-blue-500/30 rounded-lg hover:border-blue-400 hover:bg-blue-500/10 transition-all"
                   >
                     <Linkedin className="w-6 h-6 text-blue-600" />
                     <div>
@@ -644,7 +644,7 @@ ${name}`
                 {selectedContact.phone && (
                   <a
                     href={`tel:${selectedContact.phone}`}
-                    className="flex items-center gap-3 p-4 border-2 border-purple-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all"
+                    className="flex items-center gap-3 p-4 border-2 border-purple-500/30 rounded-lg hover:border-purple-400 hover:bg-purple-500/10 transition-all"
                   >
                     <Phone className="w-6 h-6 text-purple-600" />
                     <div>
@@ -671,7 +671,7 @@ ${name}`
           <Button
             onClick={() => router.push('/career-finder/search')}
             variant="outline"
-            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            className="border-blue-600 text-blue-600 hover:bg-blue-500/10"
           >
             Apply to More Jobs →
           </Button>
