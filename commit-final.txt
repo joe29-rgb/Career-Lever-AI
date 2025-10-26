@@ -1,0 +1,5 @@
+Update gitignore and add final documentation
+
+- Updated .gitignore to exclude openJdk-25
+- Added SUCCESS-PUSH-COMPLETE.md
+- Removed temporary commit message files

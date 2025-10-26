@@ -46,11 +46,6 @@ coverage/
 railway.toml
 .railway/
 
-# Java (should not be in this repo - this is a Node.js app)
-openJdk-25/
-*.jar
-*.class
-
 
 
 
