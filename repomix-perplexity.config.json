@@ -1,0 +1,32 @@
+{
+  "output": {
+    "filePath": "repomix-for-perplexity.md",
+    "style": "markdown",
+    "headerText": "# Career Lever AI - Codebase Export for Perplexity\n\nIncludes: Perplexity AI, Scrapers, PDF Processing, Cheerio, Core APIs\n\nGenerated: {{generationDate}}",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true
+  },
+  "include": [
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/perplexity-client.ts",
+    "src/lib/scrapers/**/*.ts",
+    "src/lib/pdf-*.ts",
+    "src/lib/*resume*.ts",
+    "src/lib/cheerio-utils.ts",
+    "src/lib/web-scraper.ts",
+    "src/app/api/resume/upload/route.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/jobs/scrape/route.ts",
+    "src/models/Resume.ts",
+    "src/models/Job.ts"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "**/*.test.ts",
+      "**/*.spec.ts"
+    ]
+  }
+}

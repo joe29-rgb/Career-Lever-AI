@@ -1,0 +1,2957 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/components/unified-navigation.tsx, src/components/mobile/**, src/components/modern/MobileNavigation.tsx, src/components/modern/VibrantPageHeader.tsx, src/components/ui/dropdown-menu.tsx, src/app/layout.tsx, src/components/providers.tsx, src/app/globals.css, tailwind.config.js, package.json
+- Files matching these patterns are excluded: *.test.*, *.spec.*, *.md
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+package.json
+src/app/globals.css
+src/app/layout.tsx
+src/components/mobile/JobCard.tsx
+src/components/mobile/MobileNav.tsx
+src/components/mobile/PullToRefresh.tsx
+src/components/mobile/SuccessAnimation.tsx
+src/components/modern/MobileNavigation.tsx
+src/components/modern/VibrantPageHeader.tsx
+src/components/providers.tsx
+src/components/ui/dropdown-menu.tsx
+src/components/unified-navigation.tsx
+tailwind.config.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/components/modern/MobileNavigation.tsx">
+'use client'
+
+import React from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { 
+  HomeIcon, 
+  MagnifyingGlassIcon, 
+  DocumentTextIcon, 
+  BuildingOfficeIcon,
+  UserIcon 
+} from '@heroicons/react/24/outline'
+
+const navItems = [
+  { icon: HomeIcon, label: 'Home', href: '/' },
+  { icon: MagnifyingGlassIcon, label: 'Search', href: '/career-finder/search' },
+  { icon: DocumentTextIcon, label: 'Resume', href: '/career-finder/resume' },
+  { icon: BuildingOfficeIcon, label: 'Companies', href: '/career-finder/company' },
+  { icon: UserIcon, label: 'Profile', href: '/dashboard' },
+]
+
+export const MobileNavigation: React.FC = () => {
+  const pathname = usePathname()
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 z-50 shadow-2xl">
+      <div className="flex items-center justify-around py-2 px-2">
+        {navItems.map(({ icon: Icon, label, href }) => {
+          const isActive = pathname === href || pathname?.startsWith(href + '/')
+          
+          return (
+            <Link key={href} href={href} className="flex-1">
+              <div className={`
+                flex flex-col items-center py-2 px-1 rounded-xl transition-all duration-200 min-w-0
+                ${isActive 
+                  ? 'bg-gradient-to-t from-blue-100 to-purple-100 text-blue-600 scale-105' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }
+              `}>
+                <Icon className="w-6 h-6 mb-1 flex-shrink-0" />
+                <span className={`
+                  text-xs font-medium truncate max-w-full
+                  ${isActive ? 'font-semibold' : ''}
+                `}>
+                  {label}
+                </span>
+                {isActive && (
+                  <div className="w-1 h-1 bg-blue-500 rounded-full mt-1 shadow-sm"></div>
+                )}
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
+  )
+}
+</file>
+
+<file path="src/components/modern/VibrantPageHeader.tsx">
+'use client'
+
+import React from 'react'
+
+interface PageHeaderProps {
+  title: string
+  subtitle: string
+  progress?: number
+  showProgress?: boolean
+}
+
+export const VibrantPageHeader: React.FC<PageHeaderProps> = ({ 
+  title, 
+  subtitle, 
+  progress = 0, 
+  showProgress = false 
+}) => {
+  return (
+    <div className="relative overflow-hidden rounded-b-[40px] mb-8">
+      {/* Gradient Background */}
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-red-500 px-6 py-12">
+        {/* Decorative Elements */}
+        <div className="absolute top-4 right-4 w-20 h-20 bg-white bg-opacity-10 rounded-full blur-xl"></div>
+        <div className="absolute bottom-4 left-4 w-12 h-12 bg-yellow-400 bg-opacity-20 rounded-2xl blur-lg"></div>
+        
+        {/* Content */}
+        <div className="relative z-10 text-center">
+          <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+            {title}
+          </h1>
+          <p className="text-white text-opacity-90 text-lg font-medium max-w-md mx-auto">
+            {subtitle}
+          </p>
+          
+          {/* Progress Bar */}
+          {showProgress && (
+            <div className="mt-6 max-w-xs mx-auto">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-white text-sm font-medium">Progress</span>
+                <span className="text-white text-sm font-bold">{progress}%</span>
+              </div>
+              <div className="w-full bg-white bg-opacity-20 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500 ease-out shadow-lg"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/components/providers.tsx">
+'use client'
+
+import { SessionProvider } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { Toaster } from 'react-hot-toast'
+import { ResumeProvider } from '@/components/resume-context'
+import { initSentry, addRequestBreadcrumb } from '@/lib/sentry'
+import toast from 'react-hot-toast'
+import { createQueryClient } from '@/lib/query-client'
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => createQueryClient())
+  const pathname = usePathname() || ''
+  const DASHBOARD_PREFIXES = [
+    '/dashboard',
+    '/career-finder',
+    '/analytics',
+    '/job-boards',
+    '/network',
+    '/resume-builder',
+    '/cover-letter',
+    '/salary-negotiation',
+    '/skill-analysis',
+  ]
+  const shouldMountResume = DASHBOARD_PREFIXES.some((p) => pathname.startsWith(p))
+  useEffect(() => {
+    // Initialize Sentry once on client
+    try { initSentry() } catch {}
+    // Global fetch wrapper to capture x-request-id and add breadcrumbs
+    try {
+      const originalFetch = window.fetch
+      if (!(originalFetch as any).__wrapped) {
+        const wrapped = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+          try {
+            const resp = await originalFetch(input, init)
+            const reqId = resp.headers.get('x-request-id') || ''
+            if (reqId) addRequestBreadcrumb(reqId)
+            // Minimal default toasts for unhandled auth/rate/server errors
+            if (!resp.ok) {
+              if (resp.status === 401) { toast.error('Session expired. Please sign in.'); }
+              else if (resp.status === 429) { toast.error('Rate limit exceeded. Please wait and try again.'); }
+              else if (resp.status >= 500) { toast.error('Server error. Please try again later.'); }
+            }
+            return resp
+          } catch (e) {
+            toast.error('Network error. Check your connection and try again.')
+            throw e
+          }
+        }
+        ;(wrapped as any).__wrapped = true
+        window.fetch = wrapped as typeof window.fetch
+      }
+    } catch {}
+  }, [])
+  const content = (
+    <>
+      {children}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+    </>
+  )
+
+  return (
+    <SessionProvider>
+      <QueryClientProvider client={queryClient}>
+        {shouldMountResume ? <ResumeProvider>{content}</ResumeProvider> : content}
+      </QueryClientProvider>
+    </SessionProvider>
+  )
+}
+</file>
+
+<file path="src/components/ui/dropdown-menu.tsx">
+import * as React from "react"
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
+import { Check, ChevronRight, Circle } from "lucide-react"
+
+import { cn } from "@/lib/utils"
+
+const DropdownMenu = DropdownMenuPrimitive.Root
+
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
+
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
+
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal
+
+const DropdownMenuSub = DropdownMenuPrimitive.Sub
+
+const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
+
+const DropdownMenuSubTrigger = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
+    inset?: boolean
+  }
+>(({ className, inset, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubTrigger
+    ref={ref}
+    className={cn(
+      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  >
+    {children}
+    <ChevronRight className="ml-auto h-4 w-4" />
+  </DropdownMenuPrimitive.SubTrigger>
+))
+DropdownMenuSubTrigger.displayName =
+  DropdownMenuPrimitive.SubTrigger.displayName
+
+const DropdownMenuSubContent = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.SubContent
+    ref={ref}
+    className={cn(
+      "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuSubContent.displayName =
+  DropdownMenuPrimitive.SubContent.displayName
+
+const DropdownMenuContent = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <DropdownMenuPrimitive.Portal>
+    <DropdownMenuPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=bottom]:slide-in-from-top-2 data-[state=left]:slide-in-from-right-2 data-[state=right]:slide-in-from-left-2 data-[state=top]:slide-in-from-bottom-2",
+        className
+      )}
+      {...props}
+    />
+  </DropdownMenuPrimitive.Portal>
+))
+DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
+
+const DropdownMenuItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
+    inset?: boolean
+  }
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
+
+const DropdownMenuCheckboxItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
+>(({ className, children, checked, ...props }, ref) => (
+  <DropdownMenuPrimitive.CheckboxItem
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    checked={checked}
+    {...props}
+  >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Check className="h-4 w-4" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+    {children}
+  </DropdownMenuPrimitive.CheckboxItem>
+))
+DropdownMenuCheckboxItem.displayName =
+  DropdownMenuPrimitive.CheckboxItem.displayName
+
+const DropdownMenuRadioItem = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
+>(({ className, children, ...props }, ref) => (
+  <DropdownMenuPrimitive.RadioItem
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+      <DropdownMenuPrimitive.ItemIndicator>
+        <Circle className="h-2 w-2 fill-current" />
+      </DropdownMenuPrimitive.ItemIndicator>
+    </span>
+    {children}
+  </DropdownMenuPrimitive.RadioItem>
+))
+DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
+
+const DropdownMenuLabel = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
+    inset?: boolean
+  }
+>(({ className, inset, ...props }, ref) => (
+  <DropdownMenuPrimitive.Label
+    ref={ref}
+    className={cn(
+      "px-2 py-1.5 text-sm font-semibold",
+      inset && "pl-8",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName
+
+const DropdownMenuSeparator = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Separator
+    ref={ref}
+    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    {...props}
+  />
+))
+DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName
+
+const DropdownMenuShortcut = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLSpanElement>) => {
+  return (
+    <span
+      className={cn("ml-auto text-xs tracking-widest opacity-60", className)}
+      {...props}
+    />
+  )
+}
+DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
+
+export {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuGroup,
+  DropdownMenuPortal,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuRadioGroup,
+}
+</file>
+
+<file path="tailwind.config.js">
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+    darkMode: ["class"],
+    content: [
+        './pages/**/*.{ts,tsx}',
+        './components/**/*.{ts,tsx}',
+        './app/**/*.{ts,tsx}',
+        './src/**/*.{ts,tsx}',
+    ],
+    prefix: "",
+    theme: {
+        container: {
+            center: true,
+            padding: "2rem",
+            screens: {
+                "2xl": "1400px",
+            },
+        },
+        extend: {
+            colors: {
+                border: "hsl(var(--border))",
+                input: "hsl(var(--input))",
+                ring: "hsl(var(--ring))",
+                background: "hsl(var(--background))",
+                foreground: "hsl(var(--foreground))",
+                primary: {
+                    DEFAULT: "hsl(var(--primary))",
+                    foreground: "hsl(var(--primary-foreground))",
+                },
+                secondary: {
+                    DEFAULT: "hsl(var(--secondary))",
+                    foreground: "hsl(var(--secondary-foreground))",
+                },
+                destructive: {
+                    DEFAULT: "hsl(var(--destructive))",
+                    foreground: "hsl(var(--destructive-foreground))",
+                },
+                muted: {
+                    DEFAULT: "hsl(var(--muted))",
+                    foreground: "hsl(var(--muted-foreground))",
+                },
+                accent: {
+                    DEFAULT: "hsl(var(--accent))",
+                    foreground: "hsl(var(--accent-foreground))",
+                },
+                popover: {
+                    DEFAULT: "hsl(var(--popover))",
+                    foreground: "hsl(var(--popover-foreground))",
+                },
+                card: {
+                    DEFAULT: "hsl(var(--card))",
+                    foreground: "hsl(var(--card-foreground))",
+                },
+            },
+            borderRadius: {
+                lg: "var(--radius)",
+                md: "calc(var(--radius) - 2px)",
+                sm: "calc(var(--radius) - 4px)",
+            },
+            keyframes: {
+                "accordion-down": {
+                    from: { height: "0" },
+                    to: { height: "var(--radix-accordion-content-height)" },
+                },
+                "accordion-up": {
+                    from: { height: "var(--radix-accordion-content-height)" },
+                    to: { height: "0" },
+                },
+            },
+            animation: {
+                "accordion-down": "accordion-down 0.2s ease-out",
+                "accordion-up": "accordion-up 0.2s ease-out",
+            },
+        },
+    },
+    plugins: [require("tailwindcss-animate")],
+}
+</file>
+
+<file path="src/components/mobile/JobCard.tsx">
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'
+import { Haptics, ImpactStyle } from '@capacitor/haptics'
+
+interface JobCardProps {
+  job: {
+    id: string
+    title: string
+    company: string
+    location: string
+    salary?: string
+    type: string
+    postedDate: string
+    description: string
+  }
+  onSwipeLeft?: (jobId: string) => void
+  onSwipeRight?: (jobId: string) => void
+  onTap?: (jobId: string) => void
+}
+
+export function JobCard({ job, onSwipeLeft, onSwipeRight, onTap }: JobCardProps) {
+  const [isExiting, setIsExiting] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
+  const x = useMotionValue(0)
+  
+  // Transform x position to rotation
+  const rotate = useTransform(x, [-200, 0, 200], [-15, 0, 15])
+  
+  // Transform x position to opacity for indicators
+  const leftOpacity = useTransform(x, [-200, -50, 0], [1, 0.5, 0])
+  const rightOpacity = useTransform(x, [0, 50, 200], [0, 0.5, 1])
+
+  // Trigger haptic feedback
+  const triggerHaptic = async (style: ImpactStyle = ImpactStyle.Light) => {
+    try {
+      await Haptics.impact({ style })
+    } catch (error) {
+      // Haptics not available (web browser)
+      console.debug('Haptics not available')
+    }
+  }
+
+  const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 100
+    
+    if (Math.abs(info.offset.x) > threshold) {
+      setIsExiting(true)
+      
+      // Trigger strong haptic feedback
+      await triggerHaptic(ImpactStyle.Medium)
+      
+      if (info.offset.x > 0) {
+        // Swiped right (like/save)
+        onSwipeRight?.(job.id)
+      } else {
+        // Swiped left (dismiss)
+        onSwipeLeft?.(job.id)
+      }
+    } else {
+      // Snap back to center
+      await triggerHaptic(ImpactStyle.Light)
+    }
+  }
+
+  const handleTap = async () => {
+    await triggerHaptic(ImpactStyle.Light)
+    onTap?.(job.id)
+  }
+
+  return (
+    <motion.div
+      ref={cardRef}
+      className="swipeable-card ripple"
+      style={{ x, rotate }}
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.7}
+      onDragEnd={handleDragEnd}
+      onTap={handleTap}
+      animate={isExiting ? { opacity: 0, scale: 0.8 } : { opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {/* Swipe indicators */}
+      <motion.div
+        className="swipe-indicator swipe-indicator-left"
+        style={{ opacity: leftOpacity }}
+      >
+        ❌
+      </motion.div>
+      
+      <motion.div
+        className="swipe-indicator swipe-indicator-right"
+        style={{ opacity: rightOpacity }}
+      >
+        ⭐
+      </motion.div>
+
+      {/* Card content */}
+      <div className="flex flex-col gap-3">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+              {job.title}
+            </h3>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              {job.company}
+            </p>
+          </div>
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+            {job.company.charAt(0)}
+          </div>
+        </div>
+
+        {/* Details */}
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm font-medium">
+            📍 {job.location}
+          </span>
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
+            💼 {job.type}
+          </span>
+          {job.salary && (
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium">
+              💰 {job.salary}
+            </span>
+          )}
+        </div>
+
+        {/* Description */}
+        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+          {job.description}
+        </p>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Posted {job.postedDate}
+          </span>
+          <div className="flex gap-2">
+            <button
+              className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center ripple"
+              onClick={(e) => {
+                e.stopPropagation()
+                triggerHaptic(ImpactStyle.Light)
+                onSwipeLeft?.(job.id)
+              }}
+              aria-label="Dismiss job"
+            >
+              ✕
+            </button>
+            <button
+              className="w-10 h-10 rounded-full bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 flex items-center justify-center ripple"
+              onClick={(e) => {
+                e.stopPropagation()
+                triggerHaptic(ImpactStyle.Light)
+                onSwipeRight?.(job.id)
+              }}
+              aria-label="Save job"
+            >
+              ⭐
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+</file>
+
+<file path="src/components/mobile/MobileNav.tsx">
+'use client'
+
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import { 
+  HomeIcon, 
+  BriefcaseIcon, 
+  DocumentTextIcon, 
+  UserIcon,
+  MagnifyingGlassIcon
+} from '@heroicons/react/24/outline'
+import {
+  HomeIcon as HomeIconSolid,
+  BriefcaseIcon as BriefcaseIconSolid,
+  DocumentTextIcon as DocumentTextIconSolid,
+  UserIcon as UserIconSolid,
+  MagnifyingGlassIcon as MagnifyingGlassIconSolid
+} from '@heroicons/react/24/solid'
+
+interface NavItem {
+  href: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  iconActive: React.ComponentType<{ className?: string }>
+}
+
+const navItems: NavItem[] = [
+  {
+    href: '/',
+    label: 'Home',
+    icon: HomeIcon,
+    iconActive: HomeIconSolid
+  },
+  {
+    href: '/career-finder',
+    label: 'Jobs',
+    icon: MagnifyingGlassIcon,
+    iconActive: MagnifyingGlassIconSolid
+  },
+  {
+    href: '/applications',
+    label: 'Applied',
+    icon: BriefcaseIcon,
+    iconActive: BriefcaseIconSolid
+  },
+  {
+    href: '/resumes',
+    label: 'Resumes',
+    icon: DocumentTextIcon,
+    iconActive: DocumentTextIconSolid
+  },
+  {
+    href: '/profile',
+    label: 'Profile',
+    icon: UserIcon,
+    iconActive: UserIconSolid
+  }
+]
+
+export function MobileNav() {
+  const pathname = usePathname()
+
+  const handleNavClick = async () => {
+    try {
+      await Haptics.impact({ style: ImpactStyle.Light })
+    } catch (error) {
+      // Haptics not available
+      console.debug('Haptics not available')
+    }
+  }
+
+  return (
+    <nav className="mobile-nav" role="navigation" aria-label="Mobile navigation">
+      {navItems.map((item) => {
+        const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+        const Icon = isActive ? item.iconActive : item.icon
+        
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`mobile-nav-item ${isActive ? 'active' : ''}`}
+            onClick={handleNavClick}
+            aria-label={item.label}
+            aria-current={isActive ? 'page' : undefined}
+          >
+            <Icon className="w-6 h-6" />
+            <span>{item.label}</span>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+</file>
+
+<file path="src/components/mobile/PullToRefresh.tsx">
+'use client'
+
+import { useState, useRef, useEffect, ReactNode } from 'react'
+import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import confetti from 'canvas-confetti'
+
+interface PullToRefreshProps {
+  onRefresh: () => Promise<void>
+  children: ReactNode
+  threshold?: number
+  disabled?: boolean
+}
+
+export function PullToRefresh({ 
+  onRefresh, 
+  children, 
+  threshold = 80,
+  disabled = false 
+}: PullToRefreshProps) {
+  const [isPulling, setIsPulling] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [pullDistance, setPullDistance] = useState(0)
+  const startY = useRef(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const triggerHaptic = async () => {
+    try {
+      await Haptics.impact({ style: ImpactStyle.Medium })
+    } catch (error) {
+      console.debug('Haptics not available')
+    }
+  }
+
+  const triggerConfetti = () => {
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { y: 0.1 }
+    })
+  }
+
+  const handleTouchStart = (e: TouchEvent) => {
+    if (disabled || isRefreshing) return
+    
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+    if (scrollTop === 0) {
+      startY.current = e.touches[0].clientY
+    }
+  }
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (disabled || isRefreshing || startY.current === 0) return
+    
+    const currentY = e.touches[0].clientY
+    const distance = currentY - startY.current
+    
+    if (distance > 0) {
+      setPullDistance(Math.min(distance, threshold * 1.5))
+      setIsPulling(distance > threshold)
+      
+      // Haptic feedback when reaching threshold
+      if (distance > threshold && !isPulling) {
+        triggerHaptic()
+      }
+    }
+  }
+
+  const handleTouchEnd = async () => {
+    if (disabled || isRefreshing) return
+    
+    if (isPulling && pullDistance > threshold) {
+      setIsRefreshing(true)
+      await triggerHaptic()
+      
+      try {
+        await onRefresh()
+        triggerConfetti()
+      } catch (error) {
+        console.error('Refresh failed:', error)
+      } finally {
+        setIsRefreshing(false)
+      }
+    }
+    
+    setIsPulling(false)
+    setPullDistance(0)
+    startY.current = 0
+  }
+
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: true })
+    container.addEventListener('touchmove', handleTouchMove, { passive: true })
+    container.addEventListener('touchend', handleTouchEnd)
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchmove', handleTouchMove)
+      container.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [isPulling, pullDistance, isRefreshing, disabled])
+
+  const pullProgress = Math.min((pullDistance / threshold) * 100, 100)
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* Pull indicator */}
+      <div
+        className="pull-to-refresh"
+        style={{
+          transform: `translateY(${Math.min(pullDistance, threshold)}px)`,
+          opacity: pullDistance > 0 ? 1 : 0
+        }}
+      >
+        {isRefreshing ? (
+          <div className="pull-to-refresh-spinner" />
+        ) : (
+          <div className="relative w-12 h-12 flex items-center justify-center">
+            {/* Progress circle */}
+            <svg className="absolute w-12 h-12 transform -rotate-90">
+              <circle
+                cx="24"
+                cy="24"
+                r="20"
+                stroke="#e5e7eb"
+                strokeWidth="3"
+                fill="none"
+              />
+              <circle
+                cx="24"
+                cy="24"
+                r="20"
+                stroke="#667eea"
+                strokeWidth="3"
+                fill="none"
+                strokeDasharray={`${2 * Math.PI * 20}`}
+                strokeDashoffset={`${2 * Math.PI * 20 * (1 - pullProgress / 100)}`}
+                strokeLinecap="round"
+                style={{ transition: 'stroke-dashoffset 0.1s ease' }}
+              />
+            </svg>
+            {/* Arrow icon */}
+            <div
+              className="text-2xl transition-transform duration-200"
+              style={{
+                transform: isPulling ? 'rotate(180deg)' : 'rotate(0deg)'
+              }}
+            >
+              ↓
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div
+        style={{
+          transform: `translateY(${Math.min(pullDistance * 0.5, threshold * 0.5)}px)`,
+          transition: isPulling || isRefreshing ? 'none' : 'transform 0.3s ease'
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/components/mobile/SuccessAnimation.tsx">
+'use client'
+
+import { useEffect } from 'react'
+import { motion } from 'framer-motion'
+import confetti from 'canvas-confetti'
+import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics'
+
+interface SuccessAnimationProps {
+  title?: string
+  message?: string
+  onComplete?: () => void
+  autoClose?: boolean
+  autoCloseDelay?: number
+}
+
+export function SuccessAnimation({
+  title = 'Success!',
+  message = 'Action completed successfully',
+  onComplete,
+  autoClose = true,
+  autoCloseDelay = 2000
+}: SuccessAnimationProps) {
+  
+  useEffect(() => {
+    // Trigger haptic feedback
+    const triggerHaptics = async () => {
+      try {
+        // Success notification haptic
+        await Haptics.notification({ type: NotificationType.Success })
+      } catch (error) {
+        console.debug('Haptics not available')
+      }
+    }
+
+    // Fire confetti
+    const fireConfetti = () => {
+      const duration = 2000
+      const animationEnd = Date.now() + duration
+      const defaults = { 
+        startVelocity: 30, 
+        spread: 360, 
+        ticks: 60, 
+        zIndex: 10000,
+        colors: ['#667eea', '#764ba2', '#10b981', '#f59e0b']
+      }
+
+      function randomInRange(min: number, max: number) {
+        return Math.random() * (max - min) + min
+      }
+
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now()
+
+        if (timeLeft <= 0) {
+          clearInterval(interval)
+          return
+        }
+
+        const particleCount = 30 * (timeLeft / duration)
+        
+        // Fire from left
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        })
+        
+        // Fire from right
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        })
+      }, 250)
+
+      return () => clearInterval(interval)
+    }
+
+    triggerHaptics()
+    const cleanup = fireConfetti()
+
+    // Auto-close
+    if (autoClose && onComplete) {
+      const timer = setTimeout(() => {
+        onComplete()
+      }, autoCloseDelay)
+
+      return () => {
+        cleanup()
+        clearTimeout(timer)
+      }
+    }
+
+    return cleanup
+  }, [autoClose, autoCloseDelay, onComplete])
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        transition={{ 
+          type: 'spring', 
+          stiffness: 200, 
+          damping: 20 
+        }}
+        className="bg-white dark:bg-gray-800 rounded-3xl p-8 mx-4 max-w-sm w-full shadow-2xl"
+      >
+        {/* Success icon */}
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ 
+            delay: 0.2, 
+            type: 'spring', 
+            stiffness: 200, 
+            damping: 15 
+          }}
+          className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-lg"
+        >
+          <motion.svg
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="w-12 h-12 text-white"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={3}
+          >
+            <motion.path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5 13l4 4L19 7"
+            />
+          </motion.svg>
+        </motion.div>
+
+        {/* Title */}
+        <motion.h2
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2"
+        >
+          {title}
+        </motion.h2>
+
+        {/* Message */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="text-center text-gray-600 dark:text-gray-400"
+        >
+          {message}
+        </motion.p>
+
+        {/* Progress indicator (if auto-close) */}
+        {autoClose && (
+          <motion.div
+            initial={{ width: '100%' }}
+            animate={{ width: '0%' }}
+            transition={{ duration: autoCloseDelay / 1000, ease: 'linear' }}
+            className="h-1 bg-gradient-to-r from-green-400 to-green-600 rounded-full mt-6"
+          />
+        )}
+      </motion.div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/app/globals.css">
+/* ===================================================================
+   CAREER LEVER AI - CLEAN REBUILD
+   Single source of truth for all styles
+   =================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================================================================
+   THEME SYSTEM - ONE SYSTEM, NO CONFLICTS
+   =================================================================== */
+
+@layer base {
+  /* DEFAULT: DARK THEME (Figma-inspired) */
+  :root {
+    /* Dark Theme Base - BLACK BACKGROUND */
+    --background: 0 0% 0%; /* #000000 - PURE BLACK */
+    --foreground: 0 0% 100%; /* white text */
+    
+    /* Cards & Surfaces */
+    --card: 0 0% 12%; /* #1F1F1F - dark gray on black */
+    --card-foreground: 0 0% 100%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 98%;
+    
+    /* Primary - Dribbble Blue */
+    --primary: 251 91% 56%; /* #5324FD */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Dribbble Red */
+    --secondary: 349 100% 48%; /* #F5001E */
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Accent - Dribbble Yellow */
+    --accent: 44 98% 60%; /* #FCC636 */
+    --accent-foreground: 222.2 84% 4.9%;
+    
+    /* Muted */
+    --muted: 0 0% 17%; /* #2B2B2B */
+    --muted-foreground: 0 0% 70%;
+    
+    /* Status Colors */
+    --destructive: 349 100% 48%; /* #F5001E */
+    --destructive-foreground: 210 40% 98%;
+    --success: 142 76% 36%; /* #10b981 */
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%; /* #f59e0b */
+    --warning-foreground: 0 0% 100%;
+    
+    /* UI Elements */
+    --border: 0 0% 20%; /* Neutral gray borders */
+    --input: 0 0% 12%; /* Dark input backgrounds */
+    --ring: 251 91% 56%;
+    --radius: 0.75rem;
+    
+    /* Figma Design System Colors */
+    --figma-purple: 252 97% 57%; /* #5424FD */
+    --figma-red: 352 99% 49%; /* #F5001E */
+    --figma-yellow: 45 97% 60%; /* #FCC636 */
+    --figma-dark: 0 0% 17%; /* #2B2B2B */
+    --figma-darker: 0 0% 12%; /* #1F1F1F */
+    --figma-gray: 0 0% 84%; /* #D5D5D5 */
+    
+    /* Font Variables */
+    --font-inter: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-jakarta: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    
+    /* ============================================
+       DRIBBLE THEME - ADDITIONAL VARIABLES
+       ============================================ */
+    
+    /* Extended Color Palette */
+    --primary-hex: #667eea;
+    --primary-dark-hex: #5a67d8;
+    --primary-light-hex: #7c8ef5;
+    --secondary-hex: #764ba2;
+    --accent-hex: #f093fb;
+    --accent-glow-hex: #4facfe;
+    
+    /* Background Colors (Hex for compatibility) */
+    --bg-primary-hex: #ffffff;
+    --bg-secondary-hex: #f7fafc;
+    --bg-tertiary-hex: #edf2f7;
+    --bg-dark-hex: #1a202c;
+    --bg-card-hex: #1f2937;
+    
+    /* Text Colors (Hex) */
+    --text-primary-hex: #e5e7eb;
+    --text-secondary-hex: #9ca3af;
+    --text-muted-hex: #6b7280;
+    --text-light-hex: #e2e8f0;
+    
+    /* Border Colors (Hex) */
+    --border-color-hex: #374151;
+    --border-focus-hex: #667eea;
+    --border-error-hex: #f56565;
+    --border-success-hex: #48bb78;
+    
+    /* Enhanced Shadows */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.3);
+    --shadow-glow-hover: 0 0 30px rgba(102, 126, 234, 0.5);
+    
+    /* Border Radius Scale */
+    --radius-xs: 4px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --radius-2xl: 32px;
+    --radius-full: 9999px;
+    
+    /* Spacing Scale */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+    
+    /* Transitions */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+  }
+  
+  /* LIGHT THEME (Optional toggle) */
+  [data-theme="light"] {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 251 91% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 349 100% 48%;
+    --secondary-foreground: 0 0% 100%;
+    --accent: 44 98% 60%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 251 91% 56%;
+  }
+}
+
+/* ===================================================================
+   BASE STYLES
+   =================================================================== */
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    min-height: 100vh;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix z-index stacking context */
+  main {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Ensure proper layering */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  /* Fix any overlay issues */
+  [role="dialog"],
+  [role="alertdialog"] {
+    z-index: 1000;
+  }
+  
+  /* Fix dropdown/popover layering */
+  [data-radix-popper-content-wrapper] {
+    z-index: 200;
+  }
+  
+  /* FIX: Skip to content link - must be highest z-index */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    z-index: 9999;
+    background: hsl(var(--primary));
+    color: white;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 0 0 0.5rem 0;
+  }
+  
+  .skip-link:focus {
+    top: 0;
+  }
+}
+
+/* ===================================================================
+   Z-INDEX SYSTEM - COMPREHENSIVE LAYERING
+   =================================================================== */
+
+@layer utilities {
+  /* Navigation & UI Layers - Ensure navigation is always visible */
+  .z-skip-link { z-index: 9999; }
+  .z-theme-toggle { z-index: 200; }
+  .z-navigation { z-index: 1000 !important; } /* Increased for visibility */
+  .z-dropdown { z-index: 1050; }
+  .z-sidebar { z-index: 90; }
+  
+  /* Modal & Overlay Layers */
+  .z-modal-backdrop { z-index: 1000; }
+  .z-modal { z-index: 1001; }
+  .z-tooltip { z-index: 1100; }
+  .z-popover { z-index: 200; }
+  .z-toast { z-index: 1200; }
+  
+  /* Content Layers */
+  .z-content { z-index: 1; }
+  .z-card-elevated { z-index: 10; }
+  .z-sticky { z-index: 50; }
+}
+
+/* ===================================================================
+   REUSABLE GRADIENT CLASSES (No more hardcoded inline styles!)
+   =================================================================== */
+
+@layer components {
+  /* Gradient Backgrounds */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+  }
+  
+  .gradient-secondary {
+    background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--primary)) 100%);
+  }
+  
+  .gradient-hero {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--accent)) 100%);
+  }
+  
+  .gradient-card-blue {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--accent) / 0.05) 100%);
+  }
+  
+  .gradient-card-yellow {
+    background: linear-gradient(135deg, hsl(var(--accent) / 0.1) 0%, hsl(var(--warning) / 0.05) 100%);
+  }
+  
+  .gradient-card-red {
+    background: linear-gradient(135deg, hsl(var(--secondary) / 0.1) 0%, hsl(var(--destructive) / 0.05) 100%);
+  }
+  
+  /* Accent to Secondary gradient */
+  .gradient-accent-secondary {
+    background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--secondary)));
+  }
+  
+  /* Success gradient */
+  .gradient-success {
+    background: linear-gradient(135deg, hsl(var(--success)), hsl(142 76% 30%));
+  }
+  
+  /* Modern Card */
+  .modern-card {
+    @apply bg-card text-card-foreground rounded-2xl border border-border p-6;
+    @apply shadow-lg transition-all duration-300;
+  }
+  
+  .modern-card:hover {
+    @apply border-primary/30 shadow-xl;
+    @apply -translate-y-1;
+  }
+  
+  /* Gradient Card with Border */
+  .gradient-border-card {
+    @apply relative bg-card rounded-2xl p-6;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  
+  .gradient-border-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 1rem;
+    padding: 2px;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: -1;
+  }
+  
+  /* Dashboard Container - Dribbble Layout */
+  .dashboard-container {
+    @apply max-w-7xl mx-auto px-6 py-8;
+  }
+
+  /* Glass Card (for dashboard) */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-md rounded-2xl border border-border/50 p-6;
+    @apply shadow-lg transition-all duration-300 hover:shadow-2xl hover:border-primary/20;
+  }
+  
+  .glass-card:hover {
+    @apply border-primary/30 shadow-xl;
+    @apply -translate-y-1;
+  }
+  
+  /* Theme Toggle Fixed Position */
+  .theme-toggle-fixed {
+    @apply fixed top-4 right-4 z-theme-toggle;
+    @apply bg-card/90 backdrop-blur-xl border border-border/50;
+    @apply rounded-full p-2 shadow-lg;
+    @apply transition-all duration-200;
+    @apply hover:shadow-xl hover:scale-105;
+  }
+  
+  /* Navigation Container */
+  .nav-container {
+    @apply sticky top-0 z-navigation;
+    @apply bg-background/80 backdrop-blur-xl;
+    @apply border-b border-border/50;
+  }
+  
+  /* Buttons */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-xl font-semibold;
+    @apply shadow-lg shadow-primary/30;
+    @apply transition-all duration-300;
+    @apply hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5;
+  }
+  
+  .btn-gradient {
+    @apply px-6 py-3 rounded-xl font-semibold;
+    @apply shadow-lg shadow-primary/30;
+    @apply transition-all duration-300;
+    @apply hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    color: white;
+  }
+  
+  /* Modern Input */
+  .modern-input {
+    @apply bg-muted/50 border border-border rounded-xl px-4 py-3;
+    @apply text-foreground placeholder:text-muted-foreground;
+    @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+    @apply transition-all duration-200;
+  }
+  
+  /* Upload Zone */
+  .upload-zone {
+    @apply border-2 border-dashed border-primary/30 rounded-2xl p-12;
+    @apply bg-primary/5 hover:bg-primary/10;
+    @apply transition-all duration-300 cursor-pointer;
+  }
+  
+  .upload-zone:hover {
+    @apply border-primary/50 shadow-lg shadow-primary/10;
+  }
+  
+  /* Badges */
+  .badge-primary {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-primary/10 text-primary border border-primary/20;
+  }
+  
+  .badge-secondary {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-secondary/10 text-secondary border border-secondary/20;
+  }
+  
+  .badge-accent {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply bg-accent/10 text-accent border border-accent/20;
+  }
+  
+  /* Progress Bar */
+  .progress-modern {
+    @apply w-full h-2 bg-muted rounded-full overflow-hidden;
+  }
+  
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+  
+  /* ============================================
+     DRIBBLE ENHANCED COMPONENTS
+     ============================================ */
+  
+  /* Enhanced Button Styles */
+  .btn {
+    @apply inline-flex items-center justify-center;
+    @apply px-6 py-3 rounded-xl font-semibold text-sm;
+    @apply transition-all duration-200;
+    @apply border-none outline-none cursor-pointer;
+    min-height: 44px; /* Mobile touch target */
+  }
+  
+  .btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+    transform: none !important;
+  }
+  
+  .btn-primary {
+    @apply text-white;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-glow-hover);
+    transform: translateY(-1px);
+  }
+  
+  .btn-primary:hover:not(:disabled)::before {
+    opacity: 1;
+  }
+  
+  .btn-primary > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  .btn-secondary {
+    @apply bg-card text-foreground;
+    border: 2px solid hsl(var(--border));
+  }
+  
+  .btn-secondary:hover:not(:disabled) {
+    border-color: hsl(var(--primary));
+    @apply bg-muted;
+    transform: translateY(-1px);
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent;
+    color: hsl(var(--primary));
+    border: 2px solid transparent;
+  }
+  
+  .btn-ghost:hover:not(:disabled) {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: hsl(var(--primary));
+  }
+  
+  .btn-danger {
+    @apply bg-destructive text-destructive-foreground;
+  }
+  
+  .btn-danger:hover:not(:disabled) {
+    background: hsl(var(--destructive) / 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(245, 101, 101, 0.3);
+  }
+  
+  /* Enhanced Card Styles */
+  .card {
+    @apply bg-card text-card-foreground;
+    @apply rounded-2xl border border-border;
+    @apply shadow-lg transition-all duration-300;
+    padding: var(--spacing-lg);
+  }
+  
+  .card:hover {
+    @apply border-primary/30 shadow-xl;
+    transform: translateY(-2px);
+  }
+  
+  .job-card {
+    @apply card cursor-pointer;
+  }
+  
+  .job-card:hover {
+    border-color: hsl(var(--primary) / 0.5);
+  }
+  
+  .resume-card {
+    @apply card;
+  }
+  
+  .company-card {
+    @apply card;
+  }
+  
+  .analysis-card {
+    @apply card;
+  }
+  
+  /* Enhanced Form Inputs */
+  .modern-input {
+    @apply w-full px-4 py-3;
+    @apply bg-muted/50 border-2 border-border rounded-xl;
+    @apply text-foreground placeholder:text-muted-foreground;
+    @apply transition-all duration-200;
+    font-size: 14px;
+    font-family: var(--font-body);
+    min-height: 44px;
+  }
+  
+  .modern-input:focus {
+    @apply outline-none;
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+  
+  .modern-input:disabled {
+    @apply bg-muted cursor-not-allowed opacity-60;
+  }
+  
+  /* Enhanced Badges */
+  .badge {
+    @apply inline-flex items-center;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  
+  .tag {
+    @apply badge;
+  }
+  
+  .badge-primary {
+    background: rgba(102, 126, 234, 0.1);
+    color: hsl(var(--primary));
+  }
+  
+  .badge-success {
+    background: rgba(72, 187, 120, 0.1);
+    color: hsl(var(--success));
+  }
+  
+  .badge-error {
+    background: rgba(245, 101, 101, 0.1);
+    color: hsl(var(--destructive));
+  }
+  
+  .badge-accent {
+    background: rgba(240, 147, 251, 0.1);
+    color: hsl(var(--accent));
+  }
+  
+  /* Loading States */
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid hsl(var(--border));
+    border-top-color: hsl(var(--primary));
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  
+  .loading-overlay {
+    @apply absolute inset-0;
+    @apply bg-background/95 backdrop-blur-sm;
+    @apply flex flex-col items-center justify-center;
+    border-radius: inherit;
+    z-index: 100;
+  }
+  
+  /* Pulsing Animation */
+  @keyframes pulse-border {
+    0%, 100% {
+      border-color: hsl(var(--primary));
+      box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7);
+    }
+    50% {
+      border-color: hsl(var(--accent));
+      box-shadow: 0 0 0 10px rgba(102, 126, 234, 0);
+    }
+  }
+  
+  .pulsing {
+    animation: pulse-border 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  .job-card.researching {
+    animation: pulse-border 1.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+
+/* ===================================================================
+   UTILITY CLASSES
+   =================================================================== */
+
+@layer utilities {
+  /* Gradient Text */
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  /* Glassmorphism */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+  
+  /* Animated Background */
+  .animated-bg {
+    background: linear-gradient(270deg, hsl(var(--primary)), hsl(var(--secondary)), hsl(var(--accent)));
+    background-size: 600% 600%;
+    animation: gradient 15s ease infinite;
+  }
+  
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  /* Fade in animation */
+  .fade-in {
+    animation: fadeIn 0.5s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Hide scrollbar */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ===================================================================
+   MOBILE OPTIMIZATIONS - DRIBBLE THEME
+   =================================================================== */
+
+@media (max-width: 768px) {
+  /* Larger touch targets for mobile */
+  .btn,
+  input,
+  button,
+  a.btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Full-width buttons on mobile */
+  .btn-primary,
+  .btn-secondary,
+  .btn-gradient {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Adjust card padding */
+  .card,
+  .job-card,
+  .resume-card,
+  .modern-card {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-sm);
+  }
+  
+  /* Prevent iOS zoom on input focus */
+  body {
+    font-size: 16px;
+  }
+  
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  
+  /* Responsive typography */
+  h1 { font-size: 24px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 18px; }
+  
+  /* Stack flex containers */
+  .flex-row-mobile {
+    flex-direction: column;
+  }
+  
+  /* Touch-friendly checkboxes and radios */
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+/* ===================================================================
+   PRINT STYLES
+   =================================================================== */
+
+@media print {
+  html, body {
+    background: #fff !important;
+  }
+  
+  header, nav, aside, .sidebar {
+    display: none !important;
+  }
+  
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* ===================================================================
+   CRITICAL FIXES - Z-INDEX SYSTEM
+   =================================================================== */
+
+/* Skip link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  z-index: 1000;
+  background: #000;
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: top 0.3s;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* Theme toggle positioning */
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  padding: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Modal overlay and content */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 51;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* ===================================================================
+   LOADING ANIMATIONS
+   =================================================================== */
+
+/* Loading spinner */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ===================================================================
+   BUTTON ENHANCEMENTS
+   =================================================================== */
+
+/* Primary button with hover effects */
+.btn-primary-enhanced {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border: none;
+  color: white;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-primary-enhanced:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary-enhanced:active {
+  transform: translateY(0);
+}
+
+/* Secondary button */
+.btn-secondary-enhanced {
+  background: transparent;
+  border: 2px solid currentColor;
+  color: inherit;
+  font-weight: 500;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-secondary-enhanced:hover {
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+/* ===================================================================
+   PROGRESS BAR ENHANCEMENTS
+   =================================================================== */
+
+/* Gradient progress bar */
+.progress-bar-enhanced {
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+  height: 4px;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-enhanced::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Circular progress */
+.circular-progress {
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===================================================================
+   CARD HOVER EFFECTS
+   =================================================================== */
+
+.card-hover-lift {
+  transition: all 0.2s ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Job card specific */
+.job-card {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.job-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  border-color: rgb(59 130 246 / 0.5);
+}
+
+/* ===================================================================
+   ERROR & SUCCESS STATES
+   =================================================================== */
+
+.error-container {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 1rem;
+  color: #dc2626;
+}
+
+.success-container {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 1rem;
+  color: #16a34a;
+}
+
+.warning-container {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 1rem;
+  color: #d97706;
+}
+
+/* ===================================================================
+   SMOOTH TRANSITIONS
+   =================================================================== */
+
+* {
+  transition-property: color, background-color, border-color;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Prevent transition on page load */
+.preload * {
+  transition: none !important;
+}
+
+/* ===================================================================
+   ACCESSIBILITY - DRIBBLE THEME
+   =================================================================== */
+
+/* Focus visible states */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================================================
+   ADDITIONAL UTILITY CLASSES
+   =================================================================== */
+
+/* Text utilities */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+.text-muted { color: hsl(var(--muted-foreground)); }
+.text-secondary { color: hsl(var(--secondary)); }
+
+/* Background utilities */
+.bg-primary { background: hsl(var(--primary)); }
+.bg-secondary { background: hsl(var(--secondary)); }
+.bg-card { background: hsl(var(--card)); }
+
+/* Shadow utilities */
+.shadow-xs { box-shadow: var(--shadow-xs); }
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+.shadow-xl { box-shadow: var(--shadow-xl); }
+
+/* Border radius utilities */
+.rounded-xs { border-radius: var(--radius-xs); }
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-full { border-radius: var(--radius-full); }
+</file>
+
+<file path="package.json">
+{
+    "name": "career-lever-ai",
+    "version": "1.0.0",
+    "description": "AI-powered job application assistant for resume customization and company research",
+    "main": "index.js",
+    "engines": {
+        "node": ">=20.x",
+        "npm": ">=10.0.0"
+    },
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "build:mobile": "node scripts/build-mobile.js",
+        "start": "next start -H 0.0.0.0 -p ${PORT:-8080}",
+        "lint": "next lint",
+        "type-check": "tsc --noEmit",
+        "check:env": "node scripts/check-env.js",
+        "prebuild": "echo '✅ Environment variables will be validated at runtime'",
+        "test": "vitest run --reporter=verbose",
+        "debug:perplexity": "node debug-perplexity.js",
+        "test:perplexity": "PPX_DEBUG=true node -e \"require('./debug-perplexity.js')\"",
+        "cap:init": "npx cap init",
+        "cap:add:ios": "npx cap add ios",
+        "cap:add:android": "npx cap add android",
+        "cap:sync": "npx cap sync",
+        "cap:open:ios": "npx cap open ios",
+        "cap:open:android": "npx cap open android",
+        "mobile:build": "npm run build:mobile && npx cap sync",
+        "mobile:ios": "npm run mobile:build && npx cap open ios",
+        "mobile:android": "npm run mobile:build && npx cap open android"
+    },
+    "dependencies": {
+        "@auth/mongodb-adapter": "^3.10.0",
+        "@capacitor/android": "7.4.3",
+        "@capacitor/app": "7.1.0",
+        "@capacitor/core": "7.4.3",
+        "@capacitor/filesystem": "7.1.4",
+        "@capacitor/haptics": "7.0.2",
+        "@capacitor/ios": "7.4.3",
+        "@capacitor/keyboard": "7.0.3",
+        "@capacitor/network": "7.0.2",
+        "@capacitor/share": "7.0.2",
+        "@capacitor/splash-screen": "7.0.3",
+        "@capacitor/status-bar": "7.0.3",
+        "@heroicons/react": "^2.2.0",
+        "@hookform/resolvers": "^3.3.0",
+        "@next/env": "14.2.5",
+        "@radix-ui/react-alert-dialog": "^1.1.15",
+        "@radix-ui/react-avatar": "^1.1.10",
+        "@radix-ui/react-checkbox": "^1.3.3",
+        "@radix-ui/react-dialog": "^1.1.15",
+        "@radix-ui/react-dropdown-menu": "^2.1.16",
+        "@radix-ui/react-label": "^2.1.7",
+        "@radix-ui/react-progress": "^1.1.7",
+        "@radix-ui/react-select": "^2.2.6",
+        "@radix-ui/react-separator": "^1.1.7",
+        "@radix-ui/react-slot": "^1.0.0",
+        "@radix-ui/react-tabs": "^1.1.13",
+        "@radix-ui/react-toast": "^1.2.15",
+        "@sentry/nextjs": "^8.35.0",
+        "@sparticuz/chromium": "^138.0.2",
+        "@stripe/stripe-js": "8.1.0",
+        "@tanstack/react-query": "^5.90.2",
+        "@types/bcryptjs": "^2.4.6",
+        "@types/jsonwebtoken": "^9.0.0",
+        "@types/mongoose": "^5.11.97",
+        "@types/multer": "^1.4.11",
+        "@types/node": "^20.0.0",
+        "@types/react": "^18.2.0",
+        "@types/react-dom": "^18.2.0",
+        "ajv": "8.17.1",
+        "ajv-formats": "3.0.1",
+        "autoprefixer": "^10.4.0",
+        "bcryptjs": "^2.4.3",
+        "canvas-confetti": "1.9.3",
+        "chart.js": "4.5.1",
+        "cheerio": "^1.1.2",
+        "class-variance-authority": "^0.7.0",
+        "clsx": "^2.1.1",
+        "date-fns": "^4.1.0",
+        "docx": "9.5.1",
+        "file-saver": "2.0.5",
+        "framer-motion": "10.18.0",
+        "ioredis": "^5.8.1",
+        "isomorphic-dompurify": "^2.28.0",
+        "jsonwebtoken": "^9.0.0",
+        "jspdf": "^3.0.3",
+        "lucide-react": "^0.294.0",
+        "mongodb": "6.11.0",
+        "mongoose": "8.19.1",
+        "multer": "^1.4.5-lts.1",
+        "next": "14.2.5",
+        "next-auth": "^4.24.10",
+        "pdf-parse-debugging-disabled": "1.1.1",
+        "pdfjs-dist": "^3.11.174",
+        "postcss": "^8.4.0",
+        "puppeteer": "24.25.0",
+        "puppeteer-core": "^24.22.0",
+        "react": "^18.2.0",
+        "react-chartjs-2": "5.3.0",
+        "react-dom": "^18.2.0",
+        "react-dropzone": "^14.2.0",
+        "react-hook-form": "^7.48.0",
+        "react-hot-toast": "^2.4.1",
+        "redis": "4.6.14",
+        "stripe": "19.1.0",
+        "tailwind-merge": "^2.6.0",
+        "tailwindcss": "^3.3.0",
+        "tailwindcss-animate": "^1.0.7",
+        "zod": "^3.25.76",
+        "zustand": "^5.0.8"
+    },
+    "overrides": {
+        "next": "14.2.5",
+        "@next/env": "14.2.5",
+        "chromium-bidi": "0.5.10",
+        "webdriver-bidi-protocol": "0.3.8"
+    },
+    "devDependencies": {
+        "@capacitor/cli": "7.4.3",
+        "@tanstack/react-query-devtools": "^5.90.2",
+        "@typescript-eslint/eslint-plugin": "6.21.0",
+        "@typescript-eslint/parser": "6.21.0",
+        "@vitest/coverage-v8": "3.2.4",
+        "esbuild": "^0.25.10",
+        "eslint": "8.57.1",
+        "eslint-config-next": "^14.0.0",
+        "mongodb-memory-server": "10.2.0",
+        "prettier": "^3.0.0",
+        "typescript": "5.3.3",
+        "vitest": "^3.2.4"
+    },
+    "keywords": [
+        "job-application",
+        "resume",
+        "ai",
+        "career",
+        "recruitment"
+    ],
+    "author": "Career Lever AI Team",
+    "license": "MIT"
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from 'next'
+import './globals.css'
+import './globals.mobile.css'
+import './globals-folder.css'
+import './globals-theme.css'
+import { Providers } from '@/components/providers'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { ClientInit } from '@/components/client-init'
+import { AppShell } from '@/components/app-shell'
+import { initSentry } from '@/lib/sentry'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { logger } from '@/lib/logger'
+import Link from 'next/link'
+import { Toaster } from 'react-hot-toast'
+import { AnalyticsTracker } from '@/components/analytics-tracker'
+import { DebugPanel } from '@/components/debug-panel'
+import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
+import { MobileNav } from '@/components/mobile/MobileNav'
+import { CommandPalette } from '@/components/command-palette'
+
+export const metadata: Metadata = {
+  title: 'Career Lever AI - AI-Powered Job Application Assistant',
+  description: 'Customize your resume and cover letters with AI to land your dream job. Get company insights, track applications, and boost your career success.',
+  keywords: 'resume, job application, AI, career, recruitment, cover letter',
+  icons: { icon: '/favicon.ico', apple: '/icon-192.svg' },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Career Lever AI',
+  },
+}
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  if (typeof window !== 'undefined') {
+    try { initSentry() } catch {}
+  }
+  return (
+    <html lang="en">
+      <body className="font-sans bg-background text-foreground min-h-screen" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+        <script dangerouslySetInnerHTML={{ __html: `
+          // Suppress browser extension errors
+          window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('message channel closed')) {
+              e.preventDefault();
+              return true;
+            }
+          });
+          window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && e.reason.message.includes('message channel closed')) {
+              e.preventDefault();
+              return true;
+            }
+          });
+          // Theme init
+          try{(${function(){
+            if(typeof window!=='undefined'){window.__initTheme||(window.__initTheme=true,document.documentElement.style.setProperty('--theme-transition','opacity 0.3s ease'),document.documentElement.classList.add('theme-anim'))}
+          }.toString()})()}catch(e){}
+        ` }} />
+        <ClientInit />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <ErrorBoundary>
+          <Providers>
+            <OnboardingRedirect />
+            <CommandPalette />
+            <AppShell>{children}</AppShell>
+            <MobileNav />
+          </Providers>
+        </ErrorBoundary>
+        {process.env.NEXT_PUBLIC_ENABLE_SW === 'true' ? (
+          <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js').catch(()=>{})})}` }} />
+        ) : (
+          <script dangerouslySetInnerHTML={{ __html: `
+            (function(){
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs){
+                  regs.forEach(function(r){ r.unregister().catch(function(){}) })
+                }).catch(function(){})
+              }
+              if (window.caches && caches.keys) {
+                caches.keys().then(function(keys){
+                  keys.forEach(function(k){ caches.delete(k).catch(function(){}) })
+                }).catch(function(){})
+              }
+            })();
+          ` }} />
+        )}
+      </body>
+    </html>
+  )
+}
+</file>
+
+<file path="src/components/unified-navigation.tsx">
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useSession, signOut } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useNotifications } from '@/hooks/use-notifications'
+import { 
+  Menu, 
+  X, 
+  Home, 
+  FileText, 
+  Briefcase, 
+  Settings,
+  User,
+  LogOut,
+  Search,
+  Users,
+  ChevronDown,
+  Bell,
+  Mail,
+  BarChart3,
+  Target
+} from 'lucide-react'
+
+interface NavigationItem {
+  name: string
+  href?: string
+  icon: any
+  badge?: number
+  submenu?: { name: string; href: string; badge?: number }[]
+}
+
+// Enhanced Navigation Structure with Better Organization
+const navigationItems: NavigationItem[] = [
+  { 
+    name: 'Dashboard', 
+    href: '/dashboard', 
+    icon: Home,
+    badge: 0
+  },
+  {
+    name: 'Career Finder',
+    icon: Target,
+    submenu: [
+      { name: 'Job Search', href: '/career-finder/search' },
+      { name: 'Job Analysis', href: '/career-finder/job-analysis' },
+      { name: 'Company Research', href: '/career-finder/company' },
+      { name: 'Resume Optimizer', href: '/career-finder/optimizer' },
+      { name: 'Cover Letter', href: '/career-finder/cover-letter' },
+      { name: 'Outreach', href: '/career-finder/outreach' }
+    ]
+  },
+  { 
+    name: 'Resume', 
+    href: '/resume-builder', 
+    icon: FileText 
+  },
+  { 
+    name: 'Applications', 
+    href: '/applications', 
+    icon: Briefcase,
+    badge: 0
+  },
+  { 
+    name: 'Analytics', 
+    href: '/analytics', 
+    icon: BarChart3 
+  },
+  { 
+    name: 'Network', 
+    href: '/network', 
+    icon: Users,
+    badge: 0
+  },
+  {
+    name: 'Settings',
+    icon: Settings,
+    submenu: [
+      { name: 'Profile', href: '/settings/profile' },
+      { name: 'Preferences', href: '/settings/preferences' },
+      { name: 'Integrations', href: '/settings/integrations' },
+      { name: 'Job Boards', href: '/settings/job-boards' }
+    ]
+  },
+]
+
+export function UnifiedNavigation() {
+  const { data: session } = useSession()
+  const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
+  const [scrolled, setScrolled] = useState(false)
+  const { count: notificationCount } = useNotifications()
+
+  // Handle scroll for glass effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10)
+    }
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        window.location.href = '/career-finder/search'
+      }
+      // Escape to close mobile menu
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [mobileMenuOpen])
+  
+  // Don't show navigation on auth or landing pages
+  const isAuthPage = pathname?.startsWith('/auth')
+  const isLandingPage = pathname === '/'
+  
+  if (isAuthPage || isLandingPage) return null
+
+  const isItemActive = (item: NavigationItem) => {
+    if (item.href && pathname === item.href) return true
+    if (item.submenu) {
+      return item.submenu.some(sub => pathname === sub.href || pathname?.startsWith(sub.href))
+    }
+    return false
+  }
+
+  const toggleSubmenu = (itemName: string) => {
+    setExpandedMenu(expandedMenu === itemName ? null : itemName)
+  }
+
+  return (
+    <header 
+      className={`sticky top-0 transition-all duration-300 ${
+        scrolled 
+          ? 'bg-background/95 backdrop-blur-xl border-b border-border shadow-xl' 
+          : 'bg-background/90 backdrop-blur-lg border-b border-border/50 shadow-md'
+      }`}
+      style={{ minHeight: '64px', zIndex: 9999, position: 'sticky' }}
+    >
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* LOGO WITH GRADIENT - Always visible */}
+          <Link 
+            href={session ? '/dashboard' : '/'} 
+            className="flex items-center gap-2 sm:gap-3 group shrink-0 z-10"
+          >
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl gradient-primary flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 shrink-0">
+              CL
+            </div>
+            <span className="gradient-text font-bold text-lg sm:text-xl hidden xs:inline-block whitespace-nowrap">
+              Career Lever AI
+            </span>
+          </Link>
+
+          {/* DESKTOP NAVIGATION - Always visible on desktop */}
+          <nav className="hidden md:flex items-center space-x-1 flex-1 justify-center max-w-3xl mx-auto">
+            {navigationItems.map((item) => {
+                const Icon = item.icon
+                const isActive = isItemActive(item)
+                const hasSubmenu = item.submenu && item.submenu.length > 0
+                
+                return (
+                  <div key={item.name} className="relative group">
+                    {hasSubmenu ? (
+                      <>
+                        <button
+                          onClick={() => toggleSubmenu(item.name)}
+                          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                            isActive
+                              ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-md'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span>{item.name}</span>
+                          <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${
+                            expandedMenu === item.name ? 'rotate-180' : ''
+                          }`} />
+                          {item.badge && item.badge > 0 && (
+                            <span className="ml-1 px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm">
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
+                        
+                        {/* SUBMENU DROPDOWN */}
+                        {expandedMenu === item.name && (
+                          <div className="absolute top-full left-0 mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden z-dropdown">
+                            {item.submenu?.map((subItem) => (
+                              <Link
+                                key={subItem.href}
+                                href={subItem.href}
+                                className={`flex items-center justify-between px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                                  pathname === subItem.href
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-foreground hover:bg-accent/50'
+                                }`}
+                              >
+                                <span>{subItem.name}</span>
+                                {subItem.badge && subItem.badge > 0 && (
+                                  <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
+                                    {subItem.badge}
+                                  </span>
+                                )}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <Link
+                        href={item.href || '#'}
+                        className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                          isActive
+                            ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary shadow-md'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-accent/50 hover:scale-105'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{item.name}</span>
+                        {item.badge && item.badge > 0 && (
+                          <span className="ml-1 px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm">
+                            {item.badge}
+                          </span>
+                        )}
+                      </Link>
+                    )}
+                  </div>
+                )
+              })}
+          </nav>
+
+          {/* RIGHT SIDE ACTIONS - Always visible */}
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            {/* QUICK ACTIONS - Search, Notifications & Messages */}
+            {session && (
+              <>
+                <Link 
+                  href="/career-finder/search"
+                  className="hidden lg:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+                  title="Quick Search"
+                >
+                  <Search className="w-5 h-5" />
+                </Link>
+                <Link 
+                  href="/notifications"
+                  className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+                  title="Notifications"
+                >
+                  <Bell className="w-5 h-5" />
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-lg">
+                      {notificationCount > 9 ? '9+' : notificationCount}
+                    </span>
+                  )}
+                </Link>
+                <Link 
+                  href="/messages"
+                  className="hidden sm:flex relative p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-all duration-300 hover:scale-105"
+                  title="Messages"
+                >
+                  <Mail className="w-5 h-5" />
+                </Link>
+              </>
+            )}
+
+            {/* THEME TOGGLE - Visible on tablet+ */}
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
+
+            {/* USER MENU OR AUTH BUTTONS */}
+            {session ? (
+              <div className="flex items-center space-x-2">
+                {/* USER DROPDOWN */}
+                <div className="hidden md:block relative group">
+                  <button className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-accent/50 transition-all duration-300">
+                    <Avatar className="h-8 w-8 ring-2 ring-border/50 hover:ring-primary/50 transition-all">
+                      <AvatarImage src={session.user?.image || ''} />
+                      <AvatarFallback className="bg-gradient-primary text-white font-bold text-sm">
+                        {session.user?.name?.[0]?.toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-semibold hidden xl:inline">{session.user?.name}</span>
+                    <ChevronDown className="w-3 h-3" />
+                  </button>
+                  
+                  {/* USER DROPDOWN MENU */}
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-card/95 backdrop-blur-xl border border-border/50 rounded-xl shadow-2xl overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-dropdown">
+                    <div className="px-4 py-3 border-b border-border/50">
+                      <p className="text-sm font-semibold">{session.user?.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{session.user?.email}</p>
+                    </div>
+                    <Link
+                      href="/settings/profile"
+                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent/50 transition-all"
+                    >
+                      <User className="w-4 h-4" />
+                      <span>Profile</span>
+                    </Link>
+                    <Link
+                      href="/settings"
+                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-foreground hover:bg-accent/50 transition-all"
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      onClick={() => signOut({ callbackUrl: '/' })}
+                      className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* MOBILE MENU BUTTON - More prominent */}
+                <button
+                  className="md:hidden p-2 rounded-xl hover:bg-accent/50 transition-all border-2 border-transparent hover:border-primary/20"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label="Toggle mobile menu"
+                >
+                  {mobileMenuOpen ? (
+                    <X className="h-6 w-6 text-primary" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" asChild className="rounded-xl">
+                  <Link href="/auth/signin">Sign In</Link>
+                </Button>
+                <Button asChild className="rounded-xl bg-gradient-primary text-white hover:opacity-90">
+                  <Link href="/auth/signup">Sign Up</Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* MOBILE NAVIGATION PANEL - Enhanced visibility with sections */}
+        {mobileMenuOpen && (
+          <div className="md:hidden py-4 space-y-3 border-t border-border/50 bg-background/95 backdrop-blur-xl shadow-2xl max-h-[calc(100vh-80px)] overflow-y-auto">
+            {/* QUICK ACTIONS SECTION */}
+            <div className="px-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Quick Actions</p>
+              <Link
+                href="/career-finder/search"
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-accent/50 transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Search className="w-5 h-5" />
+                <span>Job Search</span>
+              </Link>
+              <Link
+                href="/notifications"
+                className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-foreground hover:bg-accent/50 transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <div className="flex items-center space-x-3">
+                  <Bell className="w-5 h-5" />
+                  <span>Notifications</span>
+                </div>
+                <span className="w-2 h-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
+              </Link>
+            </div>
+
+            {/* MAIN NAVIGATION SECTION */}
+            <div className="px-4 space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Navigation</p>
+            {navigationItems.map((item) => {
+              const Icon = item.icon
+              const isActive = isItemActive(item)
+              const hasSubmenu = item.submenu && item.submenu.length > 0
+              
+              return (
+                <div key={item.name}>
+                  {hasSubmenu ? (
+                    <>
+                      <button
+                        onClick={() => toggleSubmenu(item.name)}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                          isActive
+                            ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary'
+                            : 'text-foreground hover:bg-accent/50'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <Icon className="w-5 h-5" />
+                          <span>{item.name}</span>
+                          {item.badge && item.badge > 0 && (
+                            <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </div>
+                        <ChevronDown className={`w-4 h-4 transition-transform ${
+                          expandedMenu === item.name ? 'rotate-180' : ''
+                        }`} />
+                      </button>
+                      {expandedMenu === item.name && (
+                        <div className="ml-4 mt-1 space-y-1">
+                          {item.submenu?.map((subItem) => (
+                            <Link
+                              key={subItem.href}
+                              href={subItem.href}
+                              className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                                pathname === subItem.href
+                                  ? 'bg-primary/10 text-primary'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                              }`}
+                            >
+                              <span>{subItem.name}</span>
+                              {subItem.badge && subItem.badge > 0 && (
+                                <span className="px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-full">
+                                  {subItem.badge}
+                                </span>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      href={item.href || '#'}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-r from-primary/20 to-accent/20 text-primary'
+                          : 'text-foreground hover:bg-accent/50'
+                      }`}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.name}</span>
+                      {item.badge && item.badge > 0 && (
+                        <span className="ml-auto px-2 py-0.5 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-500 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+                  )}
+                </div>
+              )
+            })}
+            </div>
+            
+            {/* MOBILE FOOTER ACTIONS */}
+            <div className="px-4 pt-4 mt-4 border-t border-border/50 space-y-1">
+              <ThemeToggle />
+              <Link
+                href="/settings"
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-accent/50 transition-all"
+              >
+                <Settings className="w-5 h-5" />
+                <span>Settings</span>
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </header>
+  )
+}
+</file>
+
+</files>

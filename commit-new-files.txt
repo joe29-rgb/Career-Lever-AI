@@ -1,0 +1,43 @@
+Add new files: Company research agent + type system
+
+Created 5 new files as requested:
+
+1. src/lib/agents/company-research-agent.ts
+   - Static researchCompany() method
+   - Perplexity API integration
+   - Company validation and sanitization
+   - Confidence scoring (50-100%)
+   - Returns structured data (website, industry, stock, ratings, news)
+
+2. src/types/job.ts
+   - Job interface with all fields
+   - JobSource union type (15+ job boards)
+   - JobSearchRequest and JobSearchResponse
+
+3. src/types/company.ts
+   - Company interface with complete data
+   - CompanyNews interface
+   - CompanyResearchRequest and CompanyResearchResponse
+
+4. src/types/contact.ts
+   - ContactEmail, ContactPhone, ContactAddress interfaces
+   - ContactSocialMedia interface
+   - CompanyContacts collection
+   - ContactResearchRequest and ContactResearchResponse
+
+5. src/app/api/integration-test/route.ts
+   - Tests CompanyResearchAgent
+   - Requires authentication
+   - Returns structured test results with confidence scores
+
+Updated:
+- src/types/index.ts - Added exports for job, company, contact types
+
+Note: 3 files already existed with different implementations:
+- contact-research-agent.ts (uses BaseAgent pattern)
+- company/research/route.ts (uses PerplexityIntelligenceService)
+- company/contacts/route.ts (uses PerplexityIntelligenceService)
+
+Build status: SUCCESS (0 errors)
+All TypeScript types resolve correctly
+Integration test endpoint ready at /api/integration-test

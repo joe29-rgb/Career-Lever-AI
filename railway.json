@@ -1,0 +1,32 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile",
+    "env": {
+      "MONGODB_URI": "$MONGODB_URI",
+      "NEXTAUTH_SECRET": "$NEXTAUTH_SECRET",
+      "NEXTAUTH_URL": "$NEXTAUTH_URL",
+      "PERPLEXITY_API_KEY": "$PERPLEXITY_API_KEY",
+      "REDIS_URL": "$REDIS_URL",
+      "NODE_ENV": "production",
+      "PORT": "8080",
+      "HOSTNAME": "0.0.0.0"
+    }
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "sleepApplication": false,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 300
+  },
+  "cron": [
+    {
+      "name": "process-followups",
+      "schedule": "0 9,14,17 * * *",
+      "command": "curl -X POST https://careerleverai.com/api/cron/process-followups"
+    }
+  ]
+}

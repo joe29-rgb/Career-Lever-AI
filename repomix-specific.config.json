@@ -1,0 +1,46 @@
+{
+  "output": {
+    "filePath": "perplexity-scraping-full-pack.xml",
+    "style": "xml",
+    "headerText": "Career Lever AI - Perplexity & Scraping Full Pack\n\nIncludes: Perplexity Intelligence, Agents, Scrapers, Job Search APIs, Frontend Components\n\nGenerated: {{generationDate}}",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/agents/job-discovery-agent.ts",
+    "src/lib/agents/orchestrator-agent.ts",
+    "src/lib/perplexity.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/resume/upload/route.ts",
+    "src/app/api/jobs/[id]/route.ts",
+    "src/lib/scrapers/advanced-scraper.ts",
+    "src/lib/scrapers/indeed-scraper.ts",
+    "src/lib/scrapers/linkedin-scraper.ts",
+    "src/lib/scrapers/jobbank-scraper.ts",
+    "src/app/job-search/page.tsx",
+    "src/components/JobSearch.tsx",
+    "src/components/JobCard.tsx",
+    "src/app/resume-builder/page.tsx",
+    "src/components/ResumeTemplateSelector.tsx",
+    "src/lib/job-validation.ts",
+    "src/lib/job-cache.ts",
+    "src/lib/job-enrichment.ts",
+    "src/lib/deduplication.ts",
+    "src/types/job.ts",
+    "src/types/perplexity.ts",
+    ".env.example",
+    "package.json",
+    "next.config.js"
+  ],
+  "ignore": {
+    "useGitignore": false,
+    "useDefaultPatterns": false,
+    "customPatterns": []
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

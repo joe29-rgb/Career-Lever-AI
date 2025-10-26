@@ -1,0 +1,13 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "chromium", "fontconfig", "freetype", "nss", "atk", "pango", "cairo", "glib", "gtk3"]
+
+[phases.install]
+cmds = ["npm ci --prefer-offline --no-audit --no-fund"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start"
+
+

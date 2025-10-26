@@ -1,0 +1,31 @@
+GOOGLE OAUTH FIX INSTRUCTIONS
+=============================
+
+ERROR: redirect_uri_mismatch
+This means Google doesn't recognize your callback URL.
+
+SOLUTION:
+1. Go to: https://console.cloud.google.com/apis/credentials
+2. Select your OAuth 2.0 Client ID
+3. Add these Authorized redirect URIs:
+
+   FOR PRODUCTION (Railway):
+   https://job-craft-ai-jobcraftai.up.railway.app/api/auth/callback/google
+   
+   FOR LOCAL DEVELOPMENT:
+   http://localhost:3000/api/auth/callback/google
+
+4. Click SAVE
+
+VERIFY YOUR RAILWAY URL:
+- Check Railway dashboard for actual URL
+- Update NEXTAUTH_URL in .env.local if different
+- Redeploy after changing environment variables
+
+COMMON ISSUES:
+- URL has trailing slash (remove it)
+- HTTP vs HTTPS mismatch
+- Wrong domain name
+- Missing /api/auth/callback/google path
+
+After fixing, sign in should work immediately (no code changes needed).

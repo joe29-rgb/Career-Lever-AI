@@ -1,0 +1,32 @@
+{
+  "output": {
+    "filePath": "critical-issues-pack.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/agents/job-discovery-agent.ts",
+    "src/lib/agents/perplexity-agent.ts",
+    "src/lib/scrapers/advanced-scraper.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/jobs/discover/route.ts",
+    "src/app/api/perplexity/route.ts",
+    "src/app/resume-builder/components/resume-builder.tsx",
+    "src/components/resume-builder/template-preview.tsx",
+    "src/components/resume-builder/template-selector.tsx",
+    "src/components/resume-builder/resume-analyzer.tsx",
+    "src/components/resume-builder/ats-score.tsx",
+    "src/components/job-search.tsx",
+    "src/components/career-finder.tsx",
+    "RESUME_BUILDER_ENHANCEMENTS.md",
+    "COMPLETE_FILE_AUDIT.md",
+    "package.json",
+    ".env.example"
+  ],
+  "ignore": {
+    "customPatterns": [
+      "*.test.*",
+      "*.spec.*"
+    ]
+  }
+}

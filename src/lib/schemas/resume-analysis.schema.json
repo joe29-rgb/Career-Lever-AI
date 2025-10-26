@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://careerlever.ai/schemas/resume-analysis.json",
+  "title": "Enhanced Resume Analysis",
+  "description": "Schema for AI-powered resume analysis with future outlook and career intelligence",
+  "type": "object",
+  "required": [
+    "keywords",
+    "location",
+    "experienceLevel",
+    "targetSalaryRange",
+    "targetJobTitles",
+    "topSkills",
+    "industries",
+    "certifications",
+    "careerSummary",
+    "futureOutlook",
+    "careerPath",
+    "searchOptimization"
+  ],
+  "properties": {
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 100
+    },
+    "location": {
+      "type": "object",
+      "required": ["city", "province", "full", "country"],
+      "properties": {
+        "city": { "type": "string" },
+        "province": { "type": "string" },
+        "full": { "type": "string" },
+        "country": { "type": "string" }
+      }
+    },
+    "experienceLevel": {
+      "type": "string",
+      "enum": ["entry", "mid", "senior", "executive"]
+    },
+    "targetSalaryRange": {
+      "type": "object",
+      "required": ["min", "max", "currency", "marketData"],
+      "properties": {
+        "min": { "type": "number", "minimum": 0 },
+        "max": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "marketData": {
+          "type": "object",
+          "required": ["percentile25", "percentile50", "percentile75", "lastUpdated"],
+          "properties": {
+            "percentile25": { "type": "number" },
+            "percentile50": { "type": "number" },
+            "percentile75": { "type": "number" },
+            "lastUpdated": { "type": "string" }
+          }
+        }
+      }
+    },
+    "targetJobTitles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "topSkills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["skill", "yearsExperience", "proficiency", "marketDemand", "growthTrend"],
+        "properties": {
+          "skill": { "type": "string" },
+          "yearsExperience": { "type": "number", "minimum": 0 },
+          "proficiency": {
+            "type": "string",
+            "enum": ["beginner", "intermediate", "advanced", "expert"]
+          },
+          "marketDemand": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "growthTrend": {
+            "type": "string",
+            "enum": ["declining", "stable", "growing", "hot"]
+          }
+        }
+      }
+    },
+    "industries": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "certifications": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "careerSummary": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000
+    },
+    "futureOutlook": {
+      "type": "object",
+      "required": ["aiReplacementRisk", "automationRisk", "fiveYearOutlook", "reasoning", "recommendations"],
+      "properties": {
+        "aiReplacementRisk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "automationRisk": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "fiveYearOutlook": {
+          "type": "string",
+          "enum": ["declining", "stable", "growing", "thriving"]
+        },
+        "reasoning": { "type": "string" },
+        "recommendations": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "careerPath": {
+      "type": "object",
+      "required": ["currentLevel", "nextPossibleRoles", "skillGaps", "recommendedCertifications"],
+      "properties": {
+        "currentLevel": { "type": "string" },
+        "nextPossibleRoles": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "skillGaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["skill", "importance", "timeToLearn"],
+            "properties": {
+              "skill": { "type": "string" },
+              "importance": {
+                "type": "string",
+                "enum": ["nice-to-have", "important", "critical"]
+              },
+              "timeToLearn": { "type": "string" }
+            }
+          }
+        },
+        "recommendedCertifications": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "searchOptimization": {
+      "type": "object",
+      "required": ["bestJobBoards", "optimalApplicationTime", "competitiveAdvantages", "marketSaturation", "applicationStrategy"],
+      "properties": {
+        "bestJobBoards": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "optimalApplicationTime": { "type": "string" },
+        "competitiveAdvantages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "marketSaturation": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "applicationStrategy": { "type": "string" }
+      }
+    }
+  }
+}
+

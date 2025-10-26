@@ -1,0 +1,79 @@
+{
+  "output": {
+    "filePath": "repomix-comprehensive-output.txt",
+    "style": "xml",
+    "headerText": "Career Lever AI - Comprehensive Codebase Export\nIncludes: Perplexity AI, Scrapers, PDF Processing, Cheerio, and Core APIs\nGenerated: {{generationDate}}",
+    "instructionFilePath": "",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 10,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "node_modules/**",
+      ".next/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      ".git/**",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "test-*.ps1",
+      "commit-message.txt"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "include_priority": [
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/perplexity-client.ts",
+    "src/lib/config/perplexity-configs.ts",
+    "src/lib/utils/enterprise-json-extractor.ts",
+    "src/lib/scrapers/advanced-scraper.ts",
+    "src/lib/scrapers/indeed-scraper.ts",
+    "src/lib/scrapers/linkedin-scraper.ts",
+    "src/lib/scrapers/jobbank-scraper.ts",
+    "src/lib/scrapers/glassdoor-scraper.ts",
+    "src/lib/scrapers/base-scraper.ts",
+    "src/lib/pdf-parser.ts",
+    "src/lib/pdf-extractor.ts",
+    "src/lib/local-resume-parser.ts",
+    "src/lib/resume-parser.ts",
+    "src/app/api/resume/upload/route.ts",
+    "src/app/api/resume/parse/route.ts",
+    "src/app/api/resume/list/route.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/jobs/scrape/route.ts",
+    "src/app/api/jobs/enrich/route.ts",
+    "src/app/api/jobs/outlook/route.ts",
+    "src/lib/agents/job-search-agent.ts",
+    "src/lib/agents/resume-agent.ts",
+    "src/lib/cheerio-utils.ts",
+    "src/lib/web-scraper.ts",
+    "src/lib/http-client.ts",
+    "src/lib/rate-limiter.ts",
+    "src/lib/cache-service.ts",
+    "src/lib/job-search-cache.ts",
+    "src/models/Resume.ts",
+    "src/models/Job.ts",
+    "src/types/job.ts",
+    "src/types/resume.ts",
+    "src/types/perplexity.ts",
+    "package.json",
+    "tsconfig.json",
+    ".env.example"
+  ]
+}

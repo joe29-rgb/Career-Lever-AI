@@ -1,0 +1,8 @@
+# Railway Build Trigger
+# This file forces a fresh build by changing content
+
+Build: 98
+Timestamp: 2025-10-24T16:22:00Z
+Commit: f735009
+Status: All 10 missing methods added - extractCareerTimeline, enhancedCompanyResearch, getAvailableJobBoards
+Note: Railway must pull latest commit from main branch

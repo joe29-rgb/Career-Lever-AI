@@ -1,0 +1,22 @@
+CRITICAL FIX: Perplexity prompt + Enterprise validators
+
+Fixed job-discovery-agent.ts Perplexity prompt bug:
+- Changed from 'web_search tool' (doesn't exist) to 'site: operators' (works)
+- Removed CLICK/visit instructions (Perplexity can't do that)
+- Added validation for Confidential companies and listing pages
+
+Created 4 enterprise-grade validators:
+- email-validator.ts: Rejects fake/disposable emails
+- company-validator.ts: Rejects UNKNOWN/Confidential companies
+- job-validator.ts: Rejects listing pages, validates all fields
+- data-sanitizer.ts: Sanitizes all data before database
+
+Files modified:
+- src/lib/agents/job-discovery-agent.ts (lines 93-157)
+- src/lib/validators/email-validator.ts (NEW)
+- src/lib/validators/company-validator.ts (NEW)
+- src/lib/validators/job-validator.ts (NEW)
+- src/lib/validators/data-sanitizer.ts (NEW)
+
+Build status: SUCCESS (0 errors)
+Next: Integration testing required

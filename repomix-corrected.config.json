@@ -1,0 +1,49 @@
+{
+  "output": {
+    "filePath": "perplexity-scraping-CORRECTED-pack.xml",
+    "style": "xml",
+    "headerText": "Career Lever AI - Perplexity & Scraping CORRECTED Pack\n\nIncludes: ACTUAL files that exist (not missing ones)\nPerplexity Intelligence, Agents, Scrapers, Job Search APIs, Frontend Components\n\nGenerated: {{generationDate}}",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/perplexity-service.ts",
+    "src/lib/perplexity-job-search.ts",
+    "src/lib/agents/job-discovery-agent.ts",
+    "src/lib/agents/agent-orchestrator.ts",
+    "src/lib/agents/perplexity-career-agent.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/resume/upload/route.ts",
+    "src/lib/scrapers/advanced-scraper.ts",
+    "src/lib/web-scraper.ts",
+    "src/lib/job-scraper.ts",
+    "src/lib/linkedin-job-integration.ts",
+    "src/lib/canadian-job-scraper.ts",
+    "src/app/job-boards/components/job-boards-dashboard.tsx",
+    "src/components/job-card.tsx",
+    "src/components/modern/ModernJobCard.tsx",
+    "src/components/modern/SearchHeroSection.tsx",
+    "src/app/resume-builder/page.tsx",
+    "src/components/resume-builder/template-selector.tsx",
+    "src/lib/job-deduplication.ts",
+    "src/services/job-search-cache.service.ts",
+    "src/lib/job-outlook-analyzer.ts",
+    "src/lib/validation.ts",
+    "src/types/comprehensive.ts",
+    "src/types/unified.ts",
+    "src/types/index.ts",
+    "package.json",
+    "next.config.js"
+  ],
+  "ignore": {
+    "useGitignore": false,
+    "useDefaultPatterns": false,
+    "customPatterns": []
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

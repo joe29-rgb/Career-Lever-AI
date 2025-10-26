@@ -1,0 +1,51 @@
+{
+  "output": {
+    "filePath": "career-lever-ai-COMPLETE-SYSTEM.xml",
+    "style": "xml",
+    "headerText": "Career Lever AI - COMPLETE SYSTEM EXPORT\n\nIncludes: ALL fixes, validators, constants, Perplexity, scrapers, Cheerio, APIs\n\nGenerated: {{generationDate}}",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "src/lib/agents/job-discovery-agent.ts",
+    "src/lib/agents/agent-orchestrator.ts",
+    "src/lib/agents/perplexity-career-agent.ts",
+    "src/lib/agents/base-agent.ts",
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/perplexity-service.ts",
+    "src/lib/perplexity-job-search.ts",
+    "src/lib/validators/email-validator.ts",
+    "src/lib/validators/company-validator.ts",
+    "src/lib/validators/job-validator.ts",
+    "src/lib/validators/data-sanitizer.ts",
+    "src/lib/constants/job-boards.ts",
+    "src/lib/constants/research-sources.ts",
+    "src/lib/scrapers/advanced-scraper.ts",
+    "src/lib/web-scraper.ts",
+    "src/lib/job-scraper.ts",
+    "src/lib/cheerio-utils.ts",
+    "src/lib/canadian-job-scraper.ts",
+    "src/lib/linkedin-job-integration.ts",
+    "src/lib/job-deduplication.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/resume/upload/route.ts",
+    "src/types/comprehensive.ts",
+    "src/types/unified.ts",
+    "src/types/index.ts",
+    "package.json",
+    "next.config.js",
+    "COMPLETE-IMPLEMENTATION-SUMMARY.md",
+    "FIXES-COMPLETED.md",
+    "IMPLEMENTATION-TODO.md"
+  ],
+  "ignore": {
+    "useGitignore": false,
+    "useDefaultPatterns": false,
+    "customPatterns": []
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}
