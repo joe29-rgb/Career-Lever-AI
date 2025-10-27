@@ -8,9 +8,9 @@
  * - Application tracking (preferences)
  */
 
-import UserProfile, { IUserProfile, IWorkExperience, IEducation } from '@/models/UserProfile'
-import Resume, { IResume } from '@/models/Resume'
-import { LocalResumeParser } from './local-resume-parser'
+import UserProfile, { IUserProfile } from '@/models/UserProfile'
+import Resume from '@/models/Resume'
+import { EnhancedResumeExtractor } from './enhanced-resume-extractor'
 
 export interface ProfileMappingResult {
   success: boolean
@@ -37,8 +37,16 @@ export class ProfileMapper {
         return { success: false, errors: ['Resume not found'] }
       }
 
-      // Parse resume for structured data
-      const parsed = LocalResumeParser.parse(resume.extractedText)
+      // Use enhanced extractor for better weighting and accuracy
+      console.log('[PROFILE_MAPPER] Using enhanced extractor...')
+      const extracted = await EnhancedResumeExtractor.extract(resume.extractedText)
+
+      // Add extraction warnings
+      if (extracted.warnings.length > 0) {
+        warnings.push(...extracted.warnings)
+      }
+
+      console.log('[PROFILE_MAPPER] Extraction quality:', Math.round(extracted.extractionQuality * 100) + '%')
 
       // Get or create profile
       let profile = await UserProfile.findOne({ userId })
@@ -49,46 +57,46 @@ export class ProfileMapper {
       }
 
       // Map personal information
-      if (resume.userName) {
-        const nameParts = resume.userName.split(' ')
+      if (extracted.name) {
+        const nameParts = extracted.name.split(' ')
         profile.firstName = nameParts[0] || ''
         profile.lastName = nameParts.slice(1).join(' ') || ''
       } else {
         warnings.push('Name not found in resume')
       }
 
-      if (resume.contactEmail) {
-        profile.email = resume.contactEmail
+      if (extracted.email) {
+        profile.email = extracted.email
       } else {
         warnings.push('Email not found in resume')
       }
 
-      if (resume.contactPhone) {
-        profile.phone = resume.contactPhone
+      if (extracted.phone) {
+        profile.phone = extracted.phone
       }
 
-      // Map location (CRITICAL for job search)
-      if (resume.resumeSignals?.location) {
-        const location = this.parseLocation(resume.resumeSignals.location)
-        if (location) {
-          profile.location = location
-        } else {
-          warnings.push(`Could not parse location: ${resume.resumeSignals.location}`)
+      if (extracted.linkedin) {
+        profile.linkedinUrl = extracted.linkedin
+      }
+
+      // Map location (CRITICAL for job search) - with confidence
+      if (extracted.location && extracted.location.confidence > 0.5) {
+        profile.location = {
+          city: extracted.location.city,
+          province: extracted.location.province,
+          country: extracted.location.country
         }
+        console.log('[PROFILE_MAPPER] Location confidence:', Math.round(extracted.location.confidence * 100) + '%')
       } else {
-        warnings.push('Location not found in resume')
+        warnings.push('Location not found or low confidence')
       }
 
       // Map years of experience
-      if (resume.yearsExperience) {
-        profile.yearsExperience = resume.yearsExperience
-      } else if (parsed.yearsExperience) {
-        profile.yearsExperience = parsed.yearsExperience
-      }
+      profile.yearsExperience = extracted.totalYearsExperience
 
-      // Map work experience
-      if (parsed.workExperience && parsed.workExperience.length > 0) {
-        profile.workExperience = parsed.workExperience.map(exp => ({
+      // Map work experience (already scored and sorted by recency)
+      if (extracted.workExperience.length > 0) {
+        profile.workExperience = extracted.workExperience.map(exp => ({
           company: exp.company,
           title: exp.title,
           location: exp.location,
@@ -96,37 +104,55 @@ export class ProfileMapper {
           endDate: exp.endDate,
           isCurrent: exp.isCurrent,
           description: exp.description,
-          achievements: exp.achievements || [],
-          skills: exp.skills || [],
-          industry: exp.industry
+          achievements: exp.achievements,
+          skills: exp.skills,
+          industry: undefined // Will be inferred later
         }))
       } else {
         warnings.push('No work experience found in resume')
       }
 
-      // Map education
-      if (parsed.education && parsed.education.length > 0) {
-        profile.education = parsed.education.map(edu => ({
+      // Map education (already scored by relevance)
+      if (extracted.education.length > 0) {
+        profile.education = extracted.education.map(edu => ({
           institution: edu.institution,
           degree: edu.degree,
           field: edu.field,
-          location: edu.location,
+          location: undefined,
           startDate: edu.startDate,
           endDate: edu.endDate,
-          gpa: edu.gpa,
-          achievements: edu.achievements || []
+          gpa: undefined,
+          achievements: []
         }))
       } else {
         warnings.push('No education found in resume')
       }
 
-      // Map skills (CRITICAL for job matching)
-      if (resume.resumeSignals?.keywords && resume.resumeSignals.keywords.length > 0) {
-        // Categorize skills
-        const skills = this.categorizeSkills(resume.resumeSignals.keywords)
-        profile.skills = skills
+      // Map skills (WEIGHTED by importance)
+      if (extracted.topSkills.length > 0) {
+        // Use top skills categorized by the extractor
+        const categorized = this.categorizeSkills(extracted.topSkills)
+        profile.skills = categorized
+        
+        console.log('[PROFILE_MAPPER] Top skills:', extracted.topSkills.slice(0, 10))
       } else {
         warnings.push('No skills/keywords found in resume')
+      }
+
+      // Map career preferences from extracted data
+      if (extracted.targetRoles.length > 0) {
+        if (!profile.careerPreferences) {
+          profile.careerPreferences = {
+            targetRoles: [],
+            targetIndustries: [],
+            targetCompanies: [],
+            workType: [],
+            willingToRelocate: false,
+            preferredLocations: [],
+            jobSearchRadius: 70
+          }
+        }
+        profile.careerPreferences.targetRoles = extracted.targetRoles
       }
 
       // Map psychology profile if available
