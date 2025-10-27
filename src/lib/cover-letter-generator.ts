@@ -13,6 +13,7 @@ import { PerplexityService } from './perplexity-service'
 import { validateAuthenticityLetter, sanitizeCoverLetter } from './authenticity'
 import { getTemplateById } from './resume-templates-v2'
 import { ENHANCED_COVER_LETTER_SYSTEM_PROMPT, buildEnhancedCoverLetterUserPrompt } from './prompts/perplexity'
+import { ProfileMapper } from './profile-mapper'
 
 export interface CoverLetterParams {
   resumeText: string
@@ -27,6 +28,7 @@ export interface CoverLetterParams {
   length?: 'short' | 'medium' | 'long'
   psychology?: Record<string, unknown> // Company psychology data
   yearsExperience?: number
+  userId?: string // NEW: For UserProfile lookup
 }
 
 export interface CoverLetterResult {
@@ -57,35 +59,84 @@ export async function generateCoverLetter(params: CoverLetterParams): Promise<Co
     templateId = 'modern',
     tone = 'professional',
     psychology,
-    yearsExperience
+    yearsExperience,
+    userId
   } = params
 
   // Get template for styling consistency
   const template = getTemplateById(templateId)
   
-  // Calculate years of experience if not provided
-  const calculatedYears = yearsExperience ?? extractYearsFromResume(resumeText)
+  // Try to get UserProfile for better personalization
+  let profileData: any = null
+  let calculatedYears = yearsExperience ?? extractYearsFromResume(resumeText)
+  
+  if (userId) {
+    try {
+      profileData = await ProfileMapper.getProfileForOptimization(userId)
+      if (profileData) {
+        calculatedYears = profileData.yearsExperience || calculatedYears
+        console.log('[COVER_LETTER_GEN] Using UserProfile data:', {
+          yearsExperience: profileData.yearsExperience,
+          topSkills: profileData.topSkills?.slice(0, 5),
+          currentRole: profileData.currentRole
+        })
+      }
+    } catch (error) {
+      console.log('[COVER_LETTER_GEN] Could not load profile, using resume text')
+    }
+  }
   
   console.log('[COVER_LETTER_GEN] Generating with template:', template.name)
   console.log('[COVER_LETTER_GEN] Years of experience:', calculatedYears)
   console.log('[COVER_LETTER_GEN] Has psychology data:', !!psychology)
+  console.log('[COVER_LETTER_GEN] Has profile data:', !!profileData)
 
   // Build Perplexity prompt with all context
   const ppx = new PerplexityService()
   
+  // Build enhanced candidate highlights from profile if available
+  let candidateHighlights = resumeText.slice(0, 2000)
+  if (profileData) {
+    const achievements = profileData.workExperience
+      ?.flatMap((exp: any) => exp.achievements || [])
+      .slice(0, 5)
+      .join('\n• ') || ''
+    
+    candidateHighlights = `
+CURRENT ROLE: ${profileData.currentRole || 'Not specified'}
+YEARS OF EXPERIENCE: ${calculatedYears} years
+TOP SKILLS: ${profileData.topSkills?.slice(0, 10).join(', ') || 'Not specified'}
+
+KEY ACHIEVEMENTS:
+• ${achievements}
+
+WORK HISTORY:
+${profileData.workExperience?.map((exp: any) => 
+  `${exp.title} at ${exp.company} (${exp.isCurrent ? 'Current' : 'Past'})`
+).join('\n') || 'See resume'}
+    `.trim()
+  }
+  
   const companyPayload: Record<string, unknown> = {
     ...(psychology || {}),
     yearsExperience: calculatedYears,
-    experienceNote: `CRITICAL: Candidate has EXACTLY ${calculatedYears} years of experience. Do NOT exaggerate.`
+    experienceNote: `CRITICAL: Candidate has EXACTLY ${calculatedYears} years of experience. Do NOT exaggerate.`,
+    ...(profileData?.psychologyProfile && {
+      candidatePsychology: {
+        workStyle: profileData.psychologyProfile.workStyle,
+        motivators: profileData.psychologyProfile.motivators,
+        strengths: profileData.psychologyProfile.strengths
+      }
+    })
   }
 
   const userPrompt = buildEnhancedCoverLetterUserPrompt({
     candidateName,
     jobTitle,
     companyName,
-    location: '',
+    location: profileData?.location ? `${profileData.location.city}, ${profileData.location.province}` : '',
     jobDescription: jobDescription || `Position at ${companyName} for ${jobTitle} role.`,
-    candidateHighlights: resumeText.slice(0, 2000),
+    candidateHighlights,
     companyData: companyPayload
   })
 

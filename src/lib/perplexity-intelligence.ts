@@ -2148,59 +2148,72 @@ CRITICAL EXPERIENCE CONSTRAINT:
 
 Return only valid JSON.`
 
-    const userPrompt = `GENERATE COVER LETTER FOR JOB APPLICATION
+    const userPrompt = `GENERATE TWO COVER LETTER VARIANTS
 
-CRITICAL RULE: The candidate is APPLYING TO this company. They do NOT currently work there.
+CRITICAL: The candidate is APPLYING TO ${params.company}. They do NOT currently work there.
 
-CANDIDATE INFO:
+**CANDIDATE INFO:**
 - Name: ${params.userName || '[Your Name]'}
-- Target Job: ${params.jobTitle} at ${params.company}
+- Years of Experience: EXACTLY ${yearsExperience} years
+- Applying For: ${params.jobTitle} at ${params.company}
 
-IMPORTANT:
-- NEVER write "As a ${params.jobTitle} at ${params.company}..."
-- ALWAYS write "I am excited to apply for the ${params.jobTitle} position at ${params.company}..."
-- The candidate is seeking employment, NOT currently employed there
+**TEMPLATE A - ${templateA.name} (${templateA.tone} tone):**
+Best for: ${templateA.bestFor.join(', ')}
 
-**TEMPLATE A (${templateA.name}):**
+STRUCTURE TO FOLLOW:
 ${templateA.template}
 
-**TEMPLATE B (${templateB.name}):**
+**TEMPLATE B - ${templateB.name} (${templateB.tone} tone):**
+Best for: ${templateB.bestFor.join(', ')}
+
+STRUCTURE TO FOLLOW:
 ${templateB.template}
 
-**Job Details:**
-- Job Title: ${params.jobTitle}
+**JOB DETAILS:**
+- Position: ${params.jobTitle}
 - Company: ${params.company}
 - Hiring Manager: ${params.hiringManager?.name || 'Hiring Manager'}
 
-**Key Requirements:**
+**KEY REQUIREMENTS TO ADDRESS:**
 ${params.jobRequirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
 
-**Resume Content (${yearsExperience} years experience):**
+**CANDIDATE'S RESUME (${yearsExperience} years total experience):**
 ${params.resumeText.slice(0, 1500)}
 
-**Company Research:**
+**COMPANY RESEARCH:**
 - Culture: ${params.companyInsights.culture}
 - Values: ${params.companyInsights.values.join(', ')}
 - Recent News: ${params.companyInsights.recentNews.map(n => n.title).join(', ')}
 
-Write a compelling 3-paragraph cover letter that:
-1. States interest in the OPEN POSITION
-2. Highlights relevant experience from PREVIOUS roles
-3. Explains why candidate wants to JOIN the company
+**INSTRUCTIONS:**
 
-CRITICAL RULES:
-- Experience: EXACTLY ${yearsExperience} years (no more, no less)
-- NO generic phrases like "proven track record" without specifics
-- NO casual language like "Here's what most people don't realize"
-- ALL achievements must come from the actual resume
-- Keep professional and mature tone
-- Candidate is APPLYING, not currently employed at target company
+For VARIANT A (${templateA.name}):
+1. Follow Template A's structure EXACTLY
+2. Replace ALL placeholders: [Your Name], [Job Title], [Company Name], [X years], [Skill 1], [Achievement], etc.
+3. Use ${templateA.tone} tone
+4. Fill with REAL data from the resume
+5. Match the template's paragraph structure
+
+For VARIANT B (${templateB.name}):
+1. Follow Template B's structure EXACTLY
+2. Replace ALL placeholders with real data
+3. Use ${templateB.tone} tone
+4. Keep the template's formatting (bullets, paragraphs, etc.)
+
+**CRITICAL RULES:**
+✓ Experience: Say EXACTLY "${yearsExperience} years" (no more, no less)
+✓ Opening: "I am excited to apply for..." or "I am writing to express my interest in..."
+✗ NEVER: "As a ${params.jobTitle} at ${params.company}..." (they don't work there yet!)
+✗ NEVER: "proven track record" without specific metrics
+✗ NEVER: Invent achievements not in resume
+✓ Use ONLY real achievements from resume with actual numbers
+✓ Match each template's tone and structure
 
 Return ONLY valid JSON:
 {
-  "variantA": "Full cover letter text using Template A structure...",
-  "variantB": "Full cover letter text using Template B structure...",
-  "personalization": ["Tip 1", "Tip 2", "Tip 3"]
+  "variantA": "Complete cover letter following Template A structure with all placeholders replaced...",
+  "variantB": "Complete cover letter following Template B structure with all placeholders replaced...",
+  "personalization": ["Tip 1: How to customize further", "Tip 2: What to emphasize", "Tip 3: Follow-up strategy"]
 }`
 
       const response = await withRetry(
