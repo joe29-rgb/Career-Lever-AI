@@ -125,6 +125,9 @@ export interface IUserProfile extends Document {
   profileCompleteness: number // 0-100
   lastUpdated: Date
   createdAt: Date
+  
+  // Methods
+  calculateCompleteness(): number
 }
 
 const WorkExperienceSchema = new Schema({
@@ -160,7 +163,7 @@ const CertificationSchema = new Schema({
   url: String
 })
 
-const UserProfileSchema = new Schema({
+const UserProfileSchema = new Schema<IUserProfile>({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
