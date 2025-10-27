@@ -62,7 +62,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { keywords, location } = resume.resumeSignals
+    const { keywords } = resume.resumeSignals
+    let { location } = resume.resumeSignals
+
+    // Validate location - if too broad, try to get more specific location
+    if (!location || location.length < 5 || /^(canada|usa|united states|uk|united kingdom)$/i.test(location)) {
+      console.warn('[JOB_SEARCH_API] Location too broad:', location)
+      
+      // Try to get location from user profile or use a reasonable default
+      // TODO: Add user profile location field
+      location = 'Canada' // Keep as fallback for now, but log warning
+      
+      console.warn('[JOB_SEARCH_API] Using fallback location:', location)
+    }
 
     console.log('[JOB_SEARCH_API] Resume data:', {
       keywords: keywords.slice(0, 10),

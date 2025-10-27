@@ -61,6 +61,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
+# Copy PDFKit fonts for PDF generation
+RUN mkdir -p ./.next/server/chunks/data
+COPY --from=builder /app/node_modules/pdfkit/js/data/*.afm ./.next/server/chunks/data/ || echo "PDFKit fonts not found, PDF generation may fail"
+
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
 
