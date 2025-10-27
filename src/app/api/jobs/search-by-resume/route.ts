@@ -14,6 +14,7 @@ import { authOptions } from '@/lib/auth'
 import Resume from '@/models/Resume'
 import { dbService } from '@/lib/database'
 import { JobAggregator } from '@/lib/job-aggregator'
+import { ProfileMapper } from '@/lib/profile-mapper'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -62,25 +63,41 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { keywords } = resume.resumeSignals
-    let { location } = resume.resumeSignals
-
-    // Validate location - if too broad, try to get more specific location
-    if (!location || location.length < 5 || /^(canada|usa|united states|uk|united kingdom)$/i.test(location)) {
-      console.warn('[JOB_SEARCH_API] Location too broad:', location)
+    // Try to get profile data first (better than resume signals)
+    const profileData = await ProfileMapper.getProfileForJobSearch(session.user.id)
+    
+    let keywords: string[]
+    let location: string
+    
+    if (profileData) {
+      // Use profile data (more structured and accurate)
+      keywords = profileData.keywords
+      location = profileData.location
       
-      // Try to get location from user profile or use a reasonable default
-      // TODO: Add user profile location field
-      location = 'Canada' // Keep as fallback for now, but log warning
+      console.log('[JOB_SEARCH_API] Using profile data:', {
+        keywords: keywords.slice(0, 10),
+        location,
+        experienceLevel: profileData.experienceLevel,
+        totalKeywords: keywords.length
+      })
+    } else {
+      // Fallback to resume signals
+      keywords = resume.resumeSignals.keywords
+      location = resume.resumeSignals.location
       
-      console.warn('[JOB_SEARCH_API] Using fallback location:', location)
+      // Validate location
+      if (!location || location.length < 5 || /^(canada|usa|united states|uk|united kingdom)$/i.test(location)) {
+        console.warn('[JOB_SEARCH_API] Location too broad:', location)
+        location = 'Canada' // Fallback
+        console.warn('[JOB_SEARCH_API] Using fallback location:', location)
+      }
+      
+      console.log('[JOB_SEARCH_API] Using resume signals (no profile):', {
+        keywords: keywords.slice(0, 10),
+        location,
+        totalKeywords: keywords.length
+      })
     }
-
-    console.log('[JOB_SEARCH_API] Resume data:', {
-      keywords: keywords.slice(0, 10),
-      location,
-      totalKeywords: keywords.length
-    })
 
     // Search jobs using aggregator
     const aggregator = JobAggregator.getInstance()
