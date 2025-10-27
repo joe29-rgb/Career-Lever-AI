@@ -372,12 +372,14 @@ export class JobAggregator {
     // Search for each keyword
     for (const keyword of keywords) {
       try {
-        const result = await PerplexityIntelligenceService.jobMarketAnalysisV2({
-          roleHint: keyword,
+        const result = await PerplexityIntelligenceService.jobMarketAnalysisV2(
           location,
-          resumeText: keyword, // Minimal text
-          maxResults: Math.ceil(maxResults / keywords.length)
-        })
+          keyword, // Use keyword as minimal resume text
+          {
+            roleHint: keyword,
+            maxResults: Math.ceil(maxResults / keywords.length)
+          }
+        )
 
         if (result.data && result.data.length > 0) {
           // Convert Perplexity format to scraper format
