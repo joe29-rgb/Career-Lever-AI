@@ -1,3 +1,7 @@
+/**
+ * Template Preview Component
+ * @description Displays resume template options with visual previews
+ */
 'use client'
 
 import { Card } from '@/components/ui/card'

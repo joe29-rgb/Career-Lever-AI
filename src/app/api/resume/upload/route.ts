@@ -1,3 +1,8 @@
+/**
+ * Resume Upload API Route
+ * @description Handles PDF resume uploads with AI-powered text extraction
+ * @route POST /api/resume/upload
+ */
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'

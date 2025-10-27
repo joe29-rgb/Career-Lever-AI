@@ -7,6 +7,9 @@
  * - Database fetch (fallback)
  * 
  * SOLUTION: Single source of truth with automatic fallback chain
+ * 
+ * @module ResumeManager
+ * @description Manages resume storage and retrieval with fallback strategies
  */
 
 export interface StoredResume {

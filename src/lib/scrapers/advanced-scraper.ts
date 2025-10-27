@@ -5,6 +5,9 @@
  * Strategy 2: Cheerio HTML Parsing (fast, reliable for static sites)
  * Strategy 3: Puppeteer Browser (for JavaScript-heavy sites)
  * Strategy 4: Regex Extraction (last resort)
+ * 
+ * @module AdvancedScraper
+ * @description Extracts job posting data from URLs using multiple fallback strategies
  */
 
 import * as cheerio from 'cheerio'
