@@ -21,11 +21,7 @@ export interface IResume extends Document {
   contactPhone?: string;
   yearsExperience?: number;
   // Autopilot cache fields
-  resumeSignals?: {
-    keywords: string[];
-    location?: string;
-    locations?: string[];
-  };
+  // NOTE: resumeSignals REMOVED - now using UserProfile model for structured data
   comprehensiveResearch?: Record<string, unknown>; // Full comprehensive research data
   comprehensiveResearchAt?: Date; // When research was cached
   resumeVariants?: {
@@ -105,10 +101,7 @@ const ResumeSchema: Schema = new Schema({
   yearsExperience: { type: Number, min: 0 },
   customizedVersions: [CustomizedResumeSchema],
   // Autopilot cache fields
-  resumeSignals: {
-    type: Schema.Types.Mixed,
-    required: false
-  },
+  // NOTE: resumeSignals REMOVED - now using UserProfile model
   comprehensiveResearch: {
     type: Schema.Types.Mixed,
     required: false
@@ -143,8 +136,7 @@ ResumeSchema.index({ extractedText: 'text', userName: 'text', originalFileName: 
 
 // Autopilot cache indexes
 ResumeSchema.index({ userId: 1, comprehensiveResearchAt: -1 }); // Find recent research
-ResumeSchema.index({ 'resumeSignals.keywords': 1 }); // Search by keywords
-ResumeSchema.index({ 'resumeSignals.location': 1 }); // Search by location
+// NOTE: resumeSignals indexes REMOVED - now using UserProfile indexes
 
 export default mongoose.models.Resume || mongoose.model<IResume>('Resume', ResumeSchema);
 

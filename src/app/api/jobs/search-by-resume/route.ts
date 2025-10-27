@@ -55,49 +55,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Resume not found' }, { status: 404 })
     }
 
-    // Check if resume has been analyzed
-    if (!resume.resumeSignals?.keywords || !resume.resumeSignals?.location) {
-      return NextResponse.json({
-        error: 'Resume not analyzed',
-        details: 'Please upload your resume first to extract keywords and location'
-      }, { status: 400 })
-    }
-
-    // Try to get profile data first (better than resume signals)
+    // Get profile data (REQUIRED - no fallback to old resume signals)
     const profileData = await ProfileMapper.getProfileForJobSearch(session.user.id)
     
-    let keywords: string[]
-    let location: string
-    
-    if (profileData) {
-      // Use profile data (more structured and accurate)
-      keywords = profileData.keywords
-      location = profileData.location
-      
-      console.log('[JOB_SEARCH_API] Using profile data:', {
-        keywords: keywords.slice(0, 10),
-        location,
-        experienceLevel: profileData.experienceLevel,
-        totalKeywords: keywords.length
-      })
-    } else {
-      // Fallback to resume signals
-      keywords = resume.resumeSignals.keywords
-      location = resume.resumeSignals.location
-      
-      // Validate location
-      if (!location || location.length < 5 || /^(canada|usa|united states|uk|united kingdom)$/i.test(location)) {
-        console.warn('[JOB_SEARCH_API] Location too broad:', location)
-        location = 'Canada' // Fallback
-        console.warn('[JOB_SEARCH_API] Using fallback location:', location)
-      }
-      
-      console.log('[JOB_SEARCH_API] Using resume signals (no profile):', {
-        keywords: keywords.slice(0, 10),
-        location,
-        totalKeywords: keywords.length
-      })
+    if (!profileData) {
+      return NextResponse.json({
+        error: 'Profile not found',
+        details: 'Please upload your resume to create your profile. Your resume will be analyzed and your profile will be created automatically.'
+      }, { status: 404 })
     }
+
+    const keywords = profileData.keywords
+    const location = profileData.location
+    
+    console.log('[JOB_SEARCH_API] Using profile data:', {
+      keywords: keywords.slice(0, 10),
+      location,
+      experienceLevel: profileData.experienceLevel,
+      totalKeywords: keywords.length
+    })
 
     // Search jobs using aggregator
     const aggregator = JobAggregator.getInstance()
