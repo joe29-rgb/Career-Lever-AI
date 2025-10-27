@@ -1151,62 +1151,62 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await withRetry(async () => {
         const client = createClient()
-        const prompt = `Find ${options.maxResults || 25} relevant job opportunities in ${location} matching this profile.
+        const prompt = `REAL-TIME JOB SEARCH
 
-RESUME:
-${resumeText}
+SEARCH: "${options.roleHint || 'jobs'}" in "${location}"
 
-FILTERS:
-- Role: ${options.roleHint || '(infer from resume)'}
-- Work Type: ${options.workType || 'any'}
-- Experience: ${options.experienceLevel || 'any'}
-- Min Salary: ${options.salaryMin ? ('$' + options.salaryMin + '+') : 'any'}
+CRITICAL RULES:
+1. Return ONLY valid JSON array (no markdown code blocks, no explanations, no text before or after)
+2. Each job MUST have: title, company, location, url
+3. NO "Confidential" or "Unknown" companies - skip these entirely
+4. URL must be direct link to job posting (NOT listing page)
+5. Summary must be at least 100 characters
 
-PRIORITY JOB BOARDS (use site: search for each):
-${targetBoards.slice(0, 12).map((board, i) => {
+SEARCH THESE SOURCES:
+${targetBoards.slice(0, 10).map((board, i) => {
   const config = CANADIAN_JOB_BOARDS[board] || MAJOR_JOB_BOARDS[board] || OPEN_API_BOARDS[board] || ATS_PLATFORMS[board]
   const baseUrl = config?.scrapingConfig?.baseUrl || ''
   const domain = baseUrl ? baseUrl.replace(/https?:\/\//, '').replace(/\/$/, '') : board
-  return `${i + 1}. site:${domain} "${options.roleHint || 'jobs'}" "${location}"`
+  return `- site:${domain} "${options.roleHint || 'jobs'}" "${location}"`
 }).join('\n')}
 
-${isCanadian ? `
-CANADIAN ATS PLATFORMS - Check these tech companies:
-- Greenhouse: Shopify, Hootsuite, Wealthsimple, Faire, Thinkific, Lightspeed, Jobber
-- Lever: Slack, Bench, Clio, Clearco, League, ApplyBoard, Ritual
-- Workable: FreshBooks, Visier, Unbounce, Axonify, TouchBistro
-- Recruitee: Ecobee, Geotab, Auvik, Wave, KOHO, SkipTheDishes
-- Ashby: Faire, Clearco, Maple, Borrowell, Shakepay, Wealthsimple
-` : ''}
+EXTRACT FOR EACH JOB:
+- title (exact job title)
+- company (real company name, NOT "Confidential")
+- location (city, province/state)
+- url (direct link to job posting)
+- summary (150+ characters describing the role)
+- salary (if available, else null)
+- postedDate (YYYY-MM-DD format)
+- source (website name)
+- skillMatchPercent (0-100 based on resume match)
+- skills (array of required skills)
+- workType ("remote" | "hybrid" | "onsite")
+- experienceLevel ("entry" | "mid" | "senior" | "executive")
 
-REQUIREMENTS:
-1. **CRITICAL**: Use real-time web search to find ACTUAL job postings from MULTIPLE boards
-2. **PRIORITIZE LINKEDIN**: Search "site:linkedin.com/jobs ${options.roleHint || 'jobs'} ${location}" FIRST and get at least 15-20 LinkedIn jobs
-3. Search other boards: "site:indeed.${isCanadian ? 'ca' : 'com'}", "site:glassdoor.${isCanadian ? 'ca' : 'com'}", etc.
-4. Extract: title, company, location, URL (MUST be actual job posting URL), summary (at least 100 chars), posted date
-5. **MANDATORY**: Return AT LEAST 30-40 jobs total. LinkedIn should be 40-50% of results.
-6. **IMPORTANT**: Include jobs even if some fields are missing (use null for missing data)
-7. Match resume skills to job requirements (estimate 0-100%)
-8. If company is "Confidential", try to find real name from posting
-9. **LINKEDIN URLS**: Must be format "https://www.linkedin.com/jobs/view/[job-id]" or "https://linkedin.com/jobs/collections/recommended/?currentJobId=[id]"
+RESUME SKILLS TO MATCH:
+${resumeText.slice(0, 500)}
 
-OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
-[{
-  "title": "Job Title",
-  "company": "Company Name",
-  "location": "${location}",
-  "url": "https://...",
-  "source": "indeed",
-  "summary": "Brief description",
-  "postedDate": "2025-10-24",
-  "salary": "$50,000-$70,000" or null,
-  "skillMatchPercent": 75,
-  "skills": ["skill1", "skill2"],
-  "workType": "remote" or "hybrid" or "onsite",
-  "experienceLevel": "mid"
-}]
+RETURN STRICT JSON ARRAY (no markdown, no wrapper):
+[
+  {
+    "title": "Senior Software Developer",
+    "company": "Shopify",
+    "location": "${location}",
+    "url": "https://ca.indeed.com/viewjob?jk=abc123",
+    "summary": "We are seeking a Senior Software Developer to join our team...",
+    "salary": "$100,000 - $130,000",
+    "postedDate": "2025-10-27",
+    "source": "indeed",
+    "skillMatchPercent": 85,
+    "skills": ["JavaScript", "React", "Node.js"],
+    "workType": "hybrid",
+    "experienceLevel": "senior"
+  }
+]
 
-**CRITICAL**: Return the JSON array directly. Do NOT wrap in markdown. Return AT LEAST 25 jobs.`
+MINIMUM: Return ${options.maxResults || 25} jobs
+FORMAT: Valid JSON array only, no markdown, no text before or after`
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.2, // Slightly higher for more variety
@@ -1224,65 +1224,33 @@ OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
       })
 
       console.log('[JOB_SEARCH_V2] Parsing response...')
+      console.log('[JOB_SEARCH_V2] Raw content length:', out.content.length)
+      console.log('[JOB_SEARCH_V2] Raw content preview:', out.content.slice(0, 500))
+      
       let parsed: JobListing[] = []
-      let rawContent = out.content.trim()
       
       try {
-        console.log('[JOB_SEARCH_V2] Raw content preview:', rawContent.slice(0, 200))
+        // Try parseAIResponse which has 8 strategies including line-by-line
+        parsed = parseAIResponse<JobListing[]>(out.content, { 
+          stripMarkdown: true, 
+          extractFirst: true,
+          allowPartial: true,
+          throwOnError: false
+        })
         
-        // CRITICAL FIX: Strip markdown code blocks
-        rawContent = rawContent.replace(/^```json\s*/i, '').replace(/```\s*$/i, '')
-        
-        // Try to extract JSON array if wrapped in object
-        const jsonMatch = rawContent.match(/\[[\s\S]*\]/)
-        if (jsonMatch) {
-          rawContent = jsonMatch[0]
-        }
-        
-        parsed = JSON.parse(rawContent) as JobListing[]
-        
-        console.log('[JOB_SEARCH_V2] Parsed jobs:', {
+        console.log('[JOB_SEARCH_V2] ✅ Parsing succeeded:', {
           isArray: Array.isArray(parsed),
           count: Array.isArray(parsed) ? parsed.length : 0,
           firstJob: parsed[0] ? { title: parsed[0].title, company: parsed[0].company } : null
         })
       } catch (parseError) {
-        console.error('[JOB_SEARCH_V2] JSON parse error:', {
+        console.error('[JOB_SEARCH_V2] ❌ All parsing strategies failed:', {
           error: (parseError as Error).message,
           contentPreview: out.content.slice(0, 1000)
         })
         
-        // AGGRESSIVE FIX: Try to extract individual job objects
-        console.log('[JOB_SEARCH_V2] Attempting aggressive JSON repair...')
-        try {
-          const jobObjects: JobListing[] = []
-          // Split by common job object patterns
-          const chunks = rawContent.split(/},\s*{/)
-          
-          for (let i = 0; i < chunks.length; i++) {
-            let chunk = chunks[i]
-            // Add back the braces
-            if (i > 0) chunk = '{' + chunk
-            if (i < chunks.length - 1) chunk = chunk + '}'
-            
-            // Try to parse each chunk
-            try {
-              const job = JSON.parse(chunk)
-              if (job.title && job.company) {
-                jobObjects.push(job)
-              }
-            } catch {
-              // Skip malformed chunks
-              continue
-            }
-          }
-          
-          console.log(`[JOB_SEARCH_V2] Aggressive repair extracted ${jobObjects.length} jobs`)
-          parsed = jobObjects
-        } catch (repairError) {
-          console.error('[JOB_SEARCH_V2] Aggressive repair failed:', (repairError as Error).message)
-          parsed = []
-        }
+        // Last resort: return empty array
+        parsed = []
       }
       
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []
@@ -1597,35 +1565,39 @@ If NO contacts found, return: []`
     try {
       const client = createClient()
       
-      // ENTERPRISE PROMPT - WEIGHTED KEYWORD EXTRACTION WITH TIME-BASED RELEVANCE
-      const prompt = `EXTRACT 50 WEIGHTED KEYWORDS FROM RESUME
+      const prompt = `ANALYZE THIS RESUME TEXT AND EXTRACT KEYWORDS + LOCATION
+
+CRITICAL: DO NOT search the web. ONLY read the resume text below.
 
 RESUME TEXT:
 ${resumeText}
 
-TASK:
-1. Extract EXACTLY 50 keywords (skills, technologies, competencies)
-2. Weight keywords by:
-   - Years of experience (more years = higher priority)
-   - Recency (recent roles > old roles > education)
-   - Frequency across resume
+TASK 1 - EXTRACT KEYWORDS:
+1. Extract EXACTLY 50 keywords (skills, technologies, competencies) FROM THE RESUME TEXT ABOVE
+2. Weight keywords by recency and frequency
 3. Return keywords in PRIORITY ORDER (most important first)
-4. Skills from work experience should rank HIGHER than education-only skills
-5. Calculate weight: (years using skill / total career years) × recency_multiplier
-   - Recent job (0-2 years ago): 1.0x
-   - Mid-career (3-5 years ago): 0.8x
-   - Early career (6-10 years ago): 0.6x
-   - Education only: 0.4x
 
-LOCATION EXTRACTION:
-- Find city, province/state in contact section
-- Return EXACTLY as written (e.g., "Edmonton, AB" not "Edmonton, Alberta")
-- If multiple locations, use FIRST one found
+TASK 2 - EXTRACT LOCATION FROM RESUME:
+CRITICAL RULES:
+- Read the resume text above carefully
+- Look for location in: contact info section, address, current location
+- Extract the SPECIFIC CITY and PROVINCE/STATE (e.g., "Edmonton, AB" or "Toronto, ON")
+- DO NOT return just "Canada" - that's too broad
+- DO NOT search the web for location - ONLY use what's in the resume text
+- If you find "Edmonton, Alberta" write it as "Edmonton, AB"
+- If you find "Toronto, Ontario" write it as "Toronto, ON"
+- If no specific city found, return null
 
-RETURN STRICT JSON (no markdown):
+EXAMPLES:
+- Resume says "Edmonton, Alberta" → return "Edmonton, AB"
+- Resume says "123 Main St, Calgary, AB" → return "Calgary, AB"
+- Resume says "Toronto, ON" → return "Toronto, ON"
+- Resume only says "Canada" → return null (too broad)
+
+RETURN STRICT JSON (no markdown, no explanations):
 {
   "keywords": ["Most Important Skill", "Second Most Important", ..., "50th skill"],
-  "location": "City, PROVINCE",
+  "location": "City, PROVINCE" or null,
   "personalInfo": {
     "name": "Full Name",
     "email": "email@example.com",
@@ -1633,14 +1605,17 @@ RETURN STRICT JSON (no markdown):
   }
 }
 
-CRITICAL: Return EXACTLY 50 keywords in priority order.`
+CRITICAL: 
+- Return EXACTLY 50 keywords
+- Extract location FROM THE RESUME TEXT ONLY (not from web search)
+- Location must be "City, Province" format or null`
 
-      // Processing resume signals
+      console.log('[SIGNALS] Extracting resume signals...')
 
       const response = await client.makeRequest(
-        'You extract keywords and locations from resumes. Return only JSON.',
+        'You are a resume parser. Extract data from the resume text provided. DO NOT search the web. Return only JSON.',
         prompt,
-        { temperature: 0.2, maxTokens: 2500, model: 'sonar-pro' } // FIX #2: Increased from 800 to 2500 for 50 keywords
+        { temperature: 0.1, maxTokens: 2500, model: 'sonar' }
       )
 
       if (process.env.PPX_DEBUG === 'true') {

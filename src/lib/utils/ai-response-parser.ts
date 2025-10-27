@@ -101,7 +101,23 @@ export class AIResponseParser {
       attempts.push('partial_parse_failed')
     }
 
-    // Strategy 6: Aggressive cleanup and retry
+    // Strategy 6: Line-by-line job reconstruction (for Perplexity job responses)
+    const lineByLineJobs = this.parseJobsLineByLine(text)
+    if (lineByLineJobs.length > 0) {
+      attempts.push('line_by_line_success')
+      return lineByLineJobs as T
+    }
+    attempts.push('line_by_line_failed')
+
+    // Strategy 7: Regex pattern matching for jobs
+    const regexJobs = this.parseJobsRegexPattern(text)
+    if (regexJobs.length > 0) {
+      attempts.push('regex_pattern_success')
+      return regexJobs as T
+    }
+    attempts.push('regex_pattern_failed')
+
+    // Strategy 8: Aggressive cleanup and retry
     const aggressive = this.aggressiveCleanup(text)
     if (aggressive !== text) {
       try {
@@ -235,6 +251,105 @@ export class AIResponseParser {
     }
 
     return null
+  }
+
+  /**
+   * Line-by-line job object reconstruction for severely broken JSON
+   * Specifically designed for Perplexity job listing responses
+   */
+  static parseJobsLineByLine(text: string): any[] {
+    const lines = text.split('\n')
+    let currentJob: any = null
+    const extractedJobs: any[] = []
+    
+    for (const line of lines) {
+      const trimmed = line.trim()
+      
+      // Start of new job
+      if (trimmed.includes('"title":')) {
+        if (currentJob && currentJob.title && currentJob.company) {
+          extractedJobs.push(currentJob)
+        }
+        currentJob = {}
+        
+        // Extract title
+        const titleMatch = trimmed.match(/"title":\s*"([^"]+)"/)
+        if (titleMatch) currentJob.title = titleMatch[1]
+      }
+      
+      if (!currentJob) continue
+      
+      // Extract company
+      if (trimmed.includes('"company":')) {
+        const companyMatch = trimmed.match(/"company":\s*"([^"]+)"/)
+        if (companyMatch) currentJob.company = companyMatch[1]
+      }
+      
+      // Extract location
+      if (trimmed.includes('"location":')) {
+        const locMatch = trimmed.match(/"location":\s*"([^"]+)"/)
+        if (locMatch) currentJob.location = locMatch[1]
+      }
+      
+      // Extract URL
+      if (trimmed.includes('"url":')) {
+        const urlMatch = trimmed.match(/"url":\s*"([^"]+)"/)
+        if (urlMatch) currentJob.url = urlMatch[1]
+      }
+      
+      // Extract summary
+      if (trimmed.includes('"summary":')) {
+        const summaryMatch = trimmed.match(/"summary":\s*"([^"]+)"/)
+        if (summaryMatch) currentJob.summary = summaryMatch[1]
+      }
+      
+      // Extract salary
+      if (trimmed.includes('"salary":')) {
+        const salaryMatch = trimmed.match(/"salary":\s*(?:"([^"]+)"|null)/)
+        if (salaryMatch) currentJob.salary = salaryMatch[1] || null
+      }
+      
+      // Extract source
+      if (trimmed.includes('"source":')) {
+        const sourceMatch = trimmed.match(/"source":\s*"([^"]+)"/)
+        if (sourceMatch) currentJob.source = sourceMatch[1]
+      }
+      
+      // Extract postedDate
+      if (trimmed.includes('"postedDate":')) {
+        const dateMatch = trimmed.match(/"postedDate":\s*"([^"]+)"/)
+        if (dateMatch) currentJob.postedDate = dateMatch[1]
+      }
+    }
+    
+    // Add last job
+    if (currentJob && currentJob.title && currentJob.company) {
+      extractedJobs.push(currentJob)
+    }
+    
+    return extractedJobs
+  }
+
+  /**
+   * Regex pattern matching for job objects as last resort
+   */
+  static parseJobsRegexPattern(text: string): any[] {
+    const jobPattern = /"title":\s*"([^"]+)"[\s\S]*?"company":\s*"([^"]+)"[\s\S]*?"location":\s*"([^"]+)"[\s\S]*?"url":\s*"([^"]+)"/g
+    const matches = [...text.matchAll(jobPattern)]
+    
+    if (matches.length > 0) {
+      return matches.map(match => ({
+        title: match[1],
+        company: match[2],
+        location: match[3],
+        url: match[4],
+        source: 'perplexity',
+        postedDate: new Date().toISOString().split('T')[0],
+        summary: '' // Will need enrichment
+      }))
+    }
+    
+    return []
   }
 
   /**
