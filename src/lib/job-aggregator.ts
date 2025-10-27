@@ -14,9 +14,11 @@ import JobSearchCache, { IJobSearchCache } from '@/models/JobSearchCache'
 import { getJobScraper, JobListing } from './job-scraper-service'
 import { PerplexityIntelligenceService } from './perplexity-intelligence'
 import { getAdzunaClient } from './adzuna-api-client'
+import { getJSearchClient } from './jsearch-api-client'
 
 const redis = RedisCache.getInstance()
 const adzuna = getAdzunaClient()
+const jsearch = getJSearchClient()
 
 export interface JobSearchParams {
   keywords: string[]
@@ -29,7 +31,7 @@ export interface JobSearchParams {
 
 export interface JobSearchResult {
   jobs: JobListing[]
-  source: 'redis' | 'mongodb' | 'adzuna' | 'perplexity' | 'scraper' | 'hybrid'
+  source: 'redis' | 'mongodb' | 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid'
   cached: boolean
   timestamp: Date
   searchCount?: number
@@ -137,7 +139,7 @@ export class JobAggregator {
     // LAYER 3: Try Adzuna API (FREE, fast)
     console.log('[JOB_AGGREGATOR] Trying Adzuna API...')
     let allJobs: JobListing[] = []
-    let source: 'adzuna' | 'perplexity' | 'scraper' | 'hybrid' = 'adzuna'
+    let source: 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid' = 'adzuna'
 
     if (adzuna.isConfigured()) {
       try {
@@ -156,7 +158,28 @@ export class JobAggregator {
       }
     }
 
-    // LAYER 4: If Adzuna didn't find enough, try Perplexity sonar-pro (costs money)
+    // LAYER 4: If Adzuna didn't find enough, try JSearch API (FREE, aggregates Indeed/LinkedIn/etc)
+    if (allJobs.length < maxResults / 2 && jsearch.isConfigured()) {
+      console.log('[JOB_AGGREGATOR] Adzuna insufficient, trying JSearch...')
+      
+      try {
+        const jsearchJobs = await this.searchWithJSearch(
+          keywords.slice(0, 3),
+          location,
+          maxResults
+        )
+
+        if (jsearchJobs.length > 0) {
+          console.log(`[JOB_AGGREGATOR] ✅ JSearch found ${jsearchJobs.length} jobs`)
+          allJobs = [...allJobs, ...jsearchJobs]
+          source = allJobs.length > jsearchJobs.length ? 'hybrid' : 'jsearch'
+        }
+      } catch (error) {
+        console.error('[JOB_AGGREGATOR] JSearch failed:', error)
+      }
+    }
+
+    // LAYER 5: If still not enough, try Perplexity sonar-pro (costs money)
     if (allJobs.length < maxResults / 2) {
       console.log('[JOB_AGGREGATOR] Adzuna insufficient, trying Perplexity...')
       
@@ -287,6 +310,49 @@ export class JobAggregator {
         }
       } catch (error) {
         console.error(`[JOB_AGGREGATOR] Adzuna error for "${keyword}":`, error)
+      }
+    }
+
+    return jobs
+  }
+
+  /**
+   * Search with JSearch API (FREE, aggregates Indeed/LinkedIn/Glassdoor)
+   */
+  private async searchWithJSearch(
+    keywords: string[],
+    location: string,
+    maxResults: number
+  ): Promise<JobListing[]> {
+    const jobs: JobListing[] = []
+
+    // Determine country code from location
+    let country = 'us'
+    const locationLower = location.toLowerCase()
+    if (locationLower.includes('canada') || locationLower.includes('canadian')) {
+      country = 'ca'
+    } else if (locationLower.includes('uk') || locationLower.includes('united kingdom')) {
+      country = 'gb'
+    }
+
+    // Search for each keyword
+    for (const keyword of keywords) {
+      try {
+        const result = await jsearch.searchJobs({
+          query: keyword,
+          location,
+          page: 1,
+          numPages: 1,
+          datePosted: 'month',
+          country
+        })
+
+        if (result.data && result.data.length > 0) {
+          const converted = result.data.map(job => jsearch.convertToJobListing(job))
+          jobs.push(...converted)
+        }
+      } catch (error) {
+        console.error(`[JOB_AGGREGATOR] JSearch error for "${keyword}":`, error)
       }
     }
 
