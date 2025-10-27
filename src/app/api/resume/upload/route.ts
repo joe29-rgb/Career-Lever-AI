@@ -344,61 +344,9 @@ export async function POST(request: NextRequest) {
     console.log('[PDF UPLOAD] First 300 chars:', extractedText.substring(0, 300))
     console.log('─────────────────────────────────────────────────────────')
 
-    let extractedLocation: string | undefined
-    let extractedKeywords: string[] = []
-    let personalInfo: any = {}
-
-    try {
-      const { PerplexityIntelligenceService } = await import('@/lib/perplexity-intelligence')
-      const signals = await PerplexityIntelligenceService.extractResumeSignals(extractedText, 50)
-      
-      extractedLocation = signals.location
-      extractedKeywords = signals.keywords || []
-      personalInfo = signals.personalInfo || {}
-
-      console.log('[PDF UPLOAD] EXTRACTION RESULTS:')
-      console.log('[PDF UPLOAD] Location extracted:', extractedLocation || 'NONE')
-      console.log('[PDF UPLOAD] Keywords extracted:', extractedKeywords.length, 'keywords')
-      console.log('[PDF UPLOAD] First 10 keywords:', extractedKeywords.slice(0, 10).join(', ') || 'NONE')
-      console.log('[PDF UPLOAD] Personal info:', personalInfo)
-
-      // CRITICAL: Fail if no real location found
-      if (!extractedLocation || extractedLocation.trim().length < 2) {
-        console.error('═══════════════════════════════════════════════════════')
-        console.error('[PDF UPLOAD] ❌ EXTRACTION FAILED - NO LOCATION')
-        console.error('═══════════════════════════════════════════════════════')
-        console.error('[PDF UPLOAD] Extracted location:', extractedLocation || 'undefined')
-        console.error('[PDF UPLOAD] Resume preview (first 500 chars):', extractedText.substring(0, 500))
-        console.error('═══════════════════════════════════════════════════════')
-        
-        return NextResponse.json({
-          error: 'Could not extract location from resume',
-          details: 'Please ensure your resume includes your city and state/province in the contact section at the top.',
-          extractedLocation: extractedLocation,
-          resumePreview: extractedText.substring(0, 300),
-          suggestion: 'Add your location (e.g., "Seattle, WA" or "Toronto, ON") to the top of your resume and try again.'
-        }, { status: 400 })
-      }
-
-      console.log('═══════════════════════════════════════════════════════')
-      console.log('[PDF UPLOAD] ✅ EXTRACTION SUCCESSFUL')
-      console.log('[PDF UPLOAD] Location:', extractedLocation)
-      console.log('[PDF UPLOAD] Keywords:', extractedKeywords.length, 'extracted')
-      console.log('═══════════════════════════════════════════════════════')
-    } catch (signalError) {
-      console.error('═══════════════════════════════════════════════════════')
-      console.error('[PDF UPLOAD] ❌ SIGNAL EXTRACTION FAILED')
-      console.error('═══════════════════════════════════════════════════════')
-      console.error('[PDF UPLOAD] Error:', (signalError as Error).message)
-      console.error('[PDF UPLOAD] Stack:', (signalError as Error).stack)
-      console.error('═══════════════════════════════════════════════════════')
-      
-      return NextResponse.json({
-        error: 'Failed to extract resume information',
-        details: 'Could not parse location and keywords from your resume. Please ensure your resume is properly formatted with contact information at the top.',
-        technical: (signalError as Error).message
-      }, { status: 500 })
-    }
+    // NOTE: Old signal extraction removed - now handled by EnhancedResumeExtractor in ProfileMapper
+    // This provides better weighting, confidence scores, and structured data
+    console.log('[PDF UPLOAD] Resume text ready, profile will be created after save...')
 
     const resume = new Resume({
       userId: session.user.id,
@@ -407,14 +355,7 @@ export async function POST(request: NextRequest) {
       extractedText,
       extractionMethod,
       extractionError: extractionError || undefined,
-      uploadedAt: new Date(),
-      // Store extracted signals for job matching
-      metadata: {
-        extractedLocation,
-        extractedKeywords: extractedKeywords.slice(0, 20), // Store top 20
-        personalInfo,
-        extractionDate: new Date().toISOString()
-      }
+      uploadedAt: new Date()
     })
 
     await resume.save()
@@ -467,10 +408,8 @@ export async function POST(request: NextRequest) {
       extractionMethod,
       extractionError,
       confidence: extractionConfidence,
-      // Include extracted signals in response for frontend
-      extractedLocation,
-      extractedKeywords: extractedKeywords.slice(0, 10), // Top 10 for display
-      personalInfo
+      // Profile will be created automatically with enhanced extraction
+      message: 'Resume uploaded successfully. Profile is being created with enhanced extraction.'
     })
   } catch (error) {
     console.error('Upload error:', error)
