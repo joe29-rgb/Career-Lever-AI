@@ -1151,50 +1151,38 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
     try {
       const out = await withRetry(async () => {
         const client = createClient()
-        const prompt = `REAL-TIME JOB SEARCH
+        const prompt = `Find me ${options.roleHint || 'jobs'} in ${location}
 
-SEARCH: "${options.roleHint || 'jobs'}" in "${location}"
+Search Indeed, LinkedIn, Glassdoor, Workopolis, and other job boards for active job postings.
 
-CRITICAL RULES:
-1. Return ONLY valid JSON array (no markdown code blocks, no explanations, no text before or after)
-2. Each job MUST have: title, company, location, url
-3. NO "Confidential" or "Unknown" companies - skip these entirely
-4. URL must be direct link to job posting (NOT listing page)
-5. Summary must be at least 100 characters
-
-SEARCH THESE SOURCES:
-${targetBoards.slice(0, 10).map((board, i) => {
-  const config = CANADIAN_JOB_BOARDS[board] || MAJOR_JOB_BOARDS[board] || OPEN_API_BOARDS[board] || ATS_PLATFORMS[board]
-  const baseUrl = config?.scrapingConfig?.baseUrl || ''
-  const domain = baseUrl ? baseUrl.replace(/https?:\/\//, '').replace(/\/$/, '') : board
-  return `- site:${domain} "${options.roleHint || 'jobs'}" "${location}"`
-}).join('\n')}
-
-EXTRACT FOR EACH JOB:
+For each job found, extract:
 - title (exact job title)
-- company (real company name, NOT "Confidential")
+- company (real company name, NO "Confidential" or "Unknown")
 - location (city, province/state)
-- url (direct link to job posting)
-- summary (150+ characters describing the role)
-- salary (if available, else null)
-- postedDate (YYYY-MM-DD format)
-- source (website name)
-- skillMatchPercent (0-100 based on resume match)
-- skills (array of required skills)
+- url (direct link to job posting on Indeed/LinkedIn/etc)
+- summary (150+ character description of the role and requirements)
+- salary (if listed, else null)
+- postedDate (YYYY-MM-DD format if available)
+- source (job board name: indeed, linkedin, glassdoor, etc)
 - workType ("remote" | "hybrid" | "onsite")
 - experienceLevel ("entry" | "mid" | "senior" | "executive")
 
-RESUME SKILLS TO MATCH:
+CANDIDATE SKILLS FOR MATCHING:
 ${resumeText.slice(0, 500)}
 
-RETURN STRICT JSON ARRAY (no markdown, no wrapper):
+Calculate skillMatchPercent (0-100) based on how well candidate skills match job requirements.
+Extract skills array from job requirements.
+
+Return MINIMUM ${options.maxResults || 25} jobs as a JSON array.
+
+CRITICAL: Return ONLY valid JSON array, no markdown, no explanations:
 [
   {
     "title": "Senior Software Developer",
     "company": "Shopify",
     "location": "${location}",
     "url": "https://ca.indeed.com/viewjob?jk=abc123",
-    "summary": "We are seeking a Senior Software Developer to join our team...",
+    "summary": "We are seeking a Senior Software Developer with 5+ years experience...",
     "salary": "$100,000 - $130,000",
     "postedDate": "2025-10-27",
     "source": "indeed",
@@ -1203,15 +1191,12 @@ RETURN STRICT JSON ARRAY (no markdown, no wrapper):
     "workType": "hybrid",
     "experienceLevel": "senior"
   }
-]
-
-MINIMUM: Return ${options.maxResults || 25} jobs
-FORMAT: Valid JSON array only, no markdown, no text before or after`
+]`
 
         const res = await client.makeRequest(SYSTEM, prompt, { 
           temperature: 0.2, // Slightly higher for more variety
           maxTokens: 20000, // Increased to allow more jobs
-          model: 'sonar' // Use faster model for job search
+          model: 'sonar-pro' // CRITICAL: Use sonar-pro for real-time web search
         })
         if (!res.content?.trim()) throw new Error('Empty job analysis')
         
