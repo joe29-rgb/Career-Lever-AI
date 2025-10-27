@@ -62,8 +62,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # Copy PDFKit fonts for PDF generation (from builder stage)
-RUN mkdir -p ./.next/server/chunks/data
-COPY --from=builder /app/node_modules/pdfkit/js/data/*.afm ./.next/server/chunks/data/
+# Copy entire data directory to avoid wildcard matching issues
+COPY --from=builder /app/node_modules/pdfkit/js/data ./.next/server/chunks/data
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
