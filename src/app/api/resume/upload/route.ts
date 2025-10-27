@@ -419,6 +419,28 @@ export async function POST(request: NextRequest) {
 
     await resume.save()
     
+    // Create/update user profile from resume
+    try {
+      const { ProfileMapper } = await import('@/lib/profile-mapper')
+      const profileResult = await ProfileMapper.mapResumeToProfile(
+        session.user.id,
+        resume._id.toString()
+      )
+      
+      if (profileResult.success) {
+        console.log('[RESUME_UPLOAD] ✅ Profile created/updated:', {
+          completeness: profileResult.profile?.profileCompleteness,
+          location: profileResult.profile?.location,
+          warnings: profileResult.warnings
+        })
+      } else {
+        console.error('[RESUME_UPLOAD] ⚠️ Profile creation failed:', profileResult.errors)
+      }
+    } catch (profileError) {
+      // Don't fail the upload if profile creation fails
+      console.error('[RESUME_UPLOAD] ⚠️ Profile mapping error:', profileError)
+    }
+    
     const duration = Date.now() - startTime
     console.log('[RESUME_UPLOAD] ✅ SUCCESS:', {
       resumeId: resume._id.toString(),
