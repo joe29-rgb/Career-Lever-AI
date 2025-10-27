@@ -1044,3 +1044,63 @@
     padding: 1.5rem !important;
   }
 }
+
+/* Base styles */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Card styles */
+.card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+}
+
+/* Button styles */
+.button {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+/* Input styles */
+input,
+textarea,
+select {
+  background-color: var(--input);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+/* Ensure contrast */
+.text-primary {
+  color: var(--primary);
+}
+
+.text-secondary {
+  color: var(--secondary-foreground);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+/* Job card specific */
+.job-card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+}
+
+.job-card h3 {
+  color: var(--card-foreground);
+}
+
+.job-card p {
+  color: var(--muted-foreground);
+}

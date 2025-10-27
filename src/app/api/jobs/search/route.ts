@@ -20,6 +20,9 @@ import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { isRateLimited } from '@/lib/rate-limit'
 import Resume from '@/models/Resume'
 import { jobSearchCacheService } from '@/services/job-search-cache.service'
+import { validateJob } from '@/lib/validators/job-validator'
+import { DataSanitizer } from '@/lib/validators/data-sanitizer'
+import { deduplicateJobs } from '@/lib/job-deduplication'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -228,15 +231,15 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Use NEW AGENT SYSTEM with Perplexity web_search + Cheerio fallback
-        console.log('[JOB_SEARCH] 🤖 Calling NEW AGENT SYSTEM jobListingsWithAgent with:', {
+        // Use standard Perplexity method (agent system deprecated)
+        console.log('[JOB_SEARCH] Calling Perplexity job search with:', {
           jobTitle: keywords,
           location,
           workType: workType || (remote ? 'remote' : 'any'),
           maxResults: limit
         })
         
-        result = await PerplexityIntelligenceService.jobListingsWithAgent(
+        result = await PerplexityIntelligenceService.jobSearchWithAgent(
           keywords,
           location,
           {
@@ -446,27 +449,53 @@ export async function POST(request: NextRequest) {
       console.log(`[JOB_CACHE] ✅ Cached ${processedJobs.length} jobs for future searches`);
     }
 
+    // ✅ FIX #4: VALIDATE each job
+    console.log('[JOB_SEARCH] Validating jobs...')
+    const validatedJobs = finalJobs.filter((job: any) => {
+      const validation = validateJob(job)
+      if (!validation.valid) {
+        console.log('[VALIDATOR] ❌ Rejected:', job.title, 'at', job.company)
+        if (validation.issues && validation.issues.length > 0) {
+          console.log('[VALIDATOR] Reasons:', validation.issues.join(', '))
+        }
+        return false
+      }
+      return true
+    })
+    console.log(`[JOB_SEARCH] Validation: ${finalJobs.length} → ${validatedJobs.length}`)
+
+    // ✅ FIX #5: DEDUPLICATE jobs
+    const uniqueJobs = deduplicateJobs(validatedJobs)
+    console.log(`[JOB_SEARCH] Deduplication: ${validatedJobs.length} → ${uniqueJobs.length}`)
+
+    // ✅ FIX #4: SANITIZE output
+    const sanitizedJobs = uniqueJobs.map((job: any) => DataSanitizer.sanitizeJobData(job))
+    console.log(`[JOB_SEARCH] ✅ Final jobs: ${sanitizedJobs.length}`)
+
     // Get recommended boards for this location
     const recommendedBoards = PerplexityIntelligenceService.getRecommendedBoards(location)
 
     return NextResponse.json({
       success: true,
       query: { keywords, location, sources },
-      totalResults: finalJobs.length,
-      returnedResults: Math.min(finalJobs.length, limit),
-      jobs: finalJobs.slice(0, limit),
+      totalResults: sanitizedJobs.length,
+      returnedResults: Math.min(sanitizedJobs.length, limit),
+      jobs: sanitizedJobs.slice(0, limit),
       metadata: {
         ...metadata,
         searchedAt: new Date().toISOString(),
         cachedResults: cachedJobs ? cachedJobs.length : 0,
         newResults: processedJobs.length,
-        totalMerged: finalJobs.length
+        totalMerged: finalJobs.length,
+        validated: validatedJobs.length,
+        unique: uniqueJobs.length,
+        final: sanitizedJobs.length
       },
       recommendations: {
         priorityBoards: recommendedBoards.slice(0, 5),
         reasoning: `Recommended job boards for ${location || 'your location'}`
       },
-      sources: [...new Set(finalJobs.map((j: any) => j.source || 'Unknown'))]
+      sources: [...new Set(sanitizedJobs.map((j: any) => j.source || 'Unknown'))]
     })
 
   } catch (error: any) {

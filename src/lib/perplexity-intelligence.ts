@@ -1361,90 +1361,42 @@ OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
         const config = getPerplexityConfig('hiringContacts')
         
         // ULTRA-AGGRESSIVE: Multi-platform exhaustive contact scraping
-        const prompt = `Find ALL public hiring contacts for ${companyName} using exhaustive web and social media research.
+        const prompt = `HIRING CONTACTS FOR ${companyName}
 
-MANDATORY SEARCH LOCATIONS (check ALL of these):
+YOUR TASK: Find 3-5 real hiring contacts (recruiters, HR, talent acquisition) at ${companyName}.
 
-🌐 OFFICIAL WEBSITE (VISIT AND SCRAPE):
-1. **VISIT** ${companyName} official website /contact page - EXTRACT all emails
-2. **VISIT** ${companyName} official website /careers page - EXTRACT contact info
-3. **VISIT** ${companyName} official website /about page - EXTRACT team emails
-4. **VISIT** ${companyName} official website /team page - EXTRACT individual emails
-5. **VISIT** Website footer - EXTRACT contact emails
-6. Look for: careers@, hr@, jobs@, recruiting@, talent@, info@, contact@, hello@
+SEARCH THESE PLACES (in order of priority):
+1. ${companyName} careers page (/careers, /jobs) - look for "recruiting team" or "contact us"
+2. LinkedIn - search "${companyName} recruiter" or "${companyName} talent acquisition"
+3. Company website "Team" or "About Us" page
+4. ${companyName} company directory or contact page
 
-🔍 GOOGLE SEARCHES (FOLLOW TOP 3 RESULTS):
-- "${companyName} HR email" - **VISIT top results and EXTRACT emails**
-- "${companyName} careers contact" - **VISIT and EXTRACT**
-- "${companyName} recruiter email" - **VISIT and EXTRACT**
-- "${companyName} talent acquisition contact" - **VISIT and EXTRACT**
-- "${companyName} hiring manager" - **VISIT and EXTRACT**
+WHAT TO EXTRACT:
+- Full name (REAL names only, not "HR Department")
+- Job title (must include recruiter/HR/talent)
+- Email address (ONLY if publicly listed)
+- LinkedIn profile URL (if available)
 
-🔗 LINKEDIN (VISIT PROFILES):
-- Search: site:linkedin.com/in/ "${companyName}" recruiter
-- Search: site:linkedin.com/in/ "${companyName}" HR
-- Search: site:linkedin.com/in/ "${companyName}" talent acquisition
-- **VISIT** Company LinkedIn page: linkedin.com/company/${companyName.toLowerCase().replace(/\s+/g, '-')}
-- **VISIT** individual LinkedIn profiles of HR employees
-- Extract REAL names, titles, and profile URLs
+CRITICAL RULES:
+1. ONLY include contacts you can SEE on public pages
+2. DO NOT make up or guess email addresses
+3. DO NOT use generic emails like info@, hello@, support@
+4. If you find 0 verified contacts, return empty array []
+5. Each contact MUST have either a real email OR LinkedIn URL
 
-🐦 TWITTER/X (VISIT PAGES):
-- Search: site:twitter.com "${companyName}" careers
-- **VISIT** Company Twitter bio for contact info
-
-📘 FACEBOOK (VISIT PAGES):
-- Search: site:facebook.com "${companyName}" jobs
-- **VISIT** Company Facebook page About section
-
-📷 INSTAGRAM (VISIT BIO):
-- **VISIT** Company Instagram bio for contact email
-
-💼 JOB BOARDS (VISIT POSTINGS):
-- Search: site:indeed.com "${companyName}" contact
-- Search: site:glassdoor.com "${companyName}" contact
-- **VISIT** Job postings and EXTRACT direct contact info
-
-📧 CONTACTOUT / HUNTER.IO:
-- Search: site:contactout.com "${companyName}"
-- **VISIT** any ContactOut pages and EXTRACT verified emails
-
-EXTRACT ONLY VERIFIED PUBLIC INFORMATION:
-✅ Email addresses you SEE on websites (careers@, hr@, jobs@, recruiting@, talent@)
-✅ Direct employee emails found on LinkedIn/website (firstname.lastname@domain)
-✅ Phone numbers for HR/recruiting
-✅ LinkedIn profile URLs of recruiters/HR with REAL names
-✅ Company careers page URL
-
-STRICT RULES:
-🚫 Do NOT infer or generate any email addresses
-🚫 Do NOT guess email patterns
-🚫 ONLY return information you can SEE on public pages
-🚫 Do NOT include personal emails (gmail, yahoo, hotmail)
-🚫 Do NOT make up names or contacts
-
-RETURN FORMAT (JSON array):
+RETURN THIS JSON (no markdown):
 [
   {
     "name": "Sarah Johnson",
-    "title": "Senior Recruiter",
+    "title": "Senior Technical Recruiter",
     "email": "sarah.johnson@company.com",
-    "phone": "+1-888-742-6417",
     "linkedinUrl": "https://linkedin.com/in/sarahjohnson",
-    "source": "LinkedIn profile",
-    "platform": "LinkedIn"
-  },
-  {
-    "name": "HR Department",
-    "title": "Human Resources",
-    "email": "careers@company.com",
-    "source": "Company website",
-    "platform": "Website"
+    "source": "Company careers page",
+    "confidence": 0.95
   }
 ]
 
-IF ZERO VERIFIED CONTACTS FOUND, return empty array: []
-
-IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you actually found.`
+If NO contacts found, return: []`
 
         // PERPLEXITY AUDIT FIX: Use optimal token limits + sonar-pro for research
         return client.makeRequest(SYSTEM, prompt, { 
@@ -1616,37 +1568,33 @@ IMPORTANT: Search ALL platforms listed above. Return ONLY verified contacts you 
       const client = createClient()
       
       // ENTERPRISE PROMPT - WEIGHTED KEYWORD EXTRACTION WITH TIME-BASED RELEVANCE
-      const prompt = `CRITICAL TASK: Extract weighted keywords, location, and personal info from this resume.
+      const prompt = `EXTRACT 50 WEIGHTED KEYWORDS FROM RESUME
 
 RESUME TEXT:
 ${resumeText}
 
-KEYWORD EXTRACTION WITH TIME-BASED WEIGHTING:
-1. Extract ALL relevant skills, technologies, and competencies (up to 50)
-2. WEIGHT keywords based on:
-   - Years of experience using that skill (more years = higher priority)
-   - Recency (recent roles = higher weight than old roles or education)
-   - Frequency of mention across work experience
-3. ORDER keywords by weighted relevance (most important first)
-4. Skills from work experience should be weighted HIGHER than skills from education only
-5. Calculate weight as: (years using skill / total career years) * recency_multiplier
+TASK:
+1. Extract EXACTLY 50 keywords (skills, technologies, competencies)
+2. Weight keywords by:
+   - Years of experience (more years = higher priority)
+   - Recency (recent roles > old roles > education)
+   - Frequency across resume
+3. Return keywords in PRIORITY ORDER (most important first)
+4. Skills from work experience should rank HIGHER than education-only skills
+5. Calculate weight: (years using skill / total career years) × recency_multiplier
+   - Recent job (0-2 years ago): 1.0x
+   - Mid-career (3-5 years ago): 0.8x
+   - Early career (6-10 years ago): 0.6x
+   - Education only: 0.4x
 
-LOCATION EXTRACTION RULES:
-1. Find ANY city/province/state mentioned (email header, address, work experience)
-2. Look for patterns like "City, PROVINCE" or "City, STATE"
-3. Check contact information section first
-4. If multiple locations, use the FIRST one found (likely primary)
-5. Return EXACTLY as found (e.g., "Edmonton, AB" not "Edmonton, Alberta")
+LOCATION EXTRACTION:
+- Find city, province/state in contact section
+- Return EXACTLY as written (e.g., "Edmonton, AB" not "Edmonton, Alberta")
+- If multiple locations, use FIRST one found
 
-PERSONAL INFORMATION EXTRACTION:
-1. Extract full name (usually at the top of resume)
-2. Extract email address (look for @ symbol)
-3. Extract phone number (look for phone patterns)
-4. If not found, return null for that field
-
-RETURN STRICT JSON (no explanation, no markdown):
+RETURN STRICT JSON (no markdown):
 {
-  "keywords": ["Most Important Skill", "Second Most Important", "...", "50th skill"],
+  "keywords": ["Most Important Skill", "Second Most Important", ..., "50th skill"],
   "location": "City, PROVINCE",
   "personalInfo": {
     "name": "Full Name",
@@ -1655,17 +1603,14 @@ RETURN STRICT JSON (no explanation, no markdown):
   }
 }
 
-IMPORTANT: 
-- Order keywords by weighted importance (years of experience + recency)
-- If NO location found after thorough search, return "location": null (do NOT guess or default)
-- If personal info not found, return null for those fields`
+CRITICAL: Return EXACTLY 50 keywords in priority order.`
 
       // Processing resume signals
 
       const response = await client.makeRequest(
         'You extract keywords and locations from resumes. Return only JSON.',
         prompt,
-        { temperature: 0.2, maxTokens: 2000, model: 'sonar-pro' } // CRITICAL FIX: Increased from 800 to handle 50 keywords
+        { temperature: 0.2, maxTokens: 2500, model: 'sonar-pro' } // FIX #2: Increased from 800 to 2500 for 50 keywords
       )
 
       if (process.env.PPX_DEBUG === 'true') {
@@ -2213,7 +2158,18 @@ CRITICAL EXPERIENCE CONSTRAINT:
 
 Return only valid JSON.`
 
-      const userPrompt = `Create TWO personalized cover letter variants using these templates as guides:
+    const userPrompt = `GENERATE COVER LETTER FOR JOB APPLICATION
+
+CRITICAL RULE: The candidate is APPLYING TO this company. They do NOT currently work there.
+
+CANDIDATE INFO:
+- Name: ${params.userName || '[Your Name]'}
+- Target Job: ${params.jobTitle} at ${params.company}
+
+IMPORTANT:
+- NEVER write "As a ${params.jobTitle} at ${params.company}..."
+- ALWAYS write "I am excited to apply for the ${params.jobTitle} position at ${params.company}..."
+- The candidate is seeking employment, NOT currently employed there
 
 **TEMPLATE A (${templateA.name}):**
 ${templateA.template}
@@ -2225,7 +2181,6 @@ ${templateB.template}
 - Job Title: ${params.jobTitle}
 - Company: ${params.company}
 - Hiring Manager: ${params.hiringManager?.name || 'Hiring Manager'}
-- Applicant: ${params.userName || '[Your Name]'}
 
 **Key Requirements:**
 ${params.jobRequirements.map((req, i) => `${i + 1}. ${req}`).join('\n')}
@@ -2238,14 +2193,10 @@ ${params.resumeText.slice(0, 1500)}
 - Values: ${params.companyInsights.values.join(', ')}
 - Recent News: ${params.companyInsights.recentNews.map(n => n.title).join(', ')}
 
-**Instructions:**
-1. Fill in ALL placeholders in the templates with actual data
-2. Replace [X years] with "${yearsExperience} years" (EXACT number)
-3. Use real achievements from resume with metrics
-4. Reference specific company news/values
-5. Keep the template structure but personalize content
-6. Variant A: Use Template A structure
-7. Variant B: Use Template B structure
+Write a compelling 3-paragraph cover letter that:
+1. States interest in the OPEN POSITION
+2. Highlights relevant experience from PREVIOUS roles
+3. Explains why candidate wants to JOIN the company
 
 CRITICAL RULES:
 - Experience: EXACTLY ${yearsExperience} years (no more, no less)
@@ -2253,6 +2204,7 @@ CRITICAL RULES:
 - NO casual language like "Here's what most people don't realize"
 - ALL achievements must come from the actual resume
 - Keep professional and mature tone
+- Candidate is APPLYING, not currently employed at target company
 
 Return ONLY valid JSON:
 {
@@ -2415,150 +2367,38 @@ Return ONLY valid JSON:
   }
 
   /**
-   * AGENT-POWERED: Job search with 95%+ reliability
-   * Uses NEW orchestrator-based agent system with Perplexity web_search + Cheerio fallback
-   * Searches 15+ job boards in parallel
+   * AGENT-POWERED: Job search with autonomous decision-making
+   * DEPRECATED: Agent orchestrator removed in cleanup
+   * Use jobMarketAnalysisV2 instead
    */
-  static async jobListingsWithAgent(
+  static async jobSearchWithAgent(
     jobTitle: string,
     location: string,
-    options?: { maxResults?: number; workType?: 'remote'|'hybrid'|'onsite'|'any' }
+    options?: { maxResults?: number; workType?: string }
   ): Promise<EnhancedResponse<JobListing[]>> {
-    const started = Date.now()
-    const requestId = generateRequestId()
-
-    console.log('🤖 [INTELLIGENCE] Starting NEW agent-powered job search...')
-    console.log(`📋 [INTELLIGENCE] Job: "${jobTitle}" in "${location}"`)
-    console.log(`🎯 [INTELLIGENCE] Max results: ${options?.maxResults || 30}`)
-
-    try {
-      const { AgentOrchestrator } = await import('./agents/agent-orchestrator')
-      
-      const orchestrator = new AgentOrchestrator()
-
-      const task = {
-        id: requestId,
-        type: 'job_search' as const,
-        input: { 
-          jobTitle, 
-          location, 
-          maxResults: options?.maxResults || 30,
-          workType: options?.workType
-        },
-        priority: 1 as const
-      }
-
-      const result = await orchestrator.executeTask(task)
-
-      if (!result.success || !result.data || result.data.length === 0) {
-        console.warn('⚠️ [INTELLIGENCE] Agent found no jobs, using fallback method')
-        return await this.jobMarketAnalysisV2(location, '', {
-          roleHint: jobTitle,
-          maxResults: options?.maxResults,
-          workType: options?.workType
-        })
-      }
-
-      console.log(`✅ [INTELLIGENCE] Agent found ${result.data.length} jobs`)
-      console.log(`📊 [INTELLIGENCE] Confidence: ${result.confidence}, Method: ${result.method}`)
-
-      return {
-        success: true,
-        data: result.data,
-        metadata: {
-          requestId,
-          timestamp: started,
-          duration: result.duration,
-          reasoning: result.reasoning,
-          confidence: result.confidence,
-          method: result.method,
-          sources: result.sources.length
-        },
-        cached: false
-      }
-    } catch (error) {
-      console.error('❌ [INTELLIGENCE] Agent system failed:', error)
-      console.log('🔄 [INTELLIGENCE] Falling back to standard method...')
-      
-      return await this.jobMarketAnalysisV2(location, '', {
-        roleHint: jobTitle,
-        maxResults: options?.maxResults,
-        workType: options?.workType
-      })
-    }
+    console.log('🤖 [INTELLIGENCE] Agent method deprecated, using standard method...')
+    
+    // Fallback to standard method since agent-orchestrator was removed
+    return await this.jobMarketAnalysisV2(location, '', {
+      roleHint: jobTitle,
+      maxResults: options?.maxResults,
+      workType: options?.workType as 'remote' | 'hybrid' | 'onsite' | 'any' | undefined
+    })
   }
 
   /**
    * AGENT-POWERED: Hiring contacts with 95%+ reliability
-   * Uses NEW orchestrator-based agent system with Perplexity + Hunter.io verification
-   * Returns empty array if no verified contacts (NO GUESSING)
+   * DEPRECATED: Agent orchestrator removed in cleanup
+   * Use hiringContactsV2 instead
    */
   static async hiringContactsWithAgent(
     companyName: string,
     companyDomain?: string
   ): Promise<EnhancedResponse<HiringContact[]>> {
-    const started = Date.now()
-    const requestId = generateRequestId()
-
-    console.log('🤖 [INTELLIGENCE] Starting NEW agent-powered contact research...')
-    console.log(`🏢 [INTELLIGENCE] Company: "${companyName}"`)
-    console.log(`🌐 [INTELLIGENCE] Domain: ${companyDomain || 'auto-detect'}`)
-
-    try {
-      const { AgentOrchestrator } = await import('./agents/agent-orchestrator')
-      
-      const orchestrator = new AgentOrchestrator()
-
-      const task = {
-        id: requestId,
-        type: 'contact_research' as const,
-        input: { 
-          companyName,
-          companyDomain
-        },
-        priority: 1 as const
-      }
-
-      const result = await orchestrator.executeTask(task)
-
-      if (!result.success || !result.data || result.data.length === 0) {
-        console.warn('⚠️ [INTELLIGENCE] No verified contacts found')
-        return {
-          success: false,
-          data: [],
-          metadata: {
-            requestId,
-            timestamp: started,
-            duration: result.duration,
-            error: `No verified hiring contacts found for ${companyName}. Visit company website or use LinkedIn InMail.`,
-            reasoning: result.reasoning
-          },
-          cached: false
-        }
-      }
-
-      console.log(`✅ [INTELLIGENCE] Found ${result.data.length} verified contacts`)
-      console.log(`📊 [INTELLIGENCE] Confidence: ${result.confidence}`)
-
-      return {
-        success: true,
-        data: result.data,
-        metadata: {
-          requestId,
-          timestamp: started,
-          duration: result.duration,
-          reasoning: result.reasoning,
-          confidence: result.confidence,
-          method: result.method,
-          sources: result.sources.length
-        },
-        cached: false
-      }
-    } catch (error) {
-      console.error('❌ [INTELLIGENCE] Contact agent system failed:', error)
-      console.log('🔄 [INTELLIGENCE] Falling back to standard method...')
-      return await this.hiringContactsV2(companyName)
-    }
+    console.log('🤖 [INTELLIGENCE] Agent method deprecated, using standard method...')
+    
+    // Fallback to standard method since agent-orchestrator was removed
+    return await this.hiringContactsV2(companyName)
   }
 
   /**

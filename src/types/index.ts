@@ -1,9 +1,5 @@
-// Re-export from unified types
-export * from './unified'
-
 // Autopilot domain types
 export * from './signals'
-export * from './comprehensive'
 export * from './variants'
 export * from './cover-letters'
 export * from './email-outreach'
@@ -12,6 +8,234 @@ export * from './email-outreach'
 export * from './job'
 export * from './company'
 export * from './contact'
+
+// ============================================
+// COMPREHENSIVE JOB RESEARCH TYPES
+// (Moved from comprehensive.ts)
+// ============================================
+
+export interface JobAnalysisComprehensive {
+  matchScore: number
+  matchingSkills: string[]
+  missingSkills: string[]
+  skillsToHighlight: string[]
+  recommendations: string[]
+  estimatedFit: string
+}
+
+export interface CompanyIntel {
+  culture: string
+  values: string[]
+  industry: string
+  size?: string
+  founded?: string
+  headquarters?: string
+}
+
+// CompanyNews interface consolidated below (line ~317)
+
+export interface CompanyReview {
+  rating: number
+  title: string
+  pros?: string
+  cons?: string
+  source: string
+  date?: Date | string
+}
+
+export interface HiringContact {
+  name: string
+  title?: string
+  email?: string
+  linkedIn?: string
+  linkedinUrl?: string
+  role?: string
+  department?: string
+  emailType?: 'public' | 'inferred' | 'pattern'
+  source?: string
+  confidence?: number
+  phone?: string
+  alternativeEmails?: string[]
+  discoveryMethod?: string
+}
+
+export interface ComprehensiveJobResearchData {
+  jobAnalysis: JobAnalysisComprehensive
+  companyIntel: CompanyIntel
+  hiringContacts: HiringContact[]
+  news: CompanyNews[]
+  reviews: CompanyReview[]
+  marketIntelligence?: {
+    salaryRange?: string
+    demandLevel?: string
+    growthTrend?: string
+  }
+  researchedAt: Date
+}
+
+export interface ComprehensiveJobResearchResponse {
+  success: boolean
+  data?: ComprehensiveJobResearchData
+  error?: string
+  cached?: boolean
+}
+
+// ============================================
+// UNIFIED TYPES (Moved from unified.ts)
+// ============================================
+
+export interface User {
+  _id: string
+  email: string
+  name: string
+  image?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface JobResult {
+  id: string
+  title: string
+  company: string
+  location?: string
+  salary?: string
+  url?: string
+  source: string
+  description?: string
+  snippet?: string
+  postedDate?: Date | string
+  requirements?: string[]
+  benefits?: string[]
+}
+
+export interface CompanyResearch {
+  _id: string
+  companyName: string
+  website?: string
+  industry?: string
+  size?: string
+  description?: string
+  culture?: string[]
+  financials?: FinancialData[]
+  news?: NewsItem[]
+  reviews?: CompanyReview[]
+  contacts?: HiringContact[]
+  lastUpdated: Date
+  expiresAt?: Date
+}
+
+export interface FinancialData {
+  year: number
+  revenue?: string
+  growth?: string
+  funding?: string
+}
+
+export interface NewsItem {
+  title: string
+  url: string
+  date: Date | string
+  source: string
+  summary?: string
+}
+
+export interface APIResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
+  metadata?: ResponseMetadata
+}
+
+export interface ResponseMetadata {
+  requestId?: string
+  timestamp: Date
+  cached?: boolean
+  executionTime?: number
+}
+
+export interface PerplexityJobSearch {
+  query: string
+  results?: JobResult[]
+  sources?: string[]
+}
+
+export interface IntelligenceResponse {
+  company: string
+  freshness: string
+  sources: any[]
+  confidence: number
+  financials: any[]
+  culture: any[]
+  salaries: any[]
+  contacts: any[]
+  growth: any[]
+  summary: string
+  description: string
+  size: string
+  revenue: string
+  industry: string
+  founded: string
+  headquarters: string
+  psychology: string
+  marketIntelligence: string
+}
+
+export interface PDFExtractionResult {
+  text: string
+  method: 'text-extraction' | 'ocr-fallback' | 'manual-input'
+  confidence: number
+  error?: string
+}
+
+export interface SessionUser {
+  id: string
+  email: string
+  name?: string
+  image?: string
+}
+
+export interface ResumeCustomizeInput {
+  resumeId: string
+  jobDescription: string
+  jobTitle: string
+  companyName: string
+  tone?: 'professional' | 'casual' | 'enthusiastic'
+}
+
+export interface CompanyResearchInput {
+  companyName: string
+  website?: string
+  includeNews?: boolean
+  includeReviews?: boolean
+}
+
+export interface RateLimitConfig {
+  windowMs: number
+  maxRequests: number
+  skipSuccessfulRequests?: boolean
+  skipFailedRequests?: boolean
+}
+
+export interface RateLimitEntry {
+  count: number
+  resetTime: number
+}
+
+export interface CircuitBreakerState {
+  failures: number
+  lastFailureTime: number
+  state: 'closed' | 'open' | 'half-open'
+}
+
+export interface AIResponse<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  cached?: boolean
+  cost: number
+  model: string
+}
 
 // Resume Types
 export interface Resume {

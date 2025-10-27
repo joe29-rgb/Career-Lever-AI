@@ -1,25 +1,13 @@
 {
   "output": {
-    "filePath": "navigation-pack.xml",
+    "filePath": "complete-codebase.xml",
     "style": "xml"
   },
   "include": [
-    "src/components/unified-navigation.tsx",
-    "src/components/mobile/**",
-    "src/components/modern/MobileNavigation.tsx",
-    "src/components/modern/VibrantPageHeader.tsx",
-    "src/components/ui/dropdown-menu.tsx",
-    "src/app/layout.tsx",
-    "src/components/providers.tsx",
-    "src/app/globals.css",
-    "tailwind.config.js",
-    "package.json"
+    "**/*"
   ],
   "ignore": {
-    "customPatterns": [
-      "*.test.*",
-      "*.spec.*",
-      "*.md"
-    ]
+    "useDefaultPatterns": true,
+    "customPatterns": []
   }
 }
