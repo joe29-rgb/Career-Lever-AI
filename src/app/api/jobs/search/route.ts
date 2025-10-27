@@ -450,7 +450,14 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ FIX #4: VALIDATE each job
-    console.log('[JOB_SEARCH] Validating jobs...')
+    console.log(`[JOB_SEARCH] Validating ${finalJobs.length} jobs...`)
+    console.log('[JOB_SEARCH] Sample job data:', finalJobs[0] ? {
+      title: finalJobs[0].title,
+      company: finalJobs[0].company,
+      descLength: finalJobs[0].description?.length || 0,
+      url: finalJobs[0].url
+    } : 'No jobs to sample')
+    
     const validatedJobs = finalJobs.filter((job: any) => {
       const validation = validateJob(job)
       if (!validation.valid) {
@@ -458,6 +465,11 @@ export async function POST(request: NextRequest) {
         if (validation.issues && validation.issues.length > 0) {
           console.log('[VALIDATOR] Reasons:', validation.issues.join(', '))
         }
+        console.log('[VALIDATOR] Job data:', {
+          descLength: job.description?.length || 0,
+          url: job.url,
+          location: job.location
+        })
         return false
       }
       return true

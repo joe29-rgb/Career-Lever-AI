@@ -120,14 +120,10 @@ export function validateJob(jobData: {
     }
   }
   
-  // Validate description
-  if (!jobData.description || jobData.description.length < 50) {
-    return {
-      valid: false,
-      job: null,
-      issues: ['Description missing or too short (min 50 chars)'],
-      confidence: 0
-    }
+  // Validate description - RELAXED: Allow shorter descriptions
+  if (!jobData.description || jobData.description.length < 20) {
+    issues.push('Description is short (prefer 50+ chars)')
+    // Don't reject - just warn
   }
   
   // Calculate confidence

@@ -1225,9 +1225,9 @@ OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
 
       console.log('[JOB_SEARCH_V2] Parsing response...')
       let parsed: JobListing[] = []
+      let rawContent = out.content.trim()
       
       try {
-        let rawContent = out.content.trim()
         console.log('[JOB_SEARCH_V2] Raw content preview:', rawContent.slice(0, 200))
         
         // CRITICAL FIX: Strip markdown code blocks
@@ -1249,10 +1249,40 @@ OUTPUT STRICT JSON ARRAY (no markdown, no wrapper object):
       } catch (parseError) {
         console.error('[JOB_SEARCH_V2] JSON parse error:', {
           error: (parseError as Error).message,
-          contentPreview: out.content.slice(0, 500)
+          contentPreview: out.content.slice(0, 1000)
         })
-        // Return empty array on parse error
-        parsed = []
+        
+        // AGGRESSIVE FIX: Try to extract individual job objects
+        console.log('[JOB_SEARCH_V2] Attempting aggressive JSON repair...')
+        try {
+          const jobObjects: JobListing[] = []
+          // Split by common job object patterns
+          const chunks = rawContent.split(/},\s*{/)
+          
+          for (let i = 0; i < chunks.length; i++) {
+            let chunk = chunks[i]
+            // Add back the braces
+            if (i > 0) chunk = '{' + chunk
+            if (i < chunks.length - 1) chunk = chunk + '}'
+            
+            // Try to parse each chunk
+            try {
+              const job = JSON.parse(chunk)
+              if (job.title && job.company) {
+                jobObjects.push(job)
+              }
+            } catch {
+              // Skip malformed chunks
+              continue
+            }
+          }
+          
+          console.log(`[JOB_SEARCH_V2] Aggressive repair extracted ${jobObjects.length} jobs`)
+          parsed = jobObjects
+        } catch (repairError) {
+          console.error('[JOB_SEARCH_V2] Aggressive repair failed:', (repairError as Error).message)
+          parsed = []
+        }
       }
       
       parsed = Array.isArray(parsed) ? parsed.slice(0, options.maxResults || 25) : []

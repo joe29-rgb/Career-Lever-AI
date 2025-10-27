@@ -46,6 +46,11 @@ coverage/
 railway.toml
 .railway/
 
+# Java/JDK
+openJdk-25/
+*.jar
+*.dll
+
 
 
 
