@@ -50,18 +50,26 @@ export function selectJobSources(
 ): string[] {
   const sources: string[] = []
   
-  // TIER 1: Always query core sources (best coverage)
-  sources.push('active-jobs-db', 'jsearch', 'indeed')
+  // TIER 1: Fast Primary Sources (Always Use - <2s response)
+  sources.push('google-jobs')      // 520ms - FASTEST! Show results first
+  sources.push('active-jobs-db')   // 851ms - 130K+ sources, comprehensive
+  sources.push('linkedin-jobs')    // 1796ms - Professional roles
+  sources.push('jobs-api')         // 1892ms - LinkedIn/Bing/Xing aggregator
   
-  console.log('[SOURCE_SELECTOR] Tier 1 (Core): active-jobs-db, jsearch, indeed')
+  console.log('[SOURCE_SELECTOR] Tier 1 (Fast): google-jobs, active-jobs-db, linkedin-jobs, jobs-api')
   
-  // TIER 2: Conditional based on preferences
+  // TIER 2: Medium Speed Sources (2-4s response)
+  sources.push('jsearch')          // 3425ms - LinkedIn/Indeed/Glassdoor aggregator
+  
+  console.log('[SOURCE_SELECTOR] Tier 2 (Medium): jsearch')
+  
+  // TIER 3: Conditional Sources (Only When Needed)
   
   // Remote work preference
   if (searchPreferences?.remote || 
       userProfile?.careerPreferences?.remote ||
       userProfile?.careerPreferences?.workType?.includes('remote')) {
-    sources.push('remote-jobs')
+    sources.push('remote-jobs')    // 4549ms - Remote-specific
     console.log('[SOURCE_SELECTOR] Adding remote-jobs (user prefers remote)')
   }
   
@@ -69,27 +77,13 @@ export function selectJobSources(
   if (searchPreferences?.workType?.includes('freelance') || 
       searchPreferences?.workType?.includes('contract') ||
       searchPreferences?.includeFreelance) {
-    sources.push('upwork', 'freelancer')
-    console.log('[SOURCE_SELECTOR] Adding upwork, freelancer (freelance/contract work)')
+    sources.push('freelancer')     // 16148ms - SLOW! Only for freelance
+    console.log('[SOURCE_SELECTOR] Adding freelancer (freelance/contract work)')
   }
   
-  // LinkedIn preference (high-quality matches, unless explicitly disabled)
-  if (searchPreferences?.includeLinkedIn !== false) {
-    sources.push('linkedin')
-    console.log('[SOURCE_SELECTOR] Adding linkedin (high-quality matches)')
-  }
-  
-  // TIER 3: Specialized based on user profile
-  
-  // Startup preference
-  if (userProfile?.careerPreferences?.targetCompanies?.some(c => 
-        c.toLowerCase().includes('startup') || c.toLowerCase().includes('early-stage')
-      ) ||
-      searchPreferences?.companySize?.includes('startup') ||
-      searchPreferences?.includeStartups) {
-    sources.push('startup-jobs')
-    console.log('[SOURCE_SELECTOR] Adding startup-jobs (user targets startups)')
-  }
+  // TIER 4: Fallback Sources (Only if primary sources fail or return <10 jobs)
+  // Indeed is SLOW (8084ms) - only use as last resort
+  // We'll add this dynamically in the aggregator if needed
   
   // Limit sources if specified
   if (searchPreferences?.maxSources && sources.length > searchPreferences.maxSources) {

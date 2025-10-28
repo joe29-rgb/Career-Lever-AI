@@ -59,32 +59,53 @@ export interface QueryMetadata {
 
 // Job source configurations
 export const JOB_SOURCES: Record<string, JobSource> = {
+  // TIER 1: Primary Discovery (Always Use)
+  'google-jobs': {
+    id: 'google-jobs',
+    name: 'Google Jobs API',
+    endpoint: 'https://google-jobs-api1.p.rapidapi.com/search',
+    tier: 1,
+    cost: 0.001,
+    maxResults: 50,
+    enabled: true // 520ms - FASTEST! Show results first
+  },
   'active-jobs-db': {
     id: 'active-jobs-db',
     name: 'Active Jobs DB',
-    endpoint: 'https://active-jobs-db.p.rapidapi.com/v1/jobs/search',
+    endpoint: 'https://active-jobs-db.p.rapidapi.com/jobs',
     tier: 1,
     cost: 0.001,
     maxResults: 100,
-    enabled: true
+    enabled: true // 851ms - 130K+ sources, AI-enriched
   },
   'jsearch': {
     id: 'jsearch',
-    name: 'JSearch (Google for Jobs)',
+    name: 'JSearch',
     endpoint: 'https://jsearch.p.rapidapi.com/search',
     tier: 1,
     cost: 0.001,
     maxResults: 50,
-    enabled: true
+    enabled: true // 3425ms - LinkedIn/Indeed/Glassdoor aggregator
   },
-  'indeed': {
-    id: 'indeed',
-    name: 'Indeed',
-    endpoint: 'https://indeed12.p.rapidapi.com/jobs/search',
-    tier: 1,
+  
+  // TIER 2: Specialized (Use Based on Search Type)
+  'linkedin-jobs': {
+    id: 'linkedin-jobs',
+    name: 'LinkedIn Jobs',
+    endpoint: 'https://linkedin-jobs-api.p.rapidapi.com/jobs',
+    tier: 2,
     cost: 0.001,
     maxResults: 50,
-    enabled: true
+    enabled: true // 1796ms - Professional roles, $60K+
+  },
+  'jobs-api': {
+    id: 'jobs-api',
+    name: 'Jobs API',
+    endpoint: 'https://jobs-api14.p.rapidapi.com/v2/list',
+    tier: 2,
+    cost: 0.001,
+    maxResults: 50,
+    enabled: true // 1892ms - LinkedIn/Bing/Xing aggregator
   },
   'remote-jobs': {
     id: 'remote-jobs',
@@ -93,43 +114,27 @@ export const JOB_SOURCES: Record<string, JobSource> = {
     tier: 2,
     cost: 0.001,
     maxResults: 50,
-    enabled: true
+    enabled: false // 4549ms - Only for remote: true
   },
-  'linkedin': {
-    id: 'linkedin',
-    name: 'LinkedIn Job Search',
-    endpoint: 'https://linkedin-job-search-api.p.rapidapi.com/jobs',
+  'indeed': {
+    id: 'indeed',
+    name: 'Indeed API',
+    endpoint: 'https://indeed12.p.rapidapi.com/jobs/search',
     tier: 2,
     cost: 0.001,
-    maxResults: 100,
-    enabled: true
+    maxResults: 50,
+    enabled: false // 8084ms - SLOW! Only as fallback
   },
-  'upwork': {
-    id: 'upwork',
-    name: 'Upwork Jobs',
-    endpoint: 'https://upwork-jobs-api.p.rapidapi.com/jobs',
-    tier: 2,
-    cost: 0.001,
-    maxResults: 100,
-    enabled: true
-  },
+  
+  // TIER 3: Freelance/Specialized (Only When Needed)
   'freelancer': {
     id: 'freelancer',
     name: 'Freelancer API',
     endpoint: 'https://freelancer-api.p.rapidapi.com/jobs',
-    tier: 2,
-    cost: 0.001,
-    maxResults: 50,
-    enabled: true
-  },
-  'startup-jobs': {
-    id: 'startup-jobs',
-    name: 'Startup Jobs',
-    endpoint: 'https://startup-jobs-api.p.rapidapi.com/jobs',
     tier: 3,
     cost: 0.001,
-    maxResults: 100,
-    enabled: true
+    maxResults: 50,
+    enabled: false // 16148ms - VERY SLOW! Only for freelance
   }
 }
 
