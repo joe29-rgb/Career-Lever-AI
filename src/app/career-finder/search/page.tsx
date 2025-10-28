@@ -57,7 +57,8 @@ export default function SearchPage() {
     useResumeMatching?: boolean
     searchedBoards?: number
     canadianPriority?: boolean
-    cachedResults?: boolean
+    cachedResults?: number
+    newResults?: number
   } | null>(null)
   const [loadingJobId, setLoadingJobId] = useState<string | null>(null)
   
@@ -285,7 +286,11 @@ export default function SearchPage() {
             const jobResults = data.jobs || []
             setJobs(jobResults)
             setMetadata(data.metadata || {})
-            console.log('[AUTOPILOT] Search completed:', jobResults.length, 'jobs found')
+            
+            // CRITICAL: Show NEW jobs found vs cached jobs
+            const newJobsCount = data.metadata?.newResults || 0
+            const cachedJobsCount = data.metadata?.cachedResults || 0
+            console.log('[AUTOPILOT] Search completed:', newJobsCount, 'NEW jobs found,', cachedJobsCount, 'cached jobs,', jobResults.length, 'total displayed')
             
             // ENTERPRISE FIX: Cache results for 20 minutes
             try {
@@ -352,7 +357,10 @@ export default function SearchPage() {
         throw new Error(data.error || 'Search failed')
       }
 
-      console.log(`[SEARCH] Found ${data.jobs.length} jobs from ${data.sources?.length || 0} sources`)
+      // CRITICAL: Show NEW jobs found vs cached jobs
+      const newJobsCount = data.metadata?.newResults || 0
+      const cachedJobsCount = data.metadata?.cachedResults || 0
+      console.log(`[SEARCH] ✅ ${newJobsCount} NEW jobs found, ${cachedJobsCount} cached jobs, ${data.jobs.length} total from ${data.sources?.length || 0} sources`)
 
       // ✅ FIX #1: DEDUPLICATE JOBS to prevent infinite loop
       const rawJobs = data.jobs || []
@@ -584,19 +592,38 @@ export default function SearchPage() {
 
           {/* Job Status Bar - Figma Design */}
           {jobs.length > 0 && (
-            <div className="mb-8">
-              <JobStatusBar
-                activeStatus={activeStatus}
-                onStatusChange={setActiveStatus}
-                counts={{
-                  discover: jobs.length,
-                  saved: 0,
-                  applied: 0,
-                  closed: 0,
-                  discarded: 0
-                }}
-              />
-            </div>
+            <>
+              {/* NEW: Show job discovery stats */}
+              {metadata?.newResults !== undefined && (
+                <div className="mb-4 flex items-center justify-center gap-4 text-sm">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-full border border-green-500/20">
+                    <span className="text-green-600 dark:text-green-400 font-semibold">✨ {metadata.newResults} New</span>
+                  </div>
+                  {(metadata.cachedResults || 0) > 0 && (
+                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold">💾 {metadata.cachedResults} Cached</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 rounded-full border border-purple-500/20">
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold">📊 {jobs.length} Total</span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mb-8">
+                <JobStatusBar
+                  activeStatus={activeStatus}
+                  onStatusChange={setActiveStatus}
+                  counts={{
+                    discover: jobs.length,
+                    saved: 0,
+                    applied: 0,
+                    closed: 0,
+                    discarded: 0
+                  }}
+                />
+              </div>
+            </>
           )}
 
           {loading ? (

@@ -1137,9 +1137,12 @@ Return ${limit} unique, recent listings in JSON format. For Canadian locations, 
   ): Promise<EnhancedResponse<JobListing[]>> {
     const requestId = generateRequestId()
     const started = Date.now()
+    
+    // CRITICAL FIX: Don't return cached results immediately - always search for NEW jobs
+    // Cache will be merged with new results at the API level (job-search-cache.service)
+    // This ensures users always see fresh job postings while benefiting from cached jobs
     const key = makeKey('ppx:jobmarket:v2', { location, resume: resumeText.slice(0,1000), options })
-    const cached = getCache(key) as JobListing[] | undefined
-    if (cached) return { success: true, data: cached, metadata: { requestId, timestamp: started, duration: Date.now() - started }, cached: true }
+    // REMOVED: Early return of cached results - we always want fresh jobs
 
     // Determine if location is Canadian for prioritization
     const isCanadian = /canada|canadian|toronto|vancouver|montreal|calgary|ottawa|edmonton|quebec|winnipeg|halifax/i.test(location)
