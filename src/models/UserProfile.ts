@@ -102,6 +102,25 @@ export interface IUserProfile extends Document {
     soft: string[]
     languages: string[]
     tools: string[]
+    
+    // NEW: Weighted skills from Perplexity analysis
+    weighted?: {
+      primarySkills: Array<{
+        skill: string
+        weight: number
+        years?: number | null
+        category: string
+        extractedAt?: Date
+      }>
+      secondarySkills: Array<{
+        skill: string
+        weight: number
+        years?: number | null
+        category: string
+        extractedAt?: Date
+      }>
+      lastAnalyzedAt?: Date
+    }
   }
   
   // Career Preferences
@@ -211,7 +230,26 @@ const UserProfileSchema = new Schema<IUserProfile>({
     technical: [String],
     soft: [String],
     languages: [String],
-    tools: [String]
+    tools: [String],
+    
+    // NEW: Weighted skills from Perplexity analysis
+    weighted: {
+      primarySkills: [{
+        skill: String,
+        weight: Number,
+        years: Number,
+        category: String,
+        extractedAt: Date
+      }],
+      secondarySkills: [{
+        skill: String,
+        weight: Number,
+        years: Number,
+        category: String,
+        extractedAt: Date
+      }],
+      lastAnalyzedAt: Date
+    }
   },
   
   // Career Preferences

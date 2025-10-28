@@ -108,7 +108,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // STEP 3: Save to resume document for caching (with retry logic)
+    // STEP 3: Save weighted skills to UserProfile
+    if (signals.skillsWeighted && session?.user?.email) {
+      try {
+        const UserProfile = (await import('@/models/UserProfile')).default
+        
+        await UserProfile.findOneAndUpdate(
+          { email: session.user.email },
+          {
+            $set: {
+              'skills.weighted': {
+                primarySkills: signals.skillsWeighted.primarySkills.map(s => ({
+                  ...s,
+                  extractedAt: new Date()
+                })),
+                secondarySkills: signals.skillsWeighted.secondarySkills.map(s => ({
+                  ...s,
+                  extractedAt: new Date()
+                })),
+                lastAnalyzedAt: new Date()
+              }
+            }
+          },
+          { upsert: true }
+        )
+        
+        console.log('[AUTOPILOT] ✅ Weighted skills saved to UserProfile:', {
+          primarySkills: signals.skillsWeighted.primarySkills.length,
+          secondarySkills: signals.skillsWeighted.secondarySkills.length
+        })
+      } catch (profileError) {
+        console.warn('[AUTOPILOT] ⚠️ Failed to save to UserProfile:', profileError)
+      }
+    }
+    
+    // STEP 4: Save to resume document for caching (with retry logic)
     resume.resumeSignals = enhancedSignals
     if (comprehensiveResearch) {
       resume.comprehensiveResearch = comprehensiveResearch

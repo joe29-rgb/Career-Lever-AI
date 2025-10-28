@@ -1545,7 +1545,16 @@ If NO contacts found, return: []`
   static async extractResumeSignals(
     resumeText: string,
     maxKeywords: number = 50
-  ): Promise<{ keywords: string[]; location?: string; locations?: string[]; personalInfo?: { name?: string; email?: string; phone?: string } }> {
+  ): Promise<{ 
+    keywords: string[]
+    skillsWeighted?: {
+      primarySkills: Array<{ skill: string; weight: number; years?: number | null; category: string }>
+      secondarySkills: Array<{ skill: string; weight: number; years?: number | null; category: string }>
+    }
+    location?: string
+    locations?: string[]
+    personalInfo?: { name?: string; email?: string; phone?: string }
+  }> {
     const key = makeKey('ppx:resume:signals:v3', { t: resumeText.slice(0, 3000), maxKeywords })
     const cached = getCache(key) as { keywords: string[]; location?: string; locations?: string[] } | undefined
     if (cached) return cached
@@ -1553,17 +1562,40 @@ If NO contacts found, return: []`
     try {
       const client = createClient()
       
-      const prompt = `ANALYZE THIS RESUME TEXT AND EXTRACT KEYWORDS + LOCATION
+      const prompt = `ANALYZE THIS RESUME TEXT AND EXTRACT WEIGHTED SKILLS + LOCATION
 
 CRITICAL: DO NOT search the web. ONLY read the resume text below.
 
 RESUME TEXT:
 ${resumeText}
 
-TASK 1 - EXTRACT KEYWORDS:
-1. Extract EXACTLY 50 keywords (skills, technologies, competencies) FROM THE RESUME TEXT ABOVE
-2. Weight keywords by recency and frequency
-3. Return keywords in PRIORITY ORDER (most important first)
+TASK 1 - EXTRACT WEIGHTED SKILLS:
+Analyze the resume and extract skills with the following details:
+
+PRIMARY SKILLS (Top 15 most important):
+- Skills mentioned in recent jobs (last 3 years)
+- Skills in job titles or prominently featured
+- Skills with explicit years of experience mentioned
+- Weight: 0.7 - 1.0 (based on recency, frequency, prominence)
+
+SECONDARY SKILLS (Next 20 skills):
+- Skills mentioned but less prominent
+- Skills from older jobs or education
+- Skills mentioned once or twice
+- Weight: 0.3 - 0.69
+
+For each skill, determine:
+1. Skill name (e.g., "React", "Python", "Project Management")
+2. Weight (0.0 - 1.0, where 1.0 = most important)
+3. Years of experience (estimate from work history, or null if unclear)
+4. Category: "technical", "soft", "language", or "tool"
+
+WEIGHTING RULES:
+- Recent job (last 2 years) + mentioned in title = 0.9-1.0
+- Recent job + mentioned multiple times = 0.8-0.9
+- Mentioned in multiple jobs = 0.7-0.8
+- Mentioned once in recent job = 0.6-0.7
+- Older job or education only = 0.3-0.5
 
 TASK 2 - EXTRACT LOCATION FROM RESUME:
 CRITICAL RULES:
@@ -1576,15 +1608,33 @@ CRITICAL RULES:
 - If you find "Toronto, Ontario" write it as "Toronto, ON"
 - If no specific city found, return null
 
-EXAMPLES:
-- Resume says "Edmonton, Alberta" → return "Edmonton, AB"
-- Resume says "123 Main St, Calgary, AB" → return "Calgary, AB"
-- Resume says "Toronto, ON" → return "Toronto, ON"
-- Resume only says "Canada" → return null (too broad)
-
 RETURN STRICT JSON (no markdown, no explanations):
 {
-  "keywords": ["Most Important Skill", "Second Most Important", ..., "50th skill"],
+  "keywords": ["Skill1", "Skill2", ..., "Skill35"],
+  "skillsWeighted": {
+    "primarySkills": [
+      {
+        "skill": "React",
+        "weight": 0.95,
+        "years": 5,
+        "category": "technical"
+      },
+      {
+        "skill": "Leadership",
+        "weight": 0.85,
+        "years": 3,
+        "category": "soft"
+      }
+    ],
+    "secondarySkills": [
+      {
+        "skill": "Python",
+        "weight": 0.60,
+        "years": 2,
+        "category": "technical"
+      }
+    ]
+  },
   "location": "City, PROVINCE" or null,
   "personalInfo": {
     "name": "Full Name",
@@ -1594,9 +1644,12 @@ RETURN STRICT JSON (no markdown, no explanations):
 }
 
 CRITICAL: 
-- Return EXACTLY 50 keywords
+- Return 15 primarySkills and 20 secondarySkills
+- Keep "keywords" array for backward compatibility (top 35 skills)
 - Extract location FROM THE RESUME TEXT ONLY (not from web search)
-- Location must be "City, Province" format or null`
+- Location must be "City, Province" format or null
+- Weight must be between 0.0 and 1.0
+- Years can be null if not determinable`
 
       console.log('[SIGNALS] Extracting resume signals...')
 
