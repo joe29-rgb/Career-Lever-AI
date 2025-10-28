@@ -33,12 +33,12 @@ export default function SearchPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<JobListing[]>([])
   
-  // CRITICAL FIX: Only use saved location if user has uploaded/built resume
-  const hasResume = typeof window !== 'undefined' ? !!localStorage.getItem('cf:resume') : false
-  const savedLocation = typeof window !== 'undefined' && hasResume ? localStorage.getItem('cf:location') || '' : ''
+  // CRITICAL FIX: Location MUST come from resume extraction (saved in cf:location)
+  // This is set when resume is uploaded/processed and contains extracted location
+  const savedLocation = typeof window !== 'undefined' ? localStorage.getItem('cf:location') || '' : ''
   
   const [filters, setFilters] = useState({ 
-    location: savedLocation || '', // Use saved location only if resume exists, otherwise empty for manual entry
+    location: savedLocation, // Always use location extracted from resume
     salaryMin: '', 
     salaryMax: '', 
     workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'part-time',
@@ -212,9 +212,10 @@ export default function SearchPage() {
     console.log('  - hasResume:', !!resumeData)
     console.log('  - hasKeywords:', !!savedKeywords)
     
-    // CRITICAL FIX: Only update filter state with saved location if user has resume
-    if (resumeData && savedLocation && savedLocation !== filters.location) {
-      console.log('[LOCATION] Updating filter from saved location:', savedLocation)
+    // CRITICAL FIX: Always use saved location from resume extraction
+    // This location was extracted when resume was uploaded and cached
+    if (savedLocation && savedLocation !== filters.location) {
+      console.log('[LOCATION] Using location from resume extraction:', savedLocation)
       setFilters(prev => ({ ...prev, location: savedLocation }))
     }
     
