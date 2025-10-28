@@ -321,20 +321,33 @@ export default function CareerFinderOptimizerPage() {
 
   // Manual regeneration when user changes template
   const handleTemplateChange = (newTemplate: string) => {
+    console.log('[OPTIMIZER] 🎨 Template changed to:', newTemplate)
+    
+    // CRITICAL FIX: Clear variants immediately to show loading state
+    setVariantA('')
+    setVariantB('')
+    setLoading(true)
+    
     setTemplate(newTemplate)
     
     // Auto-select matching tone
     const matchingTone = templateToToneMap[newTemplate] || 'professional'
     setTone(matchingTone)
-    console.log('[OPTIMIZER] Template changed to', newTemplate, '- auto-selected tone:', matchingTone)
+    console.log('[OPTIMIZER] Auto-selected tone:', matchingTone)
     
     if (resumeText) {
       console.log('[OPTIMIZER] Regenerating variants with new template and tone')
       // CRITICAL: Clear cache BEFORE regeneration
       localStorage.removeItem('cf:resumeVariants')
-      console.log('[OPTIMIZER] 🔄 Cache cleared, regenerating variants...')
       hasGeneratedRef.current = false // Allow regeneration
-      setTimeout(() => generateVariants(), 100) // Small delay to ensure state is updated
+      processingRef.current = false // Reset processing flag
+      
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        generateVariants()
+      }, 150)
+    } else {
+      setLoading(false)
     }
   }
 
@@ -570,6 +583,7 @@ ${htmlContent}
               </div>
             ) : (
               <iframe 
+                key={`variant-a-${template}`}
                 className="w-full h-96 border-0" 
                 srcDoc={variantA || '<div style="padding: 24px; text-align: center; color: #666;">Generating variant...</div>'}
                 sandbox="allow-same-origin"
@@ -602,6 +616,7 @@ ${htmlContent}
               </div>
             ) : (
               <iframe 
+                key={`variant-b-${template}`}
                 className="w-full h-96 border-0" 
                 srcDoc={variantB || '<div style="padding: 24px; text-align: center; color: #666;">Generating variant...</div>'}
                 sandbox="allow-same-origin"
