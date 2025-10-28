@@ -40,6 +40,8 @@ import { LinkedInImport } from '@/components/linkedin-import'
 import { ResumeAnalyzer } from '@/components/resume-builder/resume-analyzer'
 import { ATSScore } from '@/components/resume-builder/ats-score'
 import { TemplateSelector } from '@/components/resume-builder/template-selector'
+import { ResumeImportOptions } from '@/components/resume-builder/resume-import-options'
+import { ResumePreviewButton } from '@/components/resume-builder/resume-preview-modal'
 
 interface ResumeData {
   personalInfo: {
@@ -99,6 +101,7 @@ interface ResumeBuilderProps {
 export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('modern')
   const [showLinkedInImport, setShowLinkedInImport] = useState(false)
+  const [showImportOptions, setShowImportOptions] = useState(true) // Show import options initially
   const [resumeData, setResumeData] = useState<ResumeData>({
     personalInfo: {
       fullName: '',
@@ -490,11 +493,32 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
 
   const completeness = calculateCompleteness()
 
+  // Handle resume data import from LinkedIn or upload
+  const handleImport = (data: ResumeData | null) => {
+    if (data) {
+      setResumeData(data)
+      toast.success('Resume data imported successfully!')
+    }
+    setShowImportOptions(false)
+  }
+
   // Render formatted preview using templates
   const buildFormattedHtml = () => {
     const templateObj = getTemplateById(selectedTemplate)
     // Pass the resumeData directly - it already matches the ResumeData interface
     return templateObj.generate(resumeData)
+  }
+
+  // Show import options if resume is empty
+  if (showImportOptions && !resumeData.personalInfo.fullName) {
+    return (
+      <div className="container max-w-7xl mx-auto py-8">
+        <ResumeImportOptions 
+          onImport={handleImport}
+          onSkip={() => setShowImportOptions(false)}
+        />
+      </div>
+    )
   }
 
   return (

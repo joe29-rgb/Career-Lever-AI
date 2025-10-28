@@ -660,7 +660,6 @@ const creativeTemplate: ResumeTemplate = {
       <div class="resume-creative">
         <div class="header-creative">
           <h1 class="name-gradient">${personalInfo.fullName}</h1>
-          <div class="tagline">Creative Professional</div>
           <div class="contact-badges">
             <span class="badge">${personalInfo.email}</span>
             <span class="badge">${personalInfo.phone}</span>
@@ -672,7 +671,7 @@ const creativeTemplate: ResumeTemplate = {
         <div class="content-grid">
           <div class="main-column">
             <div class="section-creative">
-              <h2 class="section-title-creative">Creative Profile</h2>
+              <h2 class="section-title-creative">Profile</h2>
               <p class="profile-text">${personalInfo.summary}</p>
             </div>
             
