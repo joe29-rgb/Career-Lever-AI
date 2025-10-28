@@ -48,6 +48,7 @@ export class JobAggregatorService {
     location?: string
     remote?: boolean
     jobType?: string[]
+    salaryMin?: number
     userProfile?: UserProfile
     searchPreferences?: SearchPreferences
     useCache?: boolean
@@ -117,7 +118,8 @@ export class JobAggregatorService {
           primarySkills,
           secondarySkills,
           location: params.location,
-          remote: params.remote
+          remote: params.remote,
+          salaryMin: params.salaryMin
         }
         
         rankedJobs = rankJobsByWeightedSkills(uniqueJobs, rankingParams)
