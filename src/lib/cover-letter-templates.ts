@@ -426,7 +426,9 @@ export function getCoverLetterVariantsForResume(resumeTemplateId: string): [Cove
     'tech': ['technical', 'modern'], // Tech resume → Technical + Modern letters
     'minimal': ['ats-optimized', 'professional'], // Minimal resume → ATS + Professional letters
     'executive': ['executive', 'metrics'], // Executive resume → Executive + Metrics letters
-    'cv': ['professional', 'ats-optimized'] // CV resume → Professional + ATS letters
+    'cv': ['professional', 'ats-optimized'], // CV resume → Professional + ATS letters
+    'teal-horizontal': ['modern', 'metrics'], // Teal Horizontal → Modern + Metrics letters
+    'two-column-red': ['creative', 'problem-solver'] // Two-Column Red → Creative + Problem-solver letters
   }
   
   const [primaryId, alternativeId] = variantMapping[resumeTemplateId] || ['professional', 'modern']

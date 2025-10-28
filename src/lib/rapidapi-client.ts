@@ -87,6 +87,15 @@ export const JOB_SOURCES: Record<string, JobSource> = {
     maxResults: 50,
     enabled: true // 3425ms - LinkedIn/Indeed/Glassdoor aggregator
   },
+  'adzuna': {
+    id: 'adzuna',
+    name: 'Adzuna Jobs',
+    endpoint: 'https://adzuna.p.rapidapi.com/search',
+    tier: 1,
+    cost: 0.001,
+    maxResults: 50,
+    enabled: true // NEW! Adzuna job board aggregator
+  },
   
   // TIER 2: Specialized (Use Based on Search Type)
   'linkedin-jobs': {
