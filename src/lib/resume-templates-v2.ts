@@ -2120,6 +2120,360 @@ const cvTemplate: ResumeTemplate = {
   `
 };
 
+/**
+ * TEMPLATE 8: TEAL HORIZONTAL (Clean Single-Column)
+ */
+const tealHorizontalTemplate: ResumeTemplate = {
+  id: 'teal-horizontal',
+  name: 'Teal Horizontal',
+  description: 'Clean single-column layout with teal accent headers',
+  bestFor: ['Technology', 'Business', 'Consulting', 'General'],
+  preview: '/templates/teal-horizontal-preview.png',
+  
+  generate: (data: ResumeData) => {
+    const { personalInfo, experience, education } = data;
+    
+    return `
+      <div class="resume-teal-horizontal">
+        <div class="header-teal">
+          <h1 class="name-teal">${personalInfo.fullName}, CTO CareerJSM</h1>
+          <div class="contact-line-teal">
+            ${personalInfo.location} | ${personalInfo.phone} | 
+            <a href="mailto:${personalInfo.email}" class="email-link-teal">${personalInfo.email}</a>
+          </div>
+          <hr class="divider-teal" />
+        </div>
+        
+        <div class="section-teal">
+          <h2 class="section-title-teal">SUMMARY</h2>
+          <p class="summary-teal">${personalInfo.summary}</p>
+        </div>
+        
+        <div class="section-teal">
+          <h2 class="section-title-teal">EDUCATION</h2>
+          ${education.map(edu => `
+            <div class="education-entry-teal">
+              <div class="education-header-teal">
+                <strong>${edu.degree}, ${edu.field}</strong> | <strong>${edu.institution}</strong> | <span>${edu.graduationDate}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="section-teal">
+          <h2 class="section-title-teal">EXPERIENCE</h2>
+          ${experience.map(exp => `
+            <div class="experience-entry-teal">
+              <div class="experience-header-teal">
+                <strong>${exp.position}</strong> | <strong>${exp.company}</strong> | <span>${exp.startDate} – ${exp.current ? 'Present' : exp.endDate}</span>
+              </div>
+              <p class="experience-description-teal">${exp.description}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  },
+  
+  css: `
+    .resume-teal-horizontal {
+      max-width: 8.5in;
+      margin: 0 auto;
+      padding: 0.75in;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: white;
+      color: #000;
+      line-height: 1.6;
+    }
+    
+    .header-teal {
+      margin-bottom: 1.5rem;
+    }
+    
+    .name-teal {
+      font-size: 24px;
+      font-weight: 700;
+      color: #0d9488;
+      margin: 0 0 0.5rem;
+    }
+    
+    .contact-line-teal {
+      font-size: 11px;
+      color: #333;
+      margin-bottom: 0.75rem;
+    }
+    
+    .email-link-teal {
+      color: #0d9488;
+      text-decoration: none;
+    }
+    
+    .divider-teal {
+      border: none;
+      border-top: 2px solid #0d9488;
+      margin: 0.75rem 0;
+    }
+    
+    .section-teal {
+      margin-bottom: 1.5rem;
+    }
+    
+    .section-title-teal {
+      font-size: 14px;
+      font-weight: 700;
+      color: #0d9488;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 0.75rem;
+    }
+    
+    .summary-teal {
+      font-size: 11px;
+      line-height: 1.7;
+      color: #333;
+      margin: 0;
+    }
+    
+    .education-entry-teal,
+    .experience-entry-teal {
+      margin-bottom: 1rem;
+    }
+    
+    .education-header-teal,
+    .experience-header-teal {
+      font-size: 11px;
+      margin-bottom: 0.5rem;
+    }
+    
+    .education-header-teal strong,
+    .experience-header-teal strong {
+      font-weight: 700;
+      color: #000;
+    }
+    
+    .experience-description-teal {
+      font-size: 11px;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+    }
+    
+    @media print {
+      .resume-teal-horizontal {
+        padding: 0.5in;
+      }
+    }
+  `
+};
+
+/**
+ * TEMPLATE 9: TWO-COLUMN RED (Sidebar with Red Accents)
+ */
+const twoColumnRedTemplate: ResumeTemplate = {
+  id: 'two-column-red',
+  name: 'Two-Column Red',
+  description: 'Two-column layout with red accent sidebar',
+  bestFor: ['Creative', 'Marketing', 'Design', 'Media'],
+  preview: '/templates/two-column-red-preview.png',
+  
+  generate: (data: ResumeData) => {
+    const { personalInfo, experience, skills } = data;
+    
+    return `
+      <div class="resume-two-column-red">
+        <div class="header-two-column">
+          <h1 class="name-two-column">${personalInfo.fullName}</h1>
+          <div class="title-two-column">CTO CareerJSM</div>
+          <hr class="divider-two-column" />
+        </div>
+        
+        <div class="content-grid-two-column">
+          <div class="sidebar-two-column">
+            <div class="section-sidebar">
+              <h2 class="section-title-red">CONTACT</h2>
+              <div class="contact-item-sidebar">${personalInfo.location}</div>
+              <div class="contact-item-sidebar">${personalInfo.phone}</div>
+              <div class="contact-item-sidebar">${personalInfo.email}</div>
+            </div>
+            
+            ${skills.languages && skills.languages.length > 0 ? `
+              <div class="section-sidebar">
+                <h2 class="section-title-blue">LANGUAGES</h2>
+                ${skills.languages.map(lang => `
+                  <div class="language-item-sidebar">
+                    <strong>${lang.language}</strong>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+          
+          <div class="main-column-two-column">
+            <div class="section-main">
+              <h2 class="section-title-red">SUMMARY</h2>
+              <p class="summary-two-column">${personalInfo.summary}</p>
+            </div>
+            
+            <div class="section-main">
+              <h2 class="section-title-red">EXPERIENCE</h2>
+              ${experience.map(exp => `
+                <div class="experience-entry-two-column">
+                  <div class="experience-header-two-column">
+                    <strong class="job-title-blue">${exp.position}</strong>
+                    <span class="company-right">${exp.company}</span>
+                  </div>
+                  <div class="date-line-two-column">${exp.startDate} – ${exp.current ? 'Present' : exp.endDate}</div>
+                  <p class="experience-desc-two-column">${exp.description}</p>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+  
+  css: `
+    .resume-two-column-red {
+      max-width: 8.5in;
+      margin: 0 auto;
+      padding: 0.75in;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: white;
+      color: #000;
+    }
+    
+    .header-two-column {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .name-two-column {
+      font-size: 28px;
+      font-weight: 700;
+      color: #000;
+      margin: 0;
+    }
+    
+    .title-two-column {
+      font-size: 16px;
+      font-weight: 600;
+      color: #000;
+      margin: 0.25rem 0 0.75rem;
+    }
+    
+    .divider-two-column {
+      border: none;
+      border-top: 1px solid #ccc;
+      margin: 0.75rem 0;
+    }
+    
+    .content-grid-two-column {
+      display: grid;
+      grid-template-columns: 30% 70%;
+      gap: 2rem;
+      border-left: 1px dotted #ccc;
+      padding-left: 0;
+    }
+    
+    .sidebar-two-column {
+      padding-right: 1.5rem;
+    }
+    
+    .section-sidebar {
+      margin-bottom: 1.5rem;
+    }
+    
+    .section-title-red {
+      font-size: 12px;
+      font-weight: 700;
+      color: #dc2626;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 0.75rem;
+    }
+    
+    .section-title-blue {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2563eb;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 0.75rem;
+    }
+    
+    .contact-item-sidebar {
+      font-size: 10px;
+      color: #333;
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+    
+    .language-item-sidebar {
+      font-size: 10px;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+    
+    .main-column-two-column {
+      padding-left: 1.5rem;
+    }
+    
+    .section-main {
+      margin-bottom: 1.5rem;
+    }
+    
+    .summary-two-column {
+      font-size: 11px;
+      line-height: 1.7;
+      color: #333;
+      margin: 0;
+    }
+    
+    .experience-entry-two-column {
+      margin-bottom: 1.25rem;
+    }
+    
+    .experience-header-two-column {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.25rem;
+    }
+    
+    .job-title-blue {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2563eb;
+    }
+    
+    .company-right {
+      font-size: 11px;
+      font-weight: 600;
+      color: #000;
+    }
+    
+    .date-line-two-column {
+      font-size: 10px;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+    
+    .experience-desc-two-column {
+      font-size: 11px;
+      line-height: 1.6;
+      color: #333;
+      margin: 0;
+    }
+    
+    @media print {
+      .resume-two-column-red {
+        padding: 0.5in;
+      }
+    }
+  `
+};
+
 export const resumeTemplates: Record<string, ResumeTemplate> = {
   modern: modernTemplate,
   professional: professionalTemplate,
@@ -2128,6 +2482,8 @@ export const resumeTemplates: Record<string, ResumeTemplate> = {
   minimal: minimalTemplate,
   executive: executiveTemplate,
   cv: cvTemplate,
+  'teal-horizontal': tealHorizontalTemplate,
+  'two-column-red': twoColumnRedTemplate,
 };
 
 export function getTemplateById(id: string): ResumeTemplate {
