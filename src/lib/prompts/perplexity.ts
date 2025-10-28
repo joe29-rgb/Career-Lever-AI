@@ -105,6 +105,14 @@ CRITICAL RULE - CURRENT EMPLOYMENT:
 - Do NOT imply the candidate already works at the target company
 - If the candidate's resume mentions the target company as a PAST employer, that's fine
 - Use phrases like: "I am excited to apply", "I am drawn to [COMPANY]", "I would bring to [COMPANY]"
+
+CRITICAL RULE - GRAMMAR & OPENING SENTENCE:
+- NEVER write "I am for the [POSITION] position" - this is grammatically incorrect
+- ALWAYS use complete, grammatically correct sentences
+- Correct openings: "I am writing to express my interest in", "I am excited to apply for", "I am applying for"
+- WRONG: "I am for the Senior Developer position"
+- RIGHT: "I am excited to apply for the Senior Developer position"
+- Proofread for grammar errors before finalizing
 `;
 
 export function buildEnhancedCoverLetterUserPrompt(params: {

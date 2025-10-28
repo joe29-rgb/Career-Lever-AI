@@ -156,6 +156,9 @@ ${profileData.workExperience?.map((exp: any) =>
 
   let coverLetter = (result.content || '').trim()
 
+  // CRITICAL FIX: Grammar validation and correction
+  coverLetter = fixCommonGrammarErrors(coverLetter, jobTitle, companyName)
+
   // Validate authenticity
   const authenticityReport = validateAuthenticityLetter(resumeText, coverLetter)
   
@@ -264,6 +267,41 @@ function extractYearsFromResume(resumeText: string): number {
   }
   
   return 5 // Default fallback
+}
+
+/**
+ * Fix common grammar errors in cover letters
+ */
+function fixCommonGrammarErrors(text: string, jobTitle: string, companyName: string): string {
+  let fixed = text
+  
+  // Fix "I am for the [position]" -> "I am applying for the [position]"
+  fixed = fixed.replace(
+    /I am for the ([A-Z][a-zA-Z\s]+) position/g,
+    'I am excited to apply for the $1 position'
+  )
+  
+  // Fix "I am for [position]" -> "I am applying for [position]"
+  fixed = fixed.replace(
+    /I am for ([A-Z][a-zA-Z\s]+) at/g,
+    'I am applying for $1 at'
+  )
+  
+  // Fix missing "to" in "I am excited apply"
+  fixed = fixed.replace(
+    /I am excited apply for/g,
+    'I am excited to apply for'
+  )
+  
+  // Fix double spaces
+  fixed = fixed.replace(/\s{2,}/g, ' ')
+  
+  // Log if fixes were made
+  if (fixed !== text) {
+    console.log('[COVER_LETTER_GEN] ✅ Grammar errors fixed')
+  }
+  
+  return fixed
 }
 
 /**
