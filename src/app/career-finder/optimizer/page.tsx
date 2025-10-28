@@ -97,9 +97,32 @@ export default function CareerFinderOptimizerPage() {
         console.log('[OPTIMIZER] ✅ Found cached resume, length:', resumeData.extractedText.length)
         setResumeText(resumeData.extractedText)
         
-        // Extract personal info from resume
-        const info = extractPersonalInfo(resumeData.extractedText)
-        console.log('[OPTIMIZER] 📋 Extracted personal info:', info)
+        // Extract personal info from resume text
+        let info = extractPersonalInfo(resumeData.extractedText)
+        
+        // CRITICAL FIX: Fallback to UserProfile if extraction failed
+        if (!info.name || !info.email) {
+          try {
+            const profileRes = await fetch('/api/profile')
+            if (profileRes.ok) {
+              const profileData = await profileRes.json()
+              if (profileData.profile) {
+                console.log('[OPTIMIZER] 📋 Using UserProfile data for missing fields')
+                info = {
+                  name: info.name || `${profileData.profile.firstName} ${profileData.profile.lastName}`,
+                  email: info.email || profileData.profile.email,
+                  phone: info.phone || profileData.profile.phone,
+                  location: info.location || (profileData.profile.location ? 
+                    `${profileData.profile.location.city}, ${profileData.profile.location.province}` : undefined)
+                }
+              }
+            }
+          } catch (error) {
+            console.log('[OPTIMIZER] Could not fetch UserProfile, using extracted info only')
+          }
+        }
+        
+        console.log('[OPTIMIZER] 📋 Final personal info:', info)
         setPersonalInfo(info)
         
         // Don't calculate ATS score yet - wait for optimized resume
@@ -324,24 +347,59 @@ export default function CareerFinderOptimizerPage() {
   
   // Extract personal information from resume text
   const extractPersonalInfo = (text: string) => {
-    const emailMatch = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i)
+    // Email extraction - multiple patterns
+    const emailMatch = text.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/i)
+    
+    // Phone extraction - North American formats
     const phoneMatch = text.match(/(\+?1?\s*\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4})/i)
     
-    // Extract location (city, state/province format)
-    const locationMatch = text.match(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2})/i)
+    // Location extraction - City, Province/State format
+    const locationMatch = text.match(/([A-Z][a-z]+(?:\s[A-Z][a-z]+)*),\s*([A-Z]{2,})/i)
     
-    // Extract name (assume first line or first capitalized words before contact info)
+    // Name extraction - improved logic
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
     let name = ''
-    for (const line of lines.slice(0, 5)) {
-      if (line.length > 5 && line.length < 50 && !line.includes('@') && !line.match(/\d{3}/) && /^[A-Z]/.test(line)) {
+    
+    // Strategy 1: Look for name before email/phone (usually first 3 lines)
+    for (const line of lines.slice(0, 3)) {
+      // Skip if line contains email, phone, or common resume headers
+      if (line.includes('@') || 
+          line.match(/\d{3}/) || 
+          /^(resume|curriculum|vitae|cv|profile|summary|objective|experience|education|skills)/i.test(line)) {
+        continue
+      }
+      
+      // Check if line looks like a name (2-4 words, proper case, reasonable length)
+      const words = line.split(/\s+/)
+      if (words.length >= 2 && 
+          words.length <= 4 && 
+          line.length >= 5 && 
+          line.length <= 50 &&
+          /^[A-Z]/.test(line) &&
+          words.every(w => /^[A-Z][a-z]+/.test(w) || w.length <= 3)) {
         name = line
         break
       }
     }
     
+    // Strategy 2: If no name found, look for "Name:" or similar labels
+    if (!name) {
+      const nameMatch = text.match(/(?:Name|Full Name|Candidate):\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+){1,3})/i)
+      if (nameMatch) {
+        name = nameMatch[1]
+      }
+    }
+    
+    // Strategy 3: Try to extract from structured format (e.g., "John Doe | email@example.com")
+    if (!name) {
+      const structuredMatch = text.match(/^([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*[|\-•]/m)
+      if (structuredMatch) {
+        name = structuredMatch[1]
+      }
+    }
+    
     return {
-      name,
+      name: name || undefined,
       email: emailMatch?.[1],
       phone: phoneMatch?.[1],
       location: locationMatch ? `${locationMatch[1]}, ${locationMatch[2]}` : undefined
