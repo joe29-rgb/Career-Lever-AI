@@ -185,26 +185,31 @@
 
 ---
 
-### 15. Resume Builder UI Needs Update ⏳ IN PROGRESS
+### 15. Resume Builder UI Needs Update ✅ FIXED
 **Problem**: Current UI doesn't match desired design (Screenshot 2025-10-25 135145.png)
-**Progress**: 
-- ✅ Added 2 new templates (Teal Horizontal, Two-Column Red)
-- ✅ Now have 9 resume templates total
+**Solution**: 
+- ✅ Added 2 new templates (Teal Horizontal, Two-Column Red) - 9 total
 - ✅ All templates have print styles (white background)
 - ✅ Mapped cover letters to resume templates (2 per template = 18 total)
 - ✅ Updated Resume Builder UI with clean sidebar layout
 - ✅ Added Adzuna API to job sources (Tier 1)
-- ✅ Created Perplexity output improvement plan
-- ⏳ Need to add live preview panel
-- ⏳ Need to implement improved Perplexity formatting
+- ✅ Created LinkedIn URL import (no OAuth needed!)
+- ✅ Created unified import options (LinkedIn, Upload, Manual)
+- ✅ Integrated import options into Resume Builder page
+- ✅ Added live preview button (mobile-friendly modal)
+- ✅ Created Perplexity analysis display component
+- ✅ Removed template type labels from generated resumes
 **Files Changed**: 
-- `src/lib/resume-templates-v2.ts` (added 2 templates)
-- `src/lib/cover-letter-templates.ts` (mapped to all 9 templates)
-- `src/components/resume-builder/template-selector.tsx` (updated UI)
+- `src/lib/resume-templates-v2.ts` (9 templates, removed labels)
+- `src/lib/cover-letter-templates.ts` (mapped all 9)
+- `src/components/resume-builder/template-selector.tsx` (clean UI)
+- `src/components/resume-builder/linkedin-url-import.tsx` (NEW)
+- `src/components/resume-builder/resume-import-options.tsx` (NEW)
+- `src/components/resume-builder/resume-preview-modal.tsx` (NEW)
+- `src/components/resume-builder/perplexity-analysis-display.tsx` (NEW)
+- `src/app/resume-builder/components/resume-builder.tsx` (integrated)
 - `src/lib/rapidapi-client.ts` (added Adzuna)
-- `RESUME_TEMPLATE_MAPPING.md` (created mapping doc)
-- `PERPLEXITY_OUTPUT_IMPROVEMENT.md` (improvement plan)
-**Commits**: d80e434, 039f20d, 6753edd
+**Commits**: d80e434, 039f20d, 6753edd, 3e28ba9, 122d7ce, e1ee1b3, e192ed3
 
 ---
 
