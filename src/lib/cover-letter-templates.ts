@@ -396,6 +396,7 @@ export function getCoverLetterTemplatesByCategory(category: string): CoverLetter
 
 /**
  * Suggest template based on resume template
+ * Returns PRIMARY cover letter template that matches resume style
  */
 export function suggestCoverLetterTemplate(resumeTemplateId: string): CoverLetterTemplate {
   const mapping: Record<string, string> = {
@@ -410,4 +411,28 @@ export function suggestCoverLetterTemplate(resumeTemplateId: string): CoverLette
   
   const templateId = mapping[resumeTemplateId] || 'professional'
   return getCoverLetterTemplateById(templateId)
+}
+
+/**
+ * Get 2 cover letter template variants for a resume template
+ * Returns [Primary, Alternative] templates that match resume style
+ */
+export function getCoverLetterVariantsForResume(resumeTemplateId: string): [CoverLetterTemplate, CoverLetterTemplate] {
+  // Map each resume template to 2 cover letter templates
+  const variantMapping: Record<string, [string, string]> = {
+    'modern': ['modern', 'problem-solver'], // Modern resume → Modern + Problem-solver letters
+    'professional': ['professional', 'metrics'], // Professional resume → Professional + Metrics letters
+    'creative': ['creative', 'modern'], // Creative resume → Creative + Modern letters
+    'tech': ['technical', 'modern'], // Tech resume → Technical + Modern letters
+    'minimal': ['ats-optimized', 'professional'], // Minimal resume → ATS + Professional letters
+    'executive': ['executive', 'metrics'], // Executive resume → Executive + Metrics letters
+    'cv': ['professional', 'ats-optimized'] // CV resume → Professional + ATS letters
+  }
+  
+  const [primaryId, alternativeId] = variantMapping[resumeTemplateId] || ['professional', 'modern']
+  
+  return [
+    getCoverLetterTemplateById(primaryId),
+    getCoverLetterTemplateById(alternativeId)
+  ]
 }

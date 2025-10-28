@@ -2130,9 +2130,13 @@ Return ONLY valid JSON:
         console.log('[COVER_LETTERS] Calculated experience:', yearsExperience, 'years')
       }
 
-      // Get templates - use professional and modern as defaults
-      const templateA = getCoverLetterTemplateById(params.templateId || 'professional')
-      const templateB = getCoverLetterTemplateById('modern')
+      // CRITICAL FIX: Get 2 cover letter templates that match the resume template
+      const { getCoverLetterVariantsForResume } = await import('./cover-letter-templates')
+      const [templateA, templateB] = getCoverLetterVariantsForResume(params.templateId || 'professional')
+      
+      if (process.env.PPX_DEBUG === 'true') {
+        console.log('[COVER_LETTERS] Using templates:', templateA.name, '+', templateB.name, 'for resume template:', params.templateId)
+      }
 
       const client = createClient()
       const systemPrompt = `You are an expert cover letter writer. Use the provided templates as structure guides and fill them with personalized content from the candidate's resume.
