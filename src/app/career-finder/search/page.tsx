@@ -32,8 +32,12 @@ interface JobListing {
 export default function SearchPage() {
   const router = useRouter()
   const [jobs, setJobs] = useState<JobListing[]>([])
+  
+  // CRITICAL FIX: Initialize location from saved data, not hardcoded 'Canada'
+  const savedLocation = typeof window !== 'undefined' ? localStorage.getItem('cf:location') || '' : ''
+  
   const [filters, setFilters] = useState({ 
-    location: 'Canada', // Default location to prevent API errors, will be overridden by resume data
+    location: savedLocation || 'Canada', // Use saved location first, Canada as last resort
     salaryMin: '', 
     salaryMax: '', 
     workType: 'all' as 'all' | 'remote' | 'hybrid' | 'onsite' | 'part-time',
@@ -207,8 +211,11 @@ export default function SearchPage() {
     console.log('  - hasResume:', !!resumeData)
     console.log('  - hasKeywords:', !!savedKeywords)
     
-    // REMOVED: Don't auto-populate location - let user enter their own
-    // Location from resume might be outdated or wrong
+    // CRITICAL FIX: Update filter state with saved location
+    if (savedLocation && savedLocation !== filters.location) {
+      console.log('[LOCATION] Updating filter from saved location:', savedLocation)
+      setFilters(prev => ({ ...prev, location: savedLocation }))
+    }
     
     // ✅ FIX #6: Show search prompt if cached resume exists but no search performed
     if (resumeData && !autopilotReady && jobs.length === 0) {
