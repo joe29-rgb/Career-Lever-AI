@@ -185,16 +185,19 @@
 
 ---
 
-### 15. Resume Builder UI Needs Update ❌
+### 15. Resume Builder UI Needs Update ⏳ IN PROGRESS
 **Problem**: Current UI doesn't match desired design (Screenshot 2025-10-25 135145.png)
-**Impact**: Inconsistent user experience
-**Files**: 
-- Resume builder component
-- Resume builder CSS
-**Fix Required**: 
-- Update layout to match design
-- Improve template preview
-- Better section organization
+**Progress**: 
+- ✅ Added 2 new templates (Teal Horizontal, Two-Column Red)
+- ✅ Now have 9 resume templates total
+- ✅ All templates have print styles (white background)
+- ⏳ Need to map cover letters to resume templates (2 per template)
+- ⏳ Need to update Resume Builder UI to show all templates
+- ⏳ Need to consolidate 3 different builder UIs
+**Files Changed**: 
+- `src/lib/resume-templates-v2.ts` (added 2 templates)
+- `RESUME_TEMPLATE_MAPPING.md` (created mapping doc)
+**Commit**: d80e434
 
 ---
 
