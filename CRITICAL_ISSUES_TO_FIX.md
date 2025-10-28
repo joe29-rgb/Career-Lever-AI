@@ -191,13 +191,20 @@
 - ✅ Added 2 new templates (Teal Horizontal, Two-Column Red)
 - ✅ Now have 9 resume templates total
 - ✅ All templates have print styles (white background)
-- ⏳ Need to map cover letters to resume templates (2 per template)
-- ⏳ Need to update Resume Builder UI to show all templates
-- ⏳ Need to consolidate 3 different builder UIs
+- ✅ Mapped cover letters to resume templates (2 per template = 18 total)
+- ✅ Updated Resume Builder UI with clean sidebar layout
+- ✅ Added Adzuna API to job sources (Tier 1)
+- ✅ Created Perplexity output improvement plan
+- ⏳ Need to add live preview panel
+- ⏳ Need to implement improved Perplexity formatting
 **Files Changed**: 
 - `src/lib/resume-templates-v2.ts` (added 2 templates)
+- `src/lib/cover-letter-templates.ts` (mapped to all 9 templates)
+- `src/components/resume-builder/template-selector.tsx` (updated UI)
+- `src/lib/rapidapi-client.ts` (added Adzuna)
 - `RESUME_TEMPLATE_MAPPING.md` (created mapping doc)
-**Commit**: d80e434
+- `PERPLEXITY_OUTPUT_IMPROVEMENT.md` (improvement plan)
+**Commits**: d80e434, 039f20d, 6753edd
 
 ---
 
