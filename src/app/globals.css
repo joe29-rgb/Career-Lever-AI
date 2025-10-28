@@ -9,6 +9,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import responsive design system */
+@import '../styles/responsive.css';
+
 /* ===================================================================
    THEME SYSTEM - ONE SYSTEM, NO CONFLICTS
    =================================================================== */
