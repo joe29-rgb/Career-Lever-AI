@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { CareerFinderBackButton } from '@/components/career-finder-back-button'
 import { formatResumeWithLineBreaks } from '@/lib/text-formatting'
 import { AutopilotProgressTracker } from '@/components/autopilot-progress-tracker'
+import { ResumeAnalysisLoaderManual } from '@/components/ResumeAnalysisLoader'
 import toast from 'react-hot-toast'
 
 interface Resume {
@@ -43,8 +44,11 @@ export default function CareerFinderResumePage() {
   const [existingResume, setExistingResume] = useState<Resume | null>(null)
   const [loadingExisting, setLoadingExisting] = useState<boolean>(true)
   const [comprehensiveAnalysis, setComprehensiveAnalysis] = useState<ComprehensiveAnalysis | null>(null)
-  const [analyzingResume, setAnalyzingResume] = useState<boolean>(false)
-  
+  const [analyzingResume, setAnalyzingResume] = useState(false)
+  const [showAnalysisLoader, setShowAnalysisLoader] = useState(false)
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [analysisStage, setAnalysisStage] = useState<'analyzing' | 'matching' | 'finding'>('analyzing')
+
   // COMPETITIVE ADVANTAGE: Comprehensive resume analysis with AI risk
   const handleComprehensiveAnalysis = async (resumeText: string) => {
     if (!resumeText || resumeText.length < 100) {
@@ -137,7 +141,7 @@ export default function CareerFinderResumePage() {
       setLoadingExisting(false)
     })()
   }, [])
-  
+
   return (
     <div className="min-h-screen bg-background">
       {/* PHASE 1: Autopilot Progress Tracker */}
@@ -187,33 +191,40 @@ export default function CareerFinderResumePage() {
             <div className="flex gap-3">
               <button
                 onClick={async () => {
-                  if (!existingResume?._id) return
+                  // Show analysis loader
+                  setShowAnalysisLoader(true)
+                  setAnalysisProgress(0)
+                  setAnalysisStage('analyzing')
                   
                   try {
-                    console.log('[AUTOPILOT] 🚀 Continue button clicked - triggering autopilot...')
+                    // Stage 1: Analyzing resume with Perplexity (0-33%)
+                    console.log('[RESUME_ANALYSIS] Stage 1: Analyzing resume...')
+                    setAnalysisProgress(5)
                     
-                    // Trigger autopilot
                     const autopilotResponse = await fetch('/api/career-finder/autopilot', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ 
-                        resumeId: existingResume._id
+                      body: JSON.stringify({
+                        resumeId: existingResume?._id
                       })
                     })
+                    
+                    setAnalysisProgress(33)
                     
                     if (autopilotResponse.ok) {
                       const autopilotData = await autopilotResponse.json()
                       console.log('[AUTOPILOT] ✅ Success:', autopilotData)
                       
-                      // Cache signals
+                      // Stage 2: Matching skills (33-66%)
+                      setAnalysisStage('matching')
+                      setAnalysisProgress(40)
+                      console.log('[RESUME_ANALYSIS] Stage 2: Matching skills...')
+                      
+                      // Store signals in localStorage for job search
                       if (autopilotData.signals) {
-                        localStorage.setItem('cf:signals', JSON.stringify(autopilotData.signals))
-                        
-                        // Cache keywords and location separately
-                        if (autopilotData.signals.keywords?.length > 0) {
-                          const topKeywords = autopilotData.signals.keywords.slice(0, 30).join(', ')
-                          localStorage.setItem('cf:keywords', topKeywords)
-                          console.log('[AUTOPILOT] ✅ Keywords:', topKeywords)
+                        if (autopilotData.signals.keywords && autopilotData.signals.keywords.length > 0) {
+                          localStorage.setItem('cf:keywords', JSON.stringify(autopilotData.signals.keywords))
+                          console.log('[AUTOPILOT] ✅ Keywords:', autopilotData.signals.keywords.length)
                         }
                         
                         if (autopilotData.signals.location) {
@@ -225,15 +236,33 @@ export default function CareerFinderResumePage() {
                         localStorage.setItem('cf:autopilotReady', '1')
                         console.log('[AUTOPILOT] ✅ Set autopilotReady flag')
                       }
+                      
+                      setAnalysisProgress(66)
+                      
+                      // Stage 3: Finding jobs (66-100%)
+                      setAnalysisStage('finding')
+                      setAnalysisProgress(70)
+                      console.log('[RESUME_ANALYSIS] Stage 3: Finding jobs...')
+                      
+                      // Simulate finding jobs progress
+                      await new Promise(resolve => setTimeout(resolve, 500))
+                      setAnalysisProgress(85)
+                      await new Promise(resolve => setTimeout(resolve, 500))
+                      setAnalysisProgress(100)
+                      
+                      // Navigate to search
+                      await new Promise(resolve => setTimeout(resolve, 500))
+                      window.location.href = '/career-finder/search'
                     } else {
                       console.error('[AUTOPILOT] ❌ Failed:', await autopilotResponse.text())
+                      toast.error('Failed to analyze resume. Please try again.')
+                      setShowAnalysisLoader(false)
                     }
                   } catch (error) {
                     console.error('[AUTOPILOT] ❌ Error:', error)
+                    toast.error('An error occurred. Please try again.')
+                    setShowAnalysisLoader(false)
                   }
-                  
-                  // Navigate to search regardless of autopilot success (fallback)
-                  window.location.href = '/career-finder/search'
                 }}
                 className="flex-1 btn-gradient text-center py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
               >
@@ -480,6 +509,14 @@ export default function CareerFinderResumePage() {
         )}
 
       </div>
+
+      {/* Analysis Loader Overlay */}
+      {showAnalysisLoader && (
+        <ResumeAnalysisLoaderManual 
+          progress={analysisProgress}
+          stage={analysisStage}
+        />
+      )}
     </div>
   )
 }
