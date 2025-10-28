@@ -27,15 +27,15 @@ export async function htmlToSimplePDF(html: string, title: string): Promise<Buff
       doc.on('end', () => resolve(Buffer.concat(chunks)))
       doc.on('error', reject)
       
-      // Add title
+      // Add title using Courier-Bold (built-in font, no external files needed)
       doc.fontSize(20)
-         .font('Helvetica-Bold')
+         .font('Courier-Bold')
          .text(title, { align: 'center' })
          .moveDown(1.5)
       
-      // Add content
+      // Add content using Courier (built-in font, no external files needed)
       doc.fontSize(11)
-         .font('Helvetica')
+         .font('Courier')
          .text(text, {
            align: 'left',
            lineGap: 2
