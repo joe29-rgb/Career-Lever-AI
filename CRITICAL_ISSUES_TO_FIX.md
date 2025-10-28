@@ -6,38 +6,34 @@
 
 ## 🚨 CRITICAL ERRORS (Must Fix First)
 
-### 1. PDFKit Font Files Missing in Production ❌
+### 1. PDFKit Font Files Missing in Production ✅ FIXED
 **Error**: `ENOENT: no such file or directory, open '/app/.next/server/chunks/data/Helvetica.afm'`
-**Impact**: Resume/Cover letter PDFs cannot be generated or attached to emails
-**Root Cause**: PDFKit fonts not copied to correct location in Docker container
-**Files**: 
-- `Dockerfile` (line 66)
-- `src/lib/pdf/unified-pdf-generator.ts`
-**Fix Required**: Copy PDFKit fonts to `/app/.next/server/chunks/data/` in Docker
+**Solution**: Changed to use Courier (built-in font) instead of Helvetica
+**Files Changed**: `src/lib/server-pdf-generator.ts`
+**Commit**: bda2048
 
 ---
 
-### 2. Email Service Not Configured ❌
+### 2. Email Service Not Configured ✅ FIXED
 **Error**: `You can only send testing emails to your own email address`
-**Impact**: Cannot send outreach emails to hiring managers
-**Root Cause**: Resend domain not verified, using test mode
-**Files**: 
+**Solution**: 
+- PRIMARY: Users send from their own Gmail/Outlook (mailto with PDF downloads)
+- BACKUP: Resend (when domain verified)
+**Files Changed**: 
 - `src/app/api/outreach/send/route.ts`
-**Fix Required**: 
-- Verify domain in Resend
-- Update `from` address to verified domain
-- Add proper error handling for unverified domains
+- `src/app/career-finder/outreach/page.tsx`
+**Commit**: a68949d
 
 ---
 
-### 3. Resume Personal Info Not Extracted ❌
-**Error**: `[OPTIMIZER] 📋 Extracted personal info: {name: '', email: undefined, phone: ' 587 778-9029', location: 'Edmonton, Al'}`
-**Impact**: Optimized resumes missing user name and email
-**Root Cause**: Resume parser not extracting name/email correctly
-**Files**: 
-- `src/lib/enhanced-resume-extractor.ts`
-- Resume optimizer component
-**Fix Required**: Improve name/email extraction from resume text
+### 3. Resume Personal Info Not Extracted ✅ FIXED
+**Error**: `[OPTIMIZER] 📋 Extracted personal info: {name: '', email: undefined}`
+**Solution**: 
+- 3-strategy name extraction (first lines, labels, structured format)
+- UserProfile API fallback for missing fields
+- Improved email regex
+**Files Changed**: `src/app/career-finder/optimizer/page.tsx`
+**Commit**: 60e23e8
 
 ---
 
