@@ -1228,6 +1228,17 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                 )}
               </div>
 
+              {/* Preview Button */}
+              {completeness >= 30 && (
+                <ResumePreviewButton
+                  resumeHtml={buildFormattedHtml()}
+                  resumeCss={getTemplateById(selectedTemplate).css}
+                  templateName={getTemplateById(selectedTemplate).name}
+                  onDownload={downloadPdf}
+                  className="w-full"
+                />
+              )}
+
               <Button
                 onClick={generateResume}
                 disabled={isGenerating || completeness < 30}
