@@ -39,66 +39,61 @@
 
 ## 🔴 HIGH PRIORITY ISSUES
 
-### 4. Location Defaulting to Canada ❌
+### 4. Location Defaulting to Canada ✅ FIXED
 **Error**: `finalValue: "Edmonton, AB"` but `currentFilterState: "Canada"`
-**Impact**: Job searches not respecting user's saved location
-**Root Cause**: Location filter logic not using saved location properly
-**Files**: 
-- Job search component
-- Location filter logic
-**Fix Required**: Ensure saved location takes precedence over default
+**Solution**: 
+- Location ALWAYS comes from resume extraction (saved in `cf:location`)
+- Filter state initialized from saved location
+- No manual entry - location extracted from resume only
+**Files Changed**: 
+- `src/app/career-finder/search/page.tsx`
+**Commits**: 5ca6dbd, 8a7fe12, bfc924d
 
 ---
 
-### 5. Resume Template Changes Not Working ❌
+### 5. Resume Template Changes Not Working ✅ FIXED
 **Error**: Template selector changes don't update resume preview
-**Impact**: Users cannot switch between resume templates
-**Root Cause**: Template state not triggering re-render
-**Files**: 
-- Resume optimizer component
-- Template selector
-**Fix Required**: 
-- Fix template state management
-- Trigger regeneration on template change
-- Update preview immediately
+**Solution**: 
+- Clear variants immediately on template change (shows loading)
+- Reset processing flags to allow regeneration
+- Added unique keys to iframes to force React re-render
+**Files Changed**: 
+- `src/app/career-finder/optimizer/page.tsx`
+**Commit**: f0d46b4
 
 ---
 
-### 6. Cover Letter Quality Issues ❌
+### 6. Cover Letter Quality Issues ✅ FIXED
 **Problem**: "I am for the Sr. Solutions Sales Executive position" (grammatically incorrect)
-**Impact**: Unprofessional cover letters
-**Root Cause**: Template not properly enforced, AI generating poor quality text
-**Files**: 
+**Solution**: 
+- Added explicit grammar rules to AI prompts with examples
+- Created `fixCommonGrammarErrors()` post-generation validator
+- Automatic correction of "I am for" → "I am excited to apply for"
+**Files Changed**: 
 - `src/lib/cover-letter-generator.ts`
+- `src/lib/prompts/perplexity.ts`
+**Commit**: 89b459d
+
+---
+
+### 7. Cover Letter Templates Not Tied to Resume Templates ✅ FIXED
+**Problem**: Cover letter template selection independent of resume template
+**Solution**: Created `getCoverLetterVariantsForResume()` that returns 2 matched templates per resume template
+**Files Changed**: 
 - `src/lib/cover-letter-templates.ts`
 - `src/lib/perplexity-intelligence.ts`
-**Fix Required**: 
-- Enforce proper grammar: "I am applying for" or "I am excited to apply for"
-- Improve prompt quality
-- Add grammar validation
+**Commit**: 282f230
 
 ---
 
-### 7. Cover Letter Templates Not Tied to Resume Templates ❌
-**Problem**: Cover letter template selection independent of resume template
-**Impact**: Inconsistent branding between resume and cover letter
-**Files**: 
-- Cover letter generator
-- Template mapping logic
-**Fix Required**: 
-- Create 2 cover letter templates for each resume template
-- Auto-select matching cover letter template when resume template chosen
-- Maintain consistent styling
-
----
-
-### 8. Resume/Cover Letter Not Attached to Emails ❌
+### 8. Resume/Cover Letter Not Attached to Emails ✅ FIXED
 **Problem**: PDFs not attached when sending outreach emails
-**Impact**: Incomplete job applications
-**Root Cause**: PDF generation failing (see issue #1)
-**Files**: 
-- `src/app/api/outreach/send/route.ts`
-**Fix Required**: Fix PDF generation, then ensure attachments work
+**Solution**: 
+- PDFs generated using Courier font (fixed in Issue #1)
+- Attachments provided as base64 for download
+- Users attach PDFs when sending from their own email
+**Files Changed**: Already fixed in Issue #1 & #2
+**Status**: Working with mailto method
 
 ---
 
