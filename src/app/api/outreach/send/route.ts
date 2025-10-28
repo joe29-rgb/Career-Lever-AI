@@ -128,20 +128,72 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Send email with attachments
-      // CRITICAL FIX: Always use Resend's default email since user domains aren't verified
-      // Set user's email as replyTo so responses go to them
+      // PRIMARY METHOD: User sends from their own email (Gmail/Outlook)
+      // BACKUP METHOD: Resend (only if domain is verified)
       const userEmail = session.user.email || undefined
-      const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev'
+      const useResend = process.env.RESEND_DOMAIN_VERIFIED === 'true'
       
       console.log('[OUTREACH_SEND] User email:', userEmail)
+      console.log('[OUTREACH_SEND] Use Resend:', useResend)
+      
+      // If Resend is not configured or domain not verified, provide mailto fallback
+      if (!useResend) {
+        console.log('[OUTREACH_SEND] Resend not configured, using mailto fallback')
+        
+        // Generate mailto link with attachments note
+        const attachmentNote = attachments.length > 0 
+          ? `\n\n[Please attach: ${attachments.map(a => a.filename).join(', ')}]`
+          : ''
+        
+        const mailtoLink = `mailto:${contact.email}?subject=${encodeURIComponent(email.subject)}&body=${encodeURIComponent(email.body + attachmentNote)}`
+        
+        // Save to database as "pending" - user will send manually
+        try {
+          await connectToDatabase()
+          await SentEmail.create({
+            userId: session.user.id,
+            contactEmail: contact.email,
+            contactName: contact.name || 'Unknown',
+            subject: email.subject,
+            body: email.body,
+            attachments: attachments.map(a => ({ 
+              filename: a.filename, 
+              size: Buffer.from(a.content, 'base64').length,
+              content: a.content // Store base64 for download
+            })),
+            status: 'pending_manual',
+            metadata: { 
+              method: 'mailto',
+              mailto_link: mailtoLink
+            }
+          })
+        } catch (dbError) {
+          console.error('[OUTREACH_SEND] Failed to save to DB:', dbError)
+        }
+        
+        return NextResponse.json({
+          success: true,
+          method: 'mailto',
+          mailto_link: mailtoLink,
+          attachments: attachments.map(a => ({
+            filename: a.filename,
+            content: a.content,
+            contentType: a.contentType
+          })),
+          message: 'Email prepared. Click the link to send from your email client.',
+          instructions: 'Your default email client will open with the message pre-filled. Attach the provided PDFs before sending.'
+        })
+      }
+      
+      // BACKUP: Try Resend if domain is verified
+      const fromEmail = process.env.EMAIL_FROM || 'onboarding@resend.dev'
       console.log('[OUTREACH_SEND] From email:', fromEmail)
       console.log('[OUTREACH_SEND] Reply-To:', userEmail)
       
       const result = await resendProvider.send({
         to: contact.email,
-        from: fromEmail, // Use verified Resend email
-        replyTo: userEmail, // Replies go to user
+        from: fromEmail,
+        replyTo: userEmail,
         subject: email.subject,
         body: email.body,
         attachments: attachments.length > 0 ? attachments : undefined

@@ -303,36 +303,53 @@ ${name}`
 
       const result = await response.json()
 
+      // Handle mailto method (user sends from their own email)
+      if (result.method === 'mailto' && result.success) {
+        console.log('[OUTREACH] Using mailto method with attachments')
+        
+        // Download PDF attachments for user
+        if (result.attachments && result.attachments.length > 0) {
+          result.attachments.forEach((attachment: any) => {
+            const blob = new Blob(
+              [Uint8Array.from(atob(attachment.content), c => c.charCodeAt(0))],
+              { type: attachment.contentType }
+            )
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = attachment.filename
+            a.click()
+            URL.revokeObjectURL(url)
+          })
+        }
+        
+        // Open mailto link
+        setTimeout(() => {
+          window.location.href = result.mailto_link
+        }, 500)
+        
+        setSuccess(`PDFs downloaded! Your email client will open. Attach the PDFs and send to ${currentEmail}.`)
+        return
+      }
+
       if (!response.ok) {
-        // If email service not configured, open Gmail compose
+        // Fallback for errors
         if (result.mailto_fallback) {
-          console.log('[OUTREACH] Email service not configured, opening Gmail compose')
+          console.log('[OUTREACH] Error, using mailto fallback')
           
-          // Create Gmail compose URL (works better than mailto for attachments)
+          // Create Gmail compose URL
           const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(currentEmail)}&su=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
           
-          // Open in new tab
           window.open(gmailUrl, '_blank')
-          
           setSuccess(`Opening Gmail to send to ${currentEmail}. Please attach your resume and cover letter manually.`)
-          
-          // Also provide mailto as backup
-          const mailtoLink = document.createElement('a')
-          mailtoLink.href = result.mailto_fallback
-          mailtoLink.style.display = 'none'
-          document.body.appendChild(mailtoLink)
-          
-          setTimeout(() => {
-            setSuccess('Email draft opened in Gmail. Click "Send via Email Client" if Gmail didn\'t open.')
-          }, 2000)
         } else {
           throw new Error(result.error || 'Failed to send email')
         }
       } else {
-        console.log('[OUTREACH] ✅ Email sent successfully:', result.message_id)
+        // Resend method succeeded
+        console.log('[OUTREACH] ✅ Email sent via Resend:', result.message_id)
         setSuccess(`Email sent successfully to ${currentEmail}!`)
         
-        // Wait a moment then navigate to next step
         setTimeout(() => {
           handleCompleteApplication()
         }, 2000)
