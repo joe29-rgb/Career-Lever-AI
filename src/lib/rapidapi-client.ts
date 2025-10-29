@@ -63,7 +63,7 @@ export const JOB_SOURCES: Record<string, JobSource> = {
   'google-jobs': {
     id: 'google-jobs',
     name: 'Google Jobs API',
-    endpoint: 'https://google-jobs-api1.p.rapidapi.com/search',
+    endpoint: 'https://google-jobs-api.p.rapidapi.com/google-jobs/distance',
     tier: 1,
     cost: 0.001,
     maxResults: 50,
@@ -342,9 +342,9 @@ export class RapidAPIClient {
       
       case 'google-jobs':
         return {
-          query,
+          include: query || 'jobs',
           location: params.location,
-          num_pages: 1
+          distance: 150 // 150km radius
         }
       
       case 'linkedin-jobs':
