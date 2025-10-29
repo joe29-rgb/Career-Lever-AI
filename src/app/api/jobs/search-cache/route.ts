@@ -105,18 +105,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       source: 'cache',
-      jobs: rankedJobs.map(job => ({
+      jobs: rankedJobs.map((job: any) => ({
         id: job._id?.toString() || '',
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        description: job.description,
+        title: job.title || '',
+        company: job.company || '',
+        location: job.location || '',
+        description: job.description || '',
         salary: job.salary,
-        url: job.url,
-        source: job.source,
+        url: job.url || '',
+        source: job.source || 'cache',
         postedDate: job.postedDate,
-        relevanceScore: job.relevanceScore,
-        keywords: job.keywords
+        relevanceScore: job.relevanceScore || 0,
+        keywords: job.keywords || []
       })),
       metadata: {
         totalFound: jobs.length,
