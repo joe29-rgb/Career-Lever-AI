@@ -41,6 +41,7 @@ export interface SearchParams {
   limit?: number
   experienceLevel?: string
   salaryMin?: number
+  page?: number
 }
 
 export interface QueryMetadata {
