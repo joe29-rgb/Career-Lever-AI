@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { Toaster } from 'react-hot-toast'
 import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
 import { CommandPalette } from '@/components/command-palette'
+import { GlobalLoadingOverlay } from '@/components/global-loading-overlay'
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',
@@ -68,6 +69,7 @@ export default function RootLayout({
             />
             <OnboardingRedirect />
             <CommandPalette />
+            <GlobalLoadingOverlay />
             <AppShell>{children}</AppShell>
           </Providers>
         </ErrorBoundary>
