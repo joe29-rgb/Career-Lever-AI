@@ -106,7 +106,7 @@ export async function GET(request: NextRequest) {
       success: true,
       source: 'cache',
       jobs: rankedJobs.map(job => ({
-        id: job.jobId,
+        id: job._id?.toString() || '',
         title: job.title,
         company: job.company,
         location: job.location,
