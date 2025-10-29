@@ -94,27 +94,28 @@ export async function GET(request: NextRequest) {
         let allJobs: any[] = []
         
         for (const searchTerm of broadSearches) {
-          logger.info(`[BULK DOWNLOAD] Searching: "${searchTerm}"`)
+          logger.info(`[BULK DOWNLOAD] Searching: "${searchTerm}" with pagination`)
           
-          const { jobs, metadata } = await rapidAPI.queryMultipleSources(
+          const { jobs, metadata } = await rapidAPI.queryMultipleSourcesWithPagination(
             [
-              'google-jobs',      // ~100 jobs per search
-              'active-jobs-db',   // ~100 jobs per search
-              'jsearch',          // ~100 jobs per search (10 pages)
-              'adzuna'            // ~100 jobs per search
+              'google-jobs',      // ~300 jobs (3 pages × 100)
+              'active-jobs-db',   // ~300 jobs (3 pages × 100)
+              'jsearch',          // ~300 jobs (3 pages × 100)
+              'adzuna'            // ~300 jobs (3 pages × 100)
             ],
             {
               keywords: [searchTerm],
               location: cityConfig.city,
-              limit: 1000
-            }
+              limit: 100
+            },
+            3 // 3 pages per source
           )
           
           allJobs = allJobs.concat(jobs)
           logger.info(`[BULK DOWNLOAD] "${searchTerm}": ${jobs.length} jobs in ${metadata.duration}ms`)
           
-          // Rate limit protection - wait 2 seconds between searches
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          // Rate limit protection - wait 3 seconds between searches
+          await new Promise(resolve => setTimeout(resolve, 3000))
         }
 
         logger.info(`[BULK DOWNLOAD] Downloaded ${allJobs.length} total jobs before deduplication`)

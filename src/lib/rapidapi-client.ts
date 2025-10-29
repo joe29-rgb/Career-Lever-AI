@@ -217,6 +217,105 @@ export class RapidAPIClient {
   }
   
   /**
+   * Query a single source with pagination
+   */
+  async querySourceWithPagination(
+    sourceId: string,
+    params: SearchParams,
+    maxPages: number = 3
+  ): Promise<{ jobs: Job[], duration: number }> {
+    const startTime = Date.now()
+    const allJobs: Job[] = []
+    
+    console.log(`[RapidAPI] Querying ${sourceId} with pagination (${maxPages} pages)...`)
+    
+    for (let page = 1; page <= maxPages; page++) {
+      try {
+        const pageParams = { ...params, page }
+        const { jobs } = await this.querySource(sourceId, pageParams)
+        
+        if (jobs.length === 0) {
+          console.log(`[RapidAPI] ${sourceId}: No more results at page ${page}`)
+          break
+        }
+        
+        allJobs.push(...jobs)
+        console.log(`[RapidAPI] ${sourceId}: Page ${page} - ${jobs.length} jobs`)
+        
+        // Small delay between pages to avoid rate limits
+        if (page < maxPages) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      } catch (error) {
+        console.error(`[RapidAPI] ${sourceId}: Error on page ${page}:`, error)
+        break
+      }
+    }
+    
+    const duration = Date.now() - startTime
+    return { jobs: allJobs, duration }
+  }
+  
+  /**
+   * Query multiple sources with pagination
+   */
+  async queryMultipleSourcesWithPagination(
+    sourceIds: string[],
+    params: SearchParams,
+    maxPages: number = 3
+  ): Promise<{ jobs: Job[], metadata: QueryMetadata }> {
+    const startTime = Date.now()
+    
+    console.log(`[RapidAPI] Querying ${sourceIds.length} sources with pagination (${maxPages} pages each)...`)
+    
+    // Query all sources with pagination
+    const results = await Promise.allSettled(
+      sourceIds.map(id => this.querySourceWithPagination(id, params, maxPages))
+    )
+    
+    // Collect results
+    const allJobs: Job[] = []
+    const metadata: QueryMetadata = {
+      sources: {},
+      totalJobs: 0,
+      duration: 0,
+      totalCost: 0
+    }
+    
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i]
+      const sourceId = sourceIds[i]
+      const source = JOB_SOURCES[sourceId]
+      
+      if (result.status === 'fulfilled') {
+        const { jobs, duration } = result.value
+        allJobs.push(...jobs)
+        
+        metadata.sources[sourceId] = {
+          success: true,
+          count: jobs.length,
+          cost: source.cost,
+          duration
+        }
+        metadata.totalCost += source.cost * maxPages
+      } else {
+        metadata.sources[sourceId] = {
+          success: false,
+          count: 0,
+          cost: 0,
+          duration: 0,
+          error: result.reason?.message || 'Unknown error'
+        }
+      }
+    }
+    
+    metadata.totalJobs = allJobs.length
+    metadata.duration = Date.now() - startTime
+    
+    return { jobs: allJobs, metadata }
+  }
+  
+  /**
    * Query multiple sources in parallel
    */
   async queryMultipleSources(
