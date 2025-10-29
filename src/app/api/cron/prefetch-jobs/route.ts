@@ -3,6 +3,7 @@ import { dbService } from '@/lib/database'
 import UserProfile from '@/models/UserProfile'
 import JobSearchCache from '@/models/JobSearchCache'
 import { logger } from '@/lib/logger'
+import { webScraper } from '@/lib/web-scraper'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes
@@ -83,30 +84,16 @@ export async function GET(request: NextRequest) {
 
         const location = `${profile.location.city}, ${profile.location.province}`
 
-        // Call job search API
-        const searchUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/v2/jobs/discover`)
-        searchUrl.searchParams.set('jobTitle', keywords.join(', '))
-        searchUrl.searchParams.set('location', location)
-        searchUrl.searchParams.set('userId', profile.userId.toString())
-        searchUrl.searchParams.set('maxResults', '50')
-
-        const response = await fetch(searchUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-cron-job': 'true'
-          }
+        // Call webScraper directly (no HTTP overhead, no auth required)
+        const jobs = await webScraper.searchJobsByGoogle({
+          jobTitle: keywords.join(', '),
+          location,
+          limit: 50,
+          radiusKm: 150 // Default 150km radius
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          logger.info(`[CRON] ✅ Pre-fetched ${data.jobs?.length || 0} jobs for user ${profile.userId}`)
-          results.success++
-        } else {
-          logger.error(`[CRON] ❌ Failed to pre-fetch jobs for user ${profile.userId}: ${response.status}`)
-          results.failed++
-          results.errors.push(`User ${profile.userId}: ${response.statusText}`)
-        }
+        logger.info(`[CRON] ✅ Pre-fetched ${jobs?.length || 0} jobs for user ${profile.userId}`)
+        results.success++
 
         // Rate limit: wait 2 seconds between requests
         await new Promise(resolve => setTimeout(resolve, 2000))

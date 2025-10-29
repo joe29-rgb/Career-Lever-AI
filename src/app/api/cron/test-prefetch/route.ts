@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { dbService } from '@/lib/database'
 import { logger } from '@/lib/logger'
+import { webScraper } from '@/lib/web-scraper'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes
@@ -56,13 +57,10 @@ export async function GET() {
       errors: [] as string[]
     }
 
-    // Test multiple keyword combinations
+    // Test multiple keyword combinations (reduced to 2 for speed)
     const keywordGroups = [
       ['sales', 'business development', 'CRM'],
-      ['software developer', 'software engineer', 'developer'],
-      ['finance', 'financial analyst', 'accounting'],
-      ['project manager', 'program manager', 'scrum master'],
-      ['marketing', 'digital marketing', 'content marketing']
+      ['software developer', 'software engineer', 'developer']
     ]
 
     for (const keywords of keywordGroups) {
@@ -70,53 +68,30 @@ export async function GET() {
         const keywordString = keywords.join(', ')
         logger.info(`[TEST PREFETCH] Searching for: ${keywordString}`)
 
-        // Call job search API
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        const searchUrl = new URL(`${baseUrl}/api/v2/jobs/discover`)
-        searchUrl.searchParams.set('jobTitle', keywordString)
-        searchUrl.searchParams.set('location', testConfig.location)
-        searchUrl.searchParams.set('maxResults', testConfig.maxResults.toString())
-        searchUrl.searchParams.set('radius', testConfig.radius.toString())
-
-        const response = await fetch(searchUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-test-prefetch': 'true'
-          }
+        // Call webScraper directly (no HTTP overhead, no auth required)
+        const jobs = await webScraper.searchJobsByGoogle({
+          jobTitle: keywordString,
+          location: testConfig.location,
+          limit: testConfig.maxResults,
+          radiusKm: testConfig.radius
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          const jobCount = data.jobs?.length || 0
-          
-          logger.info(`[TEST PREFETCH] ✅ Found ${jobCount} jobs for: ${keywordString}`)
-          
-          results.searches.push({
-            keywords: keywordString,
-            jobCount,
-            success: true,
-            cached: data.cached || false
-          })
-          
-          results.totalJobs += jobCount
-          results.success++
-        } else {
-          logger.error(`[TEST PREFETCH] ❌ Failed for: ${keywordString} - ${response.status}`)
-          
-          results.searches.push({
-            keywords: keywordString,
-            jobCount: 0,
-            success: false,
-            error: response.statusText
-          })
-          
-          results.failed++
-          results.errors.push(`${keywordString}: ${response.statusText}`)
-        }
+        const jobCount = jobs?.length || 0
+        
+        logger.info(`[TEST PREFETCH] ✅ Found ${jobCount} jobs for: ${keywordString}`)
+        
+        results.searches.push({
+          keywords: keywordString,
+          jobCount,
+          success: true,
+          cached: false
+        })
+        
+        results.totalJobs += jobCount
+        results.success++
 
-        // Rate limit: wait 3 seconds between requests
-        await new Promise(resolve => setTimeout(resolve, 3000))
+        // Rate limit: wait 1 second between requests (faster for testing)
+        await new Promise(resolve => setTimeout(resolve, 1000))
 
       } catch (error) {
         logger.error(`[TEST PREFETCH] Error searching for ${keywords.join(', ')}:`, error)
