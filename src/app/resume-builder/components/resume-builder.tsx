@@ -1172,7 +1172,7 @@ export function ResumeBuilder({ userId, mode = 'full' }: ResumeBuilderProps) {
                           Highlight keywords
                         </label>
                       </div>
-                      <iframe srcDoc={buildFormattedHtml()} className="w-full h-96 border-0" title="Resume Preview" />
+                      <iframe srcDoc={buildFormattedHtml()} className="w-full h-96 border-0" title="Resume Preview" sandbox="allow-same-origin allow-scripts" />
                     </>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2">

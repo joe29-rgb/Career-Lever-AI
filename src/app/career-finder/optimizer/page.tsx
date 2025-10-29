@@ -586,7 +586,7 @@ ${htmlContent}
                 key={`variant-a-${template}`}
                 className="w-full h-96 border-0" 
                 srcDoc={variantA || '<div style="padding: 24px; text-align: center; color: #666;">Generating variant...</div>'}
-                sandbox="allow-same-origin"
+                sandbox="allow-same-origin allow-scripts"
                 title="Resume Variant A"
               />
             )}
@@ -619,7 +619,7 @@ ${htmlContent}
                 key={`variant-b-${template}`}
                 className="w-full h-96 border-0" 
                 srcDoc={variantB || '<div style="padding: 24px; text-align: center; color: #666;">Generating variant...</div>'}
-                sandbox="allow-same-origin"
+                sandbox="allow-same-origin allow-scripts"
                 title="Resume Variant B"
               />
             )}
@@ -658,7 +658,7 @@ ${htmlContent}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <textarea className="border rounded p-2 h-[70vh] text-xs" value={editorHtml} onChange={(e)=>setEditorHtml(e.target.value)} />
-              <iframe className="w-full h-[70vh] border-0" srcDoc={editorHtml} />
+              <iframe className="w-full h-[70vh] border-0" srcDoc={editorHtml} sandbox="allow-same-origin allow-scripts" />
             </div>
           </div>
         </div>

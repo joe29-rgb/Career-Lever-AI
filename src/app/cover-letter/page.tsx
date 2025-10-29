@@ -283,7 +283,7 @@ export default function CoverLetterPage() {
           ) : previewHtml ? (
             <>
               <div className="border rounded overflow-hidden">
-                <iframe srcDoc={previewHtml} className="w-full h-96 border-0" title="Cover Letter Preview" />
+                <iframe srcDoc={previewHtml} className="w-full h-96 border-0" title="Cover Letter Preview" sandbox="allow-same-origin allow-scripts" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <Button onClick={downloadPdf} className="w-full"><Download className="mr-2 h-4 w-4" />Download PDF</Button>
