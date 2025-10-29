@@ -180,7 +180,7 @@ async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 1000) {
       const { data, error } = await supabaseAdmin
         .from('jobs')
         .upsert(batch, {
-          onConflict: 'external_id,source',
+          onConflict: 'company,title,location,source',
           ignoreDuplicates: false
         })
         .select('id')
