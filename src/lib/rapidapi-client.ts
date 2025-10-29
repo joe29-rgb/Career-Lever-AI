@@ -381,10 +381,11 @@ export class RapidAPIClient {
     switch (sourceId) {
       case 'active-jobs-db':
         return {
-          query,
-          location: params.location,
-          remote: params.remote,
-          limit: params.limit || 100
+          title_filter: query || '',
+          location_filter: 'Canada', // Search all of Canada
+          description_type: 'text',
+          limit: params.limit || 500, // Max limit for free tier
+          offset: ((params.page || 1) - 1) * (params.limit || 500)
         }
       
       case 'jsearch':
@@ -401,7 +402,11 @@ export class RapidAPIClient {
         return {
           query,
           location: params.location,
-          page: 1
+          page_id: params.page || 1,
+          locality: 'ca', // Canada
+          fromage: 30, // Last 30 days
+          radius: 150, // 150km radius
+          sort: 'date' // Newest first
         }
       
       case 'remote-jobs':
