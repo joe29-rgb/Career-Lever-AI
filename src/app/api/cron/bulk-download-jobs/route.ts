@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
           [
             'google-jobs',      // 520ms - Fastest!
             'active-jobs-db',   // 851ms - 130K+ sources
-            'jsearch'           // 3425ms - LinkedIn/Indeed/Glassdoor
+            'jsearch',          // 3425ms - LinkedIn/Indeed/Glassdoor
+            'adzuna'            // 2-3s - Salary data + comprehensive
           ],
           {
             keywords: [], // No keywords - download ALL jobs

@@ -332,6 +332,29 @@ export class RapidAPIClient {
           limit: params.limit || 100
         }
       
+      case 'adzuna':
+        return {
+          what: query,
+          where: params.location,
+          results_per_page: params.limit || 50,
+          sort_by: 'date'
+        }
+      
+      case 'google-jobs':
+        return {
+          query,
+          location: params.location,
+          num_pages: 1
+        }
+      
+      case 'linkedin-jobs':
+      case 'jobs-api':
+        return {
+          query,
+          location: params.location,
+          page: 1
+        }
+      
       default:
         return { query, location: params.location }
     }
@@ -372,6 +395,39 @@ export class RapidAPIClient {
             salary: j.job_salary || j.job_min_salary,
             remote: j.job_is_remote || false,
             jobType: j.job_employment_type ? [j.job_employment_type] : []
+          }))
+        
+        case 'adzuna':
+          return (data.results || []).map((j: any) => ({
+            id: j.id || `${sourceId}-${Date.now()}-${Math.random()}`,
+            title: j.title || '',
+            company: j.company?.display_name || j.company || '',
+            location: j.location?.display_name || j.location || '',
+            description: j.description || '',
+            url: j.redirect_url || j.url || '',
+            source: sourceId,
+            postedDate: j.created || j.date,
+            salary: j.salary_min && j.salary_max 
+              ? `$${j.salary_min}-$${j.salary_max}` 
+              : j.salary_min 
+                ? `$${j.salary_min}+`
+                : undefined,
+            remote: j.location?.display_name?.toLowerCase().includes('remote') || false,
+            jobType: j.contract_time ? [j.contract_time] : []
+          }))
+        
+        case 'google-jobs':
+          return (data.jobs || data.data || []).map((j: any) => ({
+            id: j.job_id || `${sourceId}-${Date.now()}-${Math.random()}`,
+            title: j.job_title || j.title || '',
+            company: j.employer_name || j.company_name || '',
+            location: j.location || '',
+            description: j.job_description || j.description || '',
+            url: j.job_apply_link || j.url || '',
+            source: sourceId,
+            postedDate: j.posted_at || j.date_posted,
+            salary: j.salary_range || j.salary,
+            remote: j.is_remote || false
           }))
         
         case 'indeed':
