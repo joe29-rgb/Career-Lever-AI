@@ -31,15 +31,18 @@ export async function bulkDownloadJobs(locations: string[]) {
       
       const { jobs, metadata } = await rapidAPI.queryMultipleSourcesWithPagination(
         [
-          'jsearch',          // ~100 jobs per page (WORKING ✅)
-          'google-jobs'       // ~50 jobs per page (WORKING ✅)
+          'adzuna',           // Adzuna API (MUST INCLUDE!)
+          'jsearch',          // JSearch API (working)
+          'google-jobs',      // Google Jobs API (working)
+          'indeed',           // Indeed API (needs proper config)
+          'active-jobs-db'    // Active Jobs DB (needs proper config)
         ],
         {
           keywords: [''], // Empty = all jobs
           location,
           limit: 100
         },
-        20 // 20 pages per source = ~3,000 jobs (jsearch) + ~1,000 (google) = 4,000 total
+        20 // 20 pages per source
       )
       
       // Transform to Supabase format

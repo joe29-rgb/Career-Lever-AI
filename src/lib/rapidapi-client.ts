@@ -72,11 +72,11 @@ export const JOB_SOURCES: Record<string, JobSource> = {
   'active-jobs-db': {
     id: 'active-jobs-db',
     name: 'Active Jobs DB',
-    endpoint: 'https://active-jobs-db.p.rapidapi.com/active-ats-24h',
+    endpoint: 'https://active-jobs-db.p.rapidapi.com/active-ats-7d',
     tier: 1,
     cost: 0.001,
     maxResults: 100,
-    enabled: true // 851ms - 130K+ sources, AI-enriched
+    enabled: true // 7-day active jobs from ATS platforms
   },
   'jsearch': {
     id: 'jsearch',
@@ -382,10 +382,10 @@ export class RapidAPIClient {
       case 'active-jobs-db':
         return {
           title_filter: query || '',
-          location_filter: 'Canada', // Search all of Canada
+          location_filter: 'Canada OR Alberta OR Edmonton',
           description_type: 'text',
-          limit: params.limit || 500, // Max limit for free tier
-          offset: ((params.page || 1) - 1) * (params.limit || 500)
+          limit: 100, // Free tier max is 100 per request
+          offset: ((params.page || 1) - 1) * 100
         }
       
       case 'jsearch':
