@@ -72,29 +72,55 @@ export async function GET(request: NextRequest) {
         logger.info(`[BULK DOWNLOAD] Processing ${cityConfig.city}...`)
 
         // BULK DOWNLOAD ALL JOBS IN LOCATION
-        // No keywords - just download EVERYTHING in the area
-        // Users will search the cache with their own keywords later
+        // Strategy: Use broad search terms to capture all job categories
+        // Users will search the cache with their specific keywords later
         
         logger.info(`[BULK DOWNLOAD] Downloading ALL jobs in ${cityConfig.city} (150km radius)...`)
         
-        const { jobs, metadata } = await rapidAPI.queryMultipleSources(
-          [
-            'google-jobs',      // Expected: 2,000-3,000 jobs
-            'active-jobs-db',   // Expected: 3,000-5,000 jobs  
-            'jsearch',          // Expected: 2,000-3,000 jobs
-            'adzuna'            // Expected: 500-1,000 jobs
-          ],
-          {
-            keywords: [], // NO KEYWORDS - download ALL jobs
-            location: cityConfig.city,
-            limit: 1000 // Increase limit to get more jobs per source
-          }
-        )
+        // Broad search terms to capture different job categories
+        const broadSearches = [
+          'full time',
+          'part time', 
+          'manager',
+          'engineer',
+          'sales',
+          'healthcare',
+          'retail',
+          'customer service',
+          'warehouse',
+          'administrative'
+        ]
+        
+        let allJobs: any[] = []
+        
+        for (const searchTerm of broadSearches) {
+          logger.info(`[BULK DOWNLOAD] Searching: "${searchTerm}"`)
+          
+          const { jobs, metadata } = await rapidAPI.queryMultipleSources(
+            [
+              'google-jobs',      // ~100 jobs per search
+              'active-jobs-db',   // ~100 jobs per search
+              'jsearch',          // ~100 jobs per search (10 pages)
+              'adzuna'            // ~100 jobs per search
+            ],
+            {
+              keywords: [searchTerm],
+              location: cityConfig.city,
+              limit: 1000
+            }
+          )
+          
+          allJobs = allJobs.concat(jobs)
+          logger.info(`[BULK DOWNLOAD] "${searchTerm}": ${jobs.length} jobs in ${metadata.duration}ms`)
+          
+          // Rate limit protection - wait 2 seconds between searches
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        }
 
-        logger.info(`[BULK DOWNLOAD] Downloaded ${jobs.length} jobs from all sources in ${metadata.duration}ms`)
+        logger.info(`[BULK DOWNLOAD] Downloaded ${allJobs.length} total jobs before deduplication`)
 
         // Deduplicate jobs
-        const uniqueJobs = deduplicateJobs(jobs)
+        const uniqueJobs = deduplicateJobs(allJobs)
         logger.info(`[BULK DOWNLOAD] After deduplication: ${uniqueJobs.length} unique jobs`)
 
         // Process and store jobs
