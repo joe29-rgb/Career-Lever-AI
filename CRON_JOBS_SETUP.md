@@ -12,10 +12,12 @@ This document explains how to set up automated cron jobs for Career Lever AI to 
 Pre-fetch jobs for all active users daily so they see results immediately when opening Career Finder.
 
 ### **Schedule**:
-- **Time**: 6:00 AM daily (before users wake up)
-- **Cron Expression**: `0 6 * * *`
+- **Time**: 3:00 AM EST on Tuesday and Saturday
+- **Cron Expression**: `0 8 * * 2,6` (8 AM UTC = 3 AM EST)
+- **Days**: Tuesday (2) and Saturday (6)
 - **Duration**: Up to 5 minutes
 - **Rate Limit**: 2 seconds between users
+- **Test Radius**: 150km around Edmonton, AB
 
 ### **What It Does**:
 1. Finds all users with 50%+ complete profiles
@@ -37,11 +39,17 @@ The `vercel.json` file is already configured:
   "crons": [
     {
       "path": "/api/cron/prefetch-jobs",
-      "schedule": "0 6 * * *"
+      "schedule": "0 8 * * 2,6"
     }
   ]
 }
 ```
+**Note**: `0 8 * * 2,6` means:
+- `0` = minute 0
+- `8` = hour 8 (UTC)
+- `*` = any day of month
+- `*` = any month
+- `2,6` = Tuesday (2) and Saturday (6)
 
 **Steps**:
 1. Deploy to Vercel
@@ -50,16 +58,61 @@ The `vercel.json` file is already configured:
 4. Done! Vercel handles the rest
 
 **Vercel will**:
-- Call `/api/cron/prefetch-jobs` daily at 6 AM
+- Call `/api/cron/prefetch-jobs` on Tuesday and Saturday at 3 AM EST
 - Pass `Authorization: Bearer ${CRON_SECRET}` header
 - Handle retries on failure
 - Send notifications on errors
 
 ---
 
-### **2. Manual Testing**
+### **2. Test Endpoint (Edmonton, AB)**
 
-Test the cron job locally or in production:
+Test the job pre-fetching with Edmonton data (150km radius):
+
+```bash
+curl -X GET "http://localhost:8080/api/cron/test-prefetch"
+# or production
+curl -X GET "https://your-domain.com/api/cron/test-prefetch"
+```
+
+**What It Tests**:
+- 5 different keyword combinations
+- 150km radius around Edmonton, AB
+- 50 jobs per search
+- Rate limiting (3 seconds between searches)
+
+**Expected Response**:
+```json
+{
+  "success": true,
+  "message": "Test job pre-fetch completed",
+  "results": {
+    "location": "Edmonton, AB",
+    "radius": 150,
+    "searches": [
+      {
+        "keywords": "sales, business development, CRM",
+        "jobCount": 47,
+        "success": true,
+        "cached": false
+      }
+    ],
+    "totalJobs": 235
+  },
+  "summary": {
+    "totalSearches": 5,
+    "successfulSearches": 5,
+    "totalJobsFound": 235,
+    "averageJobsPerSearch": 47
+  }
+}
+```
+
+---
+
+### **3. Manual Production Testing**
+
+Test the full cron job in production:
 
 ```bash
 curl -X GET "https://your-domain.com/api/cron/prefetch-jobs" \
@@ -83,18 +136,18 @@ curl -X GET "https://your-domain.com/api/cron/prefetch-jobs" \
 
 ---
 
-### **3. Alternative: GitHub Actions**
+### **4. Alternative: GitHub Actions**
 
 If not using Vercel, use GitHub Actions:
 
 Create `.github/workflows/prefetch-jobs.yml`:
 
 ```yaml
-name: Pre-fetch Jobs Daily
+name: Pre-fetch Jobs Twice Weekly
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # 6 AM daily
+    - cron: '0 8 * * 2,6'  # 3 AM EST on Tuesday and Saturday
   workflow_dispatch:  # Manual trigger
 
 jobs:
