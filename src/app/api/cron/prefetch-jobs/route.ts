@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         const location = `${profile.location.city}, ${profile.location.province}`
 
         // Call job search API
-        const searchUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/v2/job-search`)
+        const searchUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/v2/jobs/discover`)
         searchUrl.searchParams.set('jobTitle', keywords.join(', '))
         searchUrl.searchParams.set('location', location)
         searchUrl.searchParams.set('userId', profile.userId.toString())

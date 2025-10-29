@@ -72,7 +72,7 @@ export async function GET() {
 
         // Call job search API
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        const searchUrl = new URL(`${baseUrl}/api/v2/job-search`)
+        const searchUrl = new URL(`${baseUrl}/api/v2/jobs/discover`)
         searchUrl.searchParams.set('jobTitle', keywordString)
         searchUrl.searchParams.set('location', testConfig.location)
         searchUrl.searchParams.set('maxResults', testConfig.maxResults.toString())
