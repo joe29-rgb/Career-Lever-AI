@@ -159,12 +159,22 @@ function transformJobForSupabase(job: any, location: string): Partial<Job> {
 async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 1000) {
   console.log(`[BATCH INSERT] Starting for ${jobs.length} jobs (batch size: ${batchSize})`)
   
+  if (jobs.length === 0) {
+    console.log('[BATCH INSERT] No jobs to insert!')
+    return { inserted: 0, errors: 0 }
+  }
+  
+  // Log first job for debugging
+  console.log('[BATCH INSERT] Sample job:', JSON.stringify(jobs[0], null, 2))
+  
   let totalInserted = 0
   let totalErrors = 0
   
   for (let i = 0; i < jobs.length; i += batchSize) {
     const batch = jobs.slice(i, i + batchSize)
     const batchNum = Math.floor(i / batchSize) + 1
+    
+    console.log(`[BATCH ${batchNum}] Attempting to insert ${batch.length} jobs...`)
     
     try {
       const { data, error } = await supabaseAdmin
@@ -176,7 +186,11 @@ async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 1000) {
         .select('id')
       
       if (error) {
-        console.error(`[BATCH ${batchNum}] Error:`, error.message)
+        console.error(`[BATCH ${batchNum}] Supabase Error:`)
+        console.error(`  Code: ${error.code}`)
+        console.error(`  Message: ${error.message}`)
+        console.error(`  Details: ${JSON.stringify(error.details)}`)
+        console.error(`  Hint: ${error.hint}`)
         totalErrors += batch.length
         continue
       }
@@ -184,10 +198,11 @@ async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 1000) {
       const insertedCount = data?.length || 0
       totalInserted += insertedCount
       
-      console.log(`[BATCH ${batchNum}] Inserted/Updated ${insertedCount} jobs`)
+      console.log(`[BATCH ${batchNum}] ✅ Inserted/Updated ${insertedCount} jobs`)
       
     } catch (error: any) {
       console.error(`[BATCH ${batchNum}] Exception:`, error.message)
+      console.error(`  Stack:`, error.stack)
       totalErrors += batch.length
     }
   }
