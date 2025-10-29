@@ -127,8 +127,7 @@ const JobSearchCacheSchema: Schema = new Schema({
   },
   expiresAt: {
     type: Date,
-    default: () => new Date(Date.now() + 21 * 24 * 60 * 60 * 1000), // 3 weeks
-    index: true
+    default: () => new Date(Date.now() + 21 * 24 * 60 * 60 * 1000) // 3 weeks
   }
 }, {
   timestamps: true

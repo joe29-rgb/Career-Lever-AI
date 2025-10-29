@@ -291,7 +291,7 @@ const UserProfileSchema = new Schema<IUserProfile>({
 })
 
 // Indexes
-UserProfileSchema.index({ userId: 1 })
+// Note: userId already indexed via unique: true
 UserProfileSchema.index({ email: 1 })
 UserProfileSchema.index({ 'location.city': 1, 'location.province': 1 })
 UserProfileSchema.index({ 'skills.technical': 1 })
