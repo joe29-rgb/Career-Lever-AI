@@ -5,9 +5,11 @@
 
 import { supabaseAdmin } from './supabase'
 import { RapidAPIClient } from './rapidapi-client'
+import { AdzunaAPIClient } from './adzuna-api-client'
 import type { Job } from '@/types/supabase'
 
 const rapidAPI = new RapidAPIClient()
+const adzunaAPI = new AdzunaAPIClient()
 
 /**
  * Bulk download jobs for multiple locations
@@ -29,13 +31,53 @@ export async function bulkDownloadJobs(locations: string[]) {
       // Strategy: Single broad search with high limits and multiple pages
       console.log(`  Searching for jobs in ${location}...`)
       
+      // 1. Scrape Adzuna directly (6,438 jobs available!)
+      console.log(`  [ADZUNA] Scraping directly...`)
+      const adzunaJobs: any[] = []
+      
+      for (let page = 1; page <= 20; page++) {
+        try {
+          const result = await adzunaAPI.searchJobs({
+            what: '',
+            where: location,
+            country: 'ca',
+            resultsPerPage: 50,
+            page,
+            sortBy: 'date'
+          })
+          
+          adzunaJobs.push(...result.results.map((j: any) => ({
+            id: j.id,
+            title: j.title,
+            company: j.company.display_name,
+            location: j.location.display_name,
+            description: j.description,
+            url: j.redirect_url,
+            source: 'adzuna',
+            salary: {
+              min: j.salary_min,
+              max: j.salary_max
+            },
+            postedDate: j.created,
+            jobType: j.contract_time ? [j.contract_time] : []
+          })))
+          
+          console.log(`    Page ${page}: ${result.results.length} jobs`)
+          await sleep(1000) // Rate limit
+          
+        } catch (error: any) {
+          console.error(`    Page ${page} error:`, error.message)
+          break
+        }
+      }
+      
+      console.log(`  [ADZUNA] Total: ${adzunaJobs.length} jobs`)
+      
+      // 2. Scrape RapidAPI sources
       const { jobs, metadata } = await rapidAPI.queryMultipleSourcesWithPagination(
         [
-          'adzuna',           // Adzuna API (MUST INCLUDE!)
           'jsearch',          // JSearch API (working)
-          'google-jobs',      // Google Jobs API (working)
-          'indeed',           // Indeed API (needs proper config)
-          'active-jobs-db'    // Active Jobs DB (needs proper config)
+          'google-jobs'       // Google Jobs API (working)
         ],
         {
           keywords: [''], // Empty = all jobs
@@ -45,12 +87,15 @@ export async function bulkDownloadJobs(locations: string[]) {
         20 // 20 pages per source
       )
       
-      // Transform to Supabase format
-      const transformedJobs = jobs.map(job => transformJobForSupabase(job, location))
-      allJobs.push(...transformedJobs)
-      totalDownloaded += jobs.length
+      // Combine all jobs
+      const allLocationJobs = [...adzunaJobs, ...jobs]
       
-      console.log(`  Total downloaded for ${location}: ${jobs.length} jobs`)
+      // Transform to Supabase format
+      const transformedJobs = allLocationJobs.map(job => transformJobForSupabase(job, location))
+      allJobs.push(...transformedJobs)
+      totalDownloaded += allLocationJobs.length
+      
+      console.log(`  Total downloaded for ${location}: ${allLocationJobs.length} jobs`)
       
       // Rate limit protection
       await sleep(3000)
