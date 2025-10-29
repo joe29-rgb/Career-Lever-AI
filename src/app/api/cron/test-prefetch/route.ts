@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { dbService } from '@/lib/database'
 import { logger } from '@/lib/logger'
-import { webScraper } from '@/lib/web-scraper'
+import { RapidAPIClient } from '@/lib/rapidapi-client'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5 minutes
@@ -63,22 +63,28 @@ export async function GET() {
       ['software developer', 'software engineer', 'developer']
     ]
 
+    // Initialize RapidAPI client
+    const rapidAPI = new RapidAPIClient()
+    
     for (const keywords of keywordGroups) {
       try {
         const keywordString = keywords.join(', ')
         logger.info(`[TEST PREFETCH] Searching for: ${keywordString}`)
 
-        // Call webScraper directly (no HTTP overhead, no auth required)
-        const jobs = await webScraper.searchJobsByGoogle({
-          jobTitle: keywordString,
-          location: testConfig.location,
-          limit: testConfig.maxResults,
-          radiusKm: testConfig.radius
-        })
+        // Use RapidAPI - MUCH faster than webScraper (seconds vs minutes!)
+        // Query multiple sources in parallel for maximum coverage
+        const { jobs, metadata } = await rapidAPI.queryMultipleSources(
+          ['google-jobs', 'active-jobs-db', 'jsearch', 'linkedin-jobs'],
+          {
+            keywords: keywords,
+            location: testConfig.location,
+            limit: testConfig.maxResults
+          }
+        )
 
         const jobCount = jobs?.length || 0
         
-        logger.info(`[TEST PREFETCH] ✅ Found ${jobCount} jobs for: ${keywordString}`)
+        logger.info(`[TEST PREFETCH] ✅ Found ${jobCount} jobs for: ${keywordString} in ${metadata.duration}ms`)
         
         results.searches.push({
           keywords: keywordString,
@@ -90,8 +96,8 @@ export async function GET() {
         results.totalJobs += jobCount
         results.success++
 
-        // Rate limit: wait 1 second between requests (faster for testing)
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // No rate limit needed - RapidAPI handles this
+        await new Promise(resolve => setTimeout(resolve, 100))
 
       } catch (error) {
         logger.error(`[TEST PREFETCH] Error searching for ${keywords.join(', ')}:`, error)
