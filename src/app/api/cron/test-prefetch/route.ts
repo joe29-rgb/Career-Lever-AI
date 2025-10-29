@@ -71,7 +71,8 @@ export async function GET() {
         logger.info(`[TEST PREFETCH] Searching for: ${keywordString}`)
 
         // Call job search API
-        const searchUrl = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/api/v2/job-search`)
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        const searchUrl = new URL(`${baseUrl}/api/v2/job-search`)
         searchUrl.searchParams.set('jobTitle', keywordString)
         searchUrl.searchParams.set('location', testConfig.location)
         searchUrl.searchParams.set('maxResults', testConfig.maxResults.toString())
