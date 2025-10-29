@@ -334,34 +334,35 @@ export class RapidAPIClient {
       
       case 'adzuna':
         return {
-          what: query,
+          what: query || '', // Empty = all jobs
           where: params.location,
-          results_per_page: params.limit || 50,
+          results_per_page: params.limit || 100,
+          page: 1,
           sort_by: 'date'
         }
       
       case 'google-jobs':
         return {
-          include: query || 'jobs',
+          include: query || '',
           location: params.location,
           distance: 150 // 150km radius
         }
       
       case 'active-jobs-db':
         return {
-          limit: params.limit || 100,
+          limit: params.limit || 1000,
           offset: 0,
-          title_filter: `"${query || 'jobs'}"`,
+          // Don't filter by title - get ALL jobs in location
           location_filter: `"${params.location}"`,
           description_type: 'text'
         }
       
       case 'jsearch':
         return {
-          query: query || 'jobs',
+          query: query || '',
           page: 1,
-          num_pages: 1,
-          country: 'us',
+          num_pages: 10, // Get 10 pages = ~100 jobs per page = 1000 jobs
+          country: 'ca', // Canada for Edmonton
           date_posted: 'all'
         }
       

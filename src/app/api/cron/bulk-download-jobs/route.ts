@@ -71,24 +71,27 @@ export async function GET(request: NextRequest) {
       try {
         logger.info(`[BULK DOWNLOAD] Processing ${cityConfig.city}...`)
 
-        // WAVE 1: Tier 1 sources (fast & comprehensive)
-        // Parallel processing for speed
-        // Use broad keywords to get maximum job coverage
+        // BULK DOWNLOAD ALL JOBS IN LOCATION
+        // No keywords - just download EVERYTHING in the area
+        // Users will search the cache with their own keywords later
+        
+        logger.info(`[BULK DOWNLOAD] Downloading ALL jobs in ${cityConfig.city} (150km radius)...`)
+        
         const { jobs, metadata } = await rapidAPI.queryMultipleSources(
           [
-            'google-jobs',      // 520ms - Fastest!
-            'active-jobs-db',   // 851ms - 130K+ sources
-            'jsearch',          // 3425ms - LinkedIn/Indeed/Glassdoor
-            'adzuna'            // 2-3s - Salary data + comprehensive
+            'google-jobs',      // Expected: 2,000-3,000 jobs
+            'active-jobs-db',   // Expected: 3,000-5,000 jobs  
+            'jsearch',          // Expected: 2,000-3,000 jobs
+            'adzuna'            // Expected: 500-1,000 jobs
           ],
           {
-            keywords: ['jobs'], // Broad keyword to get all jobs
+            keywords: [], // NO KEYWORDS - download ALL jobs
             location: cityConfig.city,
-            limit: 100 // Max per source
+            limit: 1000 // Increase limit to get more jobs per source
           }
         )
 
-        logger.info(`[BULK DOWNLOAD] Found ${jobs.length} jobs from ${cityConfig.city} in ${metadata.duration}ms`)
+        logger.info(`[BULK DOWNLOAD] Downloaded ${jobs.length} jobs from all sources in ${metadata.duration}ms`)
 
         // Deduplicate jobs
         const uniqueJobs = deduplicateJobs(jobs)
