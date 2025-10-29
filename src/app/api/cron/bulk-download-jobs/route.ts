@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
 
         // WAVE 1: Tier 1 sources (fast & comprehensive)
         // Parallel processing for speed
+        // Use broad keywords to get maximum job coverage
         const { jobs, metadata } = await rapidAPI.queryMultipleSources(
           [
             'google-jobs',      // 520ms - Fastest!
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
             'adzuna'            // 2-3s - Salary data + comprehensive
           ],
           {
-            keywords: [], // No keywords - download ALL jobs
+            keywords: ['jobs'], // Broad keyword to get all jobs
             location: cityConfig.city,
             limit: 100 // Max per source
           }
