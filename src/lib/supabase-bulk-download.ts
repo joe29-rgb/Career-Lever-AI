@@ -26,10 +26,14 @@ export async function bulkDownloadJobs(locations: string[]) {
     
     try {
       // Query RapidAPI sources - targeting ~500 jobs total
-      // Strategy: 2 searches per location with different keywords
+      // Strategy: Multiple searches with broad terms to capture all job types
       const searches = [
         { keywords: ['jobs'], description: 'All jobs' },
-        { keywords: ['full time'], description: 'Full-time' }
+        { keywords: ['full time'], description: 'Full-time jobs' },
+        { keywords: ['part time'], description: 'Part-time jobs' },
+        { keywords: ['entry level'], description: 'Entry level' },
+        { keywords: ['remote'], description: 'Remote jobs' },
+        { keywords: ['contract'], description: 'Contract jobs' }
       ]
       
       const locationJobs: any[] = []

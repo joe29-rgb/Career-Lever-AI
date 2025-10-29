@@ -389,11 +389,12 @@ export class RapidAPIClient {
       
       case 'jsearch':
         return {
-          query,
-          location: params.location,
+          query: `${query} in ${params.location}`,
+          country: 'ca', // Canada only
           remote_jobs_only: params.remote,
           num_pages: 1,
-          page: 1
+          page: params.page || 1,
+          date_posted: 'week' // Recent jobs only
         }
       
       case 'indeed':
