@@ -25,21 +25,39 @@ export async function bulkDownloadJobs(locations: string[]) {
     console.log(`\n[BULK] Processing ${location}...`)
     
     try {
-      // Query all RapidAPI sources
-      const { jobs, metadata } = await rapidAPI.queryMultipleSourcesWithPagination(
-        [
-          'google-jobs',
-          'active-jobs-db',
-          'jsearch',
-          'adzuna'
-        ],
-        {
-          keywords: ['jobs'], // Broad search
-          location,
-          limit: 100
-        },
-        3 // 3 pages per source
-      )
+      // Query RapidAPI sources - targeting ~500 jobs total
+      // Strategy: 2 searches per location with different keywords
+      const searches = [
+        { keywords: ['jobs'], description: 'All jobs' },
+        { keywords: ['full time'], description: 'Full-time' }
+      ]
+      
+      const locationJobs: any[] = []
+      
+      for (const search of searches) {
+        const { jobs, metadata } = await rapidAPI.queryMultipleSourcesWithPagination(
+          [
+            'google-jobs',      // ~50 jobs per search
+            'active-jobs-db',   // ~50 jobs per search
+            'jsearch',          // ~50 jobs per search
+            'adzuna'            // ~50 jobs per search
+          ],
+          {
+            keywords: search.keywords,
+            location,
+            limit: 50 // Reduced to stay within free tier
+          },
+          2 // 2 pages per source (was 3)
+        )
+        
+        locationJobs.push(...jobs)
+        console.log(`  ${search.description}: ${jobs.length} jobs in ${metadata.duration}ms`)
+        
+        // Rate limit between searches
+        await sleep(2000)
+      }
+      
+      const jobs = locationJobs
       
       // Transform to Supabase format
       const transformedJobs = jobs.map(job => transformJobForSupabase(job, location))

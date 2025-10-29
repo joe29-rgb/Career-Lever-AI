@@ -33,14 +33,9 @@ export async function GET(request: NextRequest) {
 
     console.log('[BULK DOWNLOAD] Starting Supabase bulk job download...')
     
-    // Define locations
+    // Define locations (Edmonton only for free tier - targeting 1000 jobs)
     const locations = [
-      'Edmonton, AB',
-      'Sherwood Park, AB',
-      'St. Albert, AB',
-      'Spruce Grove, AB',
-      'Fort Saskatchewan, AB',
-      'Leduc, AB'
+      'Edmonton, AB'
     ]
     
     // Bulk download
