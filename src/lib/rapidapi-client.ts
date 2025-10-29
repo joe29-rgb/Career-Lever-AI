@@ -72,7 +72,7 @@ export const JOB_SOURCES: Record<string, JobSource> = {
   'active-jobs-db': {
     id: 'active-jobs-db',
     name: 'Active Jobs DB',
-    endpoint: 'https://active-jobs-db.p.rapidapi.com/jobs',
+    endpoint: 'https://active-jobs-db.p.rapidapi.com/active-ats-24h',
     tier: 1,
     cost: 0.001,
     maxResults: 100,
@@ -347,12 +347,31 @@ export class RapidAPIClient {
           distance: 150 // 150km radius
         }
       
-      case 'linkedin-jobs':
-      case 'jobs-api':
+      case 'active-jobs-db':
         return {
-          query,
-          location: params.location,
-          page: 1
+          limit: params.limit || 100,
+          offset: 0,
+          title_filter: `"${query || 'jobs'}"`,
+          location_filter: `"${params.location}"`,
+          description_type: 'text'
+        }
+      
+      case 'jsearch':
+        return {
+          query: query || 'jobs',
+          page: 1,
+          num_pages: 1,
+          country: 'us',
+          date_posted: 'all'
+        }
+      
+      case 'linkedin-jobs':
+        return {
+          query: query || 'jobs',
+          page: 1,
+          num_pages: 1,
+          country: 'us',
+          date_posted: 'all'
         }
       
       default:
@@ -367,19 +386,18 @@ export class RapidAPIClient {
     try {
       switch (sourceId) {
         case 'active-jobs-db':
-          return (data.jobs || data.data || []).map((j: any) => ({
-            id: j.id || j.job_id || `${sourceId}-${Date.now()}-${Math.random()}`,
-            title: j.title || j.job_title || '',
-            company: j.company || j.company_name || '',
-            location: j.location || j.job_location || '',
-            description: j.description || j.job_description || '',
-            url: j.url || j.job_url || j.apply_url || '',
+          return (Array.isArray(data) ? data : []).map((j: any) => ({
+            id: j.id || `${sourceId}-${Date.now()}-${Math.random()}`,
+            title: j.title || '',
+            company: j.organization || '',
+            location: (j.locations_derived || [])[0] || j.location || '',
+            description: j.description || '',
+            url: j.url || '',
             source: sourceId,
-            postedDate: j.posted_date || j.date_posted || j.publication_date,
-            salary: j.salary || j.salary_range,
-            remote: j.remote || j.is_remote || false,
-            jobType: j.job_type ? [j.job_type] : [],
-            skills: j.skills || []
+            postedDate: j.date_posted,
+            salary: j.salary_raw,
+            remote: j.remote_derived || false,
+            jobType: j.employment_type || []
           }))
         
         case 'jsearch':
@@ -417,17 +435,18 @@ export class RapidAPIClient {
           }))
         
         case 'google-jobs':
-          return (data.jobs || data.data || []).map((j: any) => ({
-            id: j.job_id || `${sourceId}-${Date.now()}-${Math.random()}`,
-            title: j.job_title || j.title || '',
-            company: j.employer_name || j.company_name || '',
-            location: j.location || '',
-            description: j.job_description || j.description || '',
-            url: j.job_apply_link || j.url || '',
+          return (data.jobs || []).map((j: any) => ({
+            id: `${sourceId}-${Date.now()}-${Math.random()}`,
+            title: j.title || '',
+            company: j.company || '',
+            location: j.location || data.filters?.appliedFilters?.location || '',
+            description: j.snippet || j.description || '',
+            url: j.link || j.url || '',
             source: sourceId,
-            postedDate: j.posted_at || j.date_posted,
-            salary: j.salary_range || j.salary,
-            remote: j.is_remote || false
+            postedDate: j.postedDate,
+            salary: j.salary,
+            remote: j.remote || data.filters?.appliedFilters?.remote || false,
+            jobType: j.jobType ? [j.jobType] : []
           }))
         
         case 'indeed':
