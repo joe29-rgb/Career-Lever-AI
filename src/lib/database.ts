@@ -92,15 +92,38 @@ class DatabaseService {
     return {
       uri: process.env.MONGODB_URI!,
       options: {
+        // Connection pooling
         bufferCommands: false,
         maxPoolSize: 10,
+        minPoolSize: 2,
+        
+        // Timeouts
         serverSelectionTimeoutMS: 15000, // Increased from 5s to 15s for cold starts
         socketTimeoutMS: 45000,
+        connectTimeoutMS: 10000,
+        
+        // Network
         family: 4,
+        
+        // Reliability
         retryWrites: true,
+        retryReads: true,
+        
+        // Write concern
         writeConcern: {
-          w: 'majority'
-        }
+          w: 'majority',
+          wtimeout: 5000
+        },
+        
+        // Read preference for better load distribution
+        readPreference: 'primaryPreferred',
+        
+        // Index management
+        autoIndex: process.env.NODE_ENV !== 'production', // Disable in production for performance
+        autoCreate: process.env.NODE_ENV !== 'production',
+        
+        // Compression for better network performance
+        compressors: ['zlib']
       }
     }
   }

@@ -37,7 +37,7 @@ const SentEmailSchema = new Schema<ISentEmail>({
     default: 'sent',
     index: true
   },
-  messageId: { type: String, index: true },
+  messageId: { type: String },
   jobApplicationId: { type: Schema.Types.ObjectId, ref: 'JobApplication', index: true },
   openedAt: { type: Date },
   clickedAt: { type: Date },
