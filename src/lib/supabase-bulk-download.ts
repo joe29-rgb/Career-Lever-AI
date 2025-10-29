@@ -64,7 +64,7 @@ export async function bulkDownloadJobs(locations: string[]) {
       allJobs.push(...transformedJobs)
       totalDownloaded += jobs.length
       
-      console.log(`  Downloaded ${jobs.length} jobs in ${metadata.duration}ms`)
+      console.log(`  Total downloaded for ${location}: ${jobs.length} jobs`)
       
       // Rate limit protection
       await sleep(3000)
@@ -116,18 +116,22 @@ export async function bulkDownloadJobs(locations: string[]) {
  * Transform RapidAPI job to Supabase format
  */
 function transformJobForSupabase(job: any, location: string): Partial<Job> {
+  const city = parseCity(job.location || location)
+  const state = parseState(job.location || location)
+  const postedDate = job.postedDate ? new Date(job.postedDate).toISOString() : undefined
+  
   return {
     title: job.title || 'Unknown Title',
     company: job.company || 'Unknown Company',
     location: job.location || location,
     description: job.description || '',
     
-    salary_min: job.salary?.min || null,
-    salary_max: job.salary?.max || null,
+    salary_min: job.salary?.min || undefined,
+    salary_max: job.salary?.max || undefined,
     salary_type: 'yearly',
     salary_currency: 'CAD',
     
-    job_type: job.jobType?.[0] || null,
+    job_type: job.jobType?.[0] || undefined,
     remote_type: job.remote ? 'remote' : 'on-site',
     
     url: job.url || '',
@@ -135,13 +139,13 @@ function transformJobForSupabase(job: any, location: string): Partial<Job> {
     source: job.source as any,
     apply_link: job.url || '',
     
-    city: parseCity(job.location || location),
-    state: parseState(job.location || location),
+    city: city || undefined,
+    state: state || undefined,
     country: 'Canada',
     
     keywords: job.keywords || [],
     
-    posted_date: job.postedDate ? new Date(job.postedDate).toISOString() : null,
+    posted_date: postedDate,
     scraped_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
     
