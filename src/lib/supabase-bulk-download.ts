@@ -31,10 +31,13 @@ export async function bulkDownloadJobs(locations: string[]) {
       // Strategy: Single broad search with high limits and multiple pages
       console.log(`  Searching for jobs in ${location}...`)
       
-      // 1. Scrape Adzuna directly - MAXIMIZED to 100 pages (5,000 jobs per location!)
-      console.log(`  [ADZUNA] Scraping directly (up to 5,000 jobs)...`)
+      // 1. Scrape Adzuna directly - MAXIMIZED with multiple strategies
+      console.log(`  [ADZUNA] Scraping with multiple strategies...`)
       const adzunaJobs: any[] = []
+      const seenJobIds = new Set<string>()
       
+      // Strategy 1: Broad search (all jobs)
+      console.log(`  [ADZUNA] Strategy 1: Broad search (all jobs)`)
       for (let page = 1; page <= 100; page++) {
         try {
           const result = await adzunaAPI.searchJobs({
@@ -46,17 +49,23 @@ export async function bulkDownloadJobs(locations: string[]) {
             sortBy: 'date'
           })
           
-          // CRITICAL: Validate data quality before adding
+          // CRITICAL: Validate data quality and deduplicate
           const validJobs = result.results.filter((j: any) => {
+            // Skip duplicates
+            if (seenJobIds.has(j.id)) {
+              return false
+            }
+            
             const hasCompany = j.company?.display_name && j.company.display_name.trim().length > 0
             const hasDescription = j.description && j.description.trim().length > 0
             const hasTitle = j.title && j.title.trim().length > 0
             const hasUrl = j.redirect_url && j.redirect_url.trim().length > 0
             
             if (!hasCompany || !hasDescription || !hasTitle || !hasUrl) {
-              console.warn(`    ⚠️ Skipping invalid job: ${j.title || 'NO TITLE'} - Missing: ${!hasCompany ? 'company ' : ''}${!hasDescription ? 'description ' : ''}${!hasUrl ? 'url' : ''}`)
               return false
             }
+            
+            seenJobIds.add(j.id)
             return true
           })
           
