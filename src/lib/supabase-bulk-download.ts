@@ -221,9 +221,9 @@ function transformJobForSupabase(job: any, location: string): Partial<Job> {
 }
 
 /**
- * Batch insert jobs to Supabase
+ * Batch insert jobs to Supabase with retry logic
  */
-async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 1000) {
+async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 100) {
   console.log(`[BATCH INSERT] Starting for ${jobs.length} jobs (batch size: ${batchSize})`)
   
   if (jobs.length === 0) {
@@ -243,35 +243,60 @@ async function batchInsertJobs(jobs: Partial<Job>[], batchSize = 1000) {
     
     console.log(`[BATCH ${batchNum}] Attempting to insert ${batch.length} jobs...`)
     
-    try {
-      const { data, error } = await supabaseAdmin
-        .from('jobs')
-        .upsert(batch, {
-          onConflict: 'company,title,location,source',
-          ignoreDuplicates: false
-        })
-        .select('id')
-      
-      if (error) {
-        console.error(`[BATCH ${batchNum}] Supabase Error:`)
-        console.error(`  Code: ${error.code}`)
-        console.error(`  Message: ${error.message}`)
-        console.error(`  Details: ${JSON.stringify(error.details)}`)
-        console.error(`  Hint: ${error.hint}`)
-        totalErrors += batch.length
-        continue
+    let retries = 3
+    let success = false
+    
+    while (retries > 0 && !success) {
+      try {
+        const { data, error } = await supabaseAdmin
+          .from('jobs')
+          .upsert(batch, {
+            onConflict: 'company,title,location,source',
+            ignoreDuplicates: false
+          })
+          .select('id')
+        
+        if (error) {
+          console.error(`[BATCH ${batchNum}] Supabase Error:`)
+          console.error(`  Code: ${error.code}`)
+          console.error(`  Message: ${error.message}`)
+          console.error(`  Details: ${JSON.stringify(error.details)}`)
+          console.error(`  Hint: ${error.hint}`)
+          
+          if (retries > 1) {
+            console.log(`  Retrying... (${retries - 1} attempts left)`)
+            await sleep(2000)
+            retries--
+            continue
+          }
+          
+          totalErrors += batch.length
+          break
+        }
+        
+        const insertedCount = data?.length || 0
+        totalInserted += insertedCount
+        success = true
+        
+        console.log(`[BATCH ${batchNum}] ✅ Inserted/Updated ${insertedCount} jobs`)
+        
+      } catch (error: any) {
+        console.error(`[BATCH ${batchNum}] Exception:`, error.message)
+        
+        if (retries > 1) {
+          console.log(`  Retrying... (${retries - 1} attempts left)`)
+          await sleep(2000)
+          retries--
+        } else {
+          console.error(`  Stack:`, error.stack)
+          totalErrors += batch.length
+          break
+        }
       }
-      
-      const insertedCount = data?.length || 0
-      totalInserted += insertedCount
-      
-      console.log(`[BATCH ${batchNum}] ✅ Inserted/Updated ${insertedCount} jobs`)
-      
-    } catch (error: any) {
-      console.error(`[BATCH ${batchNum}] Exception:`, error.message)
-      console.error(`  Stack:`, error.stack)
-      totalErrors += batch.length
     }
+    
+    // Small delay between batches to avoid rate limiting
+    await sleep(500)
   }
   
   console.log(`[BATCH INSERT] Complete: ${totalInserted} inserted, ${totalErrors} errors`)
