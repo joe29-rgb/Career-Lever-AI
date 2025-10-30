@@ -1,0 +1,25 @@
+{
+  "output": {
+    "filePath": "job-scraping-repomix.txt",
+    "style": "xml"
+  },
+  "include": [
+    "src/lib/adzuna-api-client.ts",
+    "src/lib/rapidapi-client.ts",
+    "src/lib/job-aggregator.ts",
+    "src/lib/supabase-bulk-download.ts",
+    "src/lib/public-job-discovery-service.ts",
+    "src/lib/public-job-boards-config.ts",
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/supabase.ts",
+    "src/lib/scrapers/advanced-scraper.ts",
+    "src/lib/contact-scraper.ts",
+    "src/lib/enhanced-canadian-scraper.ts",
+    "src/lib/job-scraper-service.ts",
+    "src/lib/comprehensive-data-sources.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/types/supabase.ts",
+    "download-incremental.ts",
+    "download-edmonton-jobs.ts"
+  ]
+}

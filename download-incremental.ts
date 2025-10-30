@@ -114,10 +114,7 @@ async function downloadLocationJobs(location: string) {
       try {
         const { data, error} = await supabaseAdmin
           .from('jobs')
-          .upsert(batch, {
-            onConflict: 'external_id,source',
-            ignoreDuplicates: false
-          })
+          .insert(batch)
           .select('id')
         
         if (error) {
