@@ -89,7 +89,7 @@ export function ModernJobCard({
   return (
     <div 
       className={cn(
-        "job-card relative w-full overflow-visible shadow-2xl transition-all duration-[400ms]",
+        "job-card relative w-full overflow-visible shadow-2xl transition-all duration-[400ms] mt-5",
         isLoading ? "animate-pulse" : ""
       )}
       data-company={company}

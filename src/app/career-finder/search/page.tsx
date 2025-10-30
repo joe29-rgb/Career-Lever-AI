@@ -595,17 +595,17 @@ export default function SearchPage() {
             <>
               {/* NEW: Show job discovery stats */}
               {metadata?.newResults !== undefined && (
-                <div className="mb-4 flex items-center justify-center gap-4 text-sm">
-                  <div className="flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-full border border-green-500/20">
-                    <span className="text-green-600 dark:text-green-400 font-semibold">✨ {metadata.newResults} New</span>
+                <div className="mb-4 flex items-center justify-center gap-2 sm:gap-4 text-xs sm:text-sm flex-wrap">
+                  <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-green-500/10 rounded-full border border-green-500/20">
+                    <span className="text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">✨ {metadata.newResults} New</span>
                   </div>
                   {(metadata.cachedResults || 0) > 0 && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
-                      <span className="text-blue-600 dark:text-blue-400 font-semibold">💾 {metadata.cachedResults} Cached</span>
+                    <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold whitespace-nowrap">💾 {metadata.cachedResults} Cached</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 rounded-full border border-purple-500/20">
-                    <span className="text-purple-600 dark:text-purple-400 font-semibold">📊 {jobs.length} Total</span>
+                  <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-500/10 rounded-full border border-purple-500/20">
+                    <span className="text-purple-600 dark:text-purple-400 font-semibold whitespace-nowrap">📊 {jobs.length} Total</span>
                   </div>
                 </div>
               )}
