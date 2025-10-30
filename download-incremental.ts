@@ -7,10 +7,15 @@ import { config } from 'dotenv'
 config({ path: '.env.local' })
 
 import { AdzunaAPIClient } from './src/lib/adzuna-api-client'
-import { supabaseAdmin } from './src/lib/supabase'
-import type { Job } from './src/types/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 const adzuna = new AdzunaAPIClient()
+
+// Create Supabase client AFTER dotenv loads
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -107,10 +112,10 @@ async function downloadLocationJobs(location: string) {
       const batchNum = Math.floor(i / batchSize) + 1
       
       try {
-        const { data, error } = await supabaseAdmin
+        const { data, error} = await supabaseAdmin
           .from('jobs')
           .upsert(batch, {
-            onConflict: 'external_id',
+            onConflict: 'external_id,source',
             ignoreDuplicates: false
           })
           .select('id')
