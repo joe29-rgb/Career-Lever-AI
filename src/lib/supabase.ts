@@ -6,20 +6,53 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Job, Company, SalaryData, DownloadHistory, JobSearchParams, JobSearchResult } from '@/types/supabase'
 
-// Environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Lazy initialization to avoid build-time errors
+let _supabase: ReturnType<typeof createClient> | null = null
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+function getSupabaseClient() {
+  if (!_supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!url || !key) {
+      // During build, return a dummy client that won't be used
+      if (typeof window === 'undefined' && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.warn('[Supabase] Environment variables not set during build - using dummy client')
+        return createClient('https://dummy.supabase.co', 'dummy-key')
+      }
+      throw new Error('Missing Supabase environment variables')
+    }
+    
+    _supabase = createClient(url, key)
+  }
+  return _supabase
+}
+
+function getSupabaseAdminClient() {
+  if (!_supabaseAdmin) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!url || !key) {
+      // During build, return a dummy client that won't be used
+      if (typeof window === 'undefined' && !key) {
+        console.warn('[Supabase] Service key not set during build - using dummy client')
+        return createClient('https://dummy.supabase.co', 'dummy-key')
+      }
+      throw new Error('Missing Supabase environment variables')
+    }
+    
+    _supabaseAdmin = createClient(url, key)
+  }
+  return _supabaseAdmin
 }
 
 // Public client (for client-side operations)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = getSupabaseClient()
 
 // Service client (for server-side operations with elevated permissions)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+export const supabaseAdmin = getSupabaseAdminClient()
 
 /**
  * Insert jobs in bulk (upsert to handle duplicates)
