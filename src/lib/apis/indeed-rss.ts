@@ -19,45 +19,58 @@ export class IndeedRSSFeed {
     fromage?: number // days (default: 7)
     radius?: number // km (default: 25)
   }): Promise<Partial<Job>[]> {
-    try {
-      // Build RSS URL
-      const url = new URL('https://ca.rss.indeed.com/rss')
-      url.searchParams.set('q', params.keywords)
-      url.searchParams.set('l', params.location)
-      url.searchParams.set('fromage', (params.fromage || 7).toString())
-      url.searchParams.set('radius', (params.radius || 25).toString())
-      url.searchParams.set('sort', 'date')
-      
-      console.log(`[INDEED RSS] Fetching: ${params.keywords} @ ${params.location}`)
-      
-      // Parse RSS feed
-      const feed = await this.parser.parseURL(url.toString())
-      
-      // Transform to Job
-      const jobs: Partial<Job>[] = feed.items.map((item) => ({
-        title: item.title || 'Unknown',
-        company: this.extractCompany(item.contentSnippet || ''),
-        location: this.extractLocation(item.contentSnippet || '') || params.location,
-        description: item.contentSnippet || '',
-        url: item.link || '',
-        source: 'indeed',
-        salary_min: undefined,
-        salary_max: undefined,
-        posted_date: item.pubDate ? new Date(item.pubDate).toISOString() : undefined,
-        external_id: `indeed_rss_${Buffer.from(item.link || '').toString('base64').slice(0, 16)}`,
-        scraped_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        keywords: []
-      } as Partial<Job>))
-      
-      console.log(`[INDEED RSS] Found ${jobs.length} jobs`)
-      
-      return jobs
-      
-    } catch (error) {
-      console.error('[INDEED RSS] Error:', error)
-      return []
+    // Try multiple Indeed RSS endpoints
+    const endpoints = [
+      'https://ca.indeed.com/rss',
+      'https://www.indeed.ca/rss',
+      'https://rss.indeed.ca/rss',
+      'https://ca.rss.indeed.com/rss'
+    ]
+    
+    for (const baseUrl of endpoints) {
+      try {
+        // Build RSS URL
+        const url = new URL(baseUrl)
+        url.searchParams.set('q', params.keywords)
+        url.searchParams.set('l', params.location)
+        url.searchParams.set('fromage', (params.fromage || 7).toString())
+        url.searchParams.set('radius', (params.radius || 25).toString())
+        url.searchParams.set('sort', 'date')
+        
+        console.log(`[INDEED RSS] Trying: ${baseUrl}`)
+        
+        // Parse RSS feed
+        const feed = await this.parser.parseURL(url.toString())
+        
+        // Transform to Job
+        const jobs: Partial<Job>[] = feed.items.map((item) => ({
+          title: item.title || 'Unknown',
+          company: this.extractCompany(item.contentSnippet || ''),
+          location: this.extractLocation(item.contentSnippet || '') || params.location,
+          description: item.contentSnippet || '',
+          url: item.link || '',
+          source: 'indeed',
+          salary_min: undefined,
+          salary_max: undefined,
+          posted_date: item.pubDate ? new Date(item.pubDate).toISOString() : undefined,
+          external_id: `indeed_rss_${Buffer.from(item.link || '').toString('base64').slice(0, 16)}`,
+          scraped_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          keywords: []
+        } as Partial<Job>))
+        
+        console.log(`[INDEED RSS] Success with ${baseUrl}: ${jobs.length} jobs`)
+        return jobs
+        
+      } catch (error) {
+        console.log(`[INDEED RSS] Failed with ${baseUrl}, trying next...`)
+        // Continue to next endpoint
+      }
     }
+    
+    // If all endpoints fail
+    console.error('[INDEED RSS] All endpoints failed')
+    return []
   }
   
   /**
