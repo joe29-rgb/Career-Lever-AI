@@ -136,10 +136,60 @@ export class JobAggregator {
 
     console.log('[JOB_AGGREGATOR] MongoDB cache MISS')
 
-    // LAYER 3: Try Adzuna API (FREE, fast)
-    console.log('[JOB_AGGREGATOR] Trying Adzuna API...')
+    // LAYER 3: Search Supabase (1,249 jobs available!)
+    console.log('[JOB_AGGREGATOR] Searching Supabase database...')
     let allJobs: JobListing[] = []
-    let source: 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid' = 'adzuna'
+    let source: 'supabase' | 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid' = 'supabase'
+
+    try {
+      const { searchJobs } = await import('./supabase')
+      const supabaseResult = await searchJobs({
+        query: keywords.join(' '),
+        location,
+        limit: maxResults
+      })
+
+      if (supabaseResult.jobs.length > 0) {
+        console.log(`[JOB_AGGREGATOR] ✅ Supabase found ${supabaseResult.jobs.length} jobs`)
+        
+        // Convert Supabase jobs to JobListing format
+        allJobs = supabaseResult.jobs.map(job => ({
+          jobId: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          description: job.description || 'No description available',
+          url: job.url,
+          source: job.source,
+          salary: job.salary_min && job.salary_max ? `$${job.salary_min} - $${job.salary_max}` : undefined,
+          postedDate: job.scraped_at,
+          workType: (job.remote_type as 'remote' | 'hybrid' | 'onsite') || 'onsite',
+          skillMatchScore: 0,
+          skills: []
+        }))
+
+        // If we got enough jobs from Supabase, cache and return immediately
+        if (allJobs.length >= maxResults / 2) {
+          await redis.set(redisKey, allJobs, 3600)
+          await this.cacheJobsInMongo(keywords, location, workType, allJobs)
+          
+          return {
+            jobs: allJobs.slice(0, maxResults),
+            source: 'supabase',
+            cached: false,
+            timestamp: new Date()
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[JOB_AGGREGATOR] Supabase search failed:', error)
+    }
+
+    // LAYER 4: Try Adzuna API (FREE, fast)
+    console.log('[JOB_AGGREGATOR] Trying Adzuna API...')
+    if (allJobs.length === 0) {
+      source = 'adzuna'
+    }
 
     if (adzuna.isConfigured()) {
       try {

@@ -332,8 +332,8 @@ export function UnifiedNavigation() {
       <aside
         className={`fixed left-0 top-16 h-[calc(100vh-4rem)] bg-card/95 backdrop-blur-xl border-r border-border/50 transition-all duration-300 overflow-y-auto ${
           isMobile 
-            ? `${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-50 w-64`
-            : `${sidebarOpen ? 'w-64' : 'w-0'} z-10`
+            ? `${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} z-50 w-48`
+            : `${sidebarOpen ? 'w-48' : 'w-0'} z-10`
         }`}
       >
         <div className={`p-4 space-y-2 ${sidebarOpen ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
