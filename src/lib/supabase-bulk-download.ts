@@ -31,11 +31,11 @@ export async function bulkDownloadJobs(locations: string[]) {
       // Strategy: Single broad search with high limits and multiple pages
       console.log(`  Searching for jobs in ${location}...`)
       
-      // 1. Scrape Adzuna directly (6,438 jobs available!)
-      console.log(`  [ADZUNA] Scraping directly...`)
+      // 1. Scrape Adzuna directly - MAXIMIZED to 100 pages (5,000 jobs per location!)
+      console.log(`  [ADZUNA] Scraping directly (up to 5,000 jobs)...`)
       const adzunaJobs: any[] = []
       
-      for (let page = 1; page <= 20; page++) {
+      for (let page = 1; page <= 100; page++) {
         try {
           const result = await adzunaAPI.searchJobs({
             what: '',
@@ -46,7 +46,21 @@ export async function bulkDownloadJobs(locations: string[]) {
             sortBy: 'date'
           })
           
-          adzunaJobs.push(...result.results.map((j: any) => ({
+          // CRITICAL: Validate data quality before adding
+          const validJobs = result.results.filter((j: any) => {
+            const hasCompany = j.company?.display_name && j.company.display_name.trim().length > 0
+            const hasDescription = j.description && j.description.trim().length > 0
+            const hasTitle = j.title && j.title.trim().length > 0
+            const hasUrl = j.redirect_url && j.redirect_url.trim().length > 0
+            
+            if (!hasCompany || !hasDescription || !hasTitle || !hasUrl) {
+              console.warn(`    ⚠️ Skipping invalid job: ${j.title || 'NO TITLE'} - Missing: ${!hasCompany ? 'company ' : ''}${!hasDescription ? 'description ' : ''}${!hasUrl ? 'url' : ''}`)
+              return false
+            }
+            return true
+          })
+          
+          adzunaJobs.push(...validJobs.map((j: any) => ({
             id: j.id,
             title: j.title,
             company: j.company.display_name,
@@ -55,15 +69,22 @@ export async function bulkDownloadJobs(locations: string[]) {
             url: j.redirect_url,
             source: 'adzuna',
             salary: {
-              min: j.salary_min,
-              max: j.salary_max
+              min: j.salary_min || null,
+              max: j.salary_max || null
             },
             postedDate: j.created,
             jobType: j.contract_time ? [j.contract_time] : []
           })))
           
-          console.log(`    Page ${page}: ${result.results.length} jobs`)
-          await sleep(1000) // Rate limit
+          console.log(`    Page ${page}: ${validJobs.length}/${result.results.length} valid jobs (${result.results.length - validJobs.length} rejected)`)
+          
+          // Stop if no more results
+          if (result.results.length === 0) {
+            console.log(`    No more results, stopping at page ${page}`)
+            break
+          }
+          
+          await sleep(500) // Rate limit (reduced from 1000ms for faster scraping)
           
         } catch (error: any) {
           console.error(`    Page ${page} error:`, error.message)
@@ -71,7 +92,13 @@ export async function bulkDownloadJobs(locations: string[]) {
         }
       }
       
-      console.log(`  [ADZUNA] Total: ${adzunaJobs.length} jobs`)
+      console.log(`  [ADZUNA] Total: ${adzunaJobs.length} valid jobs scraped`)
+      console.log(`  [ADZUNA] Sample job:`, adzunaJobs[0] ? {
+        title: adzunaJobs[0].title,
+        company: adzunaJobs[0].company,
+        hasSalary: !!(adzunaJobs[0].salary?.min || adzunaJobs[0].salary?.max),
+        descriptionLength: adzunaJobs[0].description?.length || 0
+      } : 'No jobs')
       
       // 2. Scrape RapidAPI sources
       const { jobs, metadata } = await rapidAPI.queryMultipleSourcesWithPagination(
