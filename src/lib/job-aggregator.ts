@@ -162,11 +162,11 @@ export class JobAggregator {
           url: job.url,
           source: job.source,
           salary: job.salary_min && job.salary_max ? `$${job.salary_min} - $${job.salary_max}` : undefined,
-          postedDate: job.scraped_at ? new Date(job.scraped_at) : undefined,
+          postedDate: job.scraped_at ? new Date(job.scraped_at) : undefined as Date | undefined,
           workType: (job.remote_type as 'remote' | 'hybrid' | 'onsite') || 'onsite',
           skillMatchScore: 0,
           skills: []
-        }))
+        } as JobListing))
 
         // If we got >= 10 jobs from Supabase, cache and return immediately
         if (allJobs.length >= 10) {
