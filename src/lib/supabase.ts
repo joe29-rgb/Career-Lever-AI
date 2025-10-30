@@ -89,12 +89,20 @@ export async function searchJobs(params: JobSearchParams): Promise<JobSearchResu
       .select('*', { count: 'exact' })
       .gt('expires_at', new Date().toISOString())
 
-    // Full-text search on title, company, description
+    // Search on title, company, description using ILIKE (since fts column doesn't exist)
     if (params.query) {
-      query = query.textSearch('fts', params.query, {
-        type: 'websearch',
-        config: 'english'
-      })
+      const searchTerms = params.query.split(' ').filter(term => term.length > 0)
+      
+      // Search across title, company, and description
+      if (searchTerms.length > 0) {
+        // Use OR conditions to search multiple fields
+        const orConditions = searchTerms.map(term => {
+          const escapedTerm = term.replace(/[%_]/g, '\\$&')
+          return `title.ilike.%${escapedTerm}%,company.ilike.%${escapedTerm}%,description.ilike.%${escapedTerm}%`
+        }).join(',')
+        
+        query = query.or(orConditions)
+      }
     }
 
     // Location filter
