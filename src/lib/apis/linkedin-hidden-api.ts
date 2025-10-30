@@ -57,21 +57,31 @@ export class LinkedInHiddenAPI {
     // LinkedIn returns job posting elements
     $('li').each((i, elem) => {
       try {
-        const jobId = $(elem).attr('data-job-id') || $(elem).attr('data-entity-urn')
-        const title = $(elem).find('.base-search-card__title, .base-card__title').text().trim()
-        const company = $(elem).find('.base-search-card__subtitle, .base-card__subtitle').text().trim()
-        const location = $(elem).find('.job-search-card__location').text().trim()
+        // Get job ID from data-entity-urn
+        const entityUrn = $(elem).find('[data-entity-urn]').attr('data-entity-urn')
+        const jobId = entityUrn ? entityUrn.split(':').pop() : null
+        
+        // Find the title - it's in an h3 inside the card
+        const title = $(elem).find('h3.base-search-card__title').text().trim()
+        
+        // Company is in h4
+        const company = $(elem).find('h4.base-search-card__subtitle').text().trim()
+        
+        // Location
+        const location = $(elem).find('span.job-search-card__location').text().trim()
+        
+        // URL from the full-link anchor
         const url = $(elem).find('a.base-card__full-link').attr('href')
 
-        if (jobId && title && company) {
+        if (title && company) {
           jobs.push({
             title,
             company,
             location,
             description: '', // LinkedIn hidden API doesn't return full description
-            url: url || `https://www.linkedin.com/jobs/view/${jobId}`,
+            url: url || (jobId ? `https://www.linkedin.com/jobs/view/${jobId}` : ''),
             source: 'linkedin',
-            external_id: `linkedin_${jobId}`,
+            external_id: `linkedin_${jobId || Date.now()}`,
             posted_date: new Date().toISOString(),
             scraped_at: new Date().toISOString(),
             expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
