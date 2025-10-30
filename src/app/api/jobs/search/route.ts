@@ -1,21 +1,21 @@
 /**
- * Unified Job Search API - Enhanced with PerplexityIntelligenceService
+ * Unified Job Search API - Enhanced with JobAggregator
  * 
- * NOW USES: PerplexityIntelligenceService for comprehensive 25+ board coverage
+ * NOW USES: JobAggregator with Supabase-first search strategy
  * 
- * Features:
- * - 10 Canadian job boards (Job Bank, Jobboom, Workopolis, etc.)
- * - 35+ Canadian ATS companies (Shopify, Wealthsimple, etc.)
- * - Global boards (LinkedIn, Indeed, Glassdoor)
- * - Resume skill matching with scoring
- * - Smart Canadian prioritization
- * - Built-in caching (24hr TTL)
+ * Search Order:
+ * 1. Redis Cache (instant)
+ * 2. MongoDB Cache (fast)
+ * 3. Supabase (1,249 jobs, <100ms)
+ * 4. Cheerio/Puppeteer scrapers (if < 10 jobs, TOP 3 keywords)
+ * 5. Perplexity (last resort, if still < 10 jobs)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { dbService } from '@/lib/database'
+import { JobAggregator } from '@/lib/job-aggregator'
 import { PerplexityIntelligenceService } from '@/lib/perplexity-intelligence'
 import { isRateLimited } from '@/lib/rate-limit'
 import Resume from '@/models/Resume'
@@ -231,35 +231,53 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Use standard Perplexity method (agent system deprecated)
-        console.log('[JOB_SEARCH] Calling Perplexity job search with:', {
-          jobTitle: keywords,
+        // Use JobAggregator (Supabase → Scrapers → Perplexity fallback)
+        console.log('[JOB_SEARCH] Using JobAggregator (Supabase first):', {
+          keywords: Array.isArray(keywords) ? keywords : [keywords],
           location,
-          workType: workType || (remote ? 'remote' : 'any'),
+          workType: workType || 'any',
           maxResults: limit
         })
         
-        result = await PerplexityIntelligenceService.jobSearchWithAgent(
-          keywords,
+        const aggregator = JobAggregator.getInstance()
+        const aggregatorResult = await aggregator.searchJobs({
+          keywords: Array.isArray(keywords) ? keywords : keywords.split(',').map((k: string) => k.trim()),
           location,
-          {
-            maxResults: limit,
-            workType: workType || (remote ? 'remote' : 'any')
-          }
-        )
-
-        console.log('[JOB_SEARCH] 🤖 Agent system result:', {
-          success: result.success,
-          dataType: typeof result.data,
-          dataIsArray: Array.isArray(result.data),
-          dataLength: Array.isArray(result.data) ? result.data.length : 0,
-          cached: result.cached,
-          method: result.metadata?.method,
-          confidence: result.metadata?.confidence,
-          error: result.metadata?.error
+          workType: workType || 'any',
+          maxResults: limit
         })
 
-        jobs = result.data
+        console.log('[JOB_SEARCH] 🎯 JobAggregator result:', {
+          jobsFound: aggregatorResult.jobs.length,
+          source: aggregatorResult.source,
+          cached: aggregatorResult.cached
+        })
+
+        // Convert JobListing format to expected format
+        jobs = aggregatorResult.jobs.map(job => ({
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          url: job.url,
+          description: job.description,
+          summary: job.description?.substring(0, 200) || '',
+          salary: job.salary,
+          postedDate: job.postedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          source: job.source,
+          skillMatchPercent: job.skillMatchScore || 0,
+          skills: job.skills || [],
+          workType: job.workType
+        }))
+
+        result = {
+          success: true,
+          data: jobs,
+          cached: aggregatorResult.cached,
+          metadata: {
+            source: aggregatorResult.source,
+            timestamp: aggregatorResult.timestamp
+          }
+        }
         
         // POST-PROCESSING: Re-rank jobs by industry tenure (respects user preferences)
         if (effectivePrimaryIndustry && !disableIndustryWeighting && effectivePrimaryIndustry.keywords && Array.isArray(effectivePrimaryIndustry.keywords)) {
