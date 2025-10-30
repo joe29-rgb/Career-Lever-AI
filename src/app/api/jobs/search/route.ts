@@ -253,21 +253,30 @@ export async function POST(request: NextRequest) {
           cached: aggregatorResult.cached
         })
 
-        // Convert JobListing format to expected format
-        jobs = aggregatorResult.jobs.map(job => ({
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          url: job.url,
-          description: job.description,
-          summary: job.description?.substring(0, 200) || '',
-          salary: job.salary,
-          postedDate: job.postedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-          source: job.source,
-          skillMatchPercent: job.skillMatchScore || 0,
-          skills: job.skills || [],
-          workType: job.workType
-        }))
+        // Convert JobListing format to expected format with validation
+        jobs = aggregatorResult.jobs
+          .filter(job => {
+            // Validate required fields
+            if (!job.title || !job.company || !job.url) {
+              console.warn('[JOB_SEARCH] ⚠️ Skipping job with missing fields')
+              return false
+            }
+            return true
+          })
+          .map(job => ({
+            title: job.title,
+            company: job.company,
+            location: job.location || 'Location not specified',
+            url: job.url,
+            description: job.description || '',
+            summary: job.description?.substring(0, 200) || 'No description available',
+            salary: job.salary || null,
+            postedDate: job.postedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+            source: job.source || 'unknown',
+            skillMatchPercent: job.skillMatchScore || 0,
+            skills: job.skills || [],
+            workType: job.workType || 'onsite'
+          }))
 
         result = {
           success: true,
@@ -366,21 +375,30 @@ export async function POST(request: NextRequest) {
         } : null
       })
 
-      // Convert JobListing format to expected format
-      const jobsResult = aggregatorResult.jobs.map(job => ({
-        title: job.title,
-        company: job.company,
-        location: job.location,
-        url: job.url,
-        description: job.description,
-        summary: job.description?.substring(0, 200) || '',
-        salary: job.salary,
-        postedDate: job.postedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-        source: job.source,
-        skillMatchPercent: job.skillMatchScore || 0,
-        skills: job.skills || [],
-        workType: job.workType
-      }))
+      // Convert JobListing format to expected format with validation
+      const jobsResult = aggregatorResult.jobs
+        .filter(job => {
+          // Validate required fields
+          if (!job.title || !job.company || !job.url) {
+            console.warn('[JOB_SEARCH] ⚠️ Skipping job with missing fields')
+            return false
+          }
+          return true
+        })
+        .map(job => ({
+          title: job.title,
+          company: job.company,
+          location: job.location || 'Location not specified',
+          url: job.url,
+          description: job.description || '',
+          summary: job.description?.substring(0, 200) || 'No description available',
+          salary: job.salary || null,
+          postedDate: job.postedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+          source: job.source || 'unknown',
+          skillMatchPercent: job.skillMatchScore || 0,
+          skills: job.skills || [],
+          workType: job.workType || 'onsite'
+        }))
 
       jobs = Array.isArray(jobsResult) ? jobsResult : []
       console.log(`[JOB_SEARCH] Standard search returned type: ${typeof jobsResult}, isArray: ${Array.isArray(jobsResult)}, length: ${jobs.length}`)

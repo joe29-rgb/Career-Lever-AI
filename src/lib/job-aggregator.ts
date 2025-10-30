@@ -4,9 +4,10 @@
  * Strategy:
  * 1. Check Redis cache (instant)
  * 2. Check MongoDB JobSearchCache (fast)
- * 3. Try Perplexity sonar-pro (costs money)
- * 4. Try Puppeteer scrapers (free, slower)
- * 5. Cache all results for future users
+ * 3. Search Supabase (1,249 jobs, <100ms)
+ * 4. If < 10 jobs: Try Cheerio/Puppeteer scrapers (TOP 3 keywords, ~30s)
+ * 5. If still < 10: Try Perplexity (last resort, TOP 3 keywords)
+ * 6. Cache all results for future users
  */
 
 import { RedisCache } from './redis-cache'
@@ -152,21 +153,35 @@ export class JobAggregator {
       if (supabaseResult.jobs.length > 0) {
         console.log(`[JOB_AGGREGATOR] ✅ Supabase found ${supabaseResult.jobs.length} jobs`)
         
-        // Convert Supabase jobs to JobListing format
-        allJobs = supabaseResult.jobs.map(job => ({
-          jobId: job.id,
-          title: job.title,
-          company: job.company,
-          location: job.location,
-          description: job.description || 'No description available',
-          url: job.url,
-          source: job.source,
-          salary: job.salary_min && job.salary_max ? `$${job.salary_min} - $${job.salary_max}` : undefined,
-          postedDate: job.scraped_at ? new Date(job.scraped_at) : undefined as Date | undefined,
-          workType: (job.remote_type as 'remote' | 'hybrid' | 'onsite') || 'onsite',
-          skillMatchScore: 0,
-          skills: []
-        } as JobListing))
+        // Convert Supabase jobs to JobListing format with validation
+        allJobs = supabaseResult.jobs
+          .filter(job => {
+            // Validate required fields
+            if (!job.id || !job.title || !job.company || !job.url) {
+              console.warn('[JOB_AGGREGATOR] ⚠️ Skipping invalid job - missing required fields:', {
+                id: job.id,
+                hasTitle: !!job.title,
+                hasCompany: !!job.company,
+                hasUrl: !!job.url
+              })
+              return false
+            }
+            return true
+          })
+          .map(job => ({
+            jobId: job.id,
+            title: job.title,
+            company: job.company,
+            location: job.location || 'Location not specified',
+            description: job.description || 'No description available',
+            url: job.url,
+            source: job.source,
+            salary: job.salary_min && job.salary_max ? `$${job.salary_min} - $${job.salary_max}` : undefined,
+            postedDate: job.scraped_at ? new Date(job.scraped_at) : undefined,
+            workType: (job.remote_type as 'remote' | 'hybrid' | 'onsite') || 'onsite',
+            skillMatchScore: 0,
+            skills: []
+          } as JobListing))
 
         // If we got >= 10 jobs from Supabase, cache and return immediately
         if (allJobs.length >= 10) {
@@ -237,9 +252,13 @@ export class JobAggregator {
       }
     }
 
-    // Deduplicate by URL
+    // Deduplicate by composite key (company + title + location)
     const uniqueJobs = Array.from(
-      new Map(allJobs.map(job => [job.url, job])).values()
+      new Map(allJobs.map(job => {
+        // Create composite key for better deduplication
+        const key = `${job.company}|${job.title}|${job.location}`.toLowerCase().trim()
+        return [key, job]
+      })).values()
     )
 
     console.log(`[JOB_AGGREGATOR] Total unique jobs after deduplication: ${uniqueJobs.length}`)
