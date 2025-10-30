@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/prefetch-jobs",
       "schedule": "0 8 * * 2,6"
+    },
+    {
+      "path": "/api/cron/legal-scrape",
+      "schedule": "0 3 * * 1-5"
     }
   ]
 }
