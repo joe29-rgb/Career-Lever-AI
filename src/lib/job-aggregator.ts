@@ -31,7 +31,7 @@ export interface JobSearchParams {
 
 export interface JobSearchResult {
   jobs: JobListing[]
-  source: 'redis' | 'mongodb' | 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid'
+  source: 'redis' | 'mongodb' | 'supabase' | 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid'
   cached: boolean
   timestamp: Date
   searchCount?: number
@@ -136,15 +136,15 @@ export class JobAggregator {
 
     console.log('[JOB_AGGREGATOR] MongoDB cache MISS')
 
-    // LAYER 3: Search Supabase (1,249 jobs available!)
-    console.log('[JOB_AGGREGATOR] Searching Supabase database...')
+    // LAYER 3: Search Supabase (1,249 jobs available!) - Use ALL keywords
+    console.log('[JOB_AGGREGATOR] Searching Supabase with ALL keywords...')
     let allJobs: JobListing[] = []
-    let source: 'supabase' | 'adzuna' | 'jsearch' | 'perplexity' | 'scraper' | 'hybrid' = 'supabase'
+    let source: 'supabase' | 'scraper' | 'perplexity' | 'hybrid' = 'supabase'
 
     try {
       const { searchJobs } = await import('./supabase')
       const supabaseResult = await searchJobs({
-        query: keywords.join(' '),
+        query: keywords.join(' '), // ALL keywords for cache search
         location,
         limit: maxResults
       })
@@ -162,16 +162,16 @@ export class JobAggregator {
           url: job.url,
           source: job.source,
           salary: job.salary_min && job.salary_max ? `$${job.salary_min} - $${job.salary_max}` : undefined,
-          postedDate: job.scraped_at,
+          postedDate: job.scraped_at ? new Date(job.scraped_at) : undefined,
           workType: (job.remote_type as 'remote' | 'hybrid' | 'onsite') || 'onsite',
           skillMatchScore: 0,
           skills: []
         }))
 
-        // If we got enough jobs from Supabase, cache and return immediately
-        if (allJobs.length >= maxResults / 2) {
+        // If we got >= 10 jobs from Supabase, cache and return immediately
+        if (allJobs.length >= 10) {
+          console.log(`[JOB_AGGREGATOR] ✅ Supabase returned ${allJobs.length} jobs (>= 10), skipping fallbacks`)
           await redis.set(redisKey, allJobs, 3600)
-          await this.cacheJobsInMongo(keywords, location, workType, allJobs)
           
           return {
             jobs: allJobs.slice(0, maxResults),
@@ -185,80 +185,21 @@ export class JobAggregator {
       console.error('[JOB_AGGREGATOR] Supabase search failed:', error)
     }
 
-    // LAYER 4: Try Adzuna API (FREE, fast)
-    console.log('[JOB_AGGREGATOR] Trying Adzuna API...')
-    if (allJobs.length === 0) {
-      source = 'adzuna'
-    }
+    console.log(`[JOB_AGGREGATOR] Supabase returned ${allJobs.length} jobs (< 10), triggering fallbacks...`)
 
-    if (adzuna.isConfigured()) {
-      try {
-        const adzunaJobs = await this.searchWithAdzuna(
-          keywords.slice(0, 3),
-          location,
-          maxResults
-        )
-
-        if (adzunaJobs.length > 0) {
-          console.log(`[JOB_AGGREGATOR] ✅ Adzuna found ${adzunaJobs.length} jobs`)
-          allJobs = adzunaJobs
-        }
-      } catch (error) {
-        console.error('[JOB_AGGREGATOR] Adzuna failed:', error)
-      }
-    }
-
-    // LAYER 4: If Adzuna didn't find enough, try JSearch API (FREE, aggregates Indeed/LinkedIn/etc)
-    if (allJobs.length < maxResults / 2 && jsearch.isConfigured()) {
-      console.log('[JOB_AGGREGATOR] Adzuna insufficient, trying JSearch...')
+    // LAYER 4: If < 10 jobs, use Cheerio/Puppeteer scrapers with TOP 3 keywords
+    if (allJobs.length < 10) {
+      console.log('[JOB_AGGREGATOR] Using Cheerio/Puppeteer scrapers with TOP 3 keywords...')
+      source = 'scraper'
       
       try {
-        const jsearchJobs = await this.searchWithJSearch(
-          keywords.slice(0, 3),
-          location,
-          maxResults
-        )
-
-        if (jsearchJobs.length > 0) {
-          console.log(`[JOB_AGGREGATOR] ✅ JSearch found ${jsearchJobs.length} jobs`)
-          allJobs = [...allJobs, ...jsearchJobs]
-          source = allJobs.length > jsearchJobs.length ? 'hybrid' : 'jsearch'
-        }
-      } catch (error) {
-        console.error('[JOB_AGGREGATOR] JSearch failed:', error)
-      }
-    }
-
-    // LAYER 5: If still not enough, try Perplexity sonar-pro (costs money)
-    if (allJobs.length < maxResults / 2) {
-      console.log('[JOB_AGGREGATOR] Adzuna insufficient, trying Perplexity...')
-      
-      try {
-        const perplexityJobs = await this.searchWithPerplexity(
-          keywords.slice(0, 3),
-          location,
-          maxResults
-        )
-
-        if (perplexityJobs.length > 0) {
-          console.log(`[JOB_AGGREGATOR] ✅ Perplexity found ${perplexityJobs.length} jobs`)
-          allJobs = [...allJobs, ...perplexityJobs]
-          source = allJobs.length > perplexityJobs.length ? 'hybrid' : 'perplexity'
-        }
-      } catch (error) {
-        console.error('[JOB_AGGREGATOR] Perplexity failed:', error)
-      }
-    }
-
-    // LAYER 5: If still not enough, use scrapers
-    if (allJobs.length < maxResults / 2) {
-      console.log('[JOB_AGGREGATOR] Perplexity insufficient, using scrapers...')
-      
-      try {
+        const top3Keywords = keywords.slice(0, 3)
+        console.log(`[JOB_AGGREGATOR] Scraping with keywords: ${top3Keywords.join(', ')}`)
+        
         const scrapedJobs = await this.searchWithScrapers(
-          keywords.slice(0, 3),
+          top3Keywords, // TOP 3 keywords only
           location,
-          maxResults
+          10 // Target 10 jobs per keyword = 30 total
         )
 
         if (scrapedJobs.length > 0) {
@@ -271,16 +212,42 @@ export class JobAggregator {
       }
     }
 
+    // LAYER 5: If STILL < 10 jobs, use Perplexity as LAST RESORT with TOP 3 keywords
+    if (allJobs.length < 10) {
+      console.log('[JOB_AGGREGATOR] Still < 10 jobs, using Perplexity as last resort with TOP 3 keywords...')
+      source = 'perplexity'
+      
+      try {
+        const top3Keywords = keywords.slice(0, 3)
+        console.log(`[JOB_AGGREGATOR] Perplexity with keywords: ${top3Keywords.join(', ')}`)
+        
+        const perplexityJobs = await this.searchWithPerplexity(
+          top3Keywords, // TOP 3 keywords only
+          location,
+          10 // Target 10 jobs
+        )
+
+        if (perplexityJobs.length > 0) {
+          console.log(`[JOB_AGGREGATOR] ✅ Perplexity found ${perplexityJobs.length} jobs`)
+          allJobs = [...allJobs, ...perplexityJobs]
+          source = allJobs.length > perplexityJobs.length ? 'hybrid' : 'perplexity'
+        }
+      } catch (error) {
+        console.error('[JOB_AGGREGATOR] Perplexity failed:', error)
+      }
+    }
+
     // Deduplicate by URL
     const uniqueJobs = Array.from(
       new Map(allJobs.map(job => [job.url, job])).values()
     )
 
-    console.log(`[JOB_AGGREGATOR] Total unique jobs: ${uniqueJobs.length}`)
+    console.log(`[JOB_AGGREGATOR] Total unique jobs after deduplication: ${uniqueJobs.length}`)
 
-    // LAYER 5: Cache results for future users
+    // LAYER 6: Cache results for future users
     if (uniqueJobs.length > 0) {
-      await this.cacheResults(params, uniqueJobs)
+      await redis.set(redisKey, uniqueJobs, 3600)
+      console.log(`[JOB_AGGREGATOR] ✅ Cached ${uniqueJobs.length} jobs in Redis`)
     }
 
     return {
