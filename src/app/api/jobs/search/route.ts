@@ -338,34 +338,49 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Option 2: Standard job listing search (25+ boards)
+    // Option 2: Standard job listing search (JobAggregator with Supabase)
     if (!useResumeMatching || jobs.length === 0) {
-      console.log(`[JOB_SEARCH] Using standard search across 25+ boards`, {
+      console.log(`[JOB_SEARCH] Using JobAggregator for standard search (Supabase first)`, {
         keywords,
         location,
         limit,
         workType: workType || (remote ? 'remote' : undefined)
       })
 
-      const jobsResult = await PerplexityIntelligenceService.jobListings(
-        keywords,
+      const aggregator = JobAggregator.getInstance()
+      const aggregatorResult = await aggregator.searchJobs({
+        keywords: Array.isArray(keywords) ? keywords : keywords.split(',').map((k: string) => k.trim()),
         location,
-        {
-          limit,
-          boards: sources
-        }
-      )
+        workType: workType || 'any',
+        maxResults: limit
+      })
 
-      console.log(`[JOB_SEARCH] jobListings returned:`, {
-        type: typeof jobsResult,
-        isArray: Array.isArray(jobsResult),
-        length: Array.isArray(jobsResult) ? jobsResult.length : 0,
-        sample: Array.isArray(jobsResult) && jobsResult[0] ? {
-          title: jobsResult[0].title,
-          company: jobsResult[0].company,
-          hasUrl: !!jobsResult[0].url
+      console.log(`[JOB_SEARCH] JobAggregator returned:`, {
+        source: aggregatorResult.source,
+        cached: aggregatorResult.cached,
+        jobCount: aggregatorResult.jobs.length,
+        sample: aggregatorResult.jobs[0] ? {
+          title: aggregatorResult.jobs[0].title,
+          company: aggregatorResult.jobs[0].company,
+          hasUrl: !!aggregatorResult.jobs[0].url
         } : null
       })
+
+      // Convert JobListing format to expected format
+      const jobsResult = aggregatorResult.jobs.map(job => ({
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        url: job.url,
+        description: job.description,
+        summary: job.description?.substring(0, 200) || '',
+        salary: job.salary,
+        postedDate: job.postedDate?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        source: job.source,
+        skillMatchPercent: job.skillMatchScore || 0,
+        skills: job.skills || [],
+        workType: job.workType
+      }))
 
       jobs = Array.isArray(jobsResult) ? jobsResult : []
       console.log(`[JOB_SEARCH] Standard search returned type: ${typeof jobsResult}, isArray: ${Array.isArray(jobsResult)}, length: ${jobs.length}`)
