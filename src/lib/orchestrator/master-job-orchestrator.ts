@@ -9,15 +9,19 @@
  * 
  * Sources:
  * 1. ATS Direct (2,778 jobs) ✅
- * 2. LinkedIn Hidden API (2,000+ jobs) ✅
+ * 2. LinkedIn Hidden API (1,563 jobs) ✅
  * 3. Adzuna API (6,000+ jobs) ✅
+ * 4. Job Bank Canada (3,000-5,000 jobs) ✅
+ * 5. CivicJobs RSS (500-1,000 jobs) ✅
  * 
- * Total: 10,778+ jobs for $0/month
+ * Total: 13,841-17,341+ jobs for $0/month
  */
 
 import { getATSDirectAccess } from '../apis/ats-direct-access'
 import { getLinkedInHiddenAPI } from '../apis/linkedin-hidden-api'
 import { AdzunaAPIClient } from '../adzuna-api-client'
+import { JobBankCanadaAPI } from '../apis/job-bank-canada'
+import { CivicJobsRSS } from '../apis/civic-jobs-rss'
 import { getVerifiedCompanies } from '@/data/verified-ats-companies'
 import { CircuitBreaker } from '../utils/circuit-breaker'
 import type { Job } from '@/types/supabase'
@@ -34,6 +38,8 @@ export class MasterJobOrchestrator {
   private atsBreaker = new CircuitBreaker(3, 60000)
   private linkedinBreaker = new CircuitBreaker(3, 60000)
   private adzunaBreaker = new CircuitBreaker(3, 60000)
+  private jobBankBreaker = new CircuitBreaker(3, 60000)
+  private civicJobsBreaker = new CircuitBreaker(3, 60000)
 
   /**
    * Scrape all sources with circuit breaker protection
@@ -58,7 +64,9 @@ export class MasterJobOrchestrator {
     const scraperPromises = [
       this.scrapeATS(),
       this.scrapeLinkedIn(),
-      this.scrapeAdzuna()
+      this.scrapeAdzuna(),
+      this.scrapeJobBank(),
+      this.scrapeCivicJobs()
     ]
 
     const scraperResults = await Promise.allSettled(scraperPromises)
@@ -71,7 +79,7 @@ export class MasterJobOrchestrator {
           allJobs.push(...result.value.jobs)
         }
       } else if (result.status === 'rejected') {
-        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna']
+        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna', 'Job Bank Canada', 'CivicJobs']
         results.push({
           source: sources[index],
           jobs: [],
@@ -308,6 +316,126 @@ export class MasterJobOrchestrator {
       
       return {
         source: 'Adzuna',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Job Bank Canada with circuit breaker
+   */
+  private async scrapeJobBank(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('📌 [4/5] Job Bank Canada...\n')
+      
+      const jobs = await this.jobBankBreaker.execute(async () => {
+        const jobBank = new JobBankCanadaAPI()
+        const allJobs: Partial<Job>[] = []
+        
+        const keywords = ['software', 'engineer', 'nurse', 'accountant', 'manager']
+        const locations = ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton']
+        
+        for (const keyword of keywords) {
+          for (const location of locations) {
+            try {
+              const results = await jobBank.search({
+                keywords: keyword,
+                location,
+                pageSize: 50,
+                page: 1
+              })
+              allJobs.push(...results)
+              await this.sleep(1000) // Rate limiting
+            } catch (error) {
+              console.error(`  Error: ${keyword} @ ${location}`)
+            }
+          }
+        }
+        
+        return allJobs
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Job Bank Canada',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`\n✅ Job Bank Canada: ${jobs.length} jobs\n`)
+
+      return {
+        source: 'Job Bank Canada',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ Job Bank Canada failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'Job Bank Canada',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape CivicJobs RSS with circuit breaker
+   */
+  private async scrapeCivicJobs(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('📌 [5/5] CivicJobs RSS...\n')
+      
+      const jobs = await this.civicJobsBreaker.execute(async () => {
+        const civicJobs = new CivicJobsRSS()
+        return await civicJobs.fetchAllJobs()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'CivicJobs',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`\n✅ CivicJobs: ${jobs.length} jobs\n`)
+
+      return {
+        source: 'CivicJobs',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ CivicJobs failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'CivicJobs',
         jobs: [],
         success: false,
         error: errorMessage,

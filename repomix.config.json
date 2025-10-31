@@ -1,13 +1,43 @@
 {
   "output": {
-    "filePath": "complete-codebase.xml",
+    "filePath": "essential-production-files.xml",
     "style": "xml"
   },
   "include": [
-    "**/*"
+    "src/lib/orchestrator/master-job-orchestrator.ts",
+    "src/lib/orchestrator/insert-to-supabase.ts",
+    "src/lib/apis/ats-direct-access.ts",
+    "src/lib/apis/linkedin-hidden-api.ts",
+    "src/lib/adzuna-api-client.ts",
+    "src/lib/utils/circuit-breaker.ts",
+    "src/app/api/cron/scrape-jobs/route.ts",
+    "src/data/verified-ats-companies.ts",
+    "test-complete-system.ts",
+    "test-master-orchestrator.ts",
+    "download-incremental.ts",
+    "next.config.js",
+    "package.json",
+    "vercel.json",
+    "FIXES_COMPLETED.md",
+    "DEPLOYMENT_GUIDE.md"
   ],
   "ignore": {
     "useDefaultPatterns": true,
-    "customPatterns": []
+    "customPatterns": [
+      "*.md",
+      "!FIXES_COMPLETED.md",
+      "!DEPLOYMENT_GUIDE.md",
+      "test-*.ts",
+      "!test-complete-system.ts",
+      "!test-master-orchestrator.ts",
+      "debug-*.ts",
+      "*.xml",
+      "src/lib/scrapers/eluta*.ts",
+      "src/lib/scrapers/jsonld-extractor.ts",
+      "src/lib/apis/indeed-rss.ts",
+      "src/lib/apis/civic-jobs-rss.ts",
+      "src/lib/orchestrator/legal-free-scraper.ts",
+      "ultimate-*.ts"
+    ]
   }
 }

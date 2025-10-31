@@ -1,0 +1,82 @@
+# REPOMIX IGNORE - ESSENTIAL FILES ONLY
+# Exclude non-essential files to keep repomix focused
+
+# Documentation (keep only critical docs)
+*.md
+!FIXES_COMPLETED.md
+!DEPLOYMENT_GUIDE.md
+!README.md
+
+# Old/broken scrapers
+src/lib/scrapers/eluta.ts
+src/lib/scrapers/eluta-puppeteer.ts
+src/lib/scrapers/jsonld-extractor.ts
+src/lib/apis/indeed-rss.ts
+src/lib/apis/civic-jobs-rss.ts
+src/lib/orchestrator/legal-free-scraper.ts
+src/lib/enhanced-canadian-scraper.ts
+src/lib/real-canadian-scraper.ts
+
+# Old test files
+test-eluta.ts
+test-eluta-puppeteer.ts
+test-linkedin-hidden-api.ts
+test-legal-free-scraper.ts
+test-nuclear-scraper.ts
+ultimate-mega-scraper.ts
+ultimate-legal-scraper-v2.ts
+
+# Debug files
+debug-*.ts
+debug-*.html
+debug-*.png
+eluta-debug.*
+
+# Build artifacts
+.next/
+node_modules/
+dist/
+build/
+out/
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
+
+# Large data files
+*.xml
+!vercel.json
+
+# Old repomix files
+repomix-output.xml
+complete-codebase.xml
+repomix-comprehensive-output.xml
+career-lever-ai-COMPLETE-SYSTEM.xml
+perplexity-scraping-CORRECTED-pack.xml
+repomix-for-perplexity.md
+
+# Non-essential configs
+.eslintrc.json
+.prettierrc
+tsconfig.tsbuildinfo
+
+# Git
+.git/
+.gitignore
