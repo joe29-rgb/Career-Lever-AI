@@ -91,23 +91,25 @@ export class MasterJobOrchestrator {
     })
 
     // Deduplicate
-    console.log('\n🔄 DEDUPLICATION\n')
+    console.log('\n[ORCHESTRATOR] Starting deduplication...')
     const uniqueJobs = this.deduplicateJobs(allJobs)
 
     const duration = Math.round((Date.now() - startTime) / 1000)
 
     // Summary
-    console.log('\n📊 FINAL SUMMARY:\n')
+    console.log('\n[ORCHESTRATOR] FINAL SUMMARY:\n')
     results.forEach(r => {
-      const status = r.success ? '✅' : '❌'
-      console.log(`  ${status} ${r.source}: ${r.jobs.length} jobs (${r.duration}s)`)
+      const status = r.success ? 'SUCCESS' : 'FAILED'
+      console.log(`  [${status}] ${r.source}: ${r.jobs.length} jobs (${r.duration}s)`)
       if (r.error) {
-        console.log(`     Error: ${r.error}`)
+        console.log(`          Error: ${r.error}`)
       }
     })
+    
+    const duplicateRate = ((allJobs.length - uniqueJobs.length) / allJobs.length * 100).toFixed(1)
     console.log(`\n  Total: ${allJobs.length} jobs`)
     console.log(`  Unique: ${uniqueJobs.length} jobs`)
-    console.log(`  Duplicates: ${allJobs.length - uniqueJobs.length} jobs`)
+    console.log(`  Duplicates: ${allJobs.length - uniqueJobs.length} (${duplicateRate}%)`)
     console.log(`  Duration: ${duration}s`)
     console.log(`  Cost: $0.00\n`)
 
@@ -130,7 +132,7 @@ export class MasterJobOrchestrator {
     const startTime = Date.now()
     
     try {
-      console.log('📌 [1/3] ATS Direct Access...\n')
+      console.log('[ATS] Starting ATS Direct scrape...')
       
       const jobs = await this.atsBreaker.execute(async () => {
         const ats = getATSDirectAccess()
@@ -150,7 +152,7 @@ export class MasterJobOrchestrator {
         }
       }
 
-      console.log(`\n✅ ATS Direct: ${jobs.length} jobs\n`)
+      console.log(`[ATS] Completed: ${jobs.length} jobs in ${duration}s`)
 
       return {
         source: 'ATS Direct',
@@ -180,7 +182,7 @@ export class MasterJobOrchestrator {
     const startTime = Date.now()
     
     try {
-      console.log('📌 [2/3] LinkedIn Hidden API...\n')
+      console.log('[LINKEDIN] Starting LinkedIn scrape...')
       
       const jobs = await this.linkedinBreaker.execute(async () => {
         const linkedin = getLinkedInHiddenAPI()
@@ -199,7 +201,7 @@ export class MasterJobOrchestrator {
         }
       }
 
-      console.log(`\n✅ LinkedIn: ${jobs.length} jobs\n`)
+      console.log(`[LINKEDIN] Completed: ${jobs.length} jobs in ${duration}s`)
 
       return {
         source: 'LinkedIn',
@@ -350,7 +352,7 @@ export class MasterJobOrchestrator {
     const startTime = Date.now()
     
     try {
-      console.log('📌 [4/5] Job Bank Canada...\n')
+      console.log('[JOB BANK] Starting Job Bank scrape...')
       
       const jobs = await this.jobBankBreaker.execute(async () => {
         const jobBank = new JobBankCanadaAPI()
@@ -391,7 +393,7 @@ export class MasterJobOrchestrator {
         }
       }
 
-      console.log(`\n✅ Job Bank Canada: ${jobs.length} jobs\n`)
+      console.log(`[JOB BANK] Completed: ${jobs.length} jobs in ${duration}s`)
 
       return {
         source: 'Job Bank Canada',
@@ -421,7 +423,7 @@ export class MasterJobOrchestrator {
     const startTime = Date.now()
     
     try {
-      console.log('📌 [5/5] CivicJobs RSS...\n')
+      console.log('[CIVICJOBS] Starting CivicJobs RSS scrape...')
       
       const jobs = await this.civicJobsBreaker.execute(async () => {
         const civicJobs = new CivicJobsRSS()
@@ -440,7 +442,7 @@ export class MasterJobOrchestrator {
         }
       }
 
-      console.log(`\n✅ CivicJobs: ${jobs.length} jobs\n`)
+      console.log(`[CIVICJOBS] Completed: ${jobs.length} jobs in ${duration}s`)
 
       return {
         source: 'CivicJobs',
