@@ -56,11 +56,11 @@ export class AdzunaAPIClient {
   private readonly baseUrl = 'https://api.adzuna.com/v1/api/jobs'
 
   constructor() {
-    this.appId = process.env.ADZUNA_APP_ID || 'b0300aa2'
-    this.appKey = process.env.ADZUNA_API_KEY || '19f3a3c651c39d4073b1a66516d38432'
+    this.appId = process.env.ADZUNA_APP_ID || ''
+    this.appKey = process.env.ADZUNA_API_KEY || ''
 
     if (!this.appId || !this.appKey) {
-      console.warn('[ADZUNA] API credentials not configured')
+      throw new Error('[ADZUNA] API credentials not configured. Set ADZUNA_APP_ID and ADZUNA_API_KEY in environment variables.')
     }
   }
 
