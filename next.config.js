@@ -92,6 +92,9 @@ const nextConfig = {
         // Allow disabling type-check during build via env to avoid OOM on small builders
         ignoreBuildErrors: process.env.DISABLE_TYPECHECK === 'true',
     },
+    // Puppeteer configuration for Vercel
+    serverExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
+    
     webpack: (config, { isServer }) => {
         // Avoid bundling optional 'canvas' dependency required by pdfjs in Node builds
         config.resolve = config.resolve || {}
@@ -101,6 +104,8 @@ const nextConfig = {
             config.externals = config.externals || []
                 // Mark canvas as external in server to prevent resolution errors
             config.externals.push({ canvas: 'commonjs canvas' })
+                // Mark Puppeteer packages as external for Vercel
+            config.externals.push('puppeteer-core', '@sparticuz/chromium')
         }
         return config
     }

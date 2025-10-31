@@ -24,7 +24,20 @@ async function sleep(ms: number) {
 async function downloadLocationJobs(location: string) {
   console.log(`\n📍 Downloading jobs for ${location}...`)
   
-  const jobs: any[] = []
+  interface AdzunaJob {
+    id: string
+    title: string
+    company: { display_name: string }
+    location: { display_name: string }
+    description: string
+    redirect_url: string
+    salary_min?: number
+    salary_max?: number
+    contract_time?: string
+    created: string
+  }
+  
+  const jobs: AdzunaJob[] = []
   const seenIds = new Set<string>()
   let totalScraped = 0
   
@@ -41,7 +54,7 @@ async function downloadLocationJobs(location: string) {
       })
       
       // Validate and deduplicate
-      const validJobs = result.results.filter((j: any) => {
+      const validJobs = result.results.filter((j: AdzunaJob) => {
         if (seenIds.has(j.id)) return false
         
         const hasCompany = j.company?.display_name?.trim()
@@ -57,7 +70,7 @@ async function downloadLocationJobs(location: string) {
         return true
       })
       
-      jobs.push(...validJobs.map((j: any) => ({
+      jobs.push(...validJobs.map((j: AdzunaJob) => ({
         title: j.title,
         company: j.company.display_name,
         location: j.location.display_name,
@@ -91,8 +104,9 @@ async function downloadLocationJobs(location: string) {
       
       await sleep(500)
       
-    } catch (error: any) {
-      console.error(`  Page ${page} error:`, error.message)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`  Page ${page} error:`, errorMessage)
       break
     }
   }
@@ -127,8 +141,9 @@ async function downloadLocationJobs(location: string) {
         
         await sleep(1000) // Wait 1s between batches
         
-      } catch (error: any) {
-        console.error(`  Batch ${batchNum} exception:`, error.message)
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        console.error(`  Batch ${batchNum} exception:`, errorMessage)
         errors += batch.length
       }
     }
