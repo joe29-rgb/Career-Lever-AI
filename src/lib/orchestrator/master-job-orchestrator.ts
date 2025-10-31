@@ -22,6 +22,7 @@ import { getLinkedInHiddenAPI } from '../apis/linkedin-hidden-api'
 import { AdzunaAPIClient } from '../adzuna-api-client'
 import { JobBankCanadaAPI } from '../apis/job-bank-canada'
 import { CivicJobsRSS } from '../apis/civic-jobs-rss'
+import { getGoogleForJobsAPI } from '../apis/google-for-jobs'
 import { getVerifiedCompanies } from '@/data/verified-ats-companies'
 import { CircuitBreaker } from '../utils/circuit-breaker'
 import type { Job } from '@/types/supabase'
@@ -40,6 +41,7 @@ export class MasterJobOrchestrator {
   private adzunaBreaker = new CircuitBreaker(3, 60000)
   private jobBankBreaker = new CircuitBreaker(3, 60000)
   private civicJobsBreaker = new CircuitBreaker(3, 60000)
+  private googleJobsBreaker = new CircuitBreaker(3, 60000)
 
   /**
    * Scrape all sources with circuit breaker protection
@@ -66,6 +68,7 @@ export class MasterJobOrchestrator {
       this.scrapeLinkedIn(),
       this.scrapeAdzuna(),
       this.scrapeJobBank(),
+      this.scrapeGoogleJobs(),
       this.scrapeCivicJobs()
     ]
 
@@ -79,7 +82,7 @@ export class MasterJobOrchestrator {
           allJobs.push(...result.value.jobs)
         }
       } else if (result.status === 'rejected') {
-        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna', 'Job Bank Canada', 'CivicJobs']
+        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna', 'Job Bank Canada', 'Google for Jobs', 'CivicJobs']
         results.push({
           source: sources[index],
           jobs: [],
@@ -358,8 +361,22 @@ export class MasterJobOrchestrator {
         const jobBank = new JobBankCanadaAPI()
         const allJobs: Partial<Job>[] = []
         
-        const keywords = ['software', 'engineer', 'nurse', 'accountant', 'manager']
-        const locations = ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton']
+        // Expanded keywords for maximum Job Bank coverage
+        const keywords = [
+          'software', 'engineer', 'developer', 'programmer',
+          'nurse', 'healthcare', 'medical',
+          'accountant', 'finance', 'analyst',
+          'manager', 'supervisor', 'director',
+          'technician', 'specialist'
+        ]
+        
+        // All major Canadian cities
+        const locations = [
+          'Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton',
+          'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener'
+        ]
+        
+        console.log(`[JOB BANK] Searching ${keywords.length} keywords × ${locations.length} locations`)
         
         for (const keyword of keywords) {
           for (const location of locations) {
@@ -373,10 +390,12 @@ export class MasterJobOrchestrator {
               allJobs.push(...results)
               await this.sleep(1000) // Rate limiting
             } catch (error) {
-              console.error(`  Error: ${keyword} @ ${location}`)
+              console.error(`[JOB BANK] Error: ${keyword} @ ${location}`)
             }
           }
         }
+        
+        console.log(`[JOB BANK] Total fetched: ${allJobs.length} jobs`)
         
         return allJobs
       })
@@ -408,6 +427,55 @@ export class MasterJobOrchestrator {
       
       return {
         source: 'Job Bank Canada',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Google for Jobs with circuit breaker
+   */
+  private async scrapeGoogleJobs(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[GOOGLE JOBS] Starting Google for Jobs scrape...')
+      
+      const jobs = await this.googleJobsBreaker.execute(async () => {
+        const googleJobs = getGoogleForJobsAPI()
+        return await googleJobs.searchAllCanadianJobs()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Google for Jobs',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[GOOGLE JOBS] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Google for Jobs',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[GOOGLE JOBS] Failed: ${errorMessage}`)
+      
+      return {
+        source: 'Google for Jobs',
         jobs: [],
         success: false,
         error: errorMessage,

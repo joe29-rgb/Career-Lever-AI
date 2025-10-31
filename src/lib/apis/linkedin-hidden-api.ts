@@ -99,9 +99,12 @@ export class LinkedInHiddenAPI {
   }
 
   async searchAllCanadianJobs(): Promise<Partial<Job>[]> {
+    // Expanded keyword list for maximum coverage
     const keywords = [
       'software engineer',
+      'developer',
       'data analyst',
+      'data scientist',
       'product manager',
       'registered nurse',
       'electrician',
@@ -109,9 +112,18 @@ export class LinkedInHiddenAPI {
       'project manager',
       'sales representative',
       'marketing manager',
-      'business analyst'
+      'business analyst',
+      'designer',
+      'consultant',
+      'coordinator',
+      'administrator',
+      'technician',
+      'specialist',
+      'supervisor',
+      'director'
     ]
 
+    // Expanded location list - all major Canadian cities
     const locations = [
       'Toronto, ON',
       'Vancouver, BC',
@@ -120,7 +132,11 @@ export class LinkedInHiddenAPI {
       'Edmonton, AB',
       'Ottawa, ON',
       'Winnipeg, MB',
-      'Quebec City, QC'
+      'Quebec City, QC',
+      'Hamilton, ON',
+      'Kitchener, ON',
+      'London, ON',
+      'Halifax, NS'
     ]
 
     const allJobs: Partial<Job>[] = []
