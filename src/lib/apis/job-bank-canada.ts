@@ -58,26 +58,28 @@ export class JobBankCanadaAPI {
     const jobs: Partial<Job>[] = []
     const $ = cheerio.load(html)
     
-    $('article.resultJobItem').each((i, elem) => {
-      const title = $(elem).find('.resultJobItemTitle').text().trim()
-      const company = $(elem).find('.resultJobItemEmployer').text().trim()
-      const location = $(elem).find('.resultJobItemLocation').text().trim()
-      const url = $(elem).find('.resultJobItemTitle a').attr('href')
-      const salary = $(elem).find('.resultJobItemWage').text().trim()
-      const datePosted = $(elem).find('.resultJobItemDate').text().trim()
+    // Structure: article.action-buttons > a.resultJobItem
+    $('article.action-buttons').each((i, elem) => {
+      const link = $(elem).find('a.resultJobItem')
+      const title = link.find('.noctitle').text().trim()
+      const company = link.find('.business').text().trim()
+      const location = link.find('.location').text().trim().replace(/Location\s*/i, '')
+      const url = link.attr('href')
+      const salary = link.find('.salary').text().trim()
+      const datePosted = link.find('.date').text().trim()
       
       if (title && company && url) {
         jobs.push({
           title,
           company,
-          location: location || 'Alberta',
+          location: location || 'Canada',
           description: '',
           url: url.startsWith('http') ? url : `https://www.jobbank.gc.ca${url}`,
-          source: 'indeed',
+          source: 'job_bank',
           salary_min: undefined,
           salary_max: undefined,
           posted_date: this.parseDate(datePosted),
-          external_id: `jobbank_${url.split('/').pop() || Date.now()}`,
+          external_id: `jobbank_${url.split('/').pop()?.split(';')[0] || Date.now()}`,
           scraped_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
           keywords: []

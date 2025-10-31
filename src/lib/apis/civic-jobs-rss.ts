@@ -14,12 +14,7 @@ export class CivicJobsRSS {
   private parser = new Parser()
 
   private readonly RSS_FEEDS = [
-    { url: 'https://www.civicjobs.ca/rss/alberta', location: 'Alberta' },
-    { url: 'https://www.civicjobs.ca/rss/ontario', location: 'Ontario' },
-    { url: 'https://www.civicjobs.ca/rss/quebec', location: 'Quebec' },
-    { url: 'https://www.civicjobs.ca/rss/british-columbia', location: 'British Columbia' },
-    { url: 'https://www.civicjobs.ca/rss/manitoba', location: 'Manitoba' },
-    { url: 'https://www.civicjobs.ca/rss/saskatchewan', location: 'Saskatchewan' },
+    { url: 'https://www.civicjobs.ca/rss2', location: 'Canada' },
   ]
 
   async fetchAllJobs(): Promise<Partial<Job>[]> {
