@@ -656,42 +656,10 @@ export const VERIFIED_ATS_COMPANIES: VerifiedATSCompany[] = [
     industry: 'Education',
     verified: true
   },
-  {
-    name: 'Udemy',
-    slug: 'udemy',
-    ats: 'lever',
-    location: 'Remote',
-    industry: 'Education',
-    verified: true
-  },
   
   // ========================================
   // MORE WORKABLE (SMBs & Startups)
   // ========================================
-  {
-    name: 'Lattice',
-    slug: 'lattice-hr',
-    ats: 'workable',
-    location: 'Remote',
-    industry: 'HR Tech',
-    verified: true
-  },
-  {
-    name: 'Culture Amp',
-    slug: 'cultureamp',
-    ats: 'workable',
-    location: 'Remote',
-    industry: 'HR Tech',
-    verified: true
-  },
-  {
-    name: '15Five',
-    slug: '15five',
-    ats: 'workable',
-    location: 'Remote',
-    industry: 'HR Tech',
-    verified: true
-  },
   {
     name: 'BambooHR',
     slug: 'bamboohr',

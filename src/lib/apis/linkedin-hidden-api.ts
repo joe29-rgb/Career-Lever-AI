@@ -23,8 +23,9 @@ export class LinkedInHiddenAPI {
 
   async searchJobs(keyword: string, location: string, start: number = 0): Promise<Partial<Job>[]> {
     try {
-      console.log(`[LINKEDIN API] Searching: ${keyword} @ ${location}`)
+      console.log(`[LINKEDIN] Starting search: ${keyword} @ ${location}`)
 
+      // Disable proxy to prevent ERR_INVALID_URL errors
       const response = await axios.get(this.BASE_URL, {
         params: {
           keywords: keyword,
@@ -38,14 +39,15 @@ export class LinkedInHiddenAPI {
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Referer': 'https://www.linkedin.com/jobs/search'
         },
-        timeout: 15000
+        timeout: 15000,
+        proxy: false // Explicitly disable proxy
       })
 
       const jobs = this.parseLinkedInJobs(response.data)
-      console.log(`[LINKEDIN API] Found ${jobs.length} jobs`)
+      console.log(`[LINKEDIN] Found ${jobs.length} jobs`)
       return jobs
     } catch (error) {
-      console.error('[LINKEDIN API] Error:', error)
+      console.error('[LINKEDIN] Error:', error)
       return []
     }
   }
