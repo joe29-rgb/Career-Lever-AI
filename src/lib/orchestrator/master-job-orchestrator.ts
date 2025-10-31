@@ -23,6 +23,7 @@ import { AdzunaAPIClient } from '../adzuna-api-client'
 import { JobBankCanadaAPI } from '../apis/job-bank-canada'
 import { CivicJobsRSS } from '../apis/civic-jobs-rss'
 import { getGoogleForJobsAPI } from '../apis/google-for-jobs'
+import { getCompanyCareerPagesAPI } from '../apis/company-career-pages'
 import { getVerifiedCompanies } from '@/data/verified-ats-companies'
 import { CircuitBreaker } from '../utils/circuit-breaker'
 import type { Job } from '@/types/supabase'
@@ -42,6 +43,7 @@ export class MasterJobOrchestrator {
   private jobBankBreaker = new CircuitBreaker(3, 60000)
   private civicJobsBreaker = new CircuitBreaker(3, 60000)
   private googleJobsBreaker = new CircuitBreaker(3, 60000)
+  private companyPagesBreaker = new CircuitBreaker(3, 60000)
 
   /**
    * Scrape all sources with circuit breaker protection
@@ -69,6 +71,7 @@ export class MasterJobOrchestrator {
       this.scrapeAdzuna(),
       this.scrapeJobBank(),
       this.scrapeGoogleJobs(),
+      this.scrapeCompanyPages(),
       this.scrapeCivicJobs()
     ]
 
@@ -82,7 +85,7 @@ export class MasterJobOrchestrator {
           allJobs.push(...result.value.jobs)
         }
       } else if (result.status === 'rejected') {
-        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna', 'Job Bank Canada', 'Google for Jobs', 'CivicJobs']
+        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna', 'Job Bank Canada', 'Google for Jobs', 'Company Careers', 'CivicJobs']
         results.push({
           source: sources[index],
           jobs: [],
@@ -476,6 +479,55 @@ export class MasterJobOrchestrator {
       
       return {
         source: 'Google for Jobs',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Company Career Pages with circuit breaker
+   */
+  private async scrapeCompanyPages(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[CAREERS] Starting Company Career Pages scrape...')
+      
+      const jobs = await this.companyPagesBreaker.execute(async () => {
+        const careers = getCompanyCareerPagesAPI()
+        return await careers.scrapeAllCompanies()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Company Careers',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[CAREERS] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Company Careers',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[CAREERS] Failed: ${errorMessage}`)
+      
+      return {
+        source: 'Company Careers',
         jobs: [],
         success: false,
         error: errorMessage,
