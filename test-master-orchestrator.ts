@@ -1,14 +1,20 @@
 /**
  * TEST MASTER JOB ORCHESTRATOR
  * 
- * Tests the complete system with all 3 sources:
+ * Tests the complete system with all sources:
  * - ATS Direct
  * - LinkedIn Hidden API
  * - Adzuna API
+ * - Job Bank Canada
+ * - CivicJobs RSS
  */
 
-import 'dotenv/config'
+import { config } from 'dotenv'
+import { resolve } from 'path'
 import { getMasterOrchestrator } from './src/lib/orchestrator/master-job-orchestrator'
+
+// Load .env.local explicitly
+config({ path: resolve(process.cwd(), '.env.local') })
 
 async function testMasterOrchestrator() {
   console.log('🧪 TESTING MASTER JOB ORCHESTRATOR\n')
