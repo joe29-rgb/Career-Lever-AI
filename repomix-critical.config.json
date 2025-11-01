@@ -1,0 +1,16 @@
+{
+  "output": {
+    "filePath": "CRITICAL-BUILD-FILES.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/lib/apis/**/*.ts",
+    "src/lib/orchestrator/**/*.ts",
+    "src/app/api/**/*.ts",
+    "next.config.js",
+    "package.json",
+    "Dockerfile",
+    "vercel.json",
+    "tsconfig.json"
+  ]
+}

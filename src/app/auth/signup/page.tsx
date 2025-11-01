@@ -48,7 +48,7 @@ function SignUpInner() {
 
   // Prefill email if passed from homepage
   useEffect(() => {
-    const prefill = searchParams.get('email')
+    const prefill = searchParams?.get('email')
     if (prefill) setFormData(prev => ({ ...prev, email: prefill }))
   }, [searchParams])
 

@@ -37,7 +37,7 @@ function SignInInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Sanitize callbackUrl: disallow nested /auth redirects and enforce same-origin path
-  const rawCallback = searchParams.get('callbackUrl') || '/dashboard'
+  const rawCallback = searchParams?.get('callbackUrl') || '/dashboard'
   let callbackUrl = '/dashboard'
   try {
     // Accept only pathnames starting with '/' and not /auth
@@ -51,7 +51,7 @@ function SignInInner() {
 
   // Prefill email from query
   useEffect(() => {
-    const prefill = searchParams.get('email')
+    const prefill = searchParams?.get('email')
     if (prefill) setEmail(prefill)
   }, [searchParams])
 
@@ -70,12 +70,12 @@ function SignInInner() {
 
   // Show success message for email verification
   useEffect(() => {
-    const verified = searchParams.get('verified')
+    const verified = searchParams?.get('verified')
     if (verified === 'true') {
       setSuccess('Email verified successfully! Please sign in.')
     }
 
-    const registered = searchParams.get('registered')
+    const registered = searchParams?.get('registered')
     if (registered === 'true') {
       setSuccess('Account created successfully! Please sign in.')
     }

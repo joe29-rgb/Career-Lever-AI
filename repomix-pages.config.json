@@ -1,0 +1,11 @@
+{
+  "output": {
+    "filePath": "PAGES-COMPONENTS.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/app/**/*.tsx",
+    "src/components/**/*.tsx",
+    "src/lib/resume-templates-v2.ts"
+  ]
+}

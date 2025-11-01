@@ -28,6 +28,10 @@ export default function ApplicationDetailsPage() {
 
   useEffect(() => {
     const load = async () => {
+      if (!params?.id) {
+        setLoading(false)
+        return
+      }
       try {
         const resp = await fetch(`/api/applications/${params.id}`)
         if (!resp.ok) throw new Error('Failed to load application')
@@ -39,7 +43,7 @@ export default function ApplicationDetailsPage() {
         setLoading(false)
       }
     }
-    if (params?.id) load()
+    load()
   }, [params?.id])
 
   const downloadResumeVersion = async (html: string, name: string) => {
@@ -90,6 +94,7 @@ export default function ApplicationDetailsPage() {
 
   const attachCoverLetter = async () => {
     if (!attachId) { toast.error('Select a cover letter'); return }
+    if (!params?.id) { toast.error('Invalid application ID'); return }
     setAttaching(true)
     try {
       const resp = await fetch(`/api/applications/${params.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ coverLetterId: attachId }) })
@@ -103,6 +108,7 @@ export default function ApplicationDetailsPage() {
   }
 
   const exportPack = async () => {
+    if (!params?.id) { toast.error('Invalid application ID'); return }
     try {
       const resp = await fetch(`/api/applications/${params.id}/export/pack`)
       if (!resp.ok) throw new Error('Failed to export pack')
@@ -121,6 +127,7 @@ export default function ApplicationDetailsPage() {
   }
 
   const attachLatest = async () => {
+    if (!params?.id) { toast.error('Invalid application ID'); return }
     try {
       const resp = await fetch(`/api/applications/${params.id}/attach`, { method: 'POST' })
       if (!resp.ok) throw new Error('Attach failed')
@@ -140,6 +147,7 @@ export default function ApplicationDetailsPage() {
   const [score, setScore] = useState<{ score: number; reasons: string[]; riskFactors: string[]; improvements: string[] } | null>(null)
   const [scoring, setScoring] = useState(false)
   const suggestFollowUp = async () => {
+    if (!params?.id) { toast.error('Invalid application ID'); return }
     try {
       const resp = await fetch(`/api/applications/${params.id}/followup/suggest`)
       if (!resp.ok) throw new Error('Failed to suggest follow-up')
@@ -153,6 +161,7 @@ export default function ApplicationDetailsPage() {
 
   const saveFollowUp = async () => {
     if (!followEmail) { toast.error('Generate a follow-up first'); return }
+    if (!params?.id) { toast.error('Invalid application ID'); return }
     setSavingFollows(true)
     try {
       const resp = await fetch(`/api/applications/${params.id}/followup/save`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: followEmail, dates: (followDates || []).map(d => d.toISOString()) }) })
@@ -228,6 +237,7 @@ export default function ApplicationDetailsPage() {
   }
 
   const runScore = async () => {
+    if (!params?.id) { toast.error('Invalid application ID'); return }
     setScoring(true)
     try {
       const resp = await fetch(`/api/applications/${params.id}/score`)
@@ -651,6 +661,7 @@ export default function ApplicationDetailsPage() {
                 variant="default"
                 disabled={savingFollows}
                 onClick={async ()=>{
+                  if (!params?.id) { toast.error('Invalid application ID'); return }
                   try {
                     setSavingFollows(true)
                     const resp = await fetch(`/api/applications/${params.id}/followup/save`, {

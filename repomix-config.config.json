@@ -1,0 +1,14 @@
+{
+  "output": {
+    "filePath": "CONFIG-TYPES.xml",
+    "style": "xml"
+  },
+  "include": [
+    "*.json",
+    "*.config.js",
+    "*.config.ts",
+    "src/types/**/*.ts",
+    "vercel.json",
+    "Dockerfile"
+  ]
+}

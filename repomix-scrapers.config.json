@@ -1,0 +1,13 @@
+{
+  "output": {
+    "filePath": "SCRAPERS-ONLY.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/lib/apis/**/*.ts",
+    "src/lib/orchestrator/**/*.ts",
+    "src/lib/adzuna-api-client.ts",
+    "src/lib/web-scraper.ts",
+    "src/lib/utils/circuit-breaker.ts"
+  ]
+}

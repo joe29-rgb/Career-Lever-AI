@@ -8,7 +8,7 @@ function PaymentContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
-  const cancelled = searchParams.get('payment') === 'cancelled'
+  const cancelled = searchParams?.get('payment') === 'cancelled'
 
   const handleSubscribe = async () => {
     setLoading(true)

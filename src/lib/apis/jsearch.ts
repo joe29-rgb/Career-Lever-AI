@@ -94,7 +94,7 @@ export class JSearchAPI {
    * Format location from job data
    */
   private formatLocation(job: any): string {
-    const parts = []
+    const parts: string[] = []
     if (job.job_city) parts.push(job.job_city)
     if (job.job_state) parts.push(job.job_state)
     if (job.job_country) parts.push(job.job_country)

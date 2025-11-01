@@ -1,0 +1,43 @@
+{
+  "output": {
+    "filePath": "WIRING-VERIFICATION.xml",
+    "style": "xml",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 10,
+    "showLineNumbers": true,
+    "copyToClipboard": false
+  },
+  "include": [
+    "src/app/api/resume/upload/route.ts",
+    "src/lib/profile-mapper.ts",
+    "src/lib/enhanced-resume-extractor.ts",
+    "src/app/api/jobs/search/route.ts",
+    "src/app/api/jobs/search-by-resume/route.ts",
+    "src/lib/job-aggregator.ts",
+    "src/lib/keyword-extraction.ts",
+    "src/app/career-finder/search/page.tsx",
+    "src/app/api/interview-prep/generate/route.ts",
+    "src/app/api/company/research/route.ts",
+    "src/app/api/applications/create/route.ts",
+    "src/app/api/follow-ups/generate/route.ts",
+    "src/app/api/cover-letter/generate/route.ts",
+    "src/app/api/salary/generate/route.ts",
+    "src/models/UserProfile.ts",
+    "src/models/Application.ts",
+    "src/types/supabase.ts"
+  ],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "node_modules/**",
+      ".next/**",
+      "*.test.ts",
+      "*.test.tsx"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  }
+}

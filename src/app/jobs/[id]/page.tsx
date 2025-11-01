@@ -11,13 +11,13 @@ import { ArrowLeft, Edit, CheckCircle, User, Gift, Send } from 'lucide-react'
 import { MapPin, GraduationCap, Clock } from 'lucide-react'
 
 export default function JobDetailsPage() {
-  const params = useParams()
+  const params = useParams<{ id: string }>()
   const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
 
   // Mock job data - will be replaced with API call
   const job = {
-    id: params.id,
+    id: params?.id || 'unknown',
     title: 'Graphic Designer',
     company: 'Spotify',
     companyLogo: null,

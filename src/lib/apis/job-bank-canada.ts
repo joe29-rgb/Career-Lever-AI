@@ -75,7 +75,7 @@ export class JobBankCanadaAPI {
           location: location || 'Canada',
           description: '',
           url: url.startsWith('http') ? url : `https://www.jobbank.gc.ca${url}`,
-          source: 'job_bank',
+          source: 'job-bank',
           salary_min: undefined,
           salary_max: undefined,
           posted_date: this.parseDate(datePosted),

@@ -1,0 +1,9 @@
+{
+  "output": {
+    "filePath": "DATA-KEYWORDS.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/data/**/*.ts"
+  ]
+}

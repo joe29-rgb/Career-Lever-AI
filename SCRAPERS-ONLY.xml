@@ -1,0 +1,4030 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/lib/apis/**/*.ts, src/lib/orchestrator/**/*.ts, src/lib/adzuna-api-client.ts, src/lib/web-scraper.ts, src/lib/utils/circuit-breaker.ts
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/lib/adzuna-api-client.ts
+src/lib/apis/ats-direct-access.ts
+src/lib/apis/company-career-pages.ts
+src/lib/apis/google-for-jobs.ts
+src/lib/apis/job-bank-canada.ts
+src/lib/apis/jsearch.ts
+src/lib/apis/linkedin-hidden-api.ts
+src/lib/orchestrator/insert-to-supabase.ts
+src/lib/orchestrator/master-job-orchestrator.ts
+src/lib/utils/circuit-breaker.ts
+src/lib/web-scraper.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/lib/web-scraper.ts">
+import puppeteer, { Browser } from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
+import { CompanyData } from '@/types';
+
+export interface ScrapedCompanyData {
+  companyName: string;
+  website?: string;
+  industry?: string;
+  size?: string;
+  description?: string;
+  culture?: string[];
+  benefits?: string[];
+  recentNews?: Array<{
+    title: string;
+    url: string;
+    publishedAt: Date;
+    summary: string;
+  }>;
+  glassdoorRating?: number;
+  glassdoorReviews?: number;
+  linkedinData?: {
+    companyPage: string;
+    employeeCount?: number;
+    followers?: number;
+    recentPosts?: Array<{
+      content: string;
+      postedAt: Date;
+      engagement: number;
+    }>;
+  };
+  socialMedia?: {
+    twitter?: {
+      handle: string;
+      followers: number;
+      recentTweets: Array<{
+        text: string;
+        createdAt: Date;
+        likes: number;
+        retweets: number;
+      }>;
+    };
+    facebook?: {
+      pageUrl: string;
+      followers: number;
+      recentPosts: Array<{
+        content: string;
+        postedAt: Date;
+        reactions: number;
+      }>;
+    };
+    instagram?: {
+      handle: string;
+      followers: number;
+      recentPosts: Array<{
+        caption: string;
+        postedAt: Date;
+        likes: number;
+        comments: number;
+      }>;
+    };
+  };
+  sources?: string[];
+}
+
+export class WebScraperService {
+  private browser: Browser | null = null;
+  private currentMode: 'disabled' | 'direct' | 'proxy' = 'direct';
+  private userAgents: string[] = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:118.0) Gecko/20100101 Firefox/118.0',
+  ];
+  // Simple in-memory cache for OSINT requests
+  private osintCache: Map<string, { expiresAt: number; value: any }> = new Map();
+  private osintCacheTtlMs: number = Number(process.env.OSINT_CACHE_TTL_MS || 15 * 60 * 1000);
+  // Optional Redis client
+  private redis: any = null;
+
+  async initialize(): Promise<void> {
+    if (this.browser) return
+    // Allow disabling browser-based scraping entirely in restricted environments
+    if (process.env.SCRAPE_DISABLE_BROWSER === '1') {
+      this.browser = null
+      this.currentMode = 'disabled'
+      return
+    }
+    const executablePath = await chromium.executablePath()
+    // Optional proxy rotation: read one proxy from PROXY_URLS
+    let proxyArg: string | undefined
+    try {
+      const proxies = (process.env.PROXY_URLS || '').split(',').map(s => s.trim()).filter(Boolean)
+      if (proxies.length) {
+        const pick = proxies[Math.floor(Math.random() * proxies.length)]
+        // Only accept well-formed proxy URLs
+        if (/^(https?:|socks5:\/\/)/i.test(pick)) {
+          proxyArg = `--proxy-server=${pick}`
+        }
+      }
+    } catch {}
+    // Optional Redis (cache)
+    if (!this.redis && process.env.REDIS_URL) {
+      try {
+        const { createClient } = require('redis')
+        this.redis = createClient({ url: process.env.REDIS_URL })
+        this.redis.on('error', () => {})
+        this.redis.connect().catch(()=>{})
+      } catch {}
+    }
+    const launchArgs = [...chromium.args]
+    if (proxyArg) {
+      launchArgs.push(proxyArg)
+    } else {
+      // Some hosts set proxy env vars by default; ensure direct connection
+      launchArgs.push('--no-proxy-server')
+      launchArgs.push('--proxy-bypass-list=*')
+      // Explicitly force direct connection (no quotes around direct://)
+      launchArgs.push('--proxy-server=direct://')
+    }
+    // Ensure no proxy is used if none configured; fix ERR_NO_SUPPORTED_PROXIES
+    process.env.HTTP_PROXY = ''
+    process.env.http_proxy = ''
+    process.env.HTTPS_PROXY = ''
+    process.env.https_proxy = ''
+    process.env.ALL_PROXY = ''
+    process.env.all_proxy = ''
+    // Bypass any residual system proxy
+    process.env.NO_PROXY = '*'
+    process.env.no_proxy = '*'
+    // Extra container-friendly flags
+    launchArgs.push('--no-sandbox')
+    launchArgs.push('--disable-setuid-sandbox')
+    launchArgs.push('--disable-dev-shm-usage')
+    this.browser = await puppeteer.launch({
+      args: launchArgs,
+      executablePath,
+      headless: true,
+    })
+    this.currentMode = proxyArg ? 'proxy' : 'direct'
+    // Quick connectivity self-test; if a proxy was configured and failed, relaunch direct
+    if (proxyArg) {
+      try {
+        const page = await this.browser.newPage()
+        await page.goto('https://example.com', { waitUntil: 'domcontentloaded', timeout: 8000 })
+        await page.close()
+      } catch (e) {
+        const msg = (e as any)?.message || ''
+        if (/ERR_NO_SUPPORTED_PROXIES|ERR_TUNNEL_CONNECTION_FAILED|net::ERR/i.test(String(msg))) {
+          try { await this.browser.close() } catch {}
+          const directArgs = [...chromium.args, '--no-proxy-server', '--proxy-bypass-list=*', '--proxy-server=direct://', '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+          this.browser = await puppeteer.launch({ args: directArgs, executablePath, headless: true })
+          this.currentMode = 'direct'
+        }
+      }
+    }
+  }
+
+  private async configurePage(page: any) {
+    page.setDefaultNavigationTimeout(45000)
+    page.setDefaultTimeout(45000)
+    const ua = this.userAgents[Math.floor(Math.random() * this.userAgents.length)]
+    await page.setUserAgent(ua)
+    await page.setViewport({ width: 1366, height: 768 })
+    await page.setExtraHTTPHeaders({ 'Accept-Language': 'en-US,en;q=0.9' })
+    // If Railway proxies require auth from PROXY_URLS, apply basic auth
+    try {
+      const proxies = (process.env.PROXY_URLS || '').split(',').map(s => s.trim()).filter(Boolean)
+      const pick = proxies[0]
+      if (pick) {
+        const u = new URL(pick)
+        if (u.username && u.password) {
+          await page.authenticate({ username: decodeURIComponent(u.username), password: decodeURIComponent(u.password) })
+        }
+      }
+    } catch {}
+    await page.setRequestInterception(true)
+    page.on('request', (req: any) => {
+      const type = req.resourceType()
+      // Allow CSS (for layout) but block images/media/fonts
+      if (type === 'image' || type === 'media' || type === 'font') { req.abort().catch(()=>{}) }
+      else { req.continue().catch(()=>{}) }
+    })
+  }
+
+  private async sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
+
+  private async withRetry<T>(fn: () => Promise<T>, attempts = 4, baseDelay = 600): Promise<T> {
+    let lastErr: any
+    for (let i = 0; i < attempts; i++) {
+      try { return await fn() } catch (e) { lastErr = e; await this.sleep(baseDelay * Math.pow(2, i) + Math.random()*200) }
+    }
+    throw lastErr
+  }
+
+  private isProxyError(error: any): boolean {
+    const msg = (error?.message || '').toString()
+    return /ERR_NO_SUPPORTED_PROXIES/i.test(msg)
+  }
+
+  getMode(): 'disabled' | 'direct' | 'proxy' {
+    return this.currentMode
+  }
+
+  async healthCheck(): Promise<{ ok: boolean; mode: 'disabled' | 'direct' | 'proxy'; error?: string }> {
+    try {
+      await this.initialize()
+      if (!this.browser) {
+        return { ok: false, mode: this.currentMode, error: 'browser_unavailable' }
+      }
+      const page = await this.browser.newPage()
+      try {
+        await this.configurePage(page)
+        await page.goto('https://example.com', { waitUntil: 'domcontentloaded', timeout: 8000 })
+        return { ok: true, mode: this.currentMode }
+      } finally {
+        try { await page.close() } catch {}
+      }
+    } catch (e: any) {
+      return { ok: false, mode: this.currentMode, error: String(e?.message || e) }
+    }
+  }
+
+  private async gotoWithRetry(page: any, url: string, waitUntil: 'domcontentloaded'|'networkidle2' = 'domcontentloaded', timeout = 45000) {
+    return this.withRetry(async () => {
+      return page.goto(url, { waitUntil, timeout })
+    }, 3, 700)
+  }
+
+  // Generic Google search helper returning title, url, and snippet
+  async googleSearch(query: string, limit: number = 10): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    // Cache lookup
+    const cacheKey = `g:${query}:${limit}`
+    const now = Date.now()
+    const cached = this.osintCache.get(cacheKey)
+    if (cached && cached.expiresAt > now) return cached.value
+    if (this.redis) {
+      try {
+        const raw = await this.redis.get(`osint:${cacheKey}`)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: parsed })
+          return parsed
+        }
+      } catch {}
+    }
+    // Primary path: headless Google via Puppeteer
+    try {
+      if (!this.browser) await this.initialize();
+      const page = await this.browser!.newPage();
+      try {
+        await this.configurePage(page)
+        const qs = `https://www.google.com/search?q=${encodeURIComponent(query)}&hl=en`;
+        await this.gotoWithRetry(page, qs, 'domcontentloaded', 45000)
+        // Accept consent if shown, best-effort
+        try { await page.evaluate(() => {
+          const btn = Array.from(document.querySelectorAll('button, input[type="submit"]')).find(el => /agree|accept|consent/i.test(el.textContent || '')) as HTMLButtonElement | undefined
+          btn?.click()
+        }) } catch {}
+        await this.sleep(900 + Math.random()*600)
+        const results = await page.evaluate((max: number) => {
+          const out: Array<{ title: string; url: string; snippet: string }> = []
+          const blocks = document.querySelectorAll('div.g, div[data-header-feature], div[data-snf]');
+          for (const block of Array.from(blocks)) {
+            const a = block.querySelector('a[href^="http"]') as HTMLAnchorElement | null
+            const h3 = block.querySelector('h3') as HTMLElement | null
+            const sn = block.querySelector('div[data-content-feature] div, .VwiC3b, .IsZvec') as HTMLElement | null
+            const url = a?.href || ''
+            const title = h3?.textContent?.trim() || ''
+            const snippet = sn?.textContent?.trim() || ''
+            if (url && title) out.push({ title, url, snippet })
+            if (out.length >= max) break
+          }
+          return out
+        }, Math.max(1, Math.min(limit, 50)))
+        // De-duplicate and filter tracking
+        const seen = new Set<string>()
+        const cleaned = results.filter(r => {
+          try {
+            const u = new URL(r.url)
+            const key = `${u.hostname}${u.pathname}`
+            if (seen.has(key)) return false
+            seen.add(key)
+            return true
+          } catch { return false }
+        })
+        // Set cache
+        this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: cleaned })
+        if (this.redis) {
+          try { await this.redis.setEx(`osint:${cacheKey}`, Math.floor(this.osintCacheTtlMs/1000), JSON.stringify(cleaned)) } catch {}
+        }
+        return cleaned
+      } finally {
+        try { await page.close() } catch {}
+      }
+    } catch (e) {
+      // Fallback: DuckDuckGo HTML (no JS) to avoid proxy/consent issues
+      try {
+        const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`
+        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CareerLeverAI/1.0)' } as any })
+        if (!res.ok) return []
+        const html = await res.text()
+        const items: Array<{ title: string; url: string; snippet: string }> = []
+        const re = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi
+        let m: RegExpExecArray | null
+        const strip = (s: string) => s.replace(/<[^>]+>/g, '').replace(/&[^;]+;/g, ' ').trim()
+        while ((m = re.exec(html)) && items.length < Math.max(1, Math.min(limit, 50))) {
+          const href = m[1]
+          const title = strip(m[2])
+          const snippet = strip(m[3])
+          if (href && title) items.push({ title, url: href, snippet })
+        }
+        const seen = new Set<string>()
+        const cleaned = items.filter(r => {
+          try { const u = new URL(r.url); const key = `${u.hostname}${u.pathname}`; if (seen.has(key)) return false; seen.add(key); return true } catch { return false }
+        })
+        this.osintCache.set(cacheKey, { expiresAt: now + this.osintCacheTtlMs, value: cleaned })
+        if (this.redis) { try { await this.redis.setEx(`osint:${cacheKey}`, Math.floor(this.osintCacheTtlMs/1000), JSON.stringify(cleaned)) } catch {} }
+        return cleaned
+      } catch {
+        return []
+      }
+    }
+  }
+
+  // Build advanced Google queries for job discovery across ATS/job boards
+  buildJobSearchQueries(options: {
+    jobTitle: string;
+    location?: string;
+    after?: string; // YYYY-MM-DD
+    remote?: boolean;
+    excludeSenior?: boolean;
+    salaryBands?: string[]; // like ["$60,000","$80,000"]
+    atsDomains?: string[]; // ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com']
+  }): string[] {
+    const after = options.after || ''
+    const jt = options.jobTitle
+    const loc = options.location || ''
+    const remote = options.remote ? '"remote"' : ''
+    const exclude = options.excludeSenior ? '-"senior" -"staff" -"principal"' : ''
+    const parts: string[] = []
+    const ats = (options.atsDomains && options.atsDomains.length ? options.atsDomains : ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com']).slice(0,6)
+    for (const d of ats) {
+      const q = `site:${d} "${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
+      parts.push(q)
+    }
+    // broad query
+    const broad = `"${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
+    parts.push(broad)
+    // major job boards
+    const boards = ['indeed.com','linkedin.com/jobs','ziprecruiter.com','jobbank.gc.ca','workopolis.com','glassdoor.com/Job']
+    for (const b of boards) {
+      const q = `site:${b} "${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim()
+      parts.push(q)
+    }
+    // generic careers pages
+    parts.push(`inurl:careers "${jt}" ${loc ? '"'+loc+'"' : ''} ${remote} ${exclude} ${after ? 'after:'+after : ''}`.trim())
+    // salary based queries
+    if (options.salaryBands && options.salaryBands.length) {
+      const salaryExpr = options.salaryBands.slice(0,3).map(s => `"${s}"`).join(' OR ')
+      parts.push(`${salaryExpr} "${jt}" ${loc ? '"'+loc+'"' : ''} filetype:pdf`)
+    }
+    return parts
+  }
+
+  // Run Google queries and aggregate unique job posting links, preferring ATS domains
+  async searchJobsByGoogle(options: {
+    jobTitle: string;
+    location?: string;
+    after?: string;
+    remote?: boolean;
+    excludeSenior?: boolean;
+    salaryBands?: string[];
+    limit?: number;
+    radiusKm?: number;
+  }): Promise<Array<{ title?: string; url: string; snippet?: string; source: string }>> {
+    let queries: string[] = []
+    const radiusKm = typeof options.radiusKm === 'number' ? Math.max(1, Math.min(500, options.radiusKm)) : undefined
+    if (options.location && radiusKm) {
+      try {
+        const geo = await this.geocodeLocation(options.location)
+        let placeNames: string[] = [ options.location ]
+        if (geo) {
+          const nearby = await this.getNearbyLocalities(geo.lat, geo.lng, radiusKm, 10)
+          const names = nearby.map(p => p.name).filter(Boolean)
+          placeNames = Array.from(new Set([options.location, ...names]))
+        }
+        for (const name of placeNames) {
+          const qs = this.buildJobSearchQueries({
+            jobTitle: options.jobTitle,
+            location: name,
+            after: options.after,
+            remote: options.remote,
+            excludeSenior: options.excludeSenior,
+            salaryBands: options.salaryBands,
+          })
+          queries.push(...qs)
+        }
+      } catch {
+        queries = this.buildJobSearchQueries({
+          jobTitle: options.jobTitle,
+          location: options.location,
+          after: options.after,
+          remote: options.remote,
+          excludeSenior: options.excludeSenior,
+          salaryBands: options.salaryBands,
+        })
+      }
+    } else {
+      queries = this.buildJobSearchQueries({
+        jobTitle: options.jobTitle,
+        location: options.location,
+        after: options.after,
+        remote: options.remote,
+        excludeSenior: options.excludeSenior,
+        salaryBands: options.salaryBands,
+      })
+    }
+    const preferredHosts = ['greenhouse.io','jobs.lever.co','workday.com','jobvite.com','boards.greenhouse.io','myworkdayjobs.com','smartrecruiters.com']
+    const results: Array<{ title?: string; url: string; snippet?: string; source: string }> = []
+    const seen = new Set<string>()
+    for (const q of queries) {
+      const res = await this.withRetry(() => this.googleSearch(q, 12), 2, 700)
+      for (const r of res) {
+        try {
+          const u = new URL(r.url)
+          const host = u.hostname.replace('www.','')
+          const key = `${host}${u.pathname}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          results.push({ title: r.title, url: r.url, snippet: r.snippet, source: host })
+        } catch { /* ignore */ }
+      }
+      // small delay to avoid being blocked
+      await this.sleep(800 + Math.random()*400)
+      if (results.length >= (options.limit || 30)) break
+    }
+    // Sort: prefer ATS hosts first
+    results.sort((a, b) => {
+      const aPref = preferredHosts.some(h => (a.source||'').includes(h)) ? 0 : 1
+      const bPref = preferredHosts.some(h => (b.source||'').includes(h)) ? 0 : 1
+      return aPref - bPref
+    })
+    return results.slice(0, options.limit || 30)
+  }
+
+  // Build Google intel queries and gather categorized signals when direct sites are unavailable
+  async searchCompanyIntelByGoogle(companyName: string, opts?: { after?: string }): Promise<{
+    financial: Array<{ title: string; url: string; snippet: string }>;
+    culture: Array<{ title: string; url: string; snippet: string }>;
+    news: Array<{ title: string; url: string; snippet: string }>;
+    leadership: Array<{ title: string; url: string; snippet: string }>;
+    growth: Array<{ title: string; url: string; snippet: string }>;
+    benefits: Array<{ title: string; url: string; snippet: string }>;
+    crunchbase?: Array<{ title: string; url: string; snippet: string }>;
+    pitchbook?: Array<{ title: string; url: string; snippet: string }>;
+  }> {
+    const after = opts?.after || ''
+    const qFinancial = `"${companyName}" ("funding" OR "investment" OR "revenue") ${after ? 'after:'+after : ''}`
+    const qCulture = `site:glassdoor.com "${companyName}" ("culture" OR "management" OR "benefits")`
+    const qNews = `"${companyName}" ("press release" OR "announcement") ${after ? 'after:'+after : ''}`
+    const qLeadership = `"${companyName}" ("CEO" OR "founder" OR "executive" OR "leadership team") ${after ? 'after:'+after : ''}`
+    const qGrowth = `"${companyName}" ("hiring" OR "expansion" OR "new office" OR "acquired" OR "partnership") ${after ? 'after:'+after : ''}`
+    const qBenefits = `"${companyName}" ("salary" OR "compensation" OR "benefits" OR "PTO")`
+
+    const [financial, culture, news, leadership, growth, benefits] = await Promise.all([
+      this.googleSearch(qFinancial, 8),
+      this.googleSearch(qCulture, 8),
+      this.googleSearch(qNews, 8),
+      this.googleSearch(qLeadership, 8),
+      this.googleSearch(qGrowth, 8),
+      this.googleSearch(qBenefits, 8),
+    ])
+
+    const crunchbase = await this.googleSearch(`site:crunchbase.com "${companyName}"`, 4)
+    const pitchbook = await this.googleSearch(`site:pitchbook.com "${companyName}"`, 4)
+
+    return { financial, culture, news, leadership, growth, benefits, crunchbase, pitchbook }
+  }
+
+  // Twitter/X mentions via Google
+  async searchTwitterMentions(companyName: string, limit: number = 8): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    const q = `"${companyName}" (site:twitter.com OR site:x.com)`
+    return this.googleSearch(q, limit)
+  }
+
+  // Indeed company page/reviews via Google
+  async searchIndeedCompany(companyName: string, limit: number = 8): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    const q = `site:indeed.com/cmp "${companyName}" (review OR salaries OR interviews)`
+    return this.googleSearch(q, limit)
+  }
+
+  // Reddit employee/interview mentions via Google
+  async searchRedditMentions(companyName: string, limit: number = 8): Promise<Array<{ title: string; url: string; snippet: string }>> {
+    const q = `site:reddit.com "${companyName}" ("working at" OR interview OR employee)`
+    return this.googleSearch(q, limit)
+  }
+
+  // Financials OSINT: funding, revenue, valuation, investors via Google
+  async searchFinancials(companyName: string): Promise<{
+    funding: Array<{ title: string; url: string; snippet: string }>;
+    revenue: Array<{ title: string; url: string; snippet: string }>;
+    valuation: Array<{ title: string; url: string; snippet: string }>;
+    investors: Array<{ title: string; url: string; snippet: string }>;
+  }> {
+    const qFunding = `"${companyName}" (funding OR investment OR "Series A" OR "Series B" OR "Series C") after:2018-01-01`
+    const qRevenue = `"${companyName}" (revenue OR ARR OR MRR) filetype:pdf OR site:crunchbase.com`
+    const qValuation = `"${companyName}" valuation OR "valued at"`
+    const qInvestors = `"${companyName}" investors OR backers OR "led by"`
+    const [funding, revenue, valuation, investors] = await Promise.all([
+      this.googleSearch(qFunding, 10),
+      this.googleSearch(qRevenue, 10),
+      this.googleSearch(qValuation, 10),
+      this.googleSearch(qInvestors, 10),
+    ])
+    return { funding, revenue, valuation, investors }
+  }
+
+  // Geocode a location string to lat/lng using Mapbox (if configured) or OpenStreetMap Nominatim
+  async geocodeLocation(location: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
+    const q = location.trim()
+    if (!q) return null
+    const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN
+    try {
+      if (mapboxToken) {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?limit=1&access_token=${mapboxToken}`
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } as any })
+        if (res.ok) {
+          const json: any = await res.json()
+          const f = json.features?.[0]
+          if (f?.center && Array.isArray(f.center)) {
+            return { lat: f.center[1], lng: f.center[0], displayName: f.place_name || q }
+          }
+        }
+      }
+    } catch {}
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`
+      const res = await fetch(url, { headers: { 'Accept': 'application/json', 'User-Agent': 'CareerLeverAI/1.0 (contact: support@careerlever.ai)' } as any })
+      if (res.ok) {
+        const arr: any[] = await res.json() as any
+        const it: any = arr?.[0]
+        if (it?.lat && it?.lon) {
+          return { lat: parseFloat(it.lat), lng: parseFloat(it.lon), displayName: it.display_name || q }
+        }
+      }
+    } catch {}
+    return null
+  }
+
+  // Fetch nearby locality names within radius using Overpass API (best-effort)
+  async getNearbyLocalities(lat: number, lng: number, radiusKm: number, maxPlaces: number = 10): Promise<Array<{ name: string; country?: string }>> {
+    const radiusMeters = Math.round(radiusKm * 1000)
+    const body = `[out:json][timeout:25];\n(\n  node["place"~"city|town|village"](around:${radiusMeters},${lat},${lng});\n);\nout body ${Math.max(5, maxPlaces)};`;
+    try {
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain', 'User-Agent': 'CareerLeverAI/1.0 (contact: support@careerlever.ai)' } as any,
+        body
+      })
+      if (!res.ok) throw new Error('overpass error')
+      const json: any = await res.json()
+      const names: string[] = []
+      for (const el of (json.elements || [])) {
+        const name = el?.tags?.name
+        if (name && !names.includes(name)) names.push(name)
+        if (names.length >= maxPlaces) break
+      }
+      return names.map(n => ({ name: n }))
+    } catch {
+      return []
+    }
+  }
+
+  // Compute travel duration (minutes) between two text locations using Mapbox Directions
+  async getTravelDurationMins(origin: string, destination: string, profile: 'driving'|'walking'|'cycling' = 'driving'): Promise<number | null> {
+    try {
+      const o = await this.geocodeLocation(origin)
+      const d = await this.geocodeLocation(destination)
+      const token = process.env.MAPBOX_ACCESS_TOKEN
+      if (!o || !d || !token) return null
+      const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${o.lng},${o.lat};${d.lng},${d.lat}?annotations=duration&overview=false&access_token=${token}`
+      const res = await fetch(url)
+      if (!res.ok) return null
+      const json: any = await res.json()
+      const secs = json?.routes?.[0]?.duration
+      if (typeof secs !== 'number') return null
+      return Math.round(secs / 60)
+    } catch {
+      return null
+    }
+  }
+
+  // Scrape a single job detail page from a public URL (best-effort)
+  async scrapeJobDetailFromUrl(jobUrl: string): Promise<{
+    title?: string;
+    companyName?: string;
+    location?: string;
+    description?: string;
+    source: string;
+    jobUrl: string;
+  }> {
+    if (!this.browser) await this.initialize();
+    if (!this.browser) return { source: new URL(jobUrl).hostname, jobUrl }
+    const page = await this.browser!.newPage();
+    try {
+      await this.configurePage(page)
+      await this.gotoWithRetry(page, jobUrl, 'domcontentloaded', 45000)
+      await this.sleep(800 + Math.random()*600)
+
+      const host = new URL(jobUrl).hostname.replace('www.', '');
+      const data = await page.evaluate((host) => {
+        const getText = (sel: string[]) => {
+          for (const s of sel) {
+            const el = document.querySelector(s) as HTMLElement | null;
+            if (el && el.textContent && el.textContent.trim().length > 3) return el.textContent.trim();
+          }
+          return undefined;
+        };
+        const getHtml = (sel: string[]) => {
+          for (const s of sel) {
+            const el = document.querySelector(s) as HTMLElement | null;
+            if (el && el.innerText && el.innerText.trim().length > 10) return el.innerText.trim();
+          }
+          return undefined;
+        };
+
+        let title = getText(['h1', 'h1[data-testid="jobTitle"]', 'h1.jobsearch-JobInfoHeader-title', 'h1.job-title']);
+        let companyName = getText(['.companyName', '[data-company-name="true"]', '.icl-u-lg-mr--sm.icl-u-xs-mr--xs', 'a[data-tn-element="companyName"]', 'a[data-company-name]']);
+        if (!companyName) companyName = getText(['[data-testid="companyName"]', 'div[data-company-name]']);
+        let location = getText(['.jobsearch-JobInfoHeader-subtitle div:last-child', 'div[data-testid="inlineHeader-companyLocation"]', '.location', '[data-testid="jobLocation"]']);
+        let description = getHtml(['#jobDescriptionText', 'div#jobDescriptionText', 'div.jobsearch-jobDescriptionText', 'section#jobDescription', 'div.job-description', 'article']);
+
+        return { title, companyName, location, description };
+      }, host);
+
+      return {
+        title: data.title,
+        companyName: data.companyName,
+        location: data.location,
+        description: data.description,
+        source: host,
+        jobUrl,
+      };
+    } catch (e) {
+      // swallow proxy errors and return minimal data
+      return { source: new URL(jobUrl).hostname, jobUrl };
+    } finally {
+      await page.close();
+    }
+  }
+
+  // Scrape public search results page (Indeed/ZipRecruiter/Job Bank/Google Jobs page) best-effort
+  async scrapeJobsFromSearchUrl(searchUrl: string, limit: number = 20): Promise<Array<{
+    title?: string;
+    companyName?: string;
+    location?: string;
+    snippet?: string;
+    jobUrl: string;
+    source: string;
+  }>> {
+    if (!this.browser) await this.initialize();
+    if (!this.browser) return []
+    const page = await this.browser!.newPage();
+    const results: any[] = [];
+    try {
+      await this.configurePage(page)
+      await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      await this.sleep(800 + Math.random()*700)
+      const host = new URL(searchUrl).hostname.replace('www.', '');
+
+      if (/indeed\.com|indeed\.ca/i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a.tapItem, a[data-jk], a[href*="/rc/clk"], a[href*="/pagead/"]').forEach((a) => {
+            const el = a as HTMLAnchorElement;
+            const card = el.closest('[data-testid="jobsearch-SerpJobCard"]') || el.closest('div.jobsearch-SerpJobCard') || el;
+            const title = (card.querySelector('h2.jobTitle, h2 a, h1') as HTMLElement | null)?.innerText?.trim();
+            const company = (card.querySelector('.companyName') as HTMLElement | null)?.innerText?.trim();
+            const location = (card.querySelector('.companyLocation') as HTMLElement | null)?.innerText?.trim();
+            const snippet = (card.querySelector('.job-snippet') as HTMLElement | null)?.innerText?.trim();
+            const href = el.href;
+            if (href) out.push({ title, companyName: company, location, snippet, jobUrl: href });
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      } else if (/ziprecruiter\.com/i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a[href*="/jobs/"], a[href*="/jobs-search"] h2 a').forEach((a) => {
+            const link = (a as HTMLAnchorElement).href;
+            const card = (a as HTMLElement).closest('article, .job_result, .job_card, .job_content') || (a as HTMLElement);
+            const title = (card.querySelector('h2, h3') as HTMLElement | null)?.innerText?.trim();
+            const company = (card.querySelector('.job_org, .company, .t_org_link') as HTMLElement | null)?.innerText?.trim();
+            const location = (card.querySelector('.location, .job_loc') as HTMLElement | null)?.innerText?.trim();
+            const snippet = (card.querySelector('p, .job_snippet') as HTMLElement | null)?.innerText?.trim();
+            if (link) out.push({ title, companyName: company, location, snippet, jobUrl: link });
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      } else if (/jobbank\.gc\.ca/i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a[href*="/jobsearch/jobposting/"]').forEach((a) => {
+            const link = (a as HTMLAnchorElement).href;
+            const card = (a as HTMLElement).closest('li, article, .resultJobItem') || (a as HTMLElement);
+            const title = (card.querySelector('h3, h4, a') as HTMLElement | null)?.innerText?.trim();
+            const company = (card.querySelector('.business, .resultJobItem__company') as HTMLElement | null)?.innerText?.trim();
+            const location = (card.querySelector('.location, .resultJobItem__infoItem--location') as HTMLElement | null)?.innerText?.trim();
+            const snippet = (card.querySelector('p, .resultJobItem__short') as HTMLElement | null)?.innerText?.trim();
+            if (link) out.push({ title, companyName: company, location, snippet, jobUrl: link });
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      } else if (/google\./i.test(host)) {
+        const items = await page.evaluate(() => {
+          const out: any[] = [];
+          document.querySelectorAll('a[href^="http"]').forEach((a) => {
+            const href = (a as HTMLAnchorElement).href;
+            const text = (a as HTMLAnchorElement).innerText || '';
+            if (/indeed|ziprecruiter|jobbank\.gc\.ca|workopolis|glassdoor/i.test(href) && text && text.length > 5) {
+              out.push({ title: text.split('\n')[0], companyName: undefined, location: undefined, snippet: undefined, jobUrl: href });
+            }
+          });
+          return out;
+        });
+        for (const it of items) {
+          results.push({ ...it, source: host });
+          if (results.length >= limit) break;
+        }
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      await page.close();
+    }
+    // De-dupe by URL
+    const seen = new Set<string>();
+    const deduped = results.filter(r => {
+      const key = r.jobUrl.split('#')[0];
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+    return deduped.slice(0, limit);
+  }
+
+  async close(): Promise<void> {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
+  }
+
+  async scrapeCompanyData(companyName: string, website?: string): Promise<ScrapedCompanyData> {
+    if (!this.browser) {
+      await this.initialize();
+    }
+
+    const data: ScrapedCompanyData = {
+      companyName,
+      website,
+    };
+
+    try {
+      const sources: string[] = []
+      const addSource = (s: string) => { if (!sources.includes(s)) sources.push(s) }
+      // Try to discover official website if missing
+      if (!website) {
+        try {
+          const found = await this.discoverOfficialWebsite(companyName)
+          if (found) website = found
+        } catch {}
+      }
+      // Scrape multiple sources in parallel
+      const [glassdoorData, linkedinData, websiteData, newsData, instaData, fbData, gRev] = await Promise.allSettled([
+        this.scrapeGlassdoorData(companyName),
+        this.scrapeLinkedInData(companyName),
+        website ? this.scrapeCompanyWebsite(website) : Promise.resolve(null),
+        this.scrapeNewsData(companyName),
+        this.scrapeInstagramPublic(companyName),
+        this.scrapeFacebookPublic(companyName),
+        this.scrapeGoogleReviewsSummary(companyName)
+      ]);
+      // Contact info (best effort) if website known
+      let contactInfo: { emails: string[]; phones: string[]; addresses: string[] } | null = null
+      try {
+        if (website) contactInfo = await this.scrapeContactInfoFromWebsite(website)
+      } catch {}
+
+      // Merge the data
+      if (glassdoorData.status === 'fulfilled' && glassdoorData.value) {
+        data.glassdoorRating = glassdoorData.value.rating;
+        data.glassdoorReviews = glassdoorData.value.reviews;
+        data.culture = glassdoorData.value.culture;
+        data.benefits = glassdoorData.value.benefits;
+        addSource('glassdoor')
+      }
+
+      if (linkedinData.status === 'fulfilled' && linkedinData.value) {
+        data.linkedinData = linkedinData.value;
+        if (!data.industry && linkedinData.value.industry) {
+          data.industry = linkedinData.value.industry;
+        }
+        if (!data.size && linkedinData.value.size) {
+          data.size = linkedinData.value.size;
+        }
+        addSource('linkedin')
+      }
+
+      if (websiteData.status === 'fulfilled' && websiteData.value) {
+        data.description = websiteData.value.description;
+        if (!data.industry && websiteData.value.industry) {
+          data.industry = websiteData.value.industry;
+        }
+        addSource('website')
+      }
+      if (contactInfo && (contactInfo.emails.length || contactInfo.phones.length || contactInfo.addresses.length)) {
+        ;(data as any).contactInfo = contactInfo
+        addSource('website-contact')
+      }
+
+      if (newsData.status === 'fulfilled' && newsData.value) {
+        data.recentNews = newsData.value;
+        addSource('google-news')
+      }
+
+      if (instaData.status === 'fulfilled' && instaData.value) {
+        data.socialMedia = data.socialMedia || {}
+        data.socialMedia.instagram = instaData.value as any
+        addSource('instagram')
+      }
+
+      if (fbData.status === 'fulfilled' && fbData.value) {
+        data.socialMedia = data.socialMedia || {}
+        data.socialMedia.facebook = fbData.value as any
+        addSource('facebook')
+      }
+
+      if (gRev.status === 'fulfilled' && gRev.value) {
+        ;(data as any).googleReviewsRating = (gRev.value as any).rating
+        ;(data as any).googleReviewsCount = (gRev.value as any).count
+        addSource('google-reviews')
+      }
+
+      // Generate fallback data if we don't have enough info
+      if (!data.culture || data.culture.length === 0) {
+        data.culture = this.generateFallbackCulture(companyName);
+      }
+
+      if (!data.benefits || data.benefits.length === 0) {
+        data.benefits = this.generateFallbackBenefits();
+      }
+
+      if (!data.description) {
+        data.description = this.generateFallbackDescription(companyName);
+      }
+
+      data.sources = sources
+    } catch (error) {
+      console.error('Error scraping company data:', error);
+      // Return basic data with fallbacks
+      return {
+        companyName,
+        website,
+        culture: this.generateFallbackCulture(companyName),
+        benefits: this.generateFallbackBenefits(),
+        description: this.generateFallbackDescription(companyName),
+      };
+    }
+
+    return data;
+  }
+
+  private async discoverOfficialWebsite(companyName: string): Promise<string | null> {
+    if (!this.browser) return null
+    const page = await this.browser.newPage()
+    try {
+      await this.configurePage(page)
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName)}`
+      await page.goto(q, { waitUntil: 'domcontentloaded', timeout: 30000 })
+      await this.sleep(800 + Math.random()*700)
+      const url = await page.$$eval('a[href^="http"]', els => {
+        const badHosts = ['linkedin.com','facebook.com','instagram.com','glassdoor.com','crunchbase.com','wikipedia.org','news.google.com','youtube.com','twitter.com','x.com']
+        const candidates = els.map(a => (a as HTMLAnchorElement).href).filter(h => {
+          try {
+            const u = new URL(h)
+            return !badHosts.some(b => u.hostname.includes(b))
+          } catch { return false }
+        })
+        return candidates[0] || ''
+      })
+      if (!url) return null
+      try { const u = new URL(url); return `${u.protocol}//${u.hostname}` } catch { return null }
+    } catch { return null } finally { await page.close() }
+  }
+
+  async scrapeContactInfoFromWebsite(website: string): Promise<{ emails: string[]; phones: string[]; addresses: string[] }> {
+    if (!this.browser) await this.initialize();
+    const results = { emails: [] as string[], phones: [] as string[], addresses: [] as string[] };
+    const candidates = [website, `${website.replace(/\/?$/, '/') }contact`, `${website.replace(/\/?$/, '/') }about`];
+    const page = await this.browser!.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      for (const url of candidates) {
+        try {
+          await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          await new Promise(r => setTimeout(r, 1000));
+          const html = await page.content();
+          // Emails from mailto and plain text
+          const mailtos = await page.$$eval('a[href^="mailto:"]', els => els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''));
+          const mailtoClean = mailtos.map(h => h.replace(/^mailto:/i, '').trim()).filter(Boolean);
+          const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+          const textEmails = (html.match(emailRegex) || []).map(e => e.trim());
+          const phoneRegex = /(\+?\d[\s-]?)?(\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}/g;
+          const phones = (html.match(phoneRegex) || []).map(p => p.trim());
+          // Address heuristic: lines with street/ave/blvd/suite
+          const addressRegex = /(\d+\s+[^\n,]+(?:Street|St\.|Avenue|Ave\.|Road|Rd\.|Boulevard|Blvd\.|Lane|Ln\.|Suite|Ste\.)[^\n<]{0,80})/gi;
+          const addresses = (html.match(addressRegex) || []).map(a => a.trim());
+          results.emails.push(...mailtoClean, ...textEmails);
+          results.phones.push(...phones);
+          results.addresses.push(...addresses);
+        } catch {
+          continue;
+        }
+      }
+    } finally {
+      await page.close();
+    }
+    // Deduplicate
+    results.emails = Array.from(new Set(results.emails));
+    results.phones = Array.from(new Set(results.phones));
+    results.addresses = Array.from(new Set(results.addresses));
+    return results;
+  }
+
+  async searchHiringContacts(companyName: string, roleHints: string[] = [], locationHint?: string): Promise<Array<{ name: string; title: string; profileUrl?: string; source: string }>> {
+    if (!this.browser) await this.initialize();
+    if (!this.browser) return []
+    const page = await this.browser!.newPage();
+    const people: Array<{ name: string; title: string; profileUrl?: string; source: string }> = [];
+    try {
+      const query = `${companyName} ${roleHints.join(' OR ')} site:linkedin.com/in ${locationHint || ''}`.trim();
+      const url = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+      await new Promise(r => setTimeout(r, 2000));
+      const results = await page.evaluate(() => {
+        const items: Array<{ title: string; href: string; snippet: string }> = [];
+        const nodes = document.querySelectorAll('a[href^="http"]');
+        nodes.forEach((a) => {
+          const href = (a as HTMLAnchorElement).href;
+          const h3 = a.querySelector('h3');
+          const title = h3?.textContent || '';
+          const parent = a.closest('div') as HTMLElement | null;
+          const snippet = parent?.querySelector('span, div')?.textContent || '';
+          if (title && href && /linkedin\.com\/in\//i.test(href)) {
+            items.push({ title: title.trim(), href, snippet: snippet.trim() });
+          }
+        });
+        return items.slice(0, 10);
+      });
+      for (const r of results) {
+        // Heuristic to split name and title: "Name - Title - Company" or "Name | Title"
+        const parts = r.title.split(/[-|–]\s*/);
+        const name = parts[0]?.trim() || r.title;
+        const title = parts.slice(1).join(' - ').trim() || r.snippet;
+        if (name) people.push({ name, title, profileUrl: r.href, source: 'google-linkedin' });
+      }
+    } catch {
+      // ignore
+    } finally {
+      await page.close();
+    }
+    return people;
+  }
+
+  async scrapeGlassdoorReviewsSummary(companyName: string): Promise<{ pros: string[]; cons: string[] } | null> {
+    if (!this.browser) await this.initialize();
+    const page = await this.browser!.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
+      await this.gotoWithRetry(page, searchUrl, 'domcontentloaded', 30000)
+      await new Promise(r => setTimeout(r, 2000));
+      const data = await page.evaluate(() => {
+        const textContent = document.body.innerText || '';
+        const pros: string[] = [];
+        const cons: string[] = [];
+        // Simple heuristic: look for lines following "Pros" or "Cons"
+        const lines = textContent.split('\n').map(l => l.trim()).filter(Boolean);
+        for (let i = 0; i < lines.length; i++) {
+          if (/^pros\b/i.test(lines[i]) && lines[i+1]) pros.push(lines[i+1].slice(0, 200));
+          if (/^cons\b/i.test(lines[i]) && lines[i+1]) cons.push(lines[i+1].slice(0, 200));
+        }
+        return { pros: Array.from(new Set(pros)).slice(0, 5), cons: Array.from(new Set(cons)).slice(0, 5) };
+      });
+      return data;
+    } catch (e) {
+      console.error('Glassdoor summary error:', e);
+      return null;
+    } finally {
+      await page.close();
+    }
+  }
+
+  computeSentimentFromProsCons(pros: string[] = [], cons: string[] = []): number {
+    const p = pros.length, c = cons.length
+    if (p + c === 0) return 50
+    return Math.max(0, Math.min(100, Math.round((p / (p + c)) * 100)))
+  }
+
+  private async scrapeGlassdoorData(companyName: string): Promise<{
+    rating?: number;
+    reviews?: number;
+    culture?: string[];
+    benefits?: string[];
+  } | null> {
+    if (!this.browser) return null;
+
+    const page = await this.browser.newPage();
+
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+      await page.setViewport({ width: 1366, height: 768 });
+
+      const searchUrl = `https://www.glassdoor.com/Reviews/${companyName.replace(/\s+/g, '-')}-reviews-SRCH_KE0,${companyName.length}.htm`;
+
+      await this.gotoWithRetry(page, searchUrl, 'domcontentloaded', 30000)
+
+      // Wait for content to load
+      await new Promise(r => setTimeout(r, 2000));
+
+      const data = await page.evaluate(() => {
+        const result: any = {};
+
+        // Get overall rating
+        const ratingElement = document.querySelector('[data-test="rating-info"] .css-1cw89uz');
+        if (ratingElement) {
+          const ratingText = ratingElement.textContent?.trim();
+          if (ratingText) {
+            const rating = parseFloat(ratingText);
+            if (!isNaN(rating) && rating >= 1 && rating <= 5) {
+              result.rating = rating;
+            }
+          }
+        }
+
+        // Get number of reviews
+        const reviewsElement = document.querySelector('[data-test="rating-info"] .css-1cw89uz + span');
+        if (reviewsElement) {
+          const reviewsText = reviewsElement.textContent?.trim();
+          if (reviewsText) {
+            const reviewsMatch = reviewsText.match(/([\d,]+)\s*reviews?/i);
+            if (reviewsMatch) {
+              result.reviews = parseInt(reviewsMatch[1].replace(/,/g, ''));
+            }
+          }
+        }
+
+        // Get company culture insights
+        const cultureElements = document.querySelectorAll('.css-1cw89uz');
+        const culture: string[] = [];
+        cultureElements.forEach(el => {
+          const text = el.textContent?.trim();
+          if (text && text.length > 10 && text.length < 100) {
+            culture.push(text);
+          }
+        });
+        if (culture.length > 0) {
+          result.culture = culture.slice(0, 5);
+        }
+
+        // Get benefits if available
+        const benefitElements = document.querySelectorAll('[data-test*="benefit"], .benefit, .perk');
+        const benefits: string[] = [];
+        benefitElements.forEach(el => {
+          const text = el.textContent?.trim();
+          if (text && text.length > 3 && text.length < 50) {
+            benefits.push(text);
+          }
+        });
+        if (benefits.length > 0) {
+          result.benefits = benefits.slice(0, 8);
+        }
+
+        return result;
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Glassdoor scraping error:', error);
+      return null;
+    } finally {
+      await page.close();
+    }
+  }
+
+  private async scrapeLinkedInData(companyName: string): Promise<{
+    companyPage: string;
+    employeeCount?: number;
+    followers?: number;
+    industry?: string;
+    size?: string;
+    recentPosts?: Array<{
+      content: string;
+      postedAt: Date;
+      engagement: number;
+    }>;
+  } | null> {
+    if (!this.browser) return null;
+
+    const page = await this.browser.newPage();
+
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+      await page.setViewport({ width: 1366, height: 768 });
+
+      // Prefer company vanity, but allow a Google fallback if page lacks data
+      const vanity = companyName.toLowerCase().replace(/\s+/g, '')
+      const searchUrl = `https://www.linkedin.com/company/${vanity}`;
+
+      await page.goto(searchUrl, {
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
+      });
+
+      // Wait for content to load
+      await new Promise(r => setTimeout(r, 3000));
+
+      let data = await page.evaluate(() => {
+        const result: any = {
+          companyPage: window.location.href
+        };
+
+        // Get follower count
+        const followerSelectors = [
+          '.org-top-card-summary-info-list__info-item',
+          '[data-test-id="company-followers-count"]',
+          '.org-top-card-summary__follower-count'
+        ];
+
+        for (const selector of followerSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            const text = element.textContent?.trim();
+            if (text) {
+              const followerMatch = text.match(/([\d,]+)\s*(?:followers?|people)/i);
+              if (followerMatch) {
+                result.followers = parseInt(followerMatch[1].replace(/,/g, ''));
+                break;
+              }
+            }
+          }
+        }
+
+        // Get employee count
+        const employeeSelectors = [
+          '.org-about-company-module__company-size',
+          '[data-test-id="company-employees-count"]',
+          '.org-about-company-module__company-staff-count-range'
+        ];
+
+        for (const selector of employeeSelectors) {
+          const element = document.querySelector(selector);
+          if (element) {
+            const text = element.textContent?.trim();
+            if (text) {
+              const employeeMatch = text.match(/([\d,]+)(?:\s*-\s*([\d,]+))?\s*employees?/i);
+              if (employeeMatch) {
+                result.employeeCount = employeeMatch[2]
+                  ? (parseInt(employeeMatch[1].replace(/,/g, '')) + parseInt(employeeMatch[2].replace(/,/g, ''))) / 2
+                  : parseInt(employeeMatch[1].replace(/,/g, ''));
+                break;
+              }
+            }
+          }
+        }
+
+        // Get industry and size info
+        const infoElements = document.querySelectorAll('.org-page-details__definition-text, .org-about-company-module__company-size');
+        infoElements.forEach(el => {
+          const text = el.textContent?.trim();
+          if (text) {
+            // Try to identify industry
+            if (!result.industry && text.length > 3 && text.length < 30) {
+              result.industry = text;
+            }
+            // Try to identify company size
+            if (!result.size && text.match(/\d+/)) {
+              result.size = text;
+            }
+          }
+        });
+
+        return result;
+      });
+      if (!data || (!data.followers && !data.employeeCount)) {
+        try {
+          const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:linkedin.com/company')}`
+          await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
+          await new Promise(r=>setTimeout(r,1500))
+          const link = await page.$$eval('a[href^="http"]', els => {
+            const cand = els.map(a => (a as HTMLAnchorElement).href)
+            const good = cand.find(h => /linkedin\.com\/company\//i.test(h))
+            return good || ''
+          })
+          if (link) {
+            await this.gotoWithRetry(page, link, 'domcontentloaded', 30000)
+            await new Promise(r=>setTimeout(r,1200))
+            const data2 = await page.evaluate(() => {
+              const out: any = { companyPage: window.location.href }
+              const followersEl = document.querySelector('.org-top-card-summary__follower-count, .org-top-card-summary-info-list__info-item')
+              const t = followersEl?.textContent || ''
+              const m = t.match(/([\d,]+)\s*(followers|people)/i)
+              if (m) out.followers = parseInt(m[1].replace(/,/g, ''))
+              return out
+            })
+            data = { ...data, ...data2 }
+          }
+        } catch {}
+      }
+
+      return data;
+    } catch (error) {
+      console.error('LinkedIn scraping error:', error);
+      return null;
+    } finally {
+      await page.close();
+    }
+  }
+
+  private async scrapeInstagramPublic(companyName: string): Promise<{
+    handle: string;
+    followers: number;
+    recentPosts: Array<{ caption: string; postedAt: Date; likes: number; comments: number }>;
+  } | null> {
+    if (!this.browser) return null;
+    const page = await this.browser.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:instagram.com')}`
+      await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
+      await new Promise(r=>setTimeout(r,1000))
+      const igUrl = await page.$$eval('a[href^="http"]', els => {
+        const urls = els.map(a => (a as HTMLAnchorElement).href)
+        const candidate = urls.find(h => /instagram\.com\//i.test(h)) || ''
+        return candidate
+      })
+      if (!igUrl) return null
+      await this.gotoWithRetry(page, igUrl, 'domcontentloaded', 30000)
+      await new Promise(r=>setTimeout(r,1200))
+      const result = await page.evaluate(() => {
+        function parseCount(s: string): number {
+          const m = s.trim().toLowerCase().replace(/,/g,'');
+          if (/k$/.test(m)) return Math.round(parseFloat(m) * 1000)
+          if (/m$/.test(m)) return Math.round(parseFloat(m) * 1000000)
+          const n = parseFloat(m)
+          return isNaN(n) ? 0 : Math.round(n)
+        }
+        const handle = window.location.pathname.split('/').filter(Boolean)[0] || ''
+        const meta = document.querySelector('meta[property="og:description"]') as HTMLMetaElement | null
+        let followers = 0
+        if (meta?.content) {
+          const m = meta.content.match(/([\d.,]+\s*[kKmM]?)\s+Followers?/)
+          if (m) followers = parseCount(m[1])
+        }
+        const captions: string[] = []
+        document.querySelectorAll('article img[alt]').forEach(img => {
+          const alt = (img as HTMLImageElement).alt
+          if (alt && alt.length > 5) captions.push(alt.substring(0, 200))
+        })
+        const recentPosts = captions.slice(0,6).map(c => ({ caption: c, postedAt: new Date(), likes: 0, comments: 0 }))
+        return { handle, followers, recentPosts }
+      })
+      return result
+    } catch (e) {
+      return null
+    } finally {
+      await page.close()
+    }
+  }
+
+  private async scrapeFacebookPublic(companyName: string): Promise<{
+    pageUrl: string;
+    followers: number;
+    recentPosts: Array<{ content: string; postedAt: Date; reactions: number }>;
+  } | null> {
+    if (!this.browser) return null;
+    const page = await this.browser.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' site:facebook.com')}`
+      await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
+      await new Promise(r=>setTimeout(r,1000))
+      const fbUrl = await page.$$eval('a[href^="http"]', els => {
+        const urls = els.map(a => (a as HTMLAnchorElement).href)
+        const candidate = urls.find(h => /facebook\.com\//i.test(h)) || ''
+        return candidate
+      })
+      if (!fbUrl) return null
+      await this.gotoWithRetry(page, fbUrl, 'domcontentloaded', 30000)
+      await new Promise(r=>setTimeout(r,1500))
+      const result = await page.evaluate(() => {
+        const pageUrl = window.location.href
+        const text = document.body.innerText || ''
+        let followers = 0
+        const m = text.match(/([\d.,]+)\s+followers/i)
+        if (m) followers = parseInt(m[1].replace(/,/g,''))
+        const posts: Array<{ content: string; postedAt: Date; reactions: number }> = []
+        const articles = Array.from(document.querySelectorAll('div[role="article"]'))
+        for (const a of articles.slice(0,5)) {
+          const content = (a.textContent || '').trim().replace(/\s+/g,' ').substring(0, 300)
+          if (content.length > 20) posts.push({ content, postedAt: new Date(), reactions: 0 })
+        }
+        return { pageUrl, followers, recentPosts: posts }
+      })
+      return result
+    } catch (e) {
+      return null
+    } finally {
+      await page.close()
+    }
+  }
+
+  private async scrapeGoogleReviewsSummary(companyName: string): Promise<{ rating?: number; count?: number } | null> {
+    if (!this.browser) return null;
+    const page = await this.browser.newPage();
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+      const q = `https://www.google.com/search?q=${encodeURIComponent(companyName + ' reviews')}`
+      await this.gotoWithRetry(page, q, 'domcontentloaded', 30000)
+      await new Promise(r=>setTimeout(r,1500))
+      const data = await page.evaluate(() => {
+        const txt = document.body.innerText || ''
+        let rating: number | undefined
+        let count: number | undefined
+        const ratingMatch = txt.match(/([0-9]\.[0-9])\s*\(?(?:based on\s*)?([\d,]+)\s+Google reviews\)?/i) || txt.match(/([0-9]\.[0-9])\s+rating\s+from\s+([\d,]+)\s+Google reviews/i)
+        if (ratingMatch) {
+          rating = parseFloat(ratingMatch[1])
+          count = parseInt(ratingMatch[2].replace(/,/g,''))
+        } else {
+          const countOnly = txt.match(/([\d,]+)\s+Google reviews/i)
+          if (countOnly) count = parseInt(countOnly[1].replace(/,/g,''))
+        }
+        return { rating, count }
+      })
+      if (!data.rating && !data.count) return null
+      return data
+    } catch (e) {
+      return null
+    } finally {
+      await page.close()
+    }
+  }
+
+  async scrapeCompanyWebsite(website: string): Promise<{
+    description?: string;
+    industry?: string;
+  } | null> {
+    if (!this.browser) return null;
+
+    const page = await this.browser.newPage();
+
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+      await page.setViewport({ width: 1366, height: 768 });
+
+      await this.gotoWithRetry(page, website, 'domcontentloaded', 30000)
+
+      // Wait for content to load
+      await new Promise(r => setTimeout(r, 2000));
+
+      const data = await page.evaluate(() => {
+        const result: any = {};
+
+        // Get meta description
+        const descriptionMeta = document.querySelector('meta[name="description"]');
+        if (descriptionMeta) {
+          const description = descriptionMeta.getAttribute('content')?.trim();
+          if (description && description.length > 50) {
+            result.description = description;
+          }
+        }
+
+        // Get about text from common selectors
+        if (!result.description) {
+          const aboutSelectors = [
+            '[class*="about"]',
+            '[id*="about"]',
+            '.about-us',
+            '#about',
+            '[class*="mission"]',
+            '[class*="company"]'
+          ];
+
+          for (const selector of aboutSelectors) {
+            const elements = document.querySelectorAll(`${selector} p, ${selector} div`);
+            let text = '';
+
+            elements.forEach(el => {
+              const content = el.textContent?.trim();
+              if (content && content.length > 20) {
+                text += content + ' ';
+                if (text.length > 500) return;
+              }
+            });
+
+            if (text.length > 100) {
+              result.description = text.substring(0, 500);
+              break;
+            }
+          }
+        }
+
+        // Try to infer industry from content
+        const bodyText = document.body.textContent || '';
+        const industryKeywords = {
+          'technology': ['software', 'tech', 'digital', 'app', 'platform', 'saas'],
+          'healthcare': ['health', 'medical', 'patient', 'care', 'clinical'],
+          'finance': ['financial', 'banking', 'investment', 'wealth', 'capital'],
+          'retail': ['retail', 'shopping', 'store', 'product', 'consumer'],
+          'consulting': ['consulting', 'advisory', 'strategy', 'management'],
+          'education': ['education', 'learning', 'training', 'student', 'academic']
+        };
+
+        for (const [industry, keywords] of Object.entries(industryKeywords)) {
+          const matches = keywords.filter(keyword =>
+            bodyText.toLowerCase().includes(keyword.toLowerCase())
+          );
+          if (matches.length >= 2) {
+            result.industry = industry.charAt(0).toUpperCase() + industry.slice(1);
+            break;
+          }
+        }
+
+        return result;
+      });
+
+      // If description is still missing, crawl common subpages best-effort
+      if (!data.description) {
+        const links = await page.$$eval('a[href^="/"], a[href^="http"]', els => Array.from(new Set(els.map(a => (a as HTMLAnchorElement).getAttribute('href') || ''))).slice(0, 40))
+        const candidates = links.filter(h => /about|company|who|mission|values|culture|careers|leadership|team|news|press/i.test(h || '')).slice(0, 8)
+        for (const rel of candidates) {
+          try {
+            const base = new URL(window.location.href)
+            const url = rel.startsWith('http') ? rel : new URL(rel, `${base.protocol}//${base.host}`).toString()
+            // fetch content via XHR inside the page context to avoid new navigation
+            const html = await fetch(url, { credentials: 'omit' }).then(r => r.text()).catch(()=> '')
+            const text = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<[^>]+>/g,' ')
+            const cleaned = text.split(/\s+/).join(' ').trim()
+            if (cleaned.length > 200 && !data.description) {
+              data.description = cleaned.slice(0, 600)
+            }
+            if (data.description) break
+          } catch {}
+        }
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Website scraping error:', error);
+      return null;
+    } finally {
+      await page.close();
+    }
+  }
+
+  private async scrapeNewsData(companyName: string): Promise<Array<{
+    title: string;
+    url: string;
+    publishedAt: Date;
+    summary: string;
+  }> | null> {
+    if (!this.browser) return null;
+
+    const page = await this.browser.newPage();
+
+    try {
+      page.setDefaultNavigationTimeout(45000)
+      page.setDefaultTimeout(45000)
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+      await page.setViewport({ width: 1366, height: 768 });
+
+      // Use Google News search
+      const searchQuery = encodeURIComponent(`${companyName} company news`);
+      const newsUrl = `https://www.google.com/search?q=${searchQuery}&tbm=nws&tbs=qdr:m`;
+
+      await this.gotoWithRetry(page, newsUrl, 'domcontentloaded', 30000)
+
+      await new Promise(r => setTimeout(r, 2000));
+
+      const newsData = await page.evaluate(() => {
+        const articles: Array<{
+          title: string;
+          url: string;
+          publishedAt: Date;
+          summary: string;
+        }> = [];
+
+        // Google News selectors
+        const newsItems = document.querySelectorAll('[data-ved], .WlydOe');
+
+        newsItems.forEach((item, index) => {
+          if (index >= 5) return; // Limit to 5 news items
+
+          const titleElement = item.querySelector('h3, .mCBkyc');
+          const linkElement = item.querySelector('a[href]');
+          const summaryElement = item.querySelector('.GI74Re, .c0cFT, .s3v9rd');
+          const dateElement = item.querySelector('.OSrXXb, .eNg7of, .f');
+
+          if (titleElement && linkElement) {
+            const title = titleElement.textContent?.trim();
+            const url = linkElement.getAttribute('href');
+            const summary = summaryElement?.textContent?.trim() || '';
+            const dateText = dateElement?.textContent?.trim();
+
+            if (title && url) {
+              articles.push({
+                title,
+                url: url.startsWith('http') ? url : `https://news.google.com${url}`,
+                publishedAt: dateText ? new Date(dateText) : new Date(),
+                summary: summary || title
+              });
+            }
+          }
+        });
+
+        return articles.filter(article => article.title.length > 10);
+      });
+
+      return newsData.length > 0 ? newsData : null;
+    } catch (error) {
+      console.error('News scraping error:', error);
+      return null;
+    } finally {
+      await page.close();
+    }
+  }
+
+  private generateFallbackCulture(companyName: string): string[] {
+    // Generate generic but positive culture descriptions
+    const cultures = [
+      'Collaborative and innovative work environment',
+      'Focus on employee development and growth',
+      'Work-life balance and flexible arrangements',
+      'Diverse and inclusive workplace culture',
+      'Strong emphasis on teamwork and communication',
+      'Commitment to excellence and quality',
+      'Supportive leadership and mentorship programs'
+    ];
+
+    // Return 3-4 random cultures
+    const shuffled = cultures.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 4);
+  }
+
+  private generateFallbackBenefits(): string[] {
+    return [
+      'Health, dental, and vision insurance',
+      '401k matching program',
+      'Flexible work arrangements',
+      'Professional development budget',
+      'Paid time off and holidays',
+      'Wellness and fitness programs',
+      'Modern office facilities'
+    ];
+  }
+
+  private generateFallbackDescription(companyName: string): string {
+    return '';
+  }
+}
+
+// Export a singleton instance
+export const webScraper = new WebScraperService();
+</file>
+
+<file path="src/lib/adzuna-api-client.ts">
+/**
+ * Adzuna API Client
+ * 
+ * Official job board aggregator API with FREE tier
+ * Coverage: Canada, US, UK, 20+ countries
+ */
+
+export interface AdzunaJob {
+  id: string
+  title: string
+  company: {
+    display_name: string
+  }
+  location: {
+    display_name: string
+    area: string[]
+  }
+  description: string
+  redirect_url: string
+  salary_min?: number
+  salary_max?: number
+  salary_is_predicted?: boolean
+  created: string
+  contract_time?: string
+  contract_type?: string
+  category: {
+    label: string
+    tag: string
+  }
+}
+
+export interface AdzunaSearchParams {
+  what: string // Job title or keywords
+  where: string // Location
+  country?: 'ca' | 'us' | 'gb' | 'au' // Default: ca (Canada)
+  resultsPerPage?: number // Default: 50, Max: 50
+  page?: number // Default: 1
+  sortBy?: 'relevance' | 'date' | 'salary' // Default: relevance
+  maxDaysOld?: number // Only jobs posted in last N days
+  fullTime?: boolean
+  partTime?: boolean
+  contract?: boolean
+  permanent?: boolean
+}
+
+export interface AdzunaSearchResponse {
+  results: AdzunaJob[]
+  count: number
+  mean: number
+  __CLASS__: string
+}
+
+export class AdzunaAPIClient {
+  private readonly appId: string
+  private readonly appKey: string
+  private readonly baseUrl = 'https://api.adzuna.com/v1/api/jobs'
+
+  constructor() {
+    this.appId = process.env.ADZUNA_APP_ID || ''
+    this.appKey = process.env.ADZUNA_API_KEY || ''
+
+    if (!this.appId || !this.appKey) {
+      throw new Error('[ADZUNA] API credentials not configured. Set ADZUNA_APP_ID and ADZUNA_API_KEY in environment variables.')
+    }
+  }
+
+  /**
+   * Search jobs on Adzuna
+   */
+  async searchJobs(params: AdzunaSearchParams): Promise<AdzunaSearchResponse> {
+    const {
+      what,
+      where,
+      country = 'ca',
+      resultsPerPage = 50,
+      page = 1,
+      sortBy = 'relevance',
+      maxDaysOld,
+      fullTime,
+      partTime,
+      contract,
+      permanent
+    } = params
+
+    const url = `${this.baseUrl}/${country}/search/${page}`
+
+    const queryParams: Record<string, string> = {
+      app_id: this.appId,
+      app_key: this.appKey,
+      what,
+      where,
+      results_per_page: resultsPerPage.toString(),
+      sort_by: sortBy,
+      'content-type': 'application/json'
+    }
+
+    // Optional filters
+    if (maxDaysOld) queryParams.max_days_old = maxDaysOld.toString()
+    if (fullTime !== undefined) queryParams.full_time = fullTime ? '1' : '0'
+    if (partTime !== undefined) queryParams.part_time = partTime ? '1' : '0'
+    if (contract !== undefined) queryParams.contract = contract ? '1' : '0'
+    if (permanent !== undefined) queryParams.permanent = permanent ? '1' : '0'
+
+    const queryString = new URLSearchParams(queryParams).toString()
+    const fullUrl = `${url}?${queryString}`
+
+    console.log('[ADZUNA] Searching:', { what, where, country, resultsPerPage })
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Adzuna API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data: AdzunaSearchResponse = await response.json()
+      console.log(`[ADZUNA] Found ${data.results.length} jobs (total: ${data.count})`)
+
+      return data
+
+    } catch (error) {
+      console.error('[ADZUNA] Search error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Search multiple pages
+   */
+  async searchMultiplePages(
+    params: AdzunaSearchParams,
+    maxPages: number = 2
+  ): Promise<AdzunaJob[]> {
+    const allJobs: AdzunaJob[] = []
+
+    for (let page = 1; page <= maxPages; page++) {
+      try {
+        const response = await this.searchJobs({ ...params, page })
+        allJobs.push(...response.results)
+
+        // Stop if we've got all results
+        if (allJobs.length >= response.count) {
+          break
+        }
+
+        // Rate limiting - wait 500ms between requests
+        if (page < maxPages) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+      } catch (error) {
+        console.error(`[ADZUNA] Error on page ${page}:`, error)
+        break
+      }
+    }
+
+    return allJobs
+  }
+
+  /**
+   * Convert Adzuna job to our JobListing format
+   */
+  convertToJobListing(job: AdzunaJob): {
+    jobId: string
+    title: string
+    company: string
+    location: string
+    description: string
+    url: string
+    source: string
+    salary?: string
+    postedDate?: Date
+    workType?: 'remote' | 'hybrid' | 'onsite'
+    experienceLevel?: 'entry' | 'mid' | 'senior' | 'executive'
+  } {
+    // Determine work type from description
+    const descLower = job.description.toLowerCase()
+    let workType: 'remote' | 'hybrid' | 'onsite' = 'onsite'
+    if (descLower.includes('remote') || descLower.includes('work from home')) {
+      workType = 'remote'
+    } else if (descLower.includes('hybrid')) {
+      workType = 'hybrid'
+    }
+
+    // Format salary
+    let salary: string | undefined
+    if (job.salary_min && job.salary_max) {
+      const currency = job.location.area[0] === 'Canada' ? 'CAD' : 'USD'
+      salary = `$${job.salary_min.toLocaleString()} - $${job.salary_max.toLocaleString()} ${currency}`
+      if (job.salary_is_predicted) {
+        salary += ' (estimated)'
+      }
+    }
+
+    // Determine experience level from title
+    const titleLower = job.title.toLowerCase()
+    let experienceLevel: 'entry' | 'mid' | 'senior' | 'executive' = 'mid'
+    if (titleLower.includes('junior') || titleLower.includes('entry')) {
+      experienceLevel = 'entry'
+    } else if (titleLower.includes('senior') || titleLower.includes('lead')) {
+      experienceLevel = 'senior'
+    } else if (titleLower.includes('principal') || titleLower.includes('director') || titleLower.includes('vp')) {
+      experienceLevel = 'executive'
+    }
+
+    return {
+      jobId: `adzuna_${job.id}`,
+      title: job.title,
+      company: job.company.display_name,
+      location: job.location.display_name,
+      description: job.description,
+      url: job.redirect_url,
+      source: 'adzuna',
+      salary,
+      postedDate: new Date(job.created),
+      workType,
+      experienceLevel
+    }
+  }
+
+  /**
+   * Check if API is configured
+   */
+  isConfigured(): boolean {
+    return !!(this.appId && this.appKey)
+  }
+}
+
+// Singleton instance
+let adzunaClient: AdzunaAPIClient | null = null
+
+export function getAdzunaClient(): AdzunaAPIClient {
+  if (!adzunaClient) {
+    adzunaClient = new AdzunaAPIClient()
+  }
+  return adzunaClient
+}
+
+export default AdzunaAPIClient
+</file>
+
+<file path="src/lib/apis/ats-direct-access.ts">
+/**
+ * ATS DIRECT ACCESS - THE NUCLEAR OPTION
+ * 
+ * Access 5 major ATS platforms with PUBLIC APIs (NO AUTH REQUIRED!)
+ * This is how Indeed, LinkedIn, and Google Jobs REALLY get their data.
+ * 
+ * Platforms:
+ * 1. Greenhouse (5,000+ companies) - api.greenhouse.io
+ * 2. Lever (3,000+ companies) - api.lever.co
+ * 3. Workable (27,000+ companies) - apply.workable.com
+ * 4. Ashby (Growing tech) - api.ashbyhq.com
+ * 5. BambooHR (5,000+ SMBs) - Public API
+ * 
+ * Expected: 7,500+ jobs from 500 companies
+ */
+
+import type { Job } from '@/types/supabase'
+
+interface ATSCompany {
+  name: string
+  slug: string // Company identifier for API
+  ats: 'greenhouse' | 'lever' | 'workable' | 'ashby' | 'bamboohr' | 'workday' | 'custom'
+  location?: string
+  industry?: string
+  estimatedJobs?: number
+}
+
+export class ATSDirectAccess {
+  private readonly USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  
+  /**
+   * 1. GREENHOUSE API (NO AUTH!)
+   * Used by: Shopify, PCL Construction, ATB Financial, Parkland
+   */
+  async fetchGreenhouseJobs(companySlug: string): Promise<Partial<Job>[]> {
+    try {
+      const url = `https://api.greenhouse.io/v1/boards/${companySlug}/jobs?content=true`
+      
+      console.log(`[GREENHOUSE] Fetching: ${companySlug}`)
+      
+      const response = await fetch(url, {
+        headers: { 'User-Agent': this.USER_AGENT }
+      })
+      
+      if (!response.ok) {
+        console.error(`[GREENHOUSE] ${companySlug}: HTTP ${response.status}`)
+        return []
+      }
+      
+      const data = await response.json()
+      const jobs: Partial<Job>[] = []
+      
+      if (data.jobs && Array.isArray(data.jobs)) {
+        for (const job of data.jobs) {
+          jobs.push({
+            title: job.title || 'Unknown',
+            company: data.name || companySlug,
+            location: job.location?.name || 'Remote',
+            description: job.content || '',
+            url: job.absolute_url || `https://boards.greenhouse.io/${companySlug}/jobs/${job.id}`,
+            source: 'indeed', // Using 'indeed' as placeholder
+            salary_min: undefined,
+            salary_max: undefined,
+            posted_date: job.updated_at ? new Date(job.updated_at).toISOString() : undefined,
+            external_id: `greenhouse_${companySlug}_${job.id}`,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: []
+          })
+        }
+      }
+      
+      console.log(`[GREENHOUSE] ${companySlug}: ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[GREENHOUSE] ${companySlug} error:`, error)
+      return []
+    }
+  }
+  
+  /**
+   * 2. LEVER API (NO AUTH!)
+   * Used by: EPCOR, tech companies
+   */
+  async fetchLeverJobs(companySlug: string): Promise<Partial<Job>[]> {
+    try {
+      const url = `https://api.lever.co/v0/postings/${companySlug}?mode=json`
+      
+      console.log(`[LEVER] Fetching: ${companySlug}`)
+      
+      const response = await fetch(url, {
+        headers: { 'User-Agent': this.USER_AGENT }
+      })
+      
+      if (!response.ok) {
+        console.error(`[LEVER] ${companySlug}: HTTP ${response.status}`)
+        return []
+      }
+      
+      const data = await response.json()
+      const jobs: Partial<Job>[] = []
+      
+      if (Array.isArray(data)) {
+        for (const job of data) {
+          jobs.push({
+            title: job.text || 'Unknown',
+            company: companySlug,
+            location: job.categories?.location || job.workplaceType || 'Remote',
+            description: job.description || job.descriptionPlain || '',
+            url: job.hostedUrl || job.applyUrl || `https://jobs.lever.co/${companySlug}/${job.id}`,
+            source: 'indeed',
+            salary_min: undefined,
+            salary_max: undefined,
+            posted_date: job.createdAt ? new Date(job.createdAt).toISOString() : undefined,
+            external_id: `lever_${companySlug}_${job.id}`,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: []
+          })
+        }
+      }
+      
+      console.log(`[LEVER] ${companySlug}: ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[LEVER] ${companySlug} error:`, error)
+      return []
+    }
+  }
+  
+  /**
+   * 3. WORKABLE API (NO AUTH!)
+   * Used by: 27,000+ SMBs globally
+   */
+  async fetchWorkableJobs(companySlug: string): Promise<Partial<Job>[]> {
+    try {
+      const url = `https://apply.workable.com/api/v1/widget/accounts/${companySlug}`
+      
+      console.log(`[WORKABLE] Fetching: ${companySlug}`)
+      
+      const response = await fetch(url, {
+        headers: { 'User-Agent': this.USER_AGENT }
+      })
+      
+      if (!response.ok) {
+        console.error(`[WORKABLE] ${companySlug}: HTTP ${response.status}`)
+        return []
+      }
+      
+      const data = await response.json()
+      const jobs: Partial<Job>[] = []
+      
+      if (data.jobs && Array.isArray(data.jobs)) {
+        for (const job of data.jobs) {
+          jobs.push({
+            title: job.title || 'Unknown',
+            company: data.name || companySlug,
+            location: job.location?.city || job.location?.country || 'Remote',
+            description: job.description || '',
+            url: job.url || `https://apply.workable.com/${companySlug}/j/${job.shortcode}`,
+            source: 'indeed',
+            salary_min: undefined,
+            salary_max: undefined,
+            posted_date: job.published_on ? new Date(job.published_on).toISOString() : undefined,
+            external_id: `workable_${companySlug}_${job.shortcode}`,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: []
+          })
+        }
+      }
+      
+      console.log(`[WORKABLE] ${companySlug}: ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[WORKABLE] ${companySlug} error:`, error)
+      return []
+    }
+  }
+  
+  /**
+   * 4. ASHBY API (NO AUTH!)
+   * Used by: Fast-growing tech startups
+   */
+  async fetchAshbyJobs(companySlug: string): Promise<Partial<Job>[]> {
+    try {
+      const url = `https://api.ashbyhq.com/posting-api/job-board/${companySlug}`
+      
+      console.log(`[ASHBY] Fetching: ${companySlug}`)
+      
+      const response = await fetch(url, {
+        headers: { 'User-Agent': this.USER_AGENT }
+      })
+      
+      if (!response.ok) {
+        console.error(`[ASHBY] ${companySlug}: HTTP ${response.status}`)
+        return []
+      }
+      
+      const data = await response.json()
+      const jobs: Partial<Job>[] = []
+      
+      if (data.jobs && Array.isArray(data.jobs)) {
+        for (const job of data.jobs) {
+          jobs.push({
+            title: job.title || 'Unknown',
+            company: companySlug,
+            location: job.locationName || job.location || 'Remote',
+            description: job.description || '',
+            url: job.jobUrl || `https://jobs.ashbyhq.com/${companySlug}/${job.id}`,
+            source: 'indeed',
+            salary_min: undefined,
+            salary_max: undefined,
+            posted_date: job.publishedDate ? new Date(job.publishedDate).toISOString() : undefined,
+            external_id: `ashby_${companySlug}_${job.id}`,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: []
+          })
+        }
+      }
+      
+      console.log(`[ASHBY] ${companySlug}: ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[ASHBY] ${companySlug} error:`, error)
+      return []
+    }
+  }
+  
+  /**
+   * 5. RECRUITEE API (NO AUTH!)
+   * Used by: European companies with Canadian offices
+   */
+  async fetchRecruiteeJobs(companySlug: string): Promise<Partial<Job>[]> {
+    try {
+      const url = `https://${companySlug}.recruitee.com/api/offers`
+      
+      console.log(`[RECRUITEE] Fetching: ${companySlug}`)
+      
+      const response = await fetch(url, {
+        headers: { 'User-Agent': this.USER_AGENT }
+      })
+      
+      if (!response.ok) {
+        console.error(`[RECRUITEE] ${companySlug}: HTTP ${response.status}`)
+        return []
+      }
+      
+      const data = await response.json()
+      const jobs: Partial<Job>[] = []
+      
+      if (data.offers && Array.isArray(data.offers)) {
+        for (const job of data.offers) {
+          jobs.push({
+            title: job.title || 'Unknown',
+            company: companySlug,
+            location: job.location || 'Remote',
+            description: job.description || '',
+            url: job.careers_url || `https://${companySlug}.recruitee.com/o/${job.slug}`,
+            source: 'indeed',
+            salary_min: undefined,
+            salary_max: undefined,
+            posted_date: job.created_at ? new Date(job.created_at).toISOString() : undefined,
+            external_id: `recruitee_${companySlug}_${job.id}`,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: []
+          })
+        }
+      }
+      
+      console.log(`[RECRUITEE] ${companySlug}: ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[RECRUITEE] ${companySlug} error:`, error)
+      return []
+    }
+  }
+  
+  /**
+   * MASTER METHOD: Fetch from all ATS platforms
+   */
+  async fetchAllATS(companies: ATSCompany[]): Promise<Partial<Job>[]> {
+    console.log(`\n🚀 ATS DIRECT ACCESS: Fetching from ${companies.length} companies...\n`)
+    
+    const allJobs: Partial<Job>[] = []
+    
+    for (const company of companies) {
+      let jobs: Partial<Job>[] = []
+      
+      switch (company.ats) {
+        case 'greenhouse':
+          jobs = await this.fetchGreenhouseJobs(company.slug)
+          break
+        case 'lever':
+          jobs = await this.fetchLeverJobs(company.slug)
+          break
+        case 'workable':
+          jobs = await this.fetchWorkableJobs(company.slug)
+          break
+        case 'ashby':
+          jobs = await this.fetchAshbyJobs(company.slug)
+          break
+        case 'bamboohr':
+          // BambooHR requires company-specific implementation
+          console.log(`[BAMBOOHR] ${company.slug}: Skipping (requires custom setup)`)
+          break
+      }
+      
+      allJobs.push(...jobs)
+      
+      // Rate limiting (be respectful)
+      await sleep(2000)
+    }
+    
+    console.log(`\n✅ ATS DIRECT ACCESS COMPLETE: ${allJobs.length} jobs from ${companies.length} companies\n`)
+    
+    return allJobs
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Singleton
+let instance: ATSDirectAccess | null = null
+
+export function getATSDirectAccess(): ATSDirectAccess {
+  if (!instance) {
+    instance = new ATSDirectAccess()
+  }
+  return instance
+}
+</file>
+
+<file path="src/lib/apis/company-career-pages.ts">
+/**
+ * COMPANY CAREER PAGES SCRAPER
+ * 
+ * Scrapes job postings directly from company career pages
+ * These are the FRESHEST jobs (posted here first)
+ * Expected: 2,000-3,000 Canadian jobs
+ * 
+ * Legal: Public career pages, no authentication required
+ */
+
+import axios from 'axios'
+import * as cheerio from 'cheerio'
+import type { Job } from '@/types/supabase'
+import { getTopCompanies, type CompanyCareerPage } from '@/data/top-canadian-companies'
+
+export class CompanyCareerPagesAPI {
+  
+  /**
+   * Scrape a single company's career page
+   */
+  async scrapeCompany(company: CompanyCareerPage): Promise<Partial<Job>[]> {
+    try {
+      console.log(`[CAREERS] Scraping: ${company.name}`)
+      
+      const response = await axios.get(company.careerUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        },
+        timeout: 15000,
+        proxy: false
+      })
+      
+      const jobs = this.parseCareerPage(response.data, company)
+      console.log(`[CAREERS] ${company.name}: ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[CAREERS] Error scraping ${company.name}:`, error instanceof Error ? error.message : error)
+      return []
+    }
+  }
+  
+  /**
+   * Parse career page HTML to extract jobs
+   */
+  private parseCareerPage(html: string, company: CompanyCareerPage): Partial<Job>[] {
+    const $ = cheerio.load(html)
+    const jobs: Partial<Job>[] = []
+    
+    // Try multiple common patterns for job listings
+    
+    // Pattern 1: Links with "job", "position", "opening" in href or text
+    $('a').each((i, elem) => {
+      try {
+        const $link = $(elem)
+        const href = $link.attr('href')
+        const text = $link.text().trim()
+        
+        // Check if this looks like a job link
+        const isJobLink = href && (
+          href.includes('/job/') ||
+          href.includes('/position/') ||
+          href.includes('/opening/') ||
+          href.includes('/career/') ||
+          href.includes('/apply/') ||
+          text.toLowerCase().includes('apply') ||
+          text.toLowerCase().includes('view job')
+        )
+        
+        if (isJobLink && text.length > 5 && text.length < 200) {
+          // Extract job title from link text or nearby heading
+          let title = text
+          const nearbyHeading = $link.closest('div, li, article').find('h1, h2, h3, h4').first().text().trim()
+          if (nearbyHeading && nearbyHeading.length > title.length) {
+            title = nearbyHeading
+          }
+          
+          // Build full URL
+          let url = href || ''
+          if (url.startsWith('/')) {
+            const baseUrl = new URL(company.careerUrl)
+            url = `${baseUrl.protocol}//${baseUrl.host}${url}`
+          }
+          
+          // Extract location if available
+          const locationText = $link.closest('div, li, article').find('[class*="location"], [class*="city"]').first().text().trim()
+          
+          if (title && url) {
+            jobs.push({
+              title,
+              company: company.name,
+              location: locationText || company.location,
+              description: title,
+              url,
+              source: 'company-careers',
+              external_id: `career_${Buffer.from(url).toString('base64').slice(0, 16)}`,
+              scraped_at: new Date().toISOString(),
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              keywords: [company.industry.toLowerCase()]
+            })
+          }
+        }
+      } catch (error) {
+        // Skip malformed entries
+      }
+    })
+    
+    // Pattern 2: Job cards/listings with specific classes
+    $('[class*="job"], [class*="position"], [class*="opening"], [class*="career"]').each((i, elem) => {
+      try {
+        const $elem = $(elem)
+        
+        // Skip if this is a navigation element
+        if ($elem.is('nav, header, footer')) return
+        
+        const title = $elem.find('h1, h2, h3, h4, [class*="title"]').first().text().trim()
+        const link = $elem.find('a').first().attr('href')
+        const location = $elem.find('[class*="location"], [class*="city"]').first().text().trim()
+        
+        if (title && title.length > 5 && title.length < 200) {
+          let url = link || company.careerUrl
+          if (url.startsWith('/')) {
+            const baseUrl = new URL(company.careerUrl)
+            url = `${baseUrl.protocol}//${baseUrl.host}${url}`
+          }
+          
+          const jobId = `career_${company.name.toLowerCase().replace(/\s+/g, '_')}_${i}`
+          
+          jobs.push({
+            title,
+            company: company.name,
+            location: location || company.location,
+            description: title,
+            url,
+            source: 'company-careers',
+            external_id: jobId,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: [company.industry.toLowerCase()]
+          })
+        }
+      } catch (error) {
+        // Skip malformed entries
+      }
+    })
+    
+    // Deduplicate by URL
+    const uniqueJobs = new Map<string, Partial<Job>>()
+    for (const job of jobs) {
+      if (job.url && !uniqueJobs.has(job.url)) {
+        uniqueJobs.set(job.url, job)
+      }
+    }
+    
+    return Array.from(uniqueJobs.values())
+  }
+  
+  /**
+   * Scrape all top Canadian companies
+   */
+  async scrapeAllCompanies(): Promise<Partial<Job>[]> {
+    const companies = getTopCompanies()
+    const allJobs: Partial<Job>[] = []
+    
+    console.log(`[CAREERS] Scraping ${companies.length} company career pages`)
+    
+    // Scrape in batches to avoid overwhelming servers
+    const batchSize = 5
+    for (let i = 0; i < companies.length; i += batchSize) {
+      const batch = companies.slice(i, i + batchSize)
+      
+      const batchPromises = batch.map(company => this.scrapeCompany(company))
+      const batchResults = await Promise.allSettled(batchPromises)
+      
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled') {
+          allJobs.push(...result.value)
+        }
+      })
+      
+      // Rate limiting between batches
+      if (i + batchSize < companies.length) {
+        await this.sleep(2000)
+      }
+    }
+    
+    console.log(`[CAREERS] Total fetched: ${allJobs.length} jobs from ${companies.length} companies`)
+    return allJobs
+  }
+  
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+
+// Singleton
+let instance: CompanyCareerPagesAPI | null = null
+
+export function getCompanyCareerPagesAPI(): CompanyCareerPagesAPI {
+  if (!instance) {
+    instance = new CompanyCareerPagesAPI()
+  }
+  return instance
+}
+</file>
+
+<file path="src/lib/apis/google-for-jobs.ts">
+/**
+ * GOOGLE FOR JOBS SCRAPER
+ * 
+ * Scrapes Google's job search index (the master aggregator)
+ * Coverage: 80% of all online jobs
+ * Expected: 5,000-10,000 Canadian jobs
+ * 
+ * Legal: Public search results, no authentication required
+ */
+
+import axios from 'axios'
+import * as cheerio from 'cheerio'
+import type { Job } from '@/types/supabase'
+
+export class GoogleForJobsAPI {
+  private readonly BASE_URL = 'https://www.google.com/search'
+  
+  /**
+   * Search Google for Jobs
+   * Parameter &udm=8 triggers the jobs panel
+   */
+  async searchJobs(keyword: string, location: string): Promise<Partial<Job>[]> {
+    try {
+      console.log(`[GOOGLE JOBS] Searching: ${keyword} @ ${location}`)
+      
+      const query = `${keyword} jobs near ${location}, Canada`
+      
+      const response = await axios.get(this.BASE_URL, {
+        params: {
+          q: query,
+          udm: '8', // Triggers jobs panel
+          hl: 'en',
+          gl: 'ca'
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Referer': 'https://www.google.com/'
+        },
+        timeout: 15000,
+        proxy: false
+      })
+      
+      const jobs = this.parseGoogleJobs(response.data, location, keyword)
+      console.log(`[GOOGLE JOBS] Found ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error(`[GOOGLE JOBS] Error:`, error)
+      return []
+    }
+  }
+  
+  /**
+   * Parse Google for Jobs HTML
+   */
+  private parseGoogleJobs(html: string, location: string, keyword: string = ''): Partial<Job>[] {
+    const $ = cheerio.load(html)
+    const jobs: Partial<Job>[] = []
+    
+    // Google for Jobs uses various selectors depending on layout
+    // Try multiple selector patterns
+    
+    // Pattern 1: Job cards in search results
+    $('div[data-ved]').each((i, elem) => {
+      try {
+        const $elem = $(elem)
+        
+        // Extract job title
+        const title = $elem.find('h2, h3, [role="heading"]').first().text().trim()
+        if (!title || title.length < 3) return
+        
+        // Extract company
+        const company = $elem.find('div[class*="company"], span[class*="company"]').first().text().trim()
+        
+        // Extract location
+        const jobLocation = $elem.find('div[class*="location"], span[class*="location"]').first().text().trim()
+        
+        // Extract URL
+        const link = $elem.find('a').first().attr('href')
+        let url = ''
+        if (link) {
+          // Google wraps URLs in /url?q= format
+          const urlMatch = link.match(/url\?q=([^&]+)/)
+          url = urlMatch ? decodeURIComponent(urlMatch[1]) : link
+        }
+        
+        // Extract description snippet
+        const description = $elem.find('div[class*="description"], span[class*="snippet"]').first().text().trim()
+        
+        // Generate external ID from URL or title+company
+        const externalId = url 
+          ? `google_${Buffer.from(url).toString('base64').slice(0, 16)}`
+          : `google_${Buffer.from(title + company).toString('base64').slice(0, 16)}`
+        
+        if (title && (company || url)) {
+          jobs.push({
+            title,
+            company: company || 'Unknown',
+            location: jobLocation || location,
+            description: description || title,
+            url: url || '',
+            source: 'google-jobs',
+            external_id: externalId,
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: [keyword]
+          })
+        }
+      } catch (error) {
+        // Skip malformed entries
+      }
+    })
+    
+    // Pattern 2: Alternative job listing format
+    if (jobs.length === 0) {
+      $('div[class*="job"], li[class*="job"]').each((i, elem) => {
+        try {
+          const $elem = $(elem)
+          const title = $elem.find('a, h2, h3').first().text().trim()
+          const company = $elem.find('div, span').eq(1).text().trim()
+          const link = $elem.find('a').first().attr('href')
+          
+          if (title && title.length > 3) {
+            jobs.push({
+              title,
+              company: company || 'Unknown',
+              location,
+              description: title,
+              url: link || '',
+              source: 'google-jobs',
+              external_id: `google_${Date.now()}_${i}`,
+              scraped_at: new Date().toISOString(),
+              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              keywords: [keyword]
+            })
+          }
+        } catch (error) {
+          // Skip malformed entries
+        }
+      })
+    }
+    
+    return jobs
+  }
+  
+  /**
+   * Search all Canadian jobs with keyword permutations
+   */
+  async searchAllCanadianJobs(): Promise<Partial<Job>[]> {
+    const keywords = [
+      'software engineer',
+      'developer',
+      'data analyst',
+      'nurse',
+      'accountant',
+      'manager',
+      'sales',
+      'marketing',
+      'designer',
+      'consultant'
+    ]
+    
+    const locations = [
+      'Toronto',
+      'Vancouver',
+      'Montreal',
+      'Calgary',
+      'Edmonton',
+      'Ottawa',
+      'Winnipeg'
+    ]
+    
+    const allJobs: Partial<Job>[] = []
+    
+    console.log(`[GOOGLE JOBS] Searching ${keywords.length} keywords × ${locations.length} locations`)
+    
+    for (const keyword of keywords) {
+      for (const location of locations) {
+        try {
+          const jobs = await this.searchJobs(keyword, location)
+          allJobs.push(...jobs)
+          
+          // Rate limiting - Google is strict
+          await this.sleep(3000)
+        } catch (error) {
+          console.error(`[GOOGLE JOBS] Error: ${keyword} @ ${location}`)
+        }
+      }
+    }
+    
+    console.log(`[GOOGLE JOBS] Total fetched: ${allJobs.length} jobs`)
+    return allJobs
+  }
+  
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+
+// Singleton
+let instance: GoogleForJobsAPI | null = null
+
+export function getGoogleForJobsAPI(): GoogleForJobsAPI {
+  if (!instance) {
+    instance = new GoogleForJobsAPI()
+  }
+  return instance
+}
+</file>
+
+<file path="src/lib/apis/jsearch.ts">
+/**
+ * JSEARCH API - GOOGLE JOBS AGGREGATOR
+ * 
+ * FREE tier: 1,000 requests/month
+ * Each request = ~10 jobs
+ * Total: 10,000 jobs/month FREE!
+ * 
+ * This is a Google Jobs API aggregator via RapidAPI
+ * - NO scraping
+ * - NO maintenance
+ * - 100% legal
+ * - Zero cost (free tier)
+ */
+
+import type { Job } from '@/types/supabase'
+
+interface JSearchParams {
+  query: string
+  location?: string
+  page?: number
+  num_pages?: number
+  date_posted?: 'all' | 'today' | '3days' | 'week' | 'month'
+}
+
+export class JSearchAPI {
+  private readonly BASE_URL = 'https://jsearch.p.rapidapi.com'
+  private readonly API_KEY = process.env.RAPID_API_KEY || ''
+  
+  /**
+   * Search for jobs
+   */
+  async search(params: JSearchParams): Promise<Partial<Job>[]> {
+    try {
+      if (!this.API_KEY) {
+        console.error('[JSEARCH] API key not found. Set RAPID_API_KEY in .env')
+        return []
+      }
+      
+      const url = new URL(`${this.BASE_URL}/search`)
+      url.searchParams.set('query', params.query)
+      if (params.location) url.searchParams.set('location', params.location)
+      url.searchParams.set('page', (params.page || 1).toString())
+      url.searchParams.set('num_pages', (params.num_pages || 1).toString())
+      url.searchParams.set('date_posted', params.date_posted || 'week')
+      
+      console.log(`[JSEARCH] Searching: ${params.query} @ ${params.location || 'Canada'}`)
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'X-RapidAPI-Key': this.API_KEY,
+          'X-RapidAPI-Host': 'jsearch.p.rapidapi.com'
+        }
+      })
+      
+      if (!response.ok) {
+        console.error(`[JSEARCH] HTTP ${response.status}: ${response.statusText}`)
+        return []
+      }
+      
+      const data = await response.json()
+      
+      if (!data.data || !Array.isArray(data.data)) {
+        console.error('[JSEARCH] Invalid response format')
+        return []
+      }
+      
+      const jobs: Partial<Job>[] = data.data.map((job: any) => ({
+        title: job.job_title || 'Unknown',
+        company: job.employer_name || 'Unknown',
+        location: this.formatLocation(job),
+        description: job.job_description || '',
+        url: job.job_apply_link || job.job_google_link || '',
+        source: 'jsearch',
+        salary_min: job.job_min_salary || undefined,
+        salary_max: job.job_max_salary || undefined,
+        posted_date: job.job_posted_at_datetime_utc ? new Date(job.job_posted_at_datetime_utc).toISOString() : undefined,
+        external_id: `jsearch_${job.job_id}`,
+        scraped_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        keywords: []
+      }))
+      
+      console.log(`[JSEARCH] Found ${jobs.length} jobs`)
+      return jobs
+      
+    } catch (error) {
+      console.error('[JSEARCH] Error:', error)
+      return []
+    }
+  }
+  
+  /**
+   * Format location from job data
+   */
+  private formatLocation(job: any): string {
+    const parts = []
+    if (job.job_city) parts.push(job.job_city)
+    if (job.job_state) parts.push(job.job_state)
+    if (job.job_country) parts.push(job.job_country)
+    return parts.join(', ') || 'Remote'
+  }
+  
+  /**
+   * Bulk search with multiple keywords and locations
+   */
+  async bulkSearch(
+    keywords: string[],
+    locations: string[],
+    options?: { datePosted?: 'week' | 'month'; maxPages?: number }
+  ): Promise<Partial<Job>[]> {
+    const allJobs: Partial<Job>[] = []
+    const datePosted = options?.datePosted || 'week'
+    const maxPages = options?.maxPages || 1
+    
+    console.log(`\n🔍 JSEARCH BULK SEARCH: ${keywords.length} keywords × ${locations.length} locations\n`)
+    
+    for (const location of locations) {
+      for (const keyword of keywords) {
+        const jobs = await this.search({
+          query: keyword,
+          location,
+          page: 1,
+          num_pages: maxPages,
+          date_posted: datePosted
+        })
+        
+        allJobs.push(...jobs)
+        console.log(`  ${keyword} @ ${location}: ${jobs.length} jobs (Total: ${allJobs.length})`)
+        
+        // Rate limiting (RapidAPI free tier: 5 requests/second)
+        await sleep(250)
+      }
+    }
+    
+    console.log(`\n✅ JSEARCH COMPLETE: ${allJobs.length} jobs\n`)
+    return allJobs
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Singleton
+let instance: JSearchAPI | null = null
+
+export function getJSearchAPI(): JSearchAPI {
+  if (!instance) {
+    instance = new JSearchAPI()
+  }
+  return instance
+}
+</file>
+
+<file path="src/lib/orchestrator/insert-to-supabase.ts">
+/**
+ * SUPABASE INSERTION UTILITY
+ * 
+ * Handles batch insertion of jobs to Supabase with:
+ * - Upsert logic (no duplicates)
+ * - Batch processing (100 jobs per batch)
+ * - Error handling
+ * - Progress logging
+ */
+
+import { createClient } from '@supabase/supabase-js'
+import type { Job } from '@/types/supabase'
+
+export async function insertJobsToSupabase(jobs: Partial<Job>[]): Promise<{
+  inserted: number
+  updated: number
+  errors: number
+  duration: number
+}> {
+  const startTime = Date.now()
+  
+  console.log(`\n📥 INSERTING ${jobs.length} JOBS TO SUPABASE\n`)
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  let inserted = 0
+  let updated = 0
+  let errors = 0
+  const batchSize = 100
+
+  for (let i = 0; i < jobs.length; i += batchSize) {
+    const batch = jobs.slice(i, i + batchSize)
+    const batchNum = Math.floor(i / batchSize) + 1
+    const totalBatches = Math.ceil(jobs.length / batchSize)
+
+    try {
+      // Upsert with conflict resolution on external_id
+      const { data, error } = await supabase
+        .from('jobs')
+        .upsert(batch, { 
+          onConflict: 'external_id',
+          ignoreDuplicates: false 
+        })
+        .select('id')
+
+      if (error) {
+        console.error(`  ❌ Batch ${batchNum}/${totalBatches}: ${error.message}`)
+        errors += batch.length
+      } else {
+        const count = data?.length || 0
+        inserted += count
+        console.log(`  ✅ Batch ${batchNum}/${totalBatches}: ${count} jobs`)
+      }
+
+      // Rate limiting
+      if (i + batchSize < jobs.length) {
+        await sleep(100)
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`  ❌ Batch ${batchNum}/${totalBatches}: ${errorMessage}`)
+      errors += batch.length
+    }
+  }
+
+  const duration = Math.round((Date.now() - startTime) / 1000)
+
+  console.log(`\n📊 INSERTION SUMMARY:`)
+  console.log(`  Inserted: ${inserted}`)
+  console.log(`  Errors: ${errors}`)
+  console.log(`  Duration: ${duration}s\n`)
+
+  return { inserted, updated, errors, duration }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+</file>
+
+<file path="src/lib/utils/circuit-breaker.ts">
+/**
+ * CIRCUIT BREAKER PATTERN
+ * Prevents cascading failures by stopping requests to failing services
+ */
+
+export class CircuitBreaker {
+  private failures = 0
+  private readonly threshold: number
+  private state: 'closed' | 'open' | 'half-open' = 'closed'
+  private nextAttempt: number = Date.now()
+  private readonly timeout: number
+
+  constructor(threshold = 3, timeout = 60000) {
+    this.threshold = threshold
+    this.timeout = timeout
+  }
+
+  async execute<T>(fn: () => Promise<T>): Promise<T | null> {
+    if (this.state === 'open') {
+      if (Date.now() < this.nextAttempt) {
+        console.log('[CIRCUIT BREAKER] Circuit is OPEN, request blocked')
+        return null
+      }
+      // Try half-open
+      this.state = 'half-open'
+      console.log('[CIRCUIT BREAKER] Trying half-open state')
+    }
+
+    try {
+      const result = await fn()
+      this.onSuccess()
+      return result
+    } catch (error) {
+      this.onFailure()
+      throw error
+    }
+  }
+
+  private onSuccess() {
+    this.failures = 0
+    if (this.state === 'half-open') {
+      this.state = 'closed'
+      console.log('[CIRCUIT BREAKER] Circuit closed - service recovered')
+    }
+  }
+
+  private onFailure() {
+    this.failures++
+    console.log(`[CIRCUIT BREAKER] Failure ${this.failures}/${this.threshold}`)
+    
+    if (this.failures >= this.threshold) {
+      this.state = 'open'
+      this.nextAttempt = Date.now() + this.timeout
+      console.log(`[CIRCUIT BREAKER] Circuit opened - cooling down for ${this.timeout}ms`)
+    }
+  }
+
+  getState() {
+    return this.state
+  }
+
+  reset() {
+    this.failures = 0
+    this.state = 'closed'
+    this.nextAttempt = Date.now()
+  }
+}
+</file>
+
+<file path="src/lib/apis/job-bank-canada.ts">
+/**
+ * Job Bank Canada API Integration
+ * Official government job board - 100% legal, unlimited, FREE
+ * Documentation: https://www.jobbank.gc.ca/api/doc
+ */
+
+import * as cheerio from 'cheerio'
+import type { Job } from '@/types/supabase'
+
+export class JobBankCanadaAPI {
+  private readonly BASE_URL = 'https://www.jobbank.gc.ca/jobsearch/jobsearch'
+  
+  /**
+   * Search jobs on Job Bank Canada
+   */
+  async search(params: {
+    keywords?: string
+    location?: string
+    locationId?: string // Edmonton = 9351
+    pageSize?: number
+    page?: number
+  }): Promise<Partial<Job>[]> {
+    try {
+      const url = new URL(this.BASE_URL)
+      url.searchParams.set('searchstring', params.keywords || '')
+      url.searchParams.set('locationstring', params.location || '')
+      if (params.locationId) url.searchParams.set('mid', params.locationId)
+      url.searchParams.set('sort', 'D') // Date posted (newest first)
+      url.searchParams.set('fprov', '48') // Alberta
+      url.searchParams.set('page', (params.page || 1).toString())
+      
+      console.log(`[JOB BANK] Fetching: ${params.keywords} @ ${params.location || params.locationId}`)
+      
+      const response = await fetch(url.toString(), {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      })
+      
+      if (!response.ok) {
+        console.error(`[JOB BANK] HTTP ${response.status}`)
+        return []
+      }
+      
+      const html = await response.text()
+      return this.parseJobBankHTML(html)
+      
+    } catch (error) {
+      console.error('[JOB BANK] Error:', error)
+      return []
+    }
+  }
+  
+  /**
+   * Parse Job Bank HTML (government site, very stable structure)
+   */
+  private parseJobBankHTML(html: string): Partial<Job>[] {
+    const jobs: Partial<Job>[] = []
+    const $ = cheerio.load(html)
+    
+    // Structure: article.action-buttons > a.resultJobItem
+    $('article.action-buttons').each((i, elem) => {
+      const link = $(elem).find('a.resultJobItem')
+      const title = link.find('.noctitle').text().trim()
+      const company = link.find('.business').text().trim()
+      const location = link.find('.location').text().trim().replace(/Location\s*/i, '')
+      const url = link.attr('href')
+      const salary = link.find('.salary').text().trim()
+      const datePosted = link.find('.date').text().trim()
+      
+      if (title && company && url) {
+        jobs.push({
+          title,
+          company,
+          location: location || 'Canada',
+          description: '',
+          url: url.startsWith('http') ? url : `https://www.jobbank.gc.ca${url}`,
+          source: 'job_bank',
+          salary_min: undefined,
+          salary_max: undefined,
+          posted_date: this.parseDate(datePosted),
+          external_id: `jobbank_${url.split('/').pop()?.split(';')[0] || Date.now()}`,
+          scraped_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          keywords: []
+        } as Partial<Job>)
+      }
+    })
+    
+    return jobs
+  }
+  
+  /**
+   * Parse relative dates like "2 days ago"
+   */
+  private parseDate(dateStr: string): string | undefined {
+    if (!dateStr) return undefined
+    
+    const now = new Date()
+    
+    if (dateStr.includes('today') || dateStr.includes('Today')) {
+      return now.toISOString()
+    }
+    
+    if (dateStr.includes('yesterday') || dateStr.includes('Yesterday')) {
+      now.setDate(now.getDate() - 1)
+      return now.toISOString()
+    }
+    
+    const daysMatch = dateStr.match(/(\d+)\s+days?\s+ago/i)
+    if (daysMatch) {
+      now.setDate(now.getDate() - parseInt(daysMatch[1]))
+      return now.toISOString()
+    }
+    
+    return undefined
+  }
+  
+  /**
+   * Get jobs by location code
+   * Edmonton = 9351, Calgary = 9350, Red Deer = 9353
+   */
+  async getJobsByCity(cityCode: string, keywords: string[]): Promise<Partial<Job>[]> {
+    const allJobs: Partial<Job>[] = []
+    
+    for (const keyword of keywords) {
+      // Get up to 5 pages (250 jobs per keyword)
+      for (let page = 1; page <= 5; page++) {
+        const jobs = await this.search({
+          keywords: keyword,
+          locationId: cityCode,
+          page
+        })
+        
+        if (jobs.length === 0) break
+        
+        allJobs.push(...jobs)
+        console.log(`[JOB BANK] ${keyword} - Page ${page}: ${jobs.length} jobs (Total: ${allJobs.length})`)
+        
+        // Rate limiting (respect government servers)
+        await sleep(2000)
+      }
+    }
+    
+    return allJobs
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Singleton
+let instance: JobBankCanadaAPI | null = null
+
+export function getJobBankAPI(): JobBankCanadaAPI {
+  if (!instance) {
+    instance = new JobBankCanadaAPI()
+  }
+  return instance
+}
+</file>
+
+<file path="src/lib/apis/linkedin-hidden-api.ts">
+/**
+ * LINKEDIN HIDDEN PUBLIC API
+ * 
+ * LinkedIn's job search works WITHOUT login!
+ * The API endpoint is public (used by their own website)
+ * NO authentication required
+ * 
+ * Expected: 5,000+ jobs
+ */
+
+import axios from 'axios'
+import * as cheerio from 'cheerio'
+import type { Job } from '@/types/supabase'
+
+export class LinkedInHiddenAPI {
+  
+  /**
+   * LinkedIn's hidden public job search API
+   * NO AUTHENTICATION REQUIRED
+   * This endpoint is used by LinkedIn's public job search page
+   */
+  private readonly BASE_URL = 'https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search'
+
+  async searchJobs(keyword: string, location: string, start: number = 0): Promise<Partial<Job>[]> {
+    try {
+      console.log(`[LINKEDIN] Starting search: ${keyword} @ ${location}`)
+
+      // Disable proxy to prevent ERR_INVALID_URL errors
+      const response = await axios.get(this.BASE_URL, {
+        params: {
+          keywords: keyword,
+          location: location,
+          start: start,
+          sortBy: 'DD' // Date descending
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Referer': 'https://www.linkedin.com/jobs/search'
+        },
+        timeout: 15000,
+        proxy: false // Explicitly disable proxy
+      })
+
+      const jobs = this.parseLinkedInJobs(response.data)
+      console.log(`[LINKEDIN] Found ${jobs.length} jobs`)
+      return jobs
+    } catch (error) {
+      console.error('[LINKEDIN] Error:', error)
+      return []
+    }
+  }
+
+  private parseLinkedInJobs(html: string): Partial<Job>[] {
+    const $ = cheerio.load(html)
+    const jobs: Partial<Job>[] = []
+
+    // LinkedIn returns job posting elements
+    $('li').each((i, elem) => {
+      try {
+        // Get job ID from data-entity-urn
+        const entityUrn = $(elem).find('[data-entity-urn]').attr('data-entity-urn')
+        const jobId = entityUrn ? entityUrn.split(':').pop() : null
+        
+        // Find the title - it's in an h3 inside the card
+        const title = $(elem).find('h3.base-search-card__title').text().trim()
+        
+        // Company is in h4
+        const company = $(elem).find('h4.base-search-card__subtitle').text().trim()
+        
+        // Location
+        const location = $(elem).find('span.job-search-card__location').text().trim()
+        
+        // URL from the full-link anchor
+        const url = $(elem).find('a.base-card__full-link').attr('href')
+
+        if (title && company) {
+          jobs.push({
+            title,
+            company,
+            location,
+            description: '', // LinkedIn hidden API doesn't return full description
+            url: url || (jobId ? `https://www.linkedin.com/jobs/view/${jobId}` : ''),
+            source: 'linkedin',
+            external_id: `linkedin_${jobId || Date.now()}`,
+            posted_date: new Date().toISOString(),
+            scraped_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            keywords: []
+          })
+        }
+      } catch (error) {
+        // Skip malformed entries
+      }
+    })
+
+    return jobs
+  }
+
+  async searchAllCanadianJobs(): Promise<Partial<Job>[]> {
+    // Expanded keyword list for maximum coverage
+    const keywords = [
+      'software engineer',
+      'developer',
+      'data analyst',
+      'data scientist',
+      'product manager',
+      'registered nurse',
+      'electrician',
+      'accountant',
+      'project manager',
+      'sales representative',
+      'marketing manager',
+      'business analyst',
+      'designer',
+      'consultant',
+      'coordinator',
+      'administrator',
+      'technician',
+      'specialist',
+      'supervisor',
+      'director'
+    ]
+
+    // Expanded location list - all major Canadian cities
+    const locations = [
+      'Toronto, ON',
+      'Vancouver, BC',
+      'Montreal, QC',
+      'Calgary, AB',
+      'Edmonton, AB',
+      'Ottawa, ON',
+      'Winnipeg, MB',
+      'Quebec City, QC',
+      'Hamilton, ON',
+      'Kitchener, ON',
+      'London, ON',
+      'Halifax, NS'
+    ]
+
+    const allJobs: Partial<Job>[] = []
+
+    for (const keyword of keywords) {
+      for (const location of locations) {
+        try {
+          // LinkedIn returns 25 jobs per page, fetch first 2 pages (50 jobs)
+          for (let page = 0; page < 2; page++) {
+            const jobs = await this.searchJobs(keyword, location, page * 25)
+            allJobs.push(...jobs)
+            await this.sleep(1500) // Respectful rate limiting
+          }
+        } catch (error) {
+          console.error(`Error searching ${keyword} in ${location}:`, error)
+        }
+      }
+    }
+
+    return allJobs
+  }
+
+  private sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+
+// Singleton
+let instance: LinkedInHiddenAPI | null = null
+
+export function getLinkedInHiddenAPI(): LinkedInHiddenAPI {
+  if (!instance) {
+    instance = new LinkedInHiddenAPI()
+  }
+  return instance
+}
+</file>
+
+<file path="src/lib/orchestrator/master-job-orchestrator.ts">
+/**
+ * MASTER JOB ORCHESTRATOR
+ * 
+ * Coordinates all job scrapers with:
+ * - Circuit breaker pattern
+ * - Proper error handling
+ * - Memory management
+ * - Deduplication
+ * 
+ * Sources:
+ * 1. ATS Direct (2,778 jobs) ✅
+ * 2. LinkedIn Hidden API (1,563 jobs) ✅
+ * 3. Adzuna API (6,000+ jobs) ✅
+ * 4. Job Bank Canada (3,000-5,000 jobs) ✅
+ * 5. CivicJobs RSS (500-1,000 jobs) ✅
+ * 
+ * Total: 13,841-17,341+ jobs for $0/month
+ */
+
+import { getATSDirectAccess } from '../apis/ats-direct-access'
+import { getLinkedInHiddenAPI } from '../apis/linkedin-hidden-api'
+import { AdzunaAPIClient } from '../adzuna-api-client'
+import { JobBankCanadaAPI } from '../apis/job-bank-canada'
+import { CivicJobsRSS } from '../apis/civic-jobs-rss'
+import { getGoogleForJobsAPI } from '../apis/google-for-jobs'
+import { getCompanyCareerPagesAPI } from '../apis/company-career-pages'
+import { getVerifiedCompanies } from '@/data/verified-ats-companies'
+import { CircuitBreaker } from '../utils/circuit-breaker'
+import type { Job } from '@/types/supabase'
+
+interface ScraperResult {
+  source: string
+  jobs: Partial<Job>[]
+  success: boolean
+  error?: string
+  duration: number
+}
+
+export class MasterJobOrchestrator {
+  private atsBreaker = new CircuitBreaker(3, 60000)
+  private linkedinBreaker = new CircuitBreaker(3, 60000)
+  private adzunaBreaker = new CircuitBreaker(3, 60000)
+  private jobBankBreaker = new CircuitBreaker(3, 60000)
+  private civicJobsBreaker = new CircuitBreaker(3, 60000)
+  private googleJobsBreaker = new CircuitBreaker(3, 60000)
+  private companyPagesBreaker = new CircuitBreaker(3, 60000)
+
+  /**
+   * Scrape all sources with circuit breaker protection
+   */
+  async scrapeAll(): Promise<{
+    jobs: Partial<Job>[]
+    results: ScraperResult[]
+    summary: {
+      total: number
+      unique: number
+      duplicates: number
+      duration: number
+    }
+  }> {
+    console.log('\n🚀 MASTER JOB ORCHESTRATOR STARTING\n')
+    const startTime = Date.now()
+
+    const results: ScraperResult[] = []
+    const allJobs: Partial<Job>[] = []
+
+    // Run all scrapers in parallel with error isolation
+    const scraperPromises = [
+      this.scrapeATS(),
+      this.scrapeLinkedIn(),
+      this.scrapeAdzuna(),
+      this.scrapeJobBank(),
+      this.scrapeGoogleJobs(),
+      this.scrapeCompanyPages(),
+      this.scrapeCivicJobs()
+    ]
+
+    const scraperResults = await Promise.allSettled(scraperPromises)
+
+    // Process results
+    scraperResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value) {
+        results.push(result.value)
+        if (result.value.success) {
+          allJobs.push(...result.value.jobs)
+        }
+      } else if (result.status === 'rejected') {
+        const sources = ['ATS Direct', 'LinkedIn', 'Adzuna', 'Job Bank Canada', 'Google for Jobs', 'Company Careers', 'CivicJobs']
+        results.push({
+          source: sources[index],
+          jobs: [],
+          success: false,
+          error: result.reason?.message || 'Unknown error',
+          duration: 0
+        })
+      }
+    })
+
+    // Deduplicate
+    console.log('\n[ORCHESTRATOR] Starting deduplication...')
+    const uniqueJobs = this.deduplicateJobs(allJobs)
+
+    const duration = Math.round((Date.now() - startTime) / 1000)
+
+    // Summary
+    console.log('\n[ORCHESTRATOR] FINAL SUMMARY:\n')
+    results.forEach(r => {
+      const status = r.success ? 'SUCCESS' : 'FAILED'
+      console.log(`  [${status}] ${r.source}: ${r.jobs.length} jobs (${r.duration}s)`)
+      if (r.error) {
+        console.log(`          Error: ${r.error}`)
+      }
+    })
+    
+    const duplicateRate = ((allJobs.length - uniqueJobs.length) / allJobs.length * 100).toFixed(1)
+    console.log(`\n  Total: ${allJobs.length} jobs`)
+    console.log(`  Unique: ${uniqueJobs.length} jobs`)
+    console.log(`  Duplicates: ${allJobs.length - uniqueJobs.length} (${duplicateRate}%)`)
+    console.log(`  Duration: ${duration}s`)
+    console.log(`  Cost: $0.00\n`)
+
+    return {
+      jobs: uniqueJobs,
+      results,
+      summary: {
+        total: allJobs.length,
+        unique: uniqueJobs.length,
+        duplicates: allJobs.length - uniqueJobs.length,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape ATS Direct with circuit breaker
+   */
+  private async scrapeATS(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[ATS] Starting ATS Direct scrape...')
+      
+      const jobs = await this.atsBreaker.execute(async () => {
+        const ats = getATSDirectAccess()
+        const companies = getVerifiedCompanies()
+        return await ats.fetchAllATS(companies)
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'ATS Direct',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[ATS] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'ATS Direct',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ ATS Direct failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'ATS Direct',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape LinkedIn with circuit breaker
+   */
+  private async scrapeLinkedIn(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[LINKEDIN] Starting LinkedIn scrape...')
+      
+      const jobs = await this.linkedinBreaker.execute(async () => {
+        const linkedin = getLinkedInHiddenAPI()
+        return await linkedin.searchAllCanadianJobs()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'LinkedIn',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[LINKEDIN] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'LinkedIn',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ LinkedIn failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'LinkedIn',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Adzuna with circuit breaker
+   */
+  private async scrapeAdzuna(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('📌 [3/3] Adzuna API...\n')
+      
+      const jobs = await this.adzunaBreaker.execute(async () => {
+        const adzuna = new AdzunaAPIClient()
+        
+        // Check if API keys are configured
+        if (!process.env.ADZUNA_APP_ID || !process.env.ADZUNA_API_KEY) {
+          throw new Error('Adzuna API keys not configured')
+        }
+
+        const allJobs: Partial<Job>[] = []
+        
+        // Expanded keyword list for better coverage
+        const keywords = [
+          'software', 'engineer', 'developer', 'programmer',
+          'nurse', 'healthcare', 'medical',
+          'accountant', 'finance', 'analyst',
+          'sales', 'marketing', 'manager',
+          'designer', 'consultant', 'coordinator'
+        ]
+        
+        // Major Canadian cities
+        const locations = [
+          'Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton',
+          'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener'
+        ]
+
+        console.log(`[ADZUNA] Searching ${keywords.length} keywords × ${locations.length} locations × 2 pages`)
+
+        for (const keyword of keywords) {
+          for (const location of locations) {
+            // Get 2 pages per search (100 jobs max per keyword+location)
+            for (let page = 1; page <= 2; page++) {
+              try {
+                const result = await adzuna.searchJobs({
+                  what: keyword,
+                  where: location,
+                  country: 'ca',
+                  resultsPerPage: 50,
+                  page: page
+                })
+
+              interface AdzunaResult {
+                id: string
+                title: string
+                company?: { display_name: string }
+                location?: { display_name: string }
+                description?: string
+                redirect_url?: string
+                created?: string
+              }
+
+              const jobs = result.results.map((j: AdzunaResult) => ({
+                title: j.title,
+                company: j.company?.display_name || 'Unknown',
+                location: j.location?.display_name || location,
+                description: j.description || '',
+                url: j.redirect_url || '',
+                source: 'adzuna' as const,
+                external_id: `adzuna_${j.id}`,
+                posted_date: j.created || new Date().toISOString(),
+                scraped_at: new Date().toISOString(),
+                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                keywords: []
+              }))
+
+              allJobs.push(...jobs)
+              await this.sleep(500) // Rate limiting
+              } catch (error) {
+                console.error(`[ADZUNA] Error: ${keyword} @ ${location} page ${page}`)
+              }
+            }
+          }
+        }
+
+        console.log(`[ADZUNA] Total jobs fetched: ${allJobs.length}`)
+        return allJobs
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Adzuna',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[ADZUNA] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Adzuna',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ Adzuna failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'Adzuna',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Job Bank Canada with circuit breaker
+   */
+  private async scrapeJobBank(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[JOB BANK] Starting Job Bank scrape...')
+      
+      const jobs = await this.jobBankBreaker.execute(async () => {
+        const jobBank = new JobBankCanadaAPI()
+        const allJobs: Partial<Job>[] = []
+        
+        // Expanded keywords for maximum Job Bank coverage
+        const keywords = [
+          'software', 'engineer', 'developer', 'programmer',
+          'nurse', 'healthcare', 'medical',
+          'accountant', 'finance', 'analyst',
+          'manager', 'supervisor', 'director',
+          'technician', 'specialist'
+        ]
+        
+        // All major Canadian cities
+        const locations = [
+          'Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Edmonton',
+          'Ottawa', 'Winnipeg', 'Quebec City', 'Hamilton', 'Kitchener'
+        ]
+        
+        console.log(`[JOB BANK] Searching ${keywords.length} keywords × ${locations.length} locations`)
+        
+        for (const keyword of keywords) {
+          for (const location of locations) {
+            try {
+              const results = await jobBank.search({
+                keywords: keyword,
+                location,
+                pageSize: 50,
+                page: 1
+              })
+              allJobs.push(...results)
+              await this.sleep(1000) // Rate limiting
+            } catch (error) {
+              console.error(`[JOB BANK] Error: ${keyword} @ ${location}`)
+            }
+          }
+        }
+        
+        console.log(`[JOB BANK] Total fetched: ${allJobs.length} jobs`)
+        
+        return allJobs
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Job Bank Canada',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[JOB BANK] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Job Bank Canada',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ Job Bank Canada failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'Job Bank Canada',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Google for Jobs with circuit breaker
+   */
+  private async scrapeGoogleJobs(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[GOOGLE JOBS] Starting Google for Jobs scrape...')
+      
+      const jobs = await this.googleJobsBreaker.execute(async () => {
+        const googleJobs = getGoogleForJobsAPI()
+        return await googleJobs.searchAllCanadianJobs()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Google for Jobs',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[GOOGLE JOBS] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Google for Jobs',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[GOOGLE JOBS] Failed: ${errorMessage}`)
+      
+      return {
+        source: 'Google for Jobs',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Company Career Pages with circuit breaker
+   */
+  private async scrapeCompanyPages(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[CAREERS] Starting Company Career Pages scrape...')
+      
+      const jobs = await this.companyPagesBreaker.execute(async () => {
+        const careers = getCompanyCareerPagesAPI()
+        return await careers.scrapeAllCompanies()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Company Careers',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[CAREERS] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Company Careers',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`[CAREERS] Failed: ${errorMessage}`)
+      
+      return {
+        source: 'Company Careers',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape CivicJobs RSS with circuit breaker
+   */
+  private async scrapeCivicJobs(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[CIVICJOBS] Starting CivicJobs RSS scrape...')
+      
+      const jobs = await this.civicJobsBreaker.execute(async () => {
+        const civicJobs = new CivicJobsRSS()
+        return await civicJobs.fetchAllJobs()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'CivicJobs',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[CIVICJOBS] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'CivicJobs',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ CivicJobs failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'CivicJobs',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Deduplicate jobs by fingerprint (optimized)
+   * Reduces duplicates from 11.9% to <5%
+   */
+  private deduplicateJobs(jobs: Partial<Job>[]): Partial<Job>[] {
+    // First pass: Remove exact external_id duplicates (fastest)
+    const byExternalId = new Map<string, Partial<Job>>()
+    for (const job of jobs) {
+      if (job.external_id && !byExternalId.has(job.external_id)) {
+        byExternalId.set(job.external_id, job)
+      }
+    }
+    
+    // Second pass: Remove fuzzy duplicates by fingerprint
+    const seen = new Map<string, Partial<Job>>()
+    
+    for (const job of byExternalId.values()) {
+      const fingerprint = this.createFingerprint(job)
+
+      if (!seen.has(fingerprint)) {
+        seen.set(fingerprint, job)
+      } else {
+        // Keep job with more complete data
+        const existing = seen.get(fingerprint)!
+        const jobScore = this.scoreJobCompleteness(job)
+        const existingScore = this.scoreJobCompleteness(existing)
+        
+        if (jobScore > existingScore) {
+          seen.set(fingerprint, job)
+        }
+      }
+    }
+
+    return Array.from(seen.values())
+  }
+
+  /**
+   * Create normalized fingerprint for deduplication
+   */
+  private createFingerprint(job: Partial<Job>): string {
+    const title = this.normalizeString(job.title || '')
+    const company = this.normalizeCompany(job.company || '')
+    const location = this.normalizeLocation(job.location || '')
+    return `${title}_${company}_${location}`
+  }
+  
+  /**
+   * Normalize string (remove special chars, extra spaces, lowercase)
+   */
+  private normalizeString(str: string): string {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+  
+  /**
+   * Normalize company name (remove Inc, Ltd, Corp, etc)
+   */
+  private normalizeCompany(company: string): string {
+    return this.normalizeString(company)
+      .replace(/\b(inc|ltd|llc|corp|corporation|company|co|limited)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+  
+  /**
+   * Normalize location (Toronto, ON = Toronto = Toronto, Ontario)
+   */
+  private normalizeLocation(location: string): string {
+    return this.normalizeString(location)
+      .replace(/\b(ontario|on)\b/g, 'on')
+      .replace(/\b(british columbia|bc)\b/g, 'bc')
+      .replace(/\b(quebec|qc)\b/g, 'qc')
+      .replace(/\b(alberta|ab)\b/g, 'ab')
+      .replace(/\b(manitoba|mb)\b/g, 'mb')
+      .replace(/\b(saskatchewan|sk)\b/g, 'sk')
+      .replace(/\bcanada\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+  
+  /**
+   * Score job completeness (higher = more complete)
+   */
+  private scoreJobCompleteness(job: Partial<Job>): number {
+    let score = 0
+    if (job.title) score += 1
+    if (job.company && job.company !== 'Unknown') score += 2
+    if (job.location) score += 1
+    if (job.description && job.description.length > 100) score += 3
+    if (job.url) score += 1
+    if (job.salary_min || job.salary_max) score += 2
+    if (job.posted_date) score += 1
+    return score
+  }
+
+  /**
+   * Sleep helper
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms))
+  }
+}
+
+// Singleton
+let instance: MasterJobOrchestrator | null = null
+
+export function getMasterOrchestrator(): MasterJobOrchestrator {
+  if (!instance) {
+    instance = new MasterJobOrchestrator()
+  }
+  return instance
+}
+</file>
+
+</files>

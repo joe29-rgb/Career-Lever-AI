@@ -10,7 +10,8 @@
  * - Proxy support
  */
 
-import puppeteer, { Browser, Page } from 'puppeteer'
+import puppeteer, { Browser, Page } from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
 
 // User agents for rotation
 const USER_AGENTS = [

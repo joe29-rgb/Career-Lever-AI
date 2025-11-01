@@ -1,0 +1,12 @@
+{
+  "output": {
+    "filePath": "AI-SERVICES.xml",
+    "style": "xml"
+  },
+  "include": [
+    "src/lib/ai-service.ts",
+    "src/lib/perplexity-intelligence.ts",
+    "src/lib/**/perplexity*.ts",
+    "src/lib/openai-client.ts"
+  ]
+}

@@ -19,7 +19,7 @@ export interface Job {
   remote_type?: string
   url: string
   external_id?: string
-  source: 'active-jobs-db' | 'google-jobs' | 'jsearch' | 'adzuna' | 'indeed' | 'linkedin'
+  source: 'active-jobs-db' | 'google-jobs' | 'jsearch' | 'adzuna' | 'indeed' | 'linkedin' | 'civicjobs' | 'job-bank' | 'company-pages' | 'ats-direct'
   apply_link?: string
   company_size?: string
   company_industry?: string

@@ -33,7 +33,13 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "**/*.spec.tsx",
+    "debug-*.ts",
+    "test-*.ts",
+    "download-incremental.ts",
+    "src/lib/scrapers/eluta*.ts",
+    "src/lib/scrapers/jsonld-extractor.ts",
+    "src/lib/orchestrator/legal-free-scraper.ts"
   ]
 }
 

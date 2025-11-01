@@ -1,8 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
-import connectToDatabase from '@/lib/mongodb'
-import JobApplication from '@/models/JobApplication'
 import { authOptions } from '@/lib/auth'
+import {
+  getUserApplicationStats,
+  calculateSuccessRate,
+  calculateAverageResponseTime
+} from '@/lib/analytics/application-stats'
+import Application from '@/models/Application'
+import { dbService } from '@/lib/database'
+
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 interface DashboardStats {
@@ -11,60 +18,65 @@ interface DashboardStats {
   interviewRate: number
   averageResponseTime: number
   appliedWeekChangePct?: number
+  pendingFollowUps?: number
+  upcomingInterviews?: number
 }
 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    await connectToDatabase()
+    await dbService.connect()
 
-    // Get user's applications
-    const applications = await JobApplication.find({ userId: session.user.id })
-
-    // Calculate total applications
-    const totalApplications = applications.length
+    // Use new analytics functions
+    const fullStats = await getUserApplicationStats(session.user.id)
+    const successRate = await calculateSuccessRate(session.user.id)
+    const avgResponseTime = await calculateAverageResponseTime(session.user.id)
 
     // Calculate applications this week
     const oneWeekAgo = new Date()
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
     const twoWeeksAgo = new Date()
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-    const appliedThisWeek = applications.filter(app => new Date(app.createdAt) > oneWeekAgo).length
-    const appliedPrevWeek = applications.filter(app => new Date(app.createdAt) <= oneWeekAgo && new Date(app.createdAt) > twoWeeksAgo).length
-    const appliedWeekChangePct = appliedPrevWeek > 0 ? Math.round(((appliedThisWeek - appliedPrevWeek) / appliedPrevWeek) * 100) : (appliedThisWeek > 0 ? 100 : 0)
 
-    // Calculate interview rate (applications that reached interview stage)
-    const interviewApplications = applications.filter(app =>
-      app.applicationStatus === 'interviewing' || app.applicationStatus === 'offer'
-    ).length
-    const interviewRate = totalApplications > 0 ? Math.round((interviewApplications / totalApplications) * 100) : 0
+    const thisWeekApps = await Application.countDocuments({
+      userId: session.user.id,
+      appliedAt: { $gte: oneWeekAgo }
+    })
 
-    // Calculate average response time (simplified - in days)
-    const applicationsWithResponses = applications.filter(app =>
-      app.applicationStatus !== 'saved' && app.applicationStatus !== 'applied'
-    )
+    const prevWeekApps = await Application.countDocuments({
+      userId: session.user.id,
+      appliedAt: { $gte: twoWeeksAgo, $lt: oneWeekAgo }
+    })
 
-    let averageResponseTime = 0
-    if (applicationsWithResponses.length > 0) {
-      const totalResponseTime = applicationsWithResponses.reduce((total, app) => {
-        const appliedDate = new Date(app.createdAt)
-        const responseDate = app.updatedAt ? new Date(app.updatedAt) : new Date()
-        const daysDiff = Math.ceil((responseDate.getTime() - appliedDate.getTime()) / (1000 * 60 * 60 * 24))
-        return total + daysDiff
-      }, 0)
-      averageResponseTime = Math.round(totalResponseTime / applicationsWithResponses.length)
-    }
+    const appliedWeekChangePct = prevWeekApps > 0 
+      ? Math.round(((thisWeekApps - prevWeekApps) / prevWeekApps) * 100) 
+      : (thisWeekApps > 0 ? 100 : 0)
+
+    // Count pending follow-ups
+    const pendingFollowUps = await Application.countDocuments({
+      userId: session.user.id,
+      followUpStatus: 'pending'
+    })
+
+    // Count upcoming interviews
+    const upcomingInterviews = await Application.countDocuments({
+      userId: session.user.id,
+      status: 'interview_scheduled',
+      interviewDate: { $gte: new Date() }
+    })
 
     const stats: DashboardStats = {
-      totalApplications,
-      appliedThisWeek,
-      interviewRate,
-      averageResponseTime,
-      appliedWeekChangePct
+      totalApplications: fullStats.totalApplications,
+      appliedThisWeek: thisWeekApps,
+      interviewRate: successRate.interviewRate,
+      averageResponseTime: avgResponseTime,
+      appliedWeekChangePct,
+      pendingFollowUps,
+      upcomingInterviews
     }
 
     return NextResponse.json({
@@ -73,9 +85,12 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Dashboard stats error:', error)
+    console.error('[DASHBOARD_ANALYTICS] Error:', error)
     return NextResponse.json(
-      { error: 'Failed to get dashboard stats' },
+      { 
+        error: 'Failed to get dashboard stats',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

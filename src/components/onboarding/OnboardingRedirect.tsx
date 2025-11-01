@@ -16,7 +16,7 @@ export function OnboardingRedirect() {
 
   useEffect(() => {
     // Only check if authenticated and not already on quiz/auth pages
-    if (status === 'authenticated' && !pathname.startsWith('/onboarding') && !pathname.startsWith('/auth')) {
+    if (status === 'authenticated' && pathname && !pathname.startsWith('/onboarding') && !pathname.startsWith('/auth')) {
       const user = session?.user as any
       
       // Check if user has completed onboarding

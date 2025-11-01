@@ -13,6 +13,13 @@ export interface IApplication extends Document {
   interviewDate?: Date
   attachments: string[]
   
+  // Follow-up Tracking
+  followUpStatus: 'pending' | 'scheduled' | 'sent' | 'completed' | 'not_needed'
+  followUpScheduledAt?: Date
+  followUpSentAt?: Date
+  followUpNotes?: string
+  lastContactedAt?: Date
+  
   // Interview Prep Data
   interviewPrep?: {
     questions: string[]
@@ -50,6 +57,17 @@ const ApplicationSchema = new Schema<IApplication>({
   appliedAt: { type: Date, default: Date.now },
   interviewDate: { type: Date },
   attachments: [{ type: String }],
+  
+  // Follow-up Tracking
+  followUpStatus: { 
+    type: String, 
+    enum: ['pending', 'scheduled', 'sent', 'completed', 'not_needed'], 
+    default: 'pending' 
+  },
+  followUpScheduledAt: { type: Date },
+  followUpSentAt: { type: Date },
+  followUpNotes: { type: String },
+  lastContactedAt: { type: Date },
   
   // Interview Prep Data
   interviewPrep: {
