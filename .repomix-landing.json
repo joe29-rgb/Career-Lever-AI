@@ -1,0 +1,21 @@
+{
+  "output": {
+    "filePath": "LANDING-PAGE-FILES.txt",
+    "style": "xml",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "showLineNumbers": true
+  },
+  "include": [
+    "src/app/page.tsx",
+    "src/components/hero-section-v2.tsx",
+    "src/components/features-section.tsx",
+    "src/components/stats-section.tsx",
+    "src/app/globals.css"
+  ],
+  "ignore": {
+    "useGitignore": false,
+    "useDefaultPatterns": false,
+    "customPatterns": []
+  }
+}

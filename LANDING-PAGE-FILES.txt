@@ -1,0 +1,1995 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+The content has been processed where line numbers have been added.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: src/app/page.tsx, src/components/hero-section-v2.tsx, src/components/features-section.tsx, src/components/stats-section.tsx, src/app/globals.css
+- Line numbers have been added to the beginning of each line
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/app/globals.css
+src/app/page.tsx
+src/components/features-section.tsx
+src/components/hero-section-v2.tsx
+src/components/stats-section.tsx
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/app/page.tsx">
+ 1: import { HeroSectionV2 } from '@/components/hero-section-v2'
+ 2: import { FeaturesSection } from '@/components/features-section'
+ 3: import { StatsSection } from '@/components/stats-section'
+ 4: 
+ 5: export default function HomePage() {
+ 6:   return (
+ 7:     <div className="min-h-screen bg-background">
+ 8:       <HeroSectionV2 />
+ 9:       <FeaturesSection />
+10:       <StatsSection />
+11:     </div>
+12:   )
+13: }
+</file>
+
+<file path="src/components/hero-section-v2.tsx">
+  1: 'use client'
+  2: 
+  3: import { useState, useEffect } from 'react'
+  4: import { signIn } from 'next-auth/react'
+  5: import { ArrowRight } from 'lucide-react'
+  6: 
+  7: // Company logos data for floating pills - MORE RECOGNIZABLE COMPANIES
+  8: const COMPANY_PILLS = [
+  9:   { name: 'Netflix', logo: '📺', color: '#E50914', delay: 0 },
+ 10:   { name: 'Amazon', logo: '📦', color: '#FF9900', delay: 0.5 },
+ 11:   { name: 'Spotify', logo: '🎵', color: '#1DB954', delay: 1 },
+ 12:   { name: 'LinkedIn', logo: '💼', color: '#0077B5', delay: 1.5 },
+ 13:   { name: 'Uber', logo: '🚗', color: '#000000', delay: 2 },
+ 14:   { name: 'Airbnb', logo: '🏠', color: '#FF5A5F', delay: 2.5 },
+ 15:   { name: 'Meta', logo: '📘', color: '#0075FF', delay: 3 },
+ 16:   { name: 'Google', logo: '🔍', color: '#FFFFFF', delay: 3.5, textColor: '#000000' },
+ 17:   { name: 'Apple', logo: '🍎', color: '#FFFFFF', delay: 4, textColor: '#000000' },
+ 18:   { name: 'Tesla', logo: '⚡', color: '#E82127', delay: 4.5 },
+ 19:   { name: 'Goldman', logo: '💰', color: '#1F1F1F', delay: 5, textColor: '#FFFFFF' },
+ 20:   { name: 'PepsiCo', logo: '🥤', color: 'linear-gradient(135deg, #004B93 0%, #E32934 100%)', delay: 5.5 },
+ 21: ]
+ 22: 
+ 23: // Pill positions (scattered layout) - MORE POSITIONS FOR MORE COMPANIES
+ 24: const PILL_POSITIONS = [
+ 25:   { top: '20%', left: '5%', rotation: -8 },
+ 26:   { top: '25%', right: '10%', rotation: 5 },
+ 27:   { top: '40%', left: '12%', rotation: -3 },
+ 28:   { bottom: '40%', left: '3%', rotation: 7 },
+ 29:   { top: '50%', right: '6%', rotation: -5 },
+ 30:   { bottom: '30%', left: '15%', rotation: 4 },
+ 31:   { bottom: '35%', right: '12%', rotation: -6 },
+ 32:   { top: '60%', left: '20%', rotation: 3 },
+ 33:   { bottom: '50%', right: '3%', rotation: -4 },
+ 34:   { top: '70%', right: '18%', rotation: 6 },
+ 35:   { bottom: '20%', left: '25%', rotation: -7 },
+ 36:   { top: '35%', right: '25%', rotation: 8 },
+ 37: ]
+ 38: 
+ 39: export function HeroSectionV2() {
+ 40:   const [mounted, setMounted] = useState(false)
+ 41: 
+ 42:   useEffect(() => {
+ 43:     setMounted(true)
+ 44:   }, [])
+ 45: 
+ 46:   const handleGetStarted = async () => {
+ 47:     const base = typeof window !== 'undefined' ? window.location.origin : ''
+ 48:     const target = `${base}/auth/signin?callbackUrl=${encodeURIComponent(`${base}/dashboard`)}`
+ 49:     window.location.href = target
+ 50:   }
+ 51: 
+ 52:   const handleGoogle = async () => {
+ 53:     try {
+ 54:       await signIn('google', { callbackUrl: '/dashboard' })
+ 55:     } catch {}
+ 56:   }
+ 57: 
+ 58:   return (
+ 59:     <section className="landing-page relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-6 py-12">
+ 60:       {/* Background with theme-aware gradients */}
+ 61:       <div 
+ 62:         className="absolute inset-0 -z-10 bg-background"
+ 63:         style={{
+ 64:           background: `
+ 65:             radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
+ 66:             radial-gradient(circle at 80% 70%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
+ 67:             hsl(var(--background))
+ 68:           `
+ 69:         }}
+ 70:       />
+ 71: 
+ 72:       {/* Scattered Company Pills */}
+ 73:       {mounted && (
+ 74:         <div className="company-pills absolute inset-0 pointer-events-none">
+ 75:           {COMPANY_PILLS.map((pill, index) => {
+ 76:             const position = PILL_POSITIONS[index]
+ 77:             return (
+ 78:               <div
+ 79:                 key={pill.name}
+ 80:                 className="company-pill absolute flex items-center gap-2 px-5 py-3 rounded-full shadow-lg pointer-events-auto cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-xl"
+ 81:                 style={{
+ 82:                   ...position,
+ 83:                   background: pill.color,
+ 84:                   color: pill.textColor || '#FFFFFF',
+ 85:                   transform: `rotate(${position.rotation}deg)`,
+ 86:                   animation: `float 6s ease-in-out infinite`,
+ 87:                   animationDelay: `${pill.delay}s`,
+ 88:                 } as React.CSSProperties}
+ 89:               >
+ 90:                 <span className="text-xl">{pill.logo}</span>
+ 91:                 <span className="text-sm font-medium">{pill.name}</span>
+ 92:               </div>
+ 93:             )
+ 94:           })}
+ 95:         </div>
+ 96:       )}
+ 97: 
+ 98:       {/* Hero Content */}
+ 99:       <div className="landing-hero relative z-10 text-center max-w-2xl mx-auto">
+100:         <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
+101:           Find Your Dream Job{' '}
+102:           <span className="inline-block animate-bounce-slow">🚀</span>
+103:         </h1>
+104:         <p className="text-xl font-bold text-white mb-8 leading-relaxed">
+105:           AI-powered resume optimization, company research, and application tracking—all in one platform designed for modern job seekers.
+106:         </p>
+107: 
+108:         {/* CTA Button */}
+109:         <button
+110:           onClick={handleGetStarted}
+111:           className="landing-cta group inline-flex items-center gap-3 px-12 py-4 bg-gradient-to-r from-[#5424FD] to-[#4318E8] text-white font-bold text-lg rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 relative overflow-hidden"
+112:         >
+113:           <span className="relative z-10">Find Your Dream Job</span>
+114:           <ArrowRight className="w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform" />
+115:           
+116:           {/* Shine effect */}
+117:           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+118:         </button>
+119: 
+120:         <p className="mt-6 text-sm font-semibold text-white/70">
+121:           Join 10,000+ job seekers who landed their dream roles
+122:         </p>
+123:       </div>
+124: 
+125:       {/* SSO Options */}
+126:       <div className="relative z-10 mt-12 max-w-md w-full">
+127:         <div className="text-center mb-4">
+128:           <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">Or continue with</p>
+129:         </div>
+130:         <div className="flex items-center justify-center gap-4">
+131:           <button
+132:             onClick={handleGoogle}
+133:             className="glass-card px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
+134:           >
+135:             <svg className="w-5 h-5" viewBox="0 0 24 24">
+136:               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+137:               <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+138:               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+139:               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+140:             </svg>
+141:             <span className="text-sm font-medium text-white">Google</span>
+142:           </button>
+143:           <button
+144:             onClick={() => signIn('apple', { callbackUrl: '/dashboard' })}
+145:             className="glass-card px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
+146:           >
+147:             <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+148:               <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+149:             </svg>
+150:             <span className="text-sm font-medium text-white">Apple</span>
+151:           </button>
+152:           <button
+153:             onClick={() => signIn('azure-ad', { callbackUrl: '/dashboard' })}
+154:             className="glass-card px-6 py-3 rounded-xl hover:scale-105 transition-all duration-300 flex items-center gap-2"
+155:           >
+156:             <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+157:               <path d="M11.5,3L2,5.5V11H11.5V3M22,3L12.5,5.5V11H22V3M11.5,13H2V18.5L11.5,21V13M12.5,13V21L22,18.5V13H12.5Z"/>
+158:             </svg>
+159:             <span className="text-sm font-medium text-white">Microsoft</span>
+160:           </button>
+161:         </div>
+162:       </div>
+163: 
+164:       <style jsx>{`
+165:         @keyframes float {
+166:           0%, 100% { 
+167:             transform: translateY(0); 
+168:           }
+169:           50% { 
+170:             transform: translateY(-20px); 
+171:           }
+172:         }
+173: 
+174:         @keyframes bounce-slow {
+175:           0%, 100% { transform: translateY(0); }
+176:           50% { transform: translateY(-10px); }
+177:         }
+178: 
+179:         .animate-bounce-slow {
+180:           animation: bounce-slow 2s ease-in-out infinite;
+181:         }
+182: 
+183:         .glass-card {
+184:           background: rgba(255, 255, 255, 0.1);
+185:           backdrop-filter: blur(10px);
+186:           border: 1px solid rgba(255, 255, 255, 0.2);
+187:         }
+188: 
+189:         .glass-card:hover {
+190:           background: rgba(255, 255, 255, 0.15);
+191:           border-color: rgba(255, 255, 255, 0.3);
+192:         }
+193: 
+194:         @media (max-width: 768px) {
+195:           .company-pill {
+196:             display: none;
+197:           }
+198:         }
+199:       `}</style>
+200:     </section>
+201:   )
+202: }
+</file>
+
+<file path="src/components/stats-section.tsx">
+ 1: 'use client'
+ 2: 
+ 3: import { Card, CardContent } from '@/components/ui/card'
+ 4: 
+ 5: const stats = [
+ 6:   {
+ 7:     number: '10,000+',
+ 8:     label: 'Job Seekers',
+ 9:     description: 'Active users landing jobs',
+10:   },
+11:   {
+12:     number: '85%',
+13:     label: 'Success Rate',
+14:     description: 'Users get interviews within 30 days',
+15:   },
+16:   {
+17:     number: '50+',
+18:     label: 'Hours Saved',
+19:     description: 'Per job application on average',
+20:   },
+21:   {
+22:     number: '500+',
+23:     label: 'Companies',
+24:     description: 'In our research database',
+25:   },
+26: ]
+27: 
+28: export function StatsSection() {
+29:   return (
+30:     <section className="py-24 bg-gray-50">
+31:       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+32:         <div className="mx-auto max-w-3xl text-center">
+33:           <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+34:             Trusted by job seekers worldwide
+35:           </h2>
+36:           <p className="mt-4 text-lg text-gray-600">
+37:             Join thousands of professionals who've transformed their job search with Career Lever AI.
+38:           </p>
+39:         </div>
+40: 
+41:         <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-4">
+42:           {stats.map((stat, index) => (
+43:             <Card key={index} className="text-center border-0 shadow-lg">
+44:               <CardContent className="pt-8 pb-8">
+45:                 <div className="text-4xl font-bold text-blue-600 sm:text-5xl">
+46:                   {stat.number}
+47:                 </div>
+48:                 <div className="mt-4 text-lg font-semibold text-foreground">
+49:                   {stat.label}
+50:                 </div>
+51:                 <div className="mt-2 text-sm text-gray-600">
+52:                   {stat.description}
+53:                 </div>
+54:               </CardContent>
+55:             </Card>
+56:           ))}
+57:         </div>
+58: 
+59:         {/* Testimonial */}
+60:         <div className="mx-auto mt-16 max-w-3xl text-center">
+61:           <blockquote className="text-lg font-medium text-foreground">
+62:             "Career Lever AI completely transformed my job search. I went from getting no responses to having multiple interviews within two weeks. The AI resume customization is incredible!"
+63:           </blockquote>
+64:           <div className="mt-6">
+65:             <div className="font-semibold text-foreground">Sarah Johnson</div>
+66:             <div className="text-sm text-gray-600">Software Engineer at Google</div>
+67:           </div>
+68:         </div>
+69:       </div>
+70:     </section>
+71:   )
+72: }
+</file>
+
+<file path="src/components/features-section.tsx">
+  1: 'use client'
+  2: 
+  3: import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+  4: import { Badge } from '@/components/ui/badge'
+  5: import {
+  6:   FileText,
+  7:   Search,
+  8:   Zap,
+  9:   Users,
+ 10:   BarChart3,
+ 11:   Mail,
+ 12:   Shield,
+ 13:   Clock
+ 14: } from 'lucide-react'
+ 15: 
+ 16: const features = [
+ 17:   {
+ 18:     icon: FileText,
+ 19:     title: 'AI Resume Customization',
+ 20:     description: 'Upload your resume and let AI tailor it to specific job descriptions. Our system analyzes keywords, optimizes for ATS, and highlights relevant experience.',
+ 21:     badge: 'Most Popular',
+ 22:     color: 'text-blue-600',
+ 23:   },
+ 24:   {
+ 25:     icon: Search,
+ 26:     title: 'Intelligent Job Analysis',
+ 27:     description: 'Paste any job description and get instant analysis of key requirements, preferred skills, and company culture indicators.',
+ 28:     badge: null,
+ 29:     color: 'text-green-600',
+ 30:   },
+ 31:   {
+ 32:     icon: Users,
+ 33:     title: 'Company Research Hub',
+ 34:     description: 'Get comprehensive company insights from LinkedIn, Glassdoor, and social media. Understand culture, benefits, and recent developments.',
+ 35:     badge: 'New',
+ 36:     color: 'text-purple-600',
+ 37:   },
+ 38:   {
+ 39:     icon: Mail,
+ 40:     title: 'Cover Letter Generation',
+ 41:     description: 'AI-crafted cover letters that incorporate company research and demonstrate genuine interest in the role and organization.',
+ 42:     badge: null,
+ 43:     color: 'text-orange-600',
+ 44:   },
+ 45:   {
+ 46:     icon: BarChart3,
+ 47:     title: 'Application Tracking',
+ 48:     description: 'Track all your job applications in one place. Monitor status, set follow-up reminders, and analyze your job search progress.',
+ 49:     badge: null,
+ 50:     color: 'text-red-600',
+ 51:   },
+ 52:   {
+ 53:     icon: Zap,
+ 54:     title: 'Follow-up Automation',
+ 55:     description: 'Generate personalized follow-up emails and LinkedIn messages. Never miss an opportunity to stay top-of-mind with employers.',
+ 56:     badge: 'Pro',
+ 57:     color: 'text-yellow-600',
+ 58:   },
+ 59:   {
+ 60:     icon: Shield,
+ 61:     title: 'Privacy & Security',
+ 62:     description: 'Your data is encrypted and secure. We never share your information with employers or third parties.',
+ 63:     badge: null,
+ 64:     color: 'text-indigo-600',
+ 65:   },
+ 66:   {
+ 67:     icon: Clock,
+ 68:     title: 'Time-Saving Workflow',
+ 69:     description: 'Streamlined process from resume upload to application submission. Spend less time on applications, more time on interviews.',
+ 70:     badge: null,
+ 71:     color: 'text-teal-600',
+ 72:   },
+ 73: ]
+ 74: 
+ 75: export function FeaturesSection() {
+ 76:   return (
+ 77:     <section className="py-24 relative overflow-hidden" style={{ background: 'var(--color-background)' }}>
+ 78:       {/* Animated gradient background */}
+ 79:       <div className="absolute inset-0 opacity-30">
+ 80:         <div className="absolute top-0 left-0 w-96 h-96 rounded-full blur-3xl" style={{ background: 'var(--color-bg-1)' }} />
+ 81:         <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl" style={{ background: 'var(--color-bg-3)' }} />
+ 82:       </div>
+ 83:       
+ 84:       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+ 85:         {/* BEFORE/AFTER METRICS - REDESIGNED! */}
+ 86:         <div className="mx-auto max-w-4xl mb-20">
+ 87:           <div className="text-center mb-10">
+ 88:             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-2" style={{ color: 'var(--color-text)' }}>
+ 89:               Real Results from Real Job Seekers
+ 90:             </h2>
+ 91:             <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
+ 92:               See the dramatic difference Career Lever AI makes
+ 93:             </p>
+ 94:           </div>
+ 95:           
+ 96:           <div className="grid md:grid-cols-2 gap-8">
+ 97:             {/* WITHOUT Career Lever AI */}
+ 98:             <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8">
+ 99:               <div className="text-center mb-6">
+100:                 <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+101:                   <span className="text-3xl">😓</span>
+102:                 </div>
+103:                 <h3 className="text-xl font-bold text-red-900 mb-2">Without Career Lever AI</h3>
+104:               </div>
+105:               <ul className="space-y-4">
+106:                 <li className="flex items-start">
+107:                   <span className="text-red-500 font-bold mr-3">❌</span>
+108:                   <div>
+109:                     <div className="font-semibold text-foreground">50+ applications = 2 interviews</div>
+110:                     <div className="text-sm text-gray-600">4% response rate</div>
+111:                   </div>
+112:                 </li>
+113:                 <li className="flex items-start">
+114:                   <span className="text-red-500 font-bold mr-3">❌</span>
+115:                   <div>
+116:                     <div className="font-semibold text-foreground">4 hours per application</div>
+117:                     <div className="text-sm text-gray-600">200+ hours wasted</div>
+118:                   </div>
+119:                 </li>
+120:                 <li className="flex items-start">
+121:                   <span className="text-red-500 font-bold mr-3">❌</span>
+122:                   <div>
+123:                     <div className="font-semibold text-foreground">Generic resumes ignored</div>
+124:                     <div className="text-sm text-gray-600">15% ATS pass rate</div>
+125:                   </div>
+126:                 </li>
+127:                 <li className="flex items-start">
+128:                   <span className="text-red-500 font-bold mr-3">❌</span>
+129:                   <div>
+130:                     <div className="font-semibold text-foreground">Missed follow-ups</div>
+131:                     <div className="text-sm text-gray-600">Lost opportunities</div>
+132:                   </div>
+133:                 </li>
+134:               </ul>
+135:             </div>
+136: 
+137:             {/* WITH Career Lever AI */}
+138:             <div className="bg-green-50 border-2 border-green-400 rounded-2xl p-8 relative">
+139:               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+140:                 <Badge className="bg-green-600 text-white px-4 py-1 text-sm font-bold">
+141:                   85% SUCCESS RATE
+142:                 </Badge>
+143:               </div>
+144:               <div className="text-center mb-6 mt-2">
+145:                 <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+146:                   <span className="text-3xl">🎯</span>
+147:                 </div>
+148:                 <h3 className="text-xl font-bold text-green-900 mb-2">With Career Lever AI</h3>
+149:               </div>
+150:               <ul className="space-y-4">
+151:                 <li className="flex items-start">
+152:                   <span className="text-green-600 font-bold mr-3">✅</span>
+153:                   <div>
+154:                     <div className="font-semibold text-foreground">15 applications = 8 interviews</div>
+155:                     <div className="text-sm text-gray-600">53% response rate (13x better!)</div>
+156:                   </div>
+157:                 </li>
+158:                 <li className="flex items-start">
+159:                   <span className="text-green-600 font-bold mr-3">✅</span>
+160:                   <div>
+161:                     <div className="font-semibold text-foreground">20 minutes per application</div>
+162:                     <div className="text-sm text-gray-600">5 hours total (12x faster!)</div>
+163:                   </div>
+164:                 </li>
+165:                 <li className="flex items-start">
+166:                   <span className="text-green-600 font-bold mr-3">✅</span>
+167:                   <div>
+168:                     <div className="font-semibold text-foreground">ATS-optimized resumes</div>
+169:                     <div className="text-sm text-gray-600">85% ATS pass rate (5.6x better!)</div>
+170:                   </div>
+171:                 </li>
+172:                 <li className="flex items-start">
+173:                   <span className="text-green-600 font-bold mr-3">✅</span>
+174:                   <div>
+175:                     <div className="font-semibold text-foreground">Automated follow-ups</div>
+176:                     <div className="text-sm text-gray-600">Never miss opportunities</div>
+177:                   </div>
+178:                 </li>
+179:               </ul>
+180:             </div>
+181:           </div>
+182:         </div>
+183: 
+184:         <div className="mx-auto max-w-3xl text-center mb-16">
+185:           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: 'var(--color-text)' }}>
+186:             Everything you need to land your dream job
+187:           </h2>
+188:           <p className="mt-4 text-lg" style={{ color: 'var(--color-text-secondary)' }}>
+189:             Our AI-powered platform provides comprehensive tools to optimize every aspect of your job search.
+190:           </p>
+191:         </div>
+192: 
+193:         <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-2 xl:grid-cols-4">
+194:           {features.map((feature, index) => (
+195:             <Card 
+196:               key={index} 
+197:               className="relative overflow-hidden border-0 transition-all duration-300 hover:-translate-y-2 group"
+198:               style={{ 
+199:                 background: 'var(--color-surface)',
+200:                 borderRadius: 'var(--radius-lg)',
+201:                 boxShadow: 'var(--shadow-lg)'
+202:               }}
+203:             >
+204:               {/* Gradient overlay on hover */}
+205:               <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300" style={{ background: 'var(--color-primary)' }} />
+206:               
+207:               <CardHeader className="pb-4 relative z-10">
+208:                 <div className="flex items-center justify-between">
+209:                   <div 
+210:                     className="rounded-lg p-3 transition-transform duration-300 group-hover:scale-110" 
+211:                     style={{ background: `rgba(var(--color-teal-500-rgb), 0.1)` }}
+212:                   >
+213:                     <feature.icon className="h-6 w-6" style={{ color: 'var(--color-primary)' }} />
+214:                   </div>
+215:                   {feature.badge && (
+216:                     <Badge 
+217:                       className="text-xs font-semibold px-3 py-1"
+218:                       style={{ 
+219:                         background: 'var(--color-primary)',
+220:                         color: 'var(--color-btn-primary-text)'
+221:                       }}
+222:                     >
+223:                       {feature.badge}
+224:                     </Badge>
+225:                   )}
+226:                 </div>
+227:                 <CardTitle className="text-xl mt-4" style={{ color: 'var(--color-text)' }}>
+228:                   {feature.title}
+229:                 </CardTitle>
+230:               </CardHeader>
+231:               <CardContent className="relative z-10">
+232:                 <CardDescription className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+233:                   {feature.description}
+234:                 </CardDescription>
+235:               </CardContent>
+236:             </Card>
+237:           ))}
+238:         </div>
+239: 
+240:         {/* MOBILE APP FEATURES - REDESIGNED! */}
+241:         <div className="mx-auto max-w-4xl mt-32">
+242:           <div className="text-center mb-12">
+243:             <Badge 
+244:               className="px-4 py-1 mb-4 text-sm font-semibold"
+245:               style={{ 
+246:                 background: 'linear-gradient(135deg, var(--color-primary), var(--color-teal-400))',
+247:                 color: 'var(--color-btn-primary-text)'
+248:               }}
+249:             >
+250:               📱 Mobile Apps
+251:             </Badge>
+252:             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4" style={{ color: 'var(--color-text)' }}>
+253:               Job Search on the Go
+254:             </h2>
+255:             <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
+256:               Apply to jobs from anywhere with our powerful mobile apps
+257:             </p>
+258:           </div>
+259:           
+260:           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+261:             {[
+262:               { emoji: '📸', title: 'Scan Job Postings', desc: 'Take a photo of any job posting and instantly apply with AI-optimized resume', bg: 'var(--color-bg-1)' },
+263:               { emoji: '🔔', title: 'Push Notifications', desc: 'Get instant alerts for interview prep, follow-ups, and application updates', bg: 'var(--color-bg-5)' },
+264:               { emoji: '📍', title: 'Location-Based Jobs', desc: 'Find and apply to local opportunities while commuting or traveling', bg: 'var(--color-bg-3)' },
+265:               { emoji: '💾', title: 'Offline Mode', desc: 'Edit resumes and prepare applications even without internet connection', bg: 'var(--color-bg-6)' }
+266:             ].map((item, i) => (
+267:               <Card 
+268:                 key={i}
+269:                 className="border-0 hover:-translate-y-1 transition-all duration-300 group"
+270:                 style={{ 
+271:                   background: 'var(--color-surface)',
+272:                   borderRadius: 'var(--radius-lg)',
+273:                   boxShadow: 'var(--shadow-md)'
+274:                 }}
+275:               >
+276:                 <CardContent className="p-6 text-center">
+277:                   <div 
+278:                     className="text-4xl mb-4 inline-block p-4 rounded-full transition-transform duration-300 group-hover:scale-110"
+279:                     style={{ background: item.bg }}
+280:                   >
+281:                     {item.emoji}
+282:                   </div>
+283:                   <h3 className="font-bold mb-2" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
+284:                   <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{item.desc}</p>
+285:                 </CardContent>
+286:               </Card>
+287:             ))}
+288:           </div>
+289:         </div>
+290: 
+291:         {/* PRICING PREVIEW - REDESIGNED! */}
+292:         <div className="mx-auto max-w-5xl mt-32 mb-16">
+293:           <div className="text-center mb-12">
+294:             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4" style={{ color: 'var(--color-text)' }}>
+295:               Simple, Transparent Pricing
+296:             </h2>
+297:             <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
+298:               Start free, upgrade when you&apos;re ready
+299:             </p>
+300:           </div>
+301:           
+302:           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+303:             {/* FREE TIER */}
+304:             <Card 
+305:               className="border-0 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+306:               style={{ 
+307:                 background: 'var(--color-surface)',
+308:                 borderRadius: 'var(--radius-lg)',
+309:                 boxShadow: 'var(--shadow-lg)',
+310:                 border: '2px solid var(--color-border)'
+311:               }}
+312:             >
+313:               <CardHeader className="pb-4" style={{ background: 'rgba(var(--color-teal-500-rgb), 0.05)' }}>
+314:                 <div className="text-center">
+315:                   <CardTitle className="text-2xl mb-2" style={{ color: 'var(--color-text)' }}>Free Forever</CardTitle>
+316:                   <div className="text-4xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>$0</div>
+317:                   <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Perfect for getting started</p>
+318:                 </div>
+319:               </CardHeader>
+320:               <CardContent className="p-6">
+321:                 <ul className="space-y-3">
+322:                   {['3 AI resume customizations per month', '10 company research reports', 'Basic application tracking', 'ATS optimization', 'Job search tools'].map((item, i) => (
+323:                     <li key={i} className="flex items-start">
+324:                       <span className="mr-2" style={{ color: 'var(--color-success)' }}>✅</span>
+325:                       <span style={{ color: 'var(--color-text)' }}><strong>{item}</strong></span>
+326:                     </li>
+327:                   ))}
+328:                 </ul>
+329:               </CardContent>
+330:             </Card>
+331: 
+332:             {/* PRO TIER */}
+333:             <Card 
+334:               className="border-0 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative"
+335:               style={{ 
+336:                 background: 'var(--color-surface)',
+337:                 borderRadius: 'var(--radius-lg)',
+338:                 boxShadow: '0 0 40px rgba(var(--color-teal-500-rgb), 0.3)',
+339:                 border: '2px solid var(--color-primary)'
+340:               }}
+341:             >
+342:               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+343:                 <Badge 
+344:                   className="px-6 py-2 text-sm font-bold"
+345:                   style={{ 
+346:                     background: 'linear-gradient(135deg, var(--color-primary), var(--color-teal-400))',
+347:                     color: 'var(--color-btn-primary-text)'
+348:                   }}
+349:                 >
+350:                   🔥 MOST POPULAR
+351:                 </Badge>
+352:               </div>
+353:               <CardHeader 
+354:                 className="pb-4 pt-8"
+355:                 style={{ 
+356:                   background: 'linear-gradient(135deg, rgba(var(--color-teal-500-rgb), 0.1), rgba(var(--color-teal-300-rgb), 0.05))'
+357:                 }}
+358:               >
+359:                 <div className="text-center">
+360:                   <CardTitle className="text-2xl mb-2" style={{ color: 'var(--color-text)' }}>Pro</CardTitle>
+361:                   <div className="text-4xl font-bold mb-2" style={{ color: 'var(--color-primary)' }}>
+362:                     $9.99<span className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>/mo</span>
+363:                   </div>
+364:                   <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Land your dream job faster</p>
+365:                 </div>
+366:               </CardHeader>
+367:               <CardContent className="p-6">
+368:                 <ul className="space-y-3">
+369:                   {['Unlimited AI customizations', 'Unlimited company research', 'Priority ATS optimization', 'LinkedIn integration', 'Advanced analytics', 'Interview prep AI', 'Priority support'].map((item, i) => (
+370:                     <li key={i} className="flex items-start">
+371:                       <span className="mr-2" style={{ color: 'var(--color-primary)' }}>⚡</span>
+372:                       <span style={{ color: 'var(--color-text)' }}><strong>{item}</strong></span>
+373:                     </li>
+374:                   ))}
+375:                 </ul>
+376:               </CardContent>
+377:             </Card>
+378:           </div>
+379:         </div>
+380:       </div>
+381:     </section>
+382:   )
+383: }
+</file>
+
+<file path="src/app/globals.css">
+   1: :root {
+   2:   /* Primitive Color Tokens */
+   3:   --color-white: rgba(255, 255, 255, 1);
+   4:   --color-black: rgba(0, 0, 0, 1);
+   5:   --color-cream-50: rgba(252, 252, 249, 1);
+   6:   --color-cream-100: rgba(255, 255, 253, 1);
+   7:   --color-gray-200: rgba(245, 245, 245, 1);
+   8:   --color-gray-300: rgba(167, 169, 169, 1);
+   9:   --color-gray-400: rgba(119, 124, 124, 1);
+  10:   --color-slate-500: rgba(98, 108, 113, 1);
+  11:   --color-brown-600: rgba(94, 82, 64, 1);
+  12:   --color-charcoal-700: rgba(31, 33, 33, 1);
+  13:   --color-charcoal-800: rgba(38, 40, 40, 1);
+  14:   --color-slate-900: rgba(19, 52, 59, 1);
+  15:   --color-teal-300: rgba(50, 184, 198, 1);
+  16:   --color-teal-400: rgba(45, 166, 178, 1);
+  17:   --color-teal-500: rgba(33, 128, 141, 1);
+  18:   --color-teal-600: rgba(29, 116, 128, 1);
+  19:   --color-teal-700: rgba(26, 104, 115, 1);
+  20:   --color-teal-800: rgba(41, 150, 161, 1);
+  21:   --color-red-400: rgba(255, 84, 89, 1);
+  22:   --color-red-500: rgba(192, 21, 47, 1);
+  23:   --color-orange-400: rgba(230, 129, 97, 1);
+  24:   --color-orange-500: rgba(168, 75, 47, 1);
+  25: 
+  26:   /* RGB versions for opacity control */
+  27:   --color-brown-600-rgb: 94, 82, 64;
+  28:   --color-teal-500-rgb: 33, 128, 141;
+  29:   --color-slate-900-rgb: 19, 52, 59;
+  30:   --color-slate-500-rgb: 98, 108, 113;
+  31:   --color-red-500-rgb: 192, 21, 47;
+  32:   --color-red-400-rgb: 255, 84, 89;
+  33:   --color-orange-500-rgb: 168, 75, 47;
+  34:   --color-orange-400-rgb: 230, 129, 97;
+  35: 
+  36:   /* Background color tokens (Light Mode) */
+  37:   --color-bg-1: rgba(59, 130, 246, 0.08); /* Light blue */
+  38:   --color-bg-2: rgba(245, 158, 11, 0.08); /* Light yellow */
+  39:   --color-bg-3: rgba(34, 197, 94, 0.08); /* Light green */
+  40:   --color-bg-4: rgba(239, 68, 68, 0.08); /* Light red */
+  41:   --color-bg-5: rgba(147, 51, 234, 0.08); /* Light purple */
+  42:   --color-bg-6: rgba(249, 115, 22, 0.08); /* Light orange */
+  43:   --color-bg-7: rgba(236, 72, 153, 0.08); /* Light pink */
+  44:   --color-bg-8: rgba(6, 182, 212, 0.08); /* Light cyan */
+  45: 
+  46:   /* Semantic Color Tokens (Light Mode) */
+  47:   --color-background: var(--color-cream-50);
+  48:   --color-surface: var(--color-cream-100);
+  49:   --color-text: var(--color-slate-900);
+  50:   --color-text-secondary: var(--color-slate-500);
+  51:   --color-primary: var(--color-teal-500);
+  52:   --color-primary-hover: var(--color-teal-600);
+  53:   --color-primary-active: var(--color-teal-700);
+  54:   --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
+  55:   --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
+  56:   --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
+  57:   --color-border: rgba(var(--color-brown-600-rgb), 0.2);
+  58:   --color-btn-primary-text: var(--color-cream-50);
+  59:   --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
+  60:   --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
+  61:   --color-error: var(--color-red-500);
+  62:   --color-success: var(--color-teal-500);
+  63:   --color-warning: var(--color-orange-500);
+  64:   --color-info: var(--color-slate-500);
+  65:   --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.4);
+  66:   --color-select-caret: rgba(var(--color-slate-900-rgb), 0.8);
+  67: 
+  68:   /* Common style patterns */
+  69:   --focus-ring: 0 0 0 3px var(--color-focus-ring);
+  70:   --focus-outline: 2px solid var(--color-primary);
+  71:   --status-bg-opacity: 0.15;
+  72:   --status-border-opacity: 0.25;
+  73:   --select-caret-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23134252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  74:   --select-caret-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  75: 
+  76:   /* RGB versions for opacity control */
+  77:   --color-success-rgb: 33, 128, 141;
+  78:   --color-error-rgb: 192, 21, 47;
+  79:   --color-warning-rgb: 168, 75, 47;
+  80:   --color-info-rgb: 98, 108, 113;
+  81: 
+  82:   /* Typography */
+  83:   --font-family-base: "FKGroteskNeue", "Geist", "Inter", -apple-system,
+  84:     BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  85:   --font-family-mono: "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo,
+  86:     Monaco, Consolas, monospace;
+  87:   --font-size-xs: 11px;
+  88:   --font-size-sm: 12px;
+  89:   --font-size-base: 14px;
+  90:   --font-size-md: 14px;
+  91:   --font-size-lg: 16px;
+  92:   --font-size-xl: 18px;
+  93:   --font-size-2xl: 20px;
+  94:   --font-size-3xl: 24px;
+  95:   --font-size-4xl: 30px;
+  96:   --font-weight-normal: 400;
+  97:   --font-weight-medium: 500;
+  98:   --font-weight-semibold: 550;
+  99:   --font-weight-bold: 600;
+ 100:   --line-height-tight: 1.2;
+ 101:   --line-height-normal: 1.5;
+ 102:   --letter-spacing-tight: -0.01em;
+ 103: 
+ 104:   /* Spacing */
+ 105:   --space-0: 0;
+ 106:   --space-1: 1px;
+ 107:   --space-2: 2px;
+ 108:   --space-4: 4px;
+ 109:   --space-6: 6px;
+ 110:   --space-8: 8px;
+ 111:   --space-10: 10px;
+ 112:   --space-12: 12px;
+ 113:   --space-16: 16px;
+ 114:   --space-20: 20px;
+ 115:   --space-24: 24px;
+ 116:   --space-32: 32px;
+ 117: 
+ 118:   /* Border Radius */
+ 119:   --radius-sm: 6px;
+ 120:   --radius-base: 8px;
+ 121:   --radius-md: 10px;
+ 122:   --radius-lg: 12px;
+ 123:   --radius-full: 9999px;
+ 124: 
+ 125:   /* Shadows */
+ 126:   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.02);
+ 127:   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+ 128:   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.04),
+ 129:     0 2px 4px -1px rgba(0, 0, 0, 0.02);
+ 130:   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04),
+ 131:     0 4px 6px -2px rgba(0, 0, 0, 0.02);
+ 132:   --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.15),
+ 133:     inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+ 134: 
+ 135:   /* Animation */
+ 136:   --duration-fast: 150ms;
+ 137:   --duration-normal: 250ms;
+ 138:   --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
+ 139: 
+ 140:   /* Layout */
+ 141:   --container-sm: 640px;
+ 142:   --container-md: 768px;
+ 143:   --container-lg: 1024px;
+ 144:   --container-xl: 1280px;
+ 145: }
+ 146: 
+ 147: /* Dark mode colors */
+ 148: @media (prefers-color-scheme: dark) {
+ 149:   :root {
+ 150:     /* RGB versions for opacity control (Dark Mode) */
+ 151:     --color-gray-400-rgb: 119, 124, 124;
+ 152:     --color-teal-300-rgb: 50, 184, 198;
+ 153:     --color-gray-300-rgb: 167, 169, 169;
+ 154:     --color-gray-200-rgb: 245, 245, 245;
+ 155: 
+ 156:     /* Background color tokens (Dark Mode) */
+ 157:     --color-bg-1: rgba(29, 78, 216, 0.15); /* Dark blue */
+ 158:     --color-bg-2: rgba(180, 83, 9, 0.15); /* Dark yellow */
+ 159:     --color-bg-3: rgba(21, 128, 61, 0.15); /* Dark green */
+ 160:     --color-bg-4: rgba(185, 28, 28, 0.15); /* Dark red */
+ 161:     --color-bg-5: rgba(107, 33, 168, 0.15); /* Dark purple */
+ 162:     --color-bg-6: rgba(194, 65, 12, 0.15); /* Dark orange */
+ 163:     --color-bg-7: rgba(190, 24, 93, 0.15); /* Dark pink */
+ 164:     --color-bg-8: rgba(8, 145, 178, 0.15); /* Dark cyan */
+ 165: 
+ 166:     /* Semantic Color Tokens (Dark Mode) */
+ 167:     --color-background: var(--color-charcoal-700);
+ 168:     --color-surface: var(--color-charcoal-800);
+ 169:     --color-text: var(--color-gray-200);
+ 170:     --color-text-secondary: rgba(var(--color-gray-300-rgb), 0.7);
+ 171:     --color-primary: var(--color-teal-300);
+ 172:     --color-primary-hover: var(--color-teal-400);
+ 173:     --color-primary-active: var(--color-teal-800);
+ 174:     --color-secondary: rgba(var(--color-gray-400-rgb), 0.15);
+ 175:     --color-secondary-hover: rgba(var(--color-gray-400-rgb), 0.25);
+ 176:     --color-secondary-active: rgba(var(--color-gray-400-rgb), 0.3);
+ 177:     --color-border: rgba(var(--color-gray-400-rgb), 0.3);
+ 178:     --color-error: var(--color-red-400);
+ 179:     --color-success: var(--color-teal-300);
+ 180:     --color-warning: var(--color-orange-400);
+ 181:     --color-info: var(--color-gray-300);
+ 182:     --color-focus-ring: rgba(var(--color-teal-300-rgb), 0.4);
+ 183:     --color-btn-primary-text: var(--color-slate-900);
+ 184:     --color-card-border: rgba(var(--color-gray-400-rgb), 0.2);
+ 185:     --color-card-border-inner: rgba(var(--color-gray-400-rgb), 0.15);
+ 186:     --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+ 187:       inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+ 188:     --button-border-secondary: rgba(var(--color-gray-400-rgb), 0.2);
+ 189:     --color-border-secondary: rgba(var(--color-gray-400-rgb), 0.2);
+ 190:     --color-select-caret: rgba(var(--color-gray-200-rgb), 0.8);
+ 191: 
+ 192:     /* Common style patterns - updated for dark mode */
+ 193:     --focus-ring: 0 0 0 3px var(--color-focus-ring);
+ 194:     --focus-outline: 2px solid var(--color-primary);
+ 195:     --status-bg-opacity: 0.15;
+ 196:     --status-border-opacity: 0.25;
+ 197:     --select-caret-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23134252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+ 198:     --select-caret-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+ 199: 
+ 200:     /* RGB versions for dark mode */
+ 201:     --color-success-rgb: var(--color-teal-300-rgb);
+ 202:     --color-error-rgb: var(--color-red-400-rgb);
+ 203:     --color-warning-rgb: var(--color-orange-400-rgb);
+ 204:     --color-info-rgb: var(--color-gray-300-rgb);
+ 205:   }
+ 206: }
+ 207: 
+ 208: /* Data attribute for manual theme switching */
+ 209: [data-color-scheme="dark"] {
+ 210:   /* RGB versions for opacity control (dark mode) */
+ 211:   --color-gray-400-rgb: 119, 124, 124;
+ 212:   --color-teal-300-rgb: 50, 184, 198;
+ 213:   --color-gray-300-rgb: 167, 169, 169;
+ 214:   --color-gray-200-rgb: 245, 245, 245;
+ 215: 
+ 216:   /* Colorful background palette - Dark Mode */
+ 217:   --color-bg-1: rgba(29, 78, 216, 0.15); /* Dark blue */
+ 218:   --color-bg-2: rgba(180, 83, 9, 0.15); /* Dark yellow */
+ 219:   --color-bg-3: rgba(21, 128, 61, 0.15); /* Dark green */
+ 220:   --color-bg-4: rgba(185, 28, 28, 0.15); /* Dark red */
+ 221:   --color-bg-5: rgba(107, 33, 168, 0.15); /* Dark purple */
+ 222:   --color-bg-6: rgba(194, 65, 12, 0.15); /* Dark orange */
+ 223:   --color-bg-7: rgba(190, 24, 93, 0.15); /* Dark pink */
+ 224:   --color-bg-8: rgba(8, 145, 178, 0.15); /* Dark cyan */
+ 225: 
+ 226:   /* Semantic Color Tokens (Dark Mode) */
+ 227:   --color-background: var(--color-charcoal-700);
+ 228:   --color-surface: var(--color-charcoal-800);
+ 229:   --color-text: var(--color-gray-200);
+ 230:   --color-text-secondary: rgba(var(--color-gray-300-rgb), 0.7);
+ 231:   --color-primary: var(--color-teal-300);
+ 232:   --color-primary-hover: var(--color-teal-400);
+ 233:   --color-primary-active: var(--color-teal-800);
+ 234:   --color-secondary: rgba(var(--color-gray-400-rgb), 0.15);
+ 235:   --color-secondary-hover: rgba(var(--color-gray-400-rgb), 0.25);
+ 236:   --color-secondary-active: rgba(var(--color-gray-400-rgb), 0.3);
+ 237:   --color-border: rgba(var(--color-gray-400-rgb), 0.3);
+ 238:   --color-error: var(--color-red-400);
+ 239:   --color-success: var(--color-teal-300);
+ 240:   --color-warning: var(--color-orange-400);
+ 241:   --color-info: var(--color-gray-300);
+ 242:   --color-focus-ring: rgba(var(--color-teal-300-rgb), 0.4);
+ 243:   --color-btn-primary-text: var(--color-slate-900);
+ 244:   --color-card-border: rgba(var(--color-gray-400-rgb), 0.15);
+ 245:   --color-card-border-inner: rgba(var(--color-gray-400-rgb), 0.15);
+ 246:   --shadow-inset-sm: inset 0 1px 0 rgba(255, 255, 255, 0.1),
+ 247:     inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+ 248:   --color-border-secondary: rgba(var(--color-gray-400-rgb), 0.2);
+ 249:   --color-select-caret: rgba(var(--color-gray-200-rgb), 0.8);
+ 250: 
+ 251:   /* Common style patterns - updated for dark mode */
+ 252:   --focus-ring: 0 0 0 3px var(--color-focus-ring);
+ 253:   --focus-outline: 2px solid var(--color-primary);
+ 254:   --status-bg-opacity: 0.15;
+ 255:   --status-border-opacity: 0.25;
+ 256:   --select-caret-light: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23134252' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+ 257:   --select-caret-dark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f5f5f5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+ 258: 
+ 259:   /* RGB versions for dark mode */
+ 260:   --color-success-rgb: var(--color-teal-300-rgb);
+ 261:   --color-error-rgb: var(--color-red-400-rgb);
+ 262:   --color-warning-rgb: var(--color-orange-400-rgb);
+ 263:   --color-info-rgb: var(--color-gray-300-rgb);
+ 264: }
+ 265: 
+ 266: [data-color-scheme="light"] {
+ 267:   /* RGB versions for opacity control (light mode) */
+ 268:   --color-brown-600-rgb: 94, 82, 64;
+ 269:   --color-teal-500-rgb: 33, 128, 141;
+ 270:   --color-slate-900-rgb: 19, 52, 59;
+ 271: 
+ 272:   /* Semantic Color Tokens (Light Mode) */
+ 273:   --color-background: var(--color-cream-50);
+ 274:   --color-surface: var(--color-cream-100);
+ 275:   --color-text: var(--color-slate-900);
+ 276:   --color-text-secondary: var(--color-slate-500);
+ 277:   --color-primary: var(--color-teal-500);
+ 278:   --color-primary-hover: var(--color-teal-600);
+ 279:   --color-primary-active: var(--color-teal-700);
+ 280:   --color-secondary: rgba(var(--color-brown-600-rgb), 0.12);
+ 281:   --color-secondary-hover: rgba(var(--color-brown-600-rgb), 0.2);
+ 282:   --color-secondary-active: rgba(var(--color-brown-600-rgb), 0.25);
+ 283:   --color-border: rgba(var(--color-brown-600-rgb), 0.2);
+ 284:   --color-btn-primary-text: var(--color-cream-50);
+ 285:   --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
+ 286:   --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
+ 287:   --color-error: var(--color-red-500);
+ 288:   --color-success: var(--color-teal-500);
+ 289:   --color-warning: var(--color-orange-500);
+ 290:   --color-info: var(--color-slate-500);
+ 291:   --color-focus-ring: rgba(var(--color-teal-500-rgb), 0.4);
+ 292: 
+ 293:   /* RGB versions for light mode */
+ 294:   --color-success-rgb: var(--color-teal-500-rgb);
+ 295:   --color-error-rgb: var(--color-red-500-rgb);
+ 296:   --color-warning-rgb: var(--color-orange-500-rgb);
+ 297:   --color-info-rgb: var(--color-slate-500-rgb);
+ 298: }
+ 299: 
+ 300: /* Base styles */
+ 301: html {
+ 302:   font-size: var(--font-size-base);
+ 303:   font-family: var(--font-family-base);
+ 304:   line-height: var(--line-height-normal);
+ 305:   color: var(--color-text);
+ 306:   background-color: var(--color-background);
+ 307:   -webkit-font-smoothing: antialiased;
+ 308:   box-sizing: border-box;
+ 309: }
+ 310: 
+ 311: body {
+ 312:   margin: 0;
+ 313:   padding: 0;
+ 314: }
+ 315: 
+ 316: *,
+ 317: *::before,
+ 318: *::after {
+ 319:   box-sizing: inherit;
+ 320: }
+ 321: 
+ 322: /* Typography */
+ 323: h1,
+ 324: h2,
+ 325: h3,
+ 326: h4,
+ 327: h5,
+ 328: h6 {
+ 329:   margin: 0;
+ 330:   font-weight: var(--font-weight-semibold);
+ 331:   line-height: var(--line-height-tight);
+ 332:   color: var(--color-text);
+ 333:   letter-spacing: var(--letter-spacing-tight);
+ 334: }
+ 335: 
+ 336: h1 {
+ 337:   font-size: var(--font-size-4xl);
+ 338: }
+ 339: h2 {
+ 340:   font-size: var(--font-size-3xl);
+ 341: }
+ 342: h3 {
+ 343:   font-size: var(--font-size-2xl);
+ 344: }
+ 345: h4 {
+ 346:   font-size: var(--font-size-xl);
+ 347: }
+ 348: h5 {
+ 349:   font-size: var(--font-size-lg);
+ 350: }
+ 351: h6 {
+ 352:   font-size: var(--font-size-md);
+ 353: }
+ 354: 
+ 355: p {
+ 356:   margin: 0 0 var(--space-16) 0;
+ 357: }
+ 358: 
+ 359: a {
+ 360:   color: var(--color-primary);
+ 361:   text-decoration: none;
+ 362:   transition: color var(--duration-fast) var(--ease-standard);
+ 363: }
+ 364: 
+ 365: a:hover {
+ 366:   color: var(--color-primary-hover);
+ 367: }
+ 368: 
+ 369: code,
+ 370: pre {
+ 371:   font-family: var(--font-family-mono);
+ 372:   font-size: calc(var(--font-size-base) * 0.95);
+ 373:   background-color: var(--color-secondary);
+ 374:   border-radius: var(--radius-sm);
+ 375: }
+ 376: 
+ 377: code {
+ 378:   padding: var(--space-1) var(--space-4);
+ 379: }
+ 380: 
+ 381: pre {
+ 382:   padding: var(--space-16);
+ 383:   margin: var(--space-16) 0;
+ 384:   overflow: auto;
+ 385:   border: 1px solid var(--color-border);
+ 386: }
+ 387: 
+ 388: pre code {
+ 389:   background: none;
+ 390:   padding: 0;
+ 391: }
+ 392: 
+ 393: /* Buttons */
+ 394: .btn {
+ 395:   display: inline-flex;
+ 396:   align-items: center;
+ 397:   justify-content: center;
+ 398:   padding: var(--space-8) var(--space-16);
+ 399:   border-radius: var(--radius-base);
+ 400:   font-size: var(--font-size-base);
+ 401:   font-weight: 500;
+ 402:   line-height: 1.5;
+ 403:   cursor: pointer;
+ 404:   transition: all var(--duration-normal) var(--ease-standard);
+ 405:   border: none;
+ 406:   text-decoration: none;
+ 407:   position: relative;
+ 408: }
+ 409: 
+ 410: .btn:focus-visible {
+ 411:   outline: none;
+ 412:   box-shadow: var(--focus-ring);
+ 413: }
+ 414: 
+ 415: .btn--primary {
+ 416:   background: var(--color-primary);
+ 417:   color: var(--color-btn-primary-text);
+ 418: }
+ 419: 
+ 420: .btn--primary:hover {
+ 421:   background: var(--color-primary-hover);
+ 422: }
+ 423: 
+ 424: .btn--primary:active {
+ 425:   background: var(--color-primary-active);
+ 426: }
+ 427: 
+ 428: .btn--secondary {
+ 429:   background: var(--color-secondary);
+ 430:   color: var(--color-text);
+ 431: }
+ 432: 
+ 433: .btn--secondary:hover {
+ 434:   background: var(--color-secondary-hover);
+ 435: }
+ 436: 
+ 437: .btn--secondary:active {
+ 438:   background: var(--color-secondary-active);
+ 439: }
+ 440: 
+ 441: .btn--outline {
+ 442:   background: transparent;
+ 443:   border: 1px solid var(--color-border);
+ 444:   color: var(--color-text);
+ 445: }
+ 446: 
+ 447: .btn--outline:hover {
+ 448:   background: var(--color-secondary);
+ 449: }
+ 450: 
+ 451: .btn--sm {
+ 452:   padding: var(--space-4) var(--space-12);
+ 453:   font-size: var(--font-size-sm);
+ 454:   border-radius: var(--radius-sm);
+ 455: }
+ 456: 
+ 457: .btn--lg {
+ 458:   padding: var(--space-10) var(--space-20);
+ 459:   font-size: var(--font-size-lg);
+ 460:   border-radius: var(--radius-md);
+ 461: }
+ 462: 
+ 463: .btn--full-width {
+ 464:   width: 100%;
+ 465: }
+ 466: 
+ 467: .btn:disabled {
+ 468:   opacity: 0.5;
+ 469:   cursor: not-allowed;
+ 470: }
+ 471: 
+ 472: /* Form elements */
+ 473: .form-control {
+ 474:   display: block;
+ 475:   width: 100%;
+ 476:   padding: var(--space-8) var(--space-12);
+ 477:   font-size: var(--font-size-md);
+ 478:   line-height: 1.5;
+ 479:   color: var(--color-text);
+ 480:   background-color: var(--color-surface);
+ 481:   border: 1px solid var(--color-border);
+ 482:   border-radius: var(--radius-base);
+ 483:   transition: border-color var(--duration-fast) var(--ease-standard),
+ 484:     box-shadow var(--duration-fast) var(--ease-standard);
+ 485: }
+ 486: 
+ 487: textarea.form-control {
+ 488:   font-family: var(--font-family-base);
+ 489:   font-size: var(--font-size-base);
+ 490: }
+ 491: 
+ 492: select.form-control {
+ 493:   padding: var(--space-8) var(--space-12);
+ 494:   -webkit-appearance: none;
+ 495:   -moz-appearance: none;
+ 496:   appearance: none;
+ 497:   background-image: var(--select-caret-light);
+ 498:   background-repeat: no-repeat;
+ 499:   background-position: right var(--space-12) center;
+ 500:   background-size: 16px;
+ 501:   padding-right: var(--space-32);
+ 502: }
+ 503: 
+ 504: /* Add a dark mode specific caret */
+ 505: @media (prefers-color-scheme: dark) {
+ 506:   select.form-control {
+ 507:     background-image: var(--select-caret-dark);
+ 508:   }
+ 509: }
+ 510: 
+ 511: /* Also handle data-color-scheme */
+ 512: [data-color-scheme="dark"] select.form-control {
+ 513:   background-image: var(--select-caret-dark);
+ 514: }
+ 515: 
+ 516: [data-color-scheme="light"] select.form-control {
+ 517:   background-image: var(--select-caret-light);
+ 518: }
+ 519: 
+ 520: .form-control:focus {
+ 521:   border-color: var(--color-primary);
+ 522:   outline: var(--focus-outline);
+ 523: }
+ 524: 
+ 525: .form-label {
+ 526:   display: block;
+ 527:   margin-bottom: var(--space-8);
+ 528:   font-weight: var(--font-weight-medium);
+ 529:   font-size: var(--font-size-sm);
+ 530: }
+ 531: 
+ 532: .form-group {
+ 533:   margin-bottom: var(--space-16);
+ 534: }
+ 535: 
+ 536: /* Card component */
+ 537: .card {
+ 538:   background-color: var(--color-surface);
+ 539:   border-radius: var(--radius-lg);
+ 540:   border: 1px solid var(--color-card-border);
+ 541:   box-shadow: var(--shadow-sm);
+ 542:   overflow: hidden;
+ 543:   transition: box-shadow var(--duration-normal) var(--ease-standard);
+ 544: }
+ 545: 
+ 546: .card:hover {
+ 547:   box-shadow: var(--shadow-md);
+ 548: }
+ 549: 
+ 550: .card__body {
+ 551:   padding: var(--space-16);
+ 552: }
+ 553: 
+ 554: .card__header,
+ 555: .card__footer {
+ 556:   padding: var(--space-16);
+ 557:   border-bottom: 1px solid var(--color-card-border-inner);
+ 558: }
+ 559: 
+ 560: /* Status indicators - simplified with CSS variables */
+ 561: .status {
+ 562:   display: inline-flex;
+ 563:   align-items: center;
+ 564:   padding: var(--space-6) var(--space-12);
+ 565:   border-radius: var(--radius-full);
+ 566:   font-weight: var(--font-weight-medium);
+ 567:   font-size: var(--font-size-sm);
+ 568: }
+ 569: 
+ 570: .status--success {
+ 571:   background-color: rgba(
+ 572:     var(--color-success-rgb, 33, 128, 141),
+ 573:     var(--status-bg-opacity)
+ 574:   );
+ 575:   color: var(--color-success);
+ 576:   border: 1px solid
+ 577:     rgba(var(--color-success-rgb, 33, 128, 141), var(--status-border-opacity));
+ 578: }
+ 579: 
+ 580: .status--error {
+ 581:   background-color: rgba(
+ 582:     var(--color-error-rgb, 192, 21, 47),
+ 583:     var(--status-bg-opacity)
+ 584:   );
+ 585:   color: var(--color-error);
+ 586:   border: 1px solid
+ 587:     rgba(var(--color-error-rgb, 192, 21, 47), var(--status-border-opacity));
+ 588: }
+ 589: 
+ 590: .status--warning {
+ 591:   background-color: rgba(
+ 592:     var(--color-warning-rgb, 168, 75, 47),
+ 593:     var(--status-bg-opacity)
+ 594:   );
+ 595:   color: var(--color-warning);
+ 596:   border: 1px solid
+ 597:     rgba(var(--color-warning-rgb, 168, 75, 47), var(--status-border-opacity));
+ 598: }
+ 599: 
+ 600: .status--info {
+ 601:   background-color: rgba(
+ 602:     var(--color-info-rgb, 98, 108, 113),
+ 603:     var(--status-bg-opacity)
+ 604:   );
+ 605:   color: var(--color-info);
+ 606:   border: 1px solid
+ 607:     rgba(var(--color-info-rgb, 98, 108, 113), var(--status-border-opacity));
+ 608: }
+ 609: 
+ 610: /* Container layout */
+ 611: .container {
+ 612:   width: 100%;
+ 613:   margin-right: auto;
+ 614:   margin-left: auto;
+ 615:   padding-right: var(--space-16);
+ 616:   padding-left: var(--space-16);
+ 617: }
+ 618: 
+ 619: @media (min-width: 640px) {
+ 620:   .container {
+ 621:     max-width: var(--container-sm);
+ 622:   }
+ 623: }
+ 624: @media (min-width: 768px) {
+ 625:   .container {
+ 626:     max-width: var(--container-md);
+ 627:   }
+ 628: }
+ 629: @media (min-width: 1024px) {
+ 630:   .container {
+ 631:     max-width: var(--container-lg);
+ 632:   }
+ 633: }
+ 634: @media (min-width: 1280px) {
+ 635:   .container {
+ 636:     max-width: var(--container-xl);
+ 637:   }
+ 638: }
+ 639: 
+ 640: /* Utility classes */
+ 641: .flex {
+ 642:   display: flex;
+ 643: }
+ 644: .flex-col {
+ 645:   flex-direction: column;
+ 646: }
+ 647: .items-center {
+ 648:   align-items: center;
+ 649: }
+ 650: .justify-center {
+ 651:   justify-content: center;
+ 652: }
+ 653: .justify-between {
+ 654:   justify-content: space-between;
+ 655: }
+ 656: .gap-4 {
+ 657:   gap: var(--space-4);
+ 658: }
+ 659: .gap-8 {
+ 660:   gap: var(--space-8);
+ 661: }
+ 662: .gap-16 {
+ 663:   gap: var(--space-16);
+ 664: }
+ 665: 
+ 666: .m-0 {
+ 667:   margin: 0;
+ 668: }
+ 669: .mt-8 {
+ 670:   margin-top: var(--space-8);
+ 671: }
+ 672: .mb-8 {
+ 673:   margin-bottom: var(--space-8);
+ 674: }
+ 675: .mx-8 {
+ 676:   margin-left: var(--space-8);
+ 677:   margin-right: var(--space-8);
+ 678: }
+ 679: .my-8 {
+ 680:   margin-top: var(--space-8);
+ 681:   margin-bottom: var(--space-8);
+ 682: }
+ 683: 
+ 684: .p-0 {
+ 685:   padding: 0;
+ 686: }
+ 687: .py-8 {
+ 688:   padding-top: var(--space-8);
+ 689:   padding-bottom: var(--space-8);
+ 690: }
+ 691: .px-8 {
+ 692:   padding-left: var(--space-8);
+ 693:   padding-right: var(--space-8);
+ 694: }
+ 695: .py-16 {
+ 696:   padding-top: var(--space-16);
+ 697:   padding-bottom: var(--space-16);
+ 698: }
+ 699: .px-16 {
+ 700:   padding-left: var(--space-16);
+ 701:   padding-right: var(--space-16);
+ 702: }
+ 703: 
+ 704: .block {
+ 705:   display: block;
+ 706: }
+ 707: .hidden {
+ 708:   display: none;
+ 709: }
+ 710: 
+ 711: /* Accessibility */
+ 712: .sr-only {
+ 713:   position: absolute;
+ 714:   width: 1px;
+ 715:   height: 1px;
+ 716:   padding: 0;
+ 717:   margin: -1px;
+ 718:   overflow: hidden;
+ 719:   clip: rect(0, 0, 0, 0);
+ 720:   white-space: nowrap;
+ 721:   border-width: 0;
+ 722: }
+ 723: 
+ 724: :focus-visible {
+ 725:   outline: var(--focus-outline);
+ 726:   outline-offset: 2px;
+ 727: }
+ 728: 
+ 729: /* Dark mode specifics */
+ 730: [data-color-scheme="dark"] .btn--outline {
+ 731:   border: 1px solid var(--color-border-secondary);
+ 732: }
+ 733: 
+ 734: @font-face {
+ 735:   font-family: 'FKGroteskNeue';
+ 736:   src: url('https://r2cdn.perplexity.ai/fonts/FKGroteskNeue.woff2')
+ 737:     format('woff2');
+ 738: }
+ 739: 
+ 740: /* END PERPLEXITY DESIGN SYSTEM */
+ 741: ```css
+ 742: /* ===================================================================
+ 743:    CAREER LEVER AI - PRODUCTION GLOBALS.CSS
+ 744:    Zero duplicates | Perfect contrast | Design System Compliant
+ 745:    Path: src/app/globals.css
+ 746:    =================================================================== */
+ 747: 
+ 748: @tailwind base;
+ 749: @tailwind components;
+ 750: @tailwind utilities;
+ 751: 
+ 752: /* ===================================================================
+ 753:    DESIGN TOKENS - DESIGN SYSTEM COMPLIANT
+ 754:    =================================================================== */
+ 755: 
+ 756: @layer base {
+ 757:   :root {
+ 758:     /* ==========================================
+ 759:        LIGHT MODE (DEFAULT) - Design System Colors
+ 760:        ========================================== */
+ 761:     
+ 762:     /* Brand Colors - Using Design System */
+ 763:     --primary: var(--color-teal-500-rgb);        /* Teal 500 */
+ 764:     --primary-hover: var(--color-teal-600-rgb);
+ 765:     --primary-light: rgba(var(--color-teal-500-rgb), 0.1);
+ 766:     
+ 767:     --secondary: var(--color-orange-500-rgb);     /* Orange 500 */
+ 768:     --secondary-hover: var(--color-orange-400-rgb);
+ 769:     --secondary-light: rgba(var(--color-orange-500-rgb), 0.1);
+ 770:     
+ 771:     --accent: var(--color-teal-300-rgb);          /* Teal 300 */
+ 772:     --accent-hover: var(--color-teal-400-rgb);
+ 773:     --accent-light: rgba(var(--color-teal-300-rgb), 0.1);
+ 774:     
+ 775:     /* Design System Neutrals */
+ 776:     --background: 252 252 249;                    /* Cream 50 */
+ 777:     --foreground: var(--color-slate-900-rgb);     /* Slate 900 */
+ 778:     
+ 779:     --card: 255 255 253;                          /* Cream 100 */
+ 780:     --card-foreground: var(--color-slate-900-rgb);
+ 781:     
+ 782:     --muted: 245 245 245;                         /* Gray 200 */
+ 783:     --muted-foreground: var(--color-slate-500-rgb);
+ 784:     
+ 785:     --popover: 255 255 253;
+ 786:     --popover-foreground: var(--color-slate-900-rgb);
+ 787:     
+ 788:     --border: rgba(var(--color-brown-600-rgb), 0.2);
+ 789:     --input: 255 255 253;                         /* Cream 100 */
+ 790:     --input-foreground: var(--color-slate-900-rgb);
+ 791:     --ring: var(--color-teal-500-rgb);
+ 792:     
+ 793:     /* Status Colors - Design System */
+ 794:     --success: var(--color-teal-500-rgb);
+ 795:     --success-light: rgba(var(--color-teal-500-rgb), 0.15);
+ 796:     --success-foreground: 252 252 249;
+ 797:     
+ 798:     --warning: var(--color-orange-500-rgb);
+ 799:     --warning-light: rgba(var(--color-orange-500-rgb), 0.15);
+ 800:     --warning-foreground: 252 252 249;
+ 801:     
+ 802:     --destructive: var(--color-red-500-rgb);
+ 803:     --destructive-light: rgba(var(--color-red-500-rgb), 0.15);
+ 804:     --destructive-foreground: 252 252 249;
+ 805:     
+ 806:     /* Design System Shadows */
+ 807:     --shadow-xs: var(--shadow-xs);
+ 808:     --shadow-sm: var(--shadow-sm);
+ 809:     --shadow-md: var(--shadow-md);
+ 810:     --shadow-lg: var(--shadow-lg);
+ 811:     --shadow-xl: var(--shadow-lg);
+ 812:     --shadow-primary: 0 8px 24px rgba(var(--color-teal-500-rgb), 0.24);
+ 813:     --shadow-secondary: 0 8px 24px rgba(var(--color-orange-500-rgb), 0.24);
+ 814:     
+ 815:     /* Design System Spacing */
+ 816:     --space-1: var(--space-4);    /* 4px */
+ 817:     --space-2: var(--space-8);    /* 8px */
+ 818:     --space-3: var(--space-12);   /* 12px */
+ 819:     --space-4: var(--space-16);   /* 16px */
+ 820:     --space-6: var(--space-24);   /* 24px */
+ 821:     --space-8: var(--space-32);   /* 32px */
+ 822:     --space-12: calc(var(--space-32) + var(--space-16)); /* 48px */
+ 823:     
+ 824:     /* Design System Border Radius */
+ 825:     --radius-sm: var(--radius-sm);
+ 826:     --radius-md: var(--radius-md);
+ 827:     --radius-lg: var(--radius-lg);
+ 828:     --radius-xl: calc(var(--radius-lg) + var(--space-4));
+ 829:     --radius-2xl: var(--space-32);
+ 830:     --radius-full: var(--radius-full);
+ 831:     
+ 832:     /* Design System Typography */
+ 833:     --font-sans: var(--font-family-base);
+ 834:     --font-mono: var(--font-family-mono);
+ 835:   }
+ 836:   
+ 837:   /* ==========================================
+ 838:      DARK MODE - Design System Colors
+ 839:      ========================================== */
+ 840:   
+ 841:   .dark {
+ 842:     /* Design System Dark Backgrounds */
+ 843:     --background: var(--color-charcoal-700-rgb);  /* Charcoal 700 */
+ 844:     --foreground: var(--color-gray-200-rgb);      /* Gray 200 */
+ 845:     
+ 846:     --card: var(--color-charcoal-800-rgb);        /* Charcoal 800 */
+ 847:     --card-foreground: var(--color-gray-200-rgb);
+ 848:     
+ 849:     --muted: var(--color-gray-400-rgb);
+ 850:     --muted-foreground: rgba(var(--color-gray-300-rgb), 0.7);
+ 851:     
+ 852:     --popover: var(--color-charcoal-800-rgb);
+ 853:     --popover-foreground: var(--color-gray-200-rgb);
+ 854:     
+ 855:     --border: rgba(var(--color-gray-400-rgb), 0.3);
+ 856:     --input: var(--color-charcoal-800-rgb);
+ 857:     --input-foreground: var(--color-gray-200-rgb);
+ 858:     
+ 859:     /* Design System Dark Mode Colors */
+ 860:     --primary: var(--color-teal-300-rgb);         /* Brighter teal */
+ 861:     --secondary: var(--color-orange-400-rgb);     /* Brighter orange */
+ 862:     --accent: var(--color-teal-400-rgb);
+ 863:     
+ 864:     /* Status colors - Design System Dark */
+ 865:     --success: var(--color-teal-300-rgb);
+ 866:     --warning: var(--color-orange-400-rgb);
+ 867:     --destructive: var(--color-red-400-rgb);
+ 868:     
+ 869:     /* Stronger shadows in dark mode */
+ 870:     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+ 871:     --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+ 872:     --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.5);
+ 873:     --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.7), 0 4px 8px rgba(0, 0, 0, 0.6);
+ 874:     --shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.8), 0 8px 16px rgba(0, 0, 0, 0.7);
+ 875:     --shadow-primary: 0 8px 24px rgba(var(--color-teal-300-rgb), 0.4);
+ 876:     --shadow-secondary: 0 8px 24px rgba(var(--color-orange-400-rgb), 0.4);
+ 877:   }
+ 878:   
+ 879:   /* ==========================================
+ 880:      BASE ELEMENT STYLES
+ 881:      ========================================== */
+ 882:   
+ 883:   * {
+ 884:     @apply border-border;
+ 885:     word-wrap: break-word;
+ 886:     overflow-wrap: break-word;
+ 887:   }
+ 888:   
+ 889:   html {
+ 890:     scroll-behavior: smooth;
+ 891:     -webkit-font-smoothing: antialiased;
+ 892:     font-family: var(--font-family-base);
+ 893:     font-size: var(--font-size-base);
+ 894:     line-height: var(--line-height-normal);
+ 895:   }
+ 896:   
+ 897:   body {
+ 898:     @apply bg-background text-foreground;
+ 899:     font-family: var(--font-sans);
+ 900:     min-height: 100vh;
+ 901:     margin: 0;
+ 902:     padding: 0;
+ 903:     background-color: var(--color-background);
+ 904:     color: var(--color-text);
+ 905:   }
+ 906:   
+ 907:   h1, h2, h3, h4, h5, h6 {
+ 908:     font-weight: var(--font-weight-semibold);
+ 909:     line-height: var(--line-height-tight);
+ 910:     color: var(--color-text);
+ 911:     letter-spacing: var(--letter-spacing-tight);
+ 912:     margin: 0;
+ 913:   }
+ 914:   
+ 915:   h1 { font-size: var(--font-size-4xl); }   /* 30px */
+ 916:   h2 { font-size: var(--font-size-3xl); }   /* 24px */
+ 917:   h3 { font-size: var(--font-size-2xl); }   /* 20px */
+ 918:   h4 { font-size: var(--font-size-xl); }    /* 18px */
+ 919:   h5 { font-size: var(--font-size-lg); }    /* 16px */
+ 920:   h6 { font-size: var(--font-size-md); }    /* 14px */
+ 921: }
+ 922: 
+ 923: /* ===================================================================
+ 924:    COMPONENTS - Design System Compliant
+ 925:    =================================================================== */
+ 926: 
+ 927: @layer components {
+ 928:   /* ==========================================
+ 929:      BUTTONS - Design System Styling
+ 930:      ========================================== */
+ 931:   
+ 932:   .btn {
+ 933:     @apply inline-flex items-center justify-center gap-2;
+ 934:     padding: var(--space-8) var(--space-16);
+ 935:     border-radius: var(--radius-base);
+ 936:     font-size: var(--font-size-base);
+ 937:     font-weight: var(--font-weight-medium);
+ 938:     line-height: 1.5;
+ 939:     cursor: pointer;
+ 940:     transition: all var(--duration-normal) var(--ease-standard);
+ 941:     border: none;
+ 942:     outline: none;
+ 943:     @apply disabled:opacity-50 disabled:cursor-not-allowed;
+ 944:     min-height: 48px;
+ 945:   }
+ 946:   
+ 947:   .btn-primary {
+ 948:     background: var(--color-primary);
+ 949:     color: var(--color-btn-primary-text);
+ 950:     box-shadow: var(--shadow-sm);
+ 951:   }
+ 952:   
+ 953:   .btn-primary:hover:not(:disabled) {
+ 954:     background: var(--color-primary-hover);
+ 955:     box-shadow: var(--shadow-primary);
+ 956:     transform: translateY(-2px);
+ 957:   }
+ 958:   
+ 959:   .btn-secondary {
+ 960:     background: var(--color-secondary);
+ 961:     color: var(--color-text);
+ 962:     border: 1px solid var(--color-border);
+ 963:   }
+ 964:   
+ 965:   .btn-secondary:hover:not(:disabled) {
+ 966:     background: var(--color-secondary-hover);
+ 967:     transform: translateY(-1px);
+ 968:   }
+ 969:   
+ 970:   .btn-ghost {
+ 971:     @apply bg-transparent;
+ 972:     color: var(--color-primary);
+ 973:   }
+ 974:   
+ 975:   .btn-ghost:hover:not(:disabled) {
+ 976:     background: rgba(var(--color-teal-500-rgb), 0.1);
+ 977:   }
+ 978:   
+ 979:   /* ==========================================
+ 980:      CARDS - Design System Styling
+ 981:      ========================================== */
+ 982:   
+ 983:   .card {
+ 984:     background-color: var(--color-surface);
+ 985:     color: var(--color-text);
+ 986:     border-radius: var(--radius-lg);
+ 987:     border: 1px solid var(--color-card-border);
+ 988:     @apply transition-all duration-200;
+ 989:     padding: var(--space-24);
+ 990:     box-shadow: var(--shadow-sm);
+ 991:   }
+ 992:   
+ 993:   .card:hover {
+ 994:     border-color: rgba(var(--color-teal-500-rgb), 0.4);
+ 995:     box-shadow: var(--shadow-md);
+ 996:     transform: translateY(-2px);
+ 997:   }
+ 998:   
+ 999:   /* ==========================================
+1000:      JOB CARDS - Design System Premium Look
+1001:      ========================================== */
+1002:   
+1003:   .job-card {
+1004:     @apply card cursor-pointer;
+1005:     position: relative;
+1006:     overflow: hidden;
+1007:   }
+1008:   
+1009:   .job-card::before {
+1010:     content: '';
+1011:     position: absolute;
+1012:     top: 0;
+1013:     left: 0;
+1014:     width: 4px;
+1015:     height: 100%;
+1016:     background: linear-gradient(135deg, var(--color-primary), var(--color-teal-300));
+1017:     opacity: 0;
+1018:     transition: opacity var(--duration-normal) var(--ease-standard);
+1019:   }
+1020:   
+1021:   .job-card:hover::before {
+1022:     opacity: 1;
+1023:   }
+1024:   
+1025:   .job-card__title {
+1026:     font-size: var(--font-size-lg);
+1027:     font-weight: var(--font-weight-semibold);
+1028:     color: var(--color-text);
+1029:     max-width: 100%;
+1030:     overflow: hidden;
+1031:     text-overflow: ellipsis;
+1032:     white-space: nowrap;
+1033:   }
+1034:   
+1035:   .job-card__company {
+1036:     color: var(--color-text-secondary);
+1037:     font-size: var(--font-size-sm);
+1038:     max-width: 100%;
+1039:     overflow: hidden;
+1040:     text-overflow: ellipsis;
+1041:   }
+1042:   
+1043:   .job-card__meta {
+1044:     @apply flex gap-4 flex-wrap;
+1045:     font-size: var(--font-size-sm);
+1046:     color: var(--color-text-secondary);
+1047:   }
+1048:   
+1049:   /* ==========================================
+1050:      INPUTS - Design System Forms
+1051:      ========================================== */
+1052:   
+1053:   .modern-input {
+1054:     @apply w-full;
+1055:     padding: var(--space-8) var(--space-12);
+1056:     background-color: var(--color-surface);
+1057:     border: 1px solid var(--color-border);
+1058:     border-radius: var(--radius-base);
+1059:     font-size: var(--font-size-base);
+1060:     color: var(--color-text);
+1061:     transition: border-color var(--duration-fast) var(--ease-standard),
+1062:                 box-shadow var(--duration-fast) var(--ease-standard);
+1063:     min-height: 48px;
+1064:     font-size: 16px; /* Prevents iOS zoom */
+1065:   }
+1066:   
+1067:   .modern-input::placeholder {
+1068:     color: var(--color-text-secondary);
+1069:   }
+1070:   
+1071:   .modern-input:focus {
+1072:     @apply outline-none;
+1073:     border-color: var(--color-primary);
+1074:     box-shadow: var(--focus-ring);
+1075:   }
+1076:   
+1077:   /* ==========================================
+1078:      BADGES - Design System Status
+1079:      ========================================== */
+1080:   
+1081:   .badge {
+1082:     @apply inline-flex items-center gap-1;
+1083:     padding: var(--space-6) var(--space-12);
+1084:     border-radius: var(--radius-full);
+1085:     font-size: var(--font-size-xs);
+1086:     font-weight: var(--font-weight-medium);
+1087:     line-height: 1;
+1088:   }
+1089:   
+1090:   .badge-primary {
+1091:     background: rgba(var(--color-teal-500-rgb), var(--status-bg-opacity));
+1092:     color: var(--color-primary);
+1093:     border: 1px solid rgba(var(--color-teal-500-rgb), var(--status-border-opacity));
+1094:   }
+1095:   
+1096:   .badge-success {
+1097:     background: rgba(var(--color-success-rgb), var(--status-bg-opacity));
+1098:     color: var(--color-success);
+1099:     border: 1px solid rgba(var(--color-success-rgb), var(--status-border-opacity));
+1100:   }
+1101:   
+1102:   /* ==========================================
+1103:      GRADIENTS - Design System Style
+1104:      ========================================== */
+1105:   
+1106:   .gradient-primary {
+1107:     background: linear-gradient(135deg, var(--color-primary), var(--color-teal-300));
+1108:   }
+1109:   
+1110:   .gradient-hero {
+1111:     background: linear-gradient(135deg, var(--color-teal-500) 0%, var(--color-orange-500) 50%, var(--color-teal-300) 100%);
+1112:   }
+1113:   
+1114:   .gradient-text {
+1115:     background: linear-gradient(135deg, var(--color-primary), var(--color-orange-500));
+1116:     -webkit-background-clip: text;
+1117:     -webkit-text-fill-color: transparent;
+1118:     background-clip: text;
+1119:   }
+1120: }
+1121: 
+1122: /* ===================================================================
+1123:    UTILITIES
+1124:    =================================================================== */
+1125: 
+1126: @layer utilities {
+1127:   .text-safe {
+1128:     max-width: 100%;
+1129:     overflow: hidden;
+1130:     text-overflow: ellipsis;
+1131:   }
+1132:   
+1133:   .hide-scrollbar::-webkit-scrollbar {
+1134:     display: none;
+1135:   }
+1136:   
+1137:   .hide-scrollbar {
+1138:     -ms-overflow-style: none;
+1139:     scrollbar-width: none;
+1140:   }
+1141: }
+1142: 
+1143: /* ===================================================================
+1144:    MOBILE RESPONSIVE - Design System Breakpoints
+1145:    =================================================================== */
+1146: 
+1147: @media (max-width: 480px) {
+1148:   .btn,
+1149:   input,
+1150:   button,
+1151:   select,
+1152:   textarea {
+1153:     min-height: 48px;
+1154:   }
+1155:   
+1156:   .btn-primary,
+1157:   .btn-secondary {
+1158:     width: 100%;
+1159:     padding: var(--space-10) var(--space-20);
+1160:   }
+1161:   
+1162:   .card,
+1163:   .job-card {
+1164:     padding: var(--space-16);
+1165:   }
+1166:   
+1167:   h1 { font-size: var(--font-size-3xl); }
+1168:   h2 { font-size: var(--font-size-2xl); }
+1169:   h3 { font-size: var(--font-size-xl); }
+1170:   
+1171:   .job-card__meta {
+1172:     gap: var(--space-8);
+1173:   }
+1174: }
+1175: 
+1176: @media (max-width: 768px) {
+1177:   .btn,
+1178:   input,
+1179:   button,
+1180:   select,
+1181:   textarea {
+1182:     min-height: 48px;
+1183:   }
+1184:   
+1185:   .btn-primary,
+1186:   .btn-secondary {
+1187:     width: 100%;
+1188:   }
+1189:   
+1190:   .card,
+1191:   .job-card {
+1192:     padding: var(--space-16);
+1193:   }
+1194:   
+1195:   h1 { font-size: var(--font-size-3xl); }
+1196:   h2 { font-size: var(--font-size-2xl); }
+1197:   h3 { font-size: var(--font-size-xl); }
+1198: }
+1199: 
+1200: /* ===================================================================
+1201:    ACCESSIBILITY - Design System Standards
+1202:    =================================================================== */
+1203: 
+1204: :focus-visible {
+1205:   outline: var(--focus-outline);
+1206:   outline-offset: 2px;
+1207: }
+1208: 
+1209: .sr-only {
+1210:   position: absolute;
+1211:   width: 1px;
+1212:   height: 1px;
+1213:   margin: -1px;
+1214:   overflow: hidden;
+1215:   clip: rect(0, 0, 0, 0);
+1216:   white-space: nowrap;
+1217:   border-width: 0;
+1218: }
+1219: 
+1220: @media (prefers-reduced-motion: reduce) {
+1221:   *,
+1222:   *::before,
+1223:   *::after {
+1224:     animation-duration: 0.01ms !important;
+1225:     transition-duration: 0.01ms !important;
+1226:   }
+1227: }
+1228: 
+1229: /* ===================================================================
+1230:    PRINT STYLES - Resume/Email Fix
+1231:    =================================================================== */
+1232: 
+1233: @media print {
+1234:   .resume-container,
+1235:   .resume-preview,
+1236:   .email-preview,
+1237:   .pdf-preview {
+1238:     background: white !important;
+1239:     color: black !important;
+1240:   }
+1241:   
+1242:   .resume-container *,
+1243:   .resume-preview *,
+1244:   .email-preview *,
+1245:   .pdf-preview * {
+1246:     color: black !important;
+1247:   }
+1248:   
+1249:   nav,
+1250:   .sidebar,
+1251:   .btn,
+1252:   button {
+1253:     display: none !important;
+1254:   }
+1255: }
+1256: ```
+</file>
+
+</files>
