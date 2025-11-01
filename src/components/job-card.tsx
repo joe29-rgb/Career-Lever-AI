@@ -12,7 +12,7 @@ import {
   CheckBadgeIcon
 } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/use-toast'
+import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
 interface Job {
@@ -40,16 +40,11 @@ interface JobCardProps {
 
 export function JobCard({ job, resumeText, coverText, className }: JobCardProps) {
   const { data: session } = useSession()
-  const { toast } = useToast()
   const [isApplying, setIsApplying] = useState(false)
 
   const handleApply = async () => {
     if (!session?.user?.id || !resumeText || !coverText || !job.contacts?.email) {
-      toast({
-        title: 'Apply Failed',
-        description: 'Login and complete research first.',
-        variant: 'destructive'
-      })
+      toast.error('Login and complete research first.')
       return
     }
 
@@ -74,16 +69,9 @@ export function JobCard({ job, resumeText, coverText, className }: JobCardProps)
 
       const data = await response.json()
       window.location.href = data.mailtoUrl // Open email client
-      toast({
-        title: 'Application Sent!',
-        description: `Tracked as ${data.applicationId}. Check your email client.`,
-      })
+      toast.success(`Application sent! Tracked as ${data.applicationId}. Check your email client.`)
     } catch (error) {
-      toast({
-        title: 'Apply Failed',
-        description: 'Try again or check contacts.',
-        variant: 'destructive'
-      })
+      toast.error('Apply failed. Try again or check contacts.')
     } finally {
       setIsApplying(false)
     }
