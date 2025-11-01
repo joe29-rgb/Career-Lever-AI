@@ -9,6 +9,10 @@ import { Toaster } from 'react-hot-toast'
 import { OnboardingRedirect } from '@/components/onboarding/OnboardingRedirect'
 import { CommandPalette } from '@/components/command-palette'
 import { GlobalLoadingOverlay } from '@/components/global-loading-overlay'
+import { initProductionLogger } from '@/lib/utils/production-logger'
+
+// Hide console logs in production
+initProductionLogger()
 
 export const metadata: Metadata = {
   title: 'Career Lever AI - AI-Powered Job Application Assistant',

@@ -1107,3 +1107,513 @@ select {
 .job-card p {
   color: var(--muted-foreground);
 }
+
+/* ===================================================================
+   CRITICAL FIXES - UI REDESIGN
+   =================================================================== */
+
+/* FIX 1: Dark Mode Email/Resume Preview - ALWAYS WHITE */
+.email-preview,
+.resume-preview,
+.resume-container,
+.pdf-preview,
+.pdf-content,
+[class*="resume"],
+[class*="email"] {
+  background: white !important;
+  color: black !important;
+}
+
+.email-preview *,
+.resume-preview *,
+.resume-container *,
+.pdf-preview *,
+.pdf-content * {
+  color: black !important;
+  background: transparent !important;
+}
+
+.email-preview a,
+.resume-preview a {
+  color: #0066cc !important;
+  text-decoration: underline;
+}
+
+/* FIX 2: Text Overflow Prevention */
+* {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.job-card__title,
+.company-name,
+.job-title,
+.description,
+h1, h2, h3, h4, h5, h6 {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* FIX 3: Button Boundaries */
+.btn,
+button,
+[role="button"] {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .btn,
+  button,
+  [role="button"] {
+    width: 100%;
+    max-width: none;
+    white-space: normal;
+  }
+}
+
+/* FIX 4: Form Alignment */
+.form-group,
+.form-field,
+[class*="form"] {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+input,
+textarea,
+select,
+.modern-input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* FIX 5: Resume Textarea Readability */
+textarea[name="resume"],
+textarea[placeholder*="resume"],
+.resume-textarea {
+  padding: 1.5rem !important;
+  line-height: 1.8 !important;
+  word-spacing: 0.1em !important;
+  letter-spacing: 0.3px !important;
+  white-space: pre-wrap !important;
+  font-family: var(--font-mono) !important;
+}
+
+/* FIX 6: Form Validation Visual Feedback */
+input:invalid:not(:placeholder-shown),
+textarea:invalid:not(:placeholder-shown),
+select:invalid:not(:placeholder-shown) {
+  border-color: hsl(var(--destructive)) !important;
+  background-color: hsl(var(--destructive) / 0.05) !important;
+}
+
+input:valid:not(:placeholder-shown),
+textarea:valid:not(:placeholder-shown),
+select:valid:not(:placeholder-shown) {
+  border-color: hsl(var(--success)) !important;
+  background-color: hsl(var(--success) / 0.05) !important;
+}
+
+.form-error {
+  color: hsl(var(--destructive));
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.form-success {
+  color: hsl(var(--success));
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* FIX 7: Preview Box Visual Separation */
+.preview-container,
+.preview-box,
+[class*="preview"] {
+  background-color: hsl(var(--card));
+  border: 2px solid hsl(var(--primary));
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: var(--shadow-lg);
+  margin-top: 2rem;
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: hsl(var(--muted-foreground));
+  text-align: center;
+}
+
+.preview-empty__icon {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+/* FIX 8: Enhanced Button Contrast */
+.btn-primary,
+button[type="submit"],
+[class*="primary"] {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.8)) !important;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.3) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  border: none !important;
+}
+
+.btn-primary:hover,
+button[type="submit"]:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 20px hsl(var(--primary) / 0.4) !important;
+}
+
+.btn-primary:active,
+button[type="submit"]:active {
+  transform: translateY(-1px) !important;
+}
+
+/* FIX 9: Loading States */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-spinner,
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* FIX 10: Keyboard Navigation Focus States */
+*:focus-visible {
+  outline: 3px solid hsl(var(--primary)) !important;
+  outline-offset: 2px !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid hsl(var(--primary)) !important;
+  outline-offset: 2px !important;
+}
+
+/* FIX 11: Mobile Touch Targets (44px minimum) */
+@media (max-width: 768px) {
+  button,
+  .btn,
+  a[role="button"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* FIX 12: Prevent Layout Shift */
+img,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* FIX 13: Better Readability */
+p,
+li,
+td {
+  max-width: 75ch;
+  line-height: 1.6;
+}
+
+/* FIX 14: Icon System Base */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon--sm { width: 1rem; height: 1rem; }
+.icon--md { width: 1.5rem; height: 1.5rem; }
+.icon--lg { width: 2rem; height: 2rem; }
+.icon--xl { width: 3rem; height: 3rem; }
+
+/* FIX 15: Toast Notification System */
+.toast-container {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 400px;
+}
+
+@media (max-width: 768px) {
+  .toast-container {
+    bottom: 5rem;
+    left: 1rem;
+    right: 1rem;
+    max-width: none;
+  }
+}
+
+.toast {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.5rem;
+  box-shadow: var(--shadow-xl);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  animation: slide-in-right 0.3s ease;
+}
+
+.toast--success {
+  border-left: 4px solid hsl(var(--success));
+}
+
+.toast--error {
+  border-left: 4px solid hsl(var(--destructive));
+}
+
+.toast--warning {
+  border-left: 4px solid hsl(var(--warning));
+}
+
+.toast--info {
+  border-left: 4px solid hsl(var(--primary));
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* FIX 16: Skeleton Loading States */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-text {
+  height: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-text--large {
+  height: 1.5rem;
+}
+
+.skeleton-card {
+  height: 200px;
+  border-radius: var(--radius-lg);
+}
+
+/* FIX 17: Empty States */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+}
+
+.empty-state__icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.5;
+}
+
+.empty-state__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: hsl(var(--foreground));
+}
+
+.empty-state__description {
+  margin-bottom: 2rem;
+}
+
+/* FIX 18: Job Match Explanation */
+.job-match-explanation {
+  background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+  border-left: 4px solid hsl(var(--success));
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.job-match-explanation h4 {
+  margin-bottom: 1rem;
+  color: hsl(var(--foreground));
+}
+
+.job-match-explanation ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.job-match-explanation li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.match-score {
+  display: inline-block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--success));
+  margin-top: 0.5rem;
+}
+
+/* FIX 19: Company Research Cards */
+.company-research {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .company-research {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.company-card {
+  background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted)));
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  border-left: 4px solid;
+}
+
+.company-card--pros {
+  border-left-color: hsl(var(--success));
+}
+
+.company-card--cons {
+  border-left-color: hsl(var(--warning));
+}
+
+.company-card h4 {
+  margin: 1rem 0;
+  color: hsl(var(--foreground));
+}
+
+.company-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.company-card li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+/* FIX 20: Print Styles Enhancement */
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  nav,
+  .nav-container,
+  .sidebar,
+  .btn,
+  button,
+  .no-print,
+  .toast-container,
+  .loading-overlay {
+    display: none !important;
+  }
+  
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+}
