@@ -738,19 +738,6 @@ select.form-control {
 }
 
 /* END PERPLEXITY DESIGN SYSTEM */
-```css
-/* ===================================================================
-   CAREER LEVER AI - PRODUCTION-READY GLOBAL CSS
-   Clean, no duplicates, optimized
-   Version: 1.0
-   Last Updated: November 1, 2025
-   =================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 /* ===================================================================
    CSS VARIABLES - SINGLE SOURCE OF TRUTH
@@ -1586,4 +1573,3 @@ select:focus-visible {
   color: var(--color-teal-600) !important;
   text-decoration: underline;
 }
-```
