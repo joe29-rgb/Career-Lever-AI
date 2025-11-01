@@ -1,89 +1,130 @@
+/**
+ * COMPANY RESEARCH CARD - Production Ready
+ * Path: src/components/ui/company-research-card.tsx
+ * Display company pros/cons with beautiful cards
+ */
+
 'use client'
 
-import { ThumbsUp, ThumbsDown, CheckCircle, AlertCircle } from 'lucide-react'
+import React from 'react'
+import { cn } from '@/lib/utils'
 
-export interface CompanyResearchData {
-  pros?: string[]
-  cons?: string[]
-}
-
-export interface CompanyResearchCardProps {
-  data: CompanyResearchData
+interface CompanyResearchCardProps {
+  title: string
+  type: 'pros' | 'cons'
+  items: string[]
+  icon?: string
   className?: string
 }
 
-export function CompanyResearchCard({ data, className = '' }: CompanyResearchCardProps) {
-  const { pros = [], cons = [] } = data
+export function CompanyResearchCard({
+  title,
+  type,
+  items,
+  icon,
+  className,
+}: CompanyResearchCardProps) {
+  const isPros = type === 'pros'
+
+  // Color schemes
+  const colorScheme = isPros
+    ? {
+        bgLight: 'bg-green-50',
+        bgDark: 'bg-green-500/10',
+        border: 'border-green-200 dark:border-green-500/30',
+        text: 'text-green-900 dark:text-green-400',
+        labelBg: 'bg-green-100 dark:bg-green-500/20',
+        labelText: 'text-green-700 dark:text-green-400',
+        iconColor: 'text-green-600 dark:text-green-400',
+      }
+    : {
+        bgLight: 'bg-yellow-50',
+        bgDark: 'bg-yellow-500/10',
+        border: 'border-yellow-200 dark:border-yellow-500/30',
+        text: 'text-yellow-900 dark:text-yellow-400',
+        labelBg: 'bg-yellow-100 dark:bg-yellow-500/20',
+        labelText: 'text-yellow-700 dark:text-yellow-400',
+        iconColor: 'text-yellow-600 dark:text-yellow-400',
+      }
+
+  const defaultIcon = isPros ? '✓' : '⚠'
 
   return (
-    <div className={`company-research ${className}`}>
-      {/* Pros Card */}
-      {pros.length > 0 && (
-        <div className="company-card company-card--pros">
-          <h4>
-            <ThumbsUp className="w-6 h-6" style={{ color: 'var(--color-success)' }} />
-            <span>Pros</span>
-          </h4>
-          <ul>
-            {pros.map((pro, index) => (
-              <li key={index}>
-                <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-success)' }} />
-                <span>{pro}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+    <div
+      className={cn(
+        'rounded-xl border-2 p-5 transition-all',
+        colorScheme.bgDark,
+        colorScheme.border,
+        className
       )}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <span className={cn('text-2xl', colorScheme.iconColor)}>
+          {icon || defaultIcon}
+        </span>
+        <h3 className={cn('text-lg font-semibold', colorScheme.text)}>
+          {title}
+        </h3>
+      </div>
 
-      {/* Cons Card */}
-      {cons.length > 0 && (
-        <div className="company-card company-card--cons">
-          <h4>
-            <ThumbsDown className="w-6 h-6" style={{ color: 'var(--color-warning)' }} />
-            <span>Cons</span>
-          </h4>
-          <ul>
-            {cons.map((con, index) => (
-              <li key={index}>
-                <AlertCircle className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-warning)' }} />
-                <span>{con}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {/* Items List */}
+      <ul className="space-y-3">
+        {items.map((item, index) => (
+          <li
+            key={index}
+            className={cn('flex gap-3 text-sm', colorScheme.text)}
+          >
+            <span className="font-bold flex-shrink-0">
+              {isPros ? '+' : '−'}
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+
+      {items.length === 0 && (
+        <p className={cn('text-sm italic', colorScheme.text, 'opacity-75')}>
+          No {type} listed yet
+        </p>
       )}
     </div>
   )
 }
 
-// Single card variant for more flexibility
-export function CompanyCard({ 
-  type, 
-  title, 
-  items 
-}: { 
-  type: 'pros' | 'cons'
-  title: string
-  items: string[]
-}) {
-  const Icon = type === 'pros' ? ThumbsUp : ThumbsDown
-  const ItemIcon = type === 'pros' ? CheckCircle : AlertCircle
-  const colorVar = type === 'pros' ? 'var(--color-success)' : 'var(--color-warning)'
+/**
+ * COMPANY RESEARCH GRID - Container for multiple cards
+ */
+interface CompanyResearchGridProps {
+  pros: string[]
+  cons: string[]
+  className?: string
+}
 
+export function CompanyResearchGrid({
+  pros,
+  cons,
+  className,
+}: CompanyResearchGridProps) {
   return (
-    <div className={`company-card company-card--${type}`}>
-      <h4>
-        <Icon className="w-6 h-6" style={{ color: colorVar }} />
-        <span>{title}</span>
-      </h4>
-      <ul>
-        {items.map((item, index) => (
-          <li key={index}>
-            <ItemIcon className="w-4 h-4 flex-shrink-0" style={{ color: colorVar }} />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
+    <div
+      className={cn(
+        'grid grid-cols-1 md:grid-cols-2 gap-6',
+        className
+      )}
+    >
+      <CompanyResearchCard
+        title="Pros"
+        type="pros"
+        items={pros}
+        icon="✓"
+      />
+      <CompanyResearchCard
+        title="Cons"
+        type="cons"
+        items={cons}
+        icon="⚠"
+      />
     </div>
   )
 }
