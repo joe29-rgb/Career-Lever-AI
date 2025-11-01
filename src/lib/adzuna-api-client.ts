@@ -59,8 +59,10 @@ export class AdzunaAPIClient {
     this.appId = process.env.ADZUNA_APP_ID || ''
     this.appKey = process.env.ADZUNA_API_KEY || ''
 
+    // Don't throw during construction to avoid build-time failures
+    // Validate at request-time instead
     if (!this.appId || !this.appKey) {
-      throw new Error('[ADZUNA] API credentials not configured. Set ADZUNA_APP_ID and ADZUNA_API_KEY in environment variables.')
+      console.warn('[ADZUNA] API credentials not configured. Set ADZUNA_APP_ID and ADZUNA_API_KEY in environment variables.')
     }
   }
 
@@ -68,6 +70,11 @@ export class AdzunaAPIClient {
    * Search jobs on Adzuna
    */
   async searchJobs(params: AdzunaSearchParams): Promise<AdzunaSearchResponse> {
+    // Validate credentials at request-time
+    if (!this.appId || !this.appKey) {
+      throw new Error('[ADZUNA] API credentials not configured. Set ADZUNA_APP_ID and ADZUNA_API_KEY in environment variables.')
+    }
+
     const {
       what,
       where,
