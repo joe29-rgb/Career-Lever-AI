@@ -74,15 +74,21 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section className="py-24 bg-[#2B2B2B]">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* BEFORE/AFTER METRICS - NEW! */}
+    <section className="py-24 relative overflow-hidden" style={{ background: 'var(--color-background)' }}>
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute top-0 left-0 w-96 h-96 rounded-full blur-3xl" style={{ background: 'var(--color-bg-1)' }} />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-3xl" style={{ background: 'var(--color-bg-3)' }} />
+      </div>
+      
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* BEFORE/AFTER METRICS - REDESIGNED! */}
         <div className="mx-auto max-w-4xl mb-20">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl mb-2">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-2" style={{ color: 'var(--color-text)' }}>
               Real Results from Real Job Seekers
             </h2>
-            <p className="text-lg text-white/70">
+            <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
               See the dramatic difference Career Lever AI makes
             </p>
           </div>
@@ -176,32 +182,54 @@ export function FeaturesSection() {
         </div>
 
         <div className="mx-auto max-w-3xl text-center mb-16">
-          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl" style={{ color: 'var(--color-text)' }}>
             Everything you need to land your dream job
           </h2>
-          <p className="mt-4 text-lg text-gray-600">
+          <p className="mt-4 text-lg" style={{ color: 'var(--color-text-secondary)' }}>
             Our AI-powered platform provides comprehensive tools to optimize every aspect of your job search.
           </p>
         </div>
 
         <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 sm:mt-20 lg:mx-0 lg:max-w-none lg:grid-cols-2 xl:grid-cols-4">
           {features.map((feature, index) => (
-            <Card key={index} className="relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="pb-4">
+            <Card 
+              key={index} 
+              className="relative overflow-hidden border-0 transition-all duration-300 hover:-translate-y-2 group"
+              style={{ 
+                background: 'var(--color-surface)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-lg)'
+              }}
+            >
+              {/* Gradient overlay on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300" style={{ background: 'var(--color-primary)' }} />
+              
+              <CardHeader className="pb-4 relative z-10">
                 <div className="flex items-center justify-between">
-                  <div className={`rounded-lg p-3 ${feature.color.replace('text-', 'bg-').replace('600', '100')}`}>
-                    <feature.icon className={`h-6 w-6 ${feature.color}`} />
+                  <div 
+                    className="rounded-lg p-3 transition-transform duration-300 group-hover:scale-110" 
+                    style={{ background: `rgba(var(--color-teal-500-rgb), 0.1)` }}
+                  >
+                    <feature.icon className="h-6 w-6" style={{ color: 'var(--color-primary)' }} />
                   </div>
                   {feature.badge && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge 
+                      className="text-xs font-semibold px-3 py-1"
+                      style={{ 
+                        background: 'var(--color-primary)',
+                        color: 'var(--color-btn-primary-text)'
+                      }}
+                    >
                       {feature.badge}
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
+                <CardTitle className="text-xl mt-4" style={{ color: 'var(--color-text)' }}>
+                  {feature.title}
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base leading-relaxed">
+              <CardContent className="relative z-10">
+                <CardDescription className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                   {feature.description}
                 </CardDescription>
               </CardContent>
@@ -209,146 +237,141 @@ export function FeaturesSection() {
           ))}
         </div>
 
-        {/* MOBILE APP FEATURES - NEW! */}
+        {/* MOBILE APP FEATURES - REDESIGNED! */}
         <div className="mx-auto max-w-4xl mt-32">
           <div className="text-center mb-12">
-            <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1 mb-4">
+            <Badge 
+              className="px-4 py-1 mb-4 text-sm font-semibold"
+              style={{ 
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-teal-400))',
+                color: 'var(--color-btn-primary-text)'
+              }}
+            >
               📱 Mobile Apps
             </Badge>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4" style={{ color: 'var(--color-text)' }}>
               Job Search on the Go
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
               Apply to jobs from anywhere with our powerful mobile apps
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="border-2 border-blue-100 hover:border-blue-300 transition-colors">
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-4">📸</div>
-                <h3 className="font-bold text-foreground mb-2">Scan Job Postings</h3>
-                <p className="text-sm text-gray-600">Take a photo of any job posting and instantly apply with AI-optimized resume</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-2 border-purple-100 hover:border-purple-300 transition-colors">
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-4">🔔</div>
-                <h3 className="font-bold text-foreground mb-2">Push Notifications</h3>
-                <p className="text-sm text-gray-600">Get instant alerts for interview prep, follow-ups, and application updates</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-2 border-green-100 hover:border-green-300 transition-colors">
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-4">📍</div>
-                <h3 className="font-bold text-foreground mb-2">Location-Based Jobs</h3>
-                <p className="text-sm text-gray-600">Find and apply to local opportunities while commuting or traveling</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-2 border-orange-100 hover:border-orange-300 transition-colors">
-              <CardContent className="p-6 text-center">
-                <div className="text-4xl mb-4">💾</div>
-                <h3 className="font-bold text-foreground mb-2">Offline Mode</h3>
-                <p className="text-sm text-gray-600">Edit resumes and prepare applications even without internet connection</p>
-              </CardContent>
-            </Card>
+            {[
+              { emoji: '📸', title: 'Scan Job Postings', desc: 'Take a photo of any job posting and instantly apply with AI-optimized resume', bg: 'var(--color-bg-1)' },
+              { emoji: '🔔', title: 'Push Notifications', desc: 'Get instant alerts for interview prep, follow-ups, and application updates', bg: 'var(--color-bg-5)' },
+              { emoji: '📍', title: 'Location-Based Jobs', desc: 'Find and apply to local opportunities while commuting or traveling', bg: 'var(--color-bg-3)' },
+              { emoji: '💾', title: 'Offline Mode', desc: 'Edit resumes and prepare applications even without internet connection', bg: 'var(--color-bg-6)' }
+            ].map((item, i) => (
+              <Card 
+                key={i}
+                className="border-0 hover:-translate-y-1 transition-all duration-300 group"
+                style={{ 
+                  background: 'var(--color-surface)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow-md)'
+                }}
+              >
+                <CardContent className="p-6 text-center">
+                  <div 
+                    className="text-4xl mb-4 inline-block p-4 rounded-full transition-transform duration-300 group-hover:scale-110"
+                    style={{ background: item.bg }}
+                  >
+                    {item.emoji}
+                  </div>
+                  <h3 className="font-bold mb-2" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{item.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
 
-        {/* PRICING PREVIEW - NEW! */}
+        {/* PRICING PREVIEW - REDESIGNED! */}
         <div className="mx-auto max-w-5xl mt-32 mb-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl mb-4">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4" style={{ color: 'var(--color-text)' }}>
               Simple, Transparent Pricing
             </h2>
-            <p className="text-lg text-gray-600">
-              Start free, upgrade when you're ready
+            <p className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>
+              Start free, upgrade when you&apos;re ready
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* FREE TIER */}
-            <Card className="border-2 border-border hover:shadow-xl transition-all">
-              <CardHeader className="bg-gray-50 pb-4">
+            <Card 
+              className="border-0 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+              style={{ 
+                background: 'var(--color-surface)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-lg)',
+                border: '2px solid var(--color-border)'
+              }}
+            >
+              <CardHeader className="pb-4" style={{ background: 'rgba(var(--color-teal-500-rgb), 0.05)' }}>
                 <div className="text-center">
-                  <CardTitle className="text-2xl mb-2">Free Forever</CardTitle>
-                  <div className="text-4xl font-bold text-foreground mb-2">$0</div>
-                  <p className="text-sm text-gray-600">Perfect for getting started</p>
+                  <CardTitle className="text-2xl mb-2" style={{ color: 'var(--color-text)' }}>Free Forever</CardTitle>
+                  <div className="text-4xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>$0</div>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Perfect for getting started</p>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✅</span>
-                    <span className="text-gray-700"><strong>3 AI resume customizations</strong> per month</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✅</span>
-                    <span className="text-gray-700"><strong>10 company research reports</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✅</span>
-                    <span className="text-gray-700"><strong>Basic application tracking</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✅</span>
-                    <span className="text-gray-700"><strong>ATS optimization</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-green-500 mr-2">✅</span>
-                    <span className="text-gray-700"><strong>Job search tools</strong></span>
-                  </li>
+                  {['3 AI resume customizations per month', '10 company research reports', 'Basic application tracking', 'ATS optimization', 'Job search tools'].map((item, i) => (
+                    <li key={i} className="flex items-start">
+                      <span className="mr-2" style={{ color: 'var(--color-success)' }}>✅</span>
+                      <span style={{ color: 'var(--color-text)' }}><strong>{item}</strong></span>
+                    </li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
 
             {/* PRO TIER */}
-            <Card className="border-2 border-blue-400 hover:shadow-2xl transition-all relative">
+            <Card 
+              className="border-0 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 relative"
+              style={{ 
+                background: 'var(--color-surface)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: '0 0 40px rgba(var(--color-teal-500-rgb), 0.3)',
+                border: '2px solid var(--color-primary)'
+              }}
+            >
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 text-sm font-bold">
+                <Badge 
+                  className="px-6 py-2 text-sm font-bold"
+                  style={{ 
+                    background: 'linear-gradient(135deg, var(--color-primary), var(--color-teal-400))',
+                    color: 'var(--color-btn-primary-text)'
+                  }}
+                >
                   🔥 MOST POPULAR
                 </Badge>
               </div>
-              <CardHeader className="bg-gradient-to-br from-blue-50 to-purple-50 pb-4 pt-8">
+              <CardHeader 
+                className="pb-4 pt-8"
+                style={{ 
+                  background: 'linear-gradient(135deg, rgba(var(--color-teal-500-rgb), 0.1), rgba(var(--color-teal-300-rgb), 0.05))'
+                }}
+              >
                 <div className="text-center">
-                  <CardTitle className="text-2xl mb-2">Pro</CardTitle>
-                  <div className="text-4xl font-bold text-blue-600 mb-2">$9.99<span className="text-lg text-gray-600">/mo</span></div>
-                  <p className="text-sm text-gray-600">Land your dream job faster</p>
+                  <CardTitle className="text-2xl mb-2" style={{ color: 'var(--color-text)' }}>Pro</CardTitle>
+                  <div className="text-4xl font-bold mb-2" style={{ color: 'var(--color-primary)' }}>
+                    $9.99<span className="text-lg" style={{ color: 'var(--color-text-secondary)' }}>/mo</span>
+                  </div>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Land your dream job faster</p>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 <ul className="space-y-3">
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>Unlimited AI customizations</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>Unlimited company research</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>Priority ATS optimization</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>LinkedIn integration</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>Advanced analytics</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>Interview prep AI</strong></span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-blue-500 mr-2">⚡</span>
-                    <span className="text-gray-700"><strong>Priority support</strong></span>
-                  </li>
+                  {['Unlimited AI customizations', 'Unlimited company research', 'Priority ATS optimization', 'LinkedIn integration', 'Advanced analytics', 'Interview prep AI', 'Priority support'].map((item, i) => (
+                    <li key={i} className="flex items-start">
+                      <span className="mr-2" style={{ color: 'var(--color-primary)' }}>⚡</span>
+                      <span style={{ color: 'var(--color-text)' }}><strong>{item}</strong></span>
+                    </li>
+                  ))}
                 </ul>
               </CardContent>
             </Card>
