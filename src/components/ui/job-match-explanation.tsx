@@ -1,111 +1,125 @@
+/**
+ * JOB MATCH EXPLANATION - Production Ready
+ * Path: src/components/ui/job-match-explanation.tsx
+ * Shows why a job matches the user's profile
+ */
+
 'use client'
 
-import { CheckCircle } from 'lucide-react'
+import React from 'react'
+import { cn } from '@/lib/utils'
 
-export interface JobMatchData {
-  matchScore: number
-  skillsMatch: number
-  experienceMatch: boolean
+interface JobMatchExplanationProps {
+  matchScore: number // 0-100
   matchedSkills: string[]
+  missingSkills?: string[]
   reasons?: string[]
-}
-
-export interface JobMatchExplanationProps {
-  data: JobMatchData
   className?: string
 }
 
-export function JobMatchExplanation({ data, className = '' }: JobMatchExplanationProps) {
-  const { matchScore, skillsMatch, experienceMatch, matchedSkills, reasons } = data
+export function JobMatchExplanation({
+  matchScore,
+  matchedSkills,
+  missingSkills = [],
+  reasons = [],
+  className,
+}: JobMatchExplanationProps) {
+  // Score color based on percentage
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return 'text-green-600'
+    if (score >= 60) return 'text-yellow-600'
+    return 'text-orange-600'
+  }
+
+  // Progress bar color
+  const getProgressColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500'
+    if (score >= 60) return 'bg-yellow-500'
+    return 'bg-orange-500'
+  }
 
   return (
-    <div className={`job-match-explanation ${className}`}>
-      <h4>Why we matched you:</h4>
-      <ul>
-        {reasons ? (
-          reasons.map((reason, index) => (
-            <li key={index}>
-              <CheckCircle className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-              <span>{reason}</span>
-            </li>
-          ))
-        ) : (
-          <>
-            <li>
-              <CheckCircle className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-              <span>{skillsMatch}% of your top skills match</span>
-            </li>
-            {experienceMatch && (
-              <li>
-                <CheckCircle className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-                <span>Your experience level aligns perfectly</span>
-              </li>
-            )}
-            <li>
-              <CheckCircle className="w-4 h-4" style={{ color: 'var(--color-success)' }} />
-              <span>You have {matchedSkills.length} required skills</span>
-            </li>
-          </>
-        )}
-      </ul>
-      
-      {/* Progress bar */}
-      <div className="mt-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Overall Match
+    <div className={cn('card', className)}>
+      {/* Header with Score */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-4 text-foreground">
+          Job Match Explanation
+        </h3>
+
+        {/* Match Score */}
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-muted-foreground">
+            Match Score
           </span>
-          <span className="match-score">{matchScore}% Match</span>
+          <span className={cn('text-2xl font-bold', getScoreColor(matchScore))}>
+            {matchScore}%
+          </span>
         </div>
-        <div 
-          className="w-full h-2 rounded-full overflow-hidden"
-          style={{ background: 'var(--color-secondary)' }}
-        >
+
+        {/* Progress Bar */}
+        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
           <div
-            className="h-full transition-all duration-500"
-            style={{
-              width: `${matchScore}%`,
-              background: matchScore >= 80 
-                ? 'var(--color-success)' 
-                : matchScore >= 60 
-                ? 'var(--color-warning)' 
-                : 'var(--color-error)'
-            }}
+            className={cn('h-full rounded-full transition-all duration-500', getProgressColor(matchScore))}
+            style={{ width: `${matchScore}%` }}
           />
         </div>
       </div>
 
-      {/* Matched skills tags */}
+      {/* Matched Skills */}
       {matchedSkills.length > 0 && (
-        <div className="mt-4">
-          <p className="text-sm mb-2" style={{ color: 'var(--color-text-secondary)' }}>
-            Matched Skills:
-          </p>
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-foreground mb-3">
+            ✓ Matched Skills ({matchedSkills.length})
+          </h4>
           <div className="flex flex-wrap gap-2">
-            {matchedSkills.slice(0, 5).map((skill, index) => (
+            {matchedSkills.map((skill) => (
               <span
-                key={index}
-                className="px-3 py-1 text-xs font-medium rounded-full"
-                style={{
-                  background: 'rgba(var(--color-success-rgb), 0.1)',
-                  color: 'var(--color-success)'
-                }}
+                key={skill}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500/10 text-green-600 rounded-lg text-xs font-medium border border-green-500/20"
               >
-                {skill}
+                ✓ {skill}
               </span>
             ))}
-            {matchedSkills.length > 5 && (
-              <span
-                className="px-3 py-1 text-xs font-medium rounded-full"
-                style={{
-                  background: 'var(--color-secondary)',
-                  color: 'var(--color-text-secondary)'
-                }}
-              >
-                +{matchedSkills.length - 5} more
-              </span>
-            )}
           </div>
+        </div>
+      )}
+
+      {/* Missing Skills */}
+      {missingSkills.length > 0 && (
+        <div className="mb-6">
+          <h4 className="text-sm font-semibold text-foreground mb-3">
+            ◇ Skills to Learn ({missingSkills.length})
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {missingSkills.map((skill) => (
+              <span
+                key={skill}
+                className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-500/10 text-yellow-600 rounded-lg text-xs font-medium border border-yellow-500/20"
+              >
+                ◇ {skill}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reasons */}
+      {reasons.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold text-foreground mb-3">
+            Why This Match
+          </h4>
+          <ul className="space-y-2">
+            {reasons.map((reason, index) => (
+              <li
+                key={index}
+                className="flex gap-2 text-sm text-muted-foreground"
+              >
+                <span className="text-primary font-bold flex-shrink-0">•</span>
+                <span>{reason}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
