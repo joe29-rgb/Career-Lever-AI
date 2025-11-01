@@ -16,19 +16,7 @@ import type { Job } from '@/types/supabase'
 export class CivicJobsRSS {
 
   private readonly RSS_FEEDS = [
-    { url: 'https://www.civicjobs.ca/rss2?province=AB', location: 'Alberta' },
-    { url: 'https://www.civicjobs.ca/rss2?province=BC', location: 'British Columbia' },
-    { url: 'https://www.civicjobs.ca/rss2?province=ON', location: 'Ontario' },
-    { url: 'https://www.civicjobs.ca/rss2?province=QC', location: 'Quebec' },
-    { url: 'https://www.civicjobs.ca/rss2?province=MB', location: 'Manitoba' },
-    { url: 'https://www.civicjobs.ca/rss2?province=SK', location: 'Saskatchewan' },
-    { url: 'https://www.civicjobs.ca/rss2?province=NS', location: 'Nova Scotia' },
-    { url: 'https://www.civicjobs.ca/rss2?province=NB', location: 'New Brunswick' },
-    { url: 'https://www.civicjobs.ca/rss2?province=NL', location: 'Newfoundland and Labrador' },
-    { url: 'https://www.civicjobs.ca/rss2?province=PE', location: 'Prince Edward Island' },
-    { url: 'https://www.civicjobs.ca/rss2?province=NT', location: 'Northwest Territories' },
-    { url: 'https://www.civicjobs.ca/rss2?province=YT', location: 'Yukon' },
-    { url: 'https://www.civicjobs.ca/rss2?province=NU', location: 'Nunavut' },
+    { url: 'https://www.civicjobs.ca/rss/careers', location: 'Canada' }
   ]
 
   async fetchAllJobs(): Promise<Partial<Job>[]> {
@@ -66,33 +54,36 @@ export class CivicJobsRSS {
       
       $('item').each((i, elem) => {
         try {
-          const title = $(elem).find('title').text().trim()
+          // Title format: "Job Title - Employer (City, Province)"
+          const fullTitle = $(elem).find('title').text().trim()
           const link = $(elem).find('link').text().trim()
           const description = $(elem).find('description').text().trim()
           const pubDate = $(elem).find('pubDate').text().trim()
+          const guid = $(elem).find('guid').text().trim()
           
-          // Parse description HTML to extract company and location
-          const $desc = cheerio.load(description)
+          // Parse title: "Police Constable Recruit - City of New Westminster (New Westminster, BC)"
+          const titleMatch = fullTitle.match(/^(.+?)\s*-\s*(.+?)\s*\((.+?)\)$/)
           
-          // CivicJobs description format:
-          // <strong>Employer:</strong> City of Toronto
-          // <strong>Location:</strong> Toronto, ON
-          const employer = $desc('strong:contains("Employer:")').parent().text()
-            .replace('Employer:', '').trim()
+          let title = fullTitle
+          let company = 'Municipal Government'
+          let jobLocation = location
           
-          const jobLocation = $desc('strong:contains("Location:")').parent().text()
-            .replace('Location:', '').trim()
+          if (titleMatch) {
+            title = titleMatch[1].trim()
+            company = titleMatch[2].trim()
+            jobLocation = titleMatch[3].trim()
+          }
           
-          // Extract job ID from link
-          // Format: https://www.civicjobs.ca/job/123456
-          const jobId = link.match(/job\/(\d+)/)?.[1] || Date.now().toString()
+          // Extract job ID from link or guid
+          // Format: https://www.civicjobs.ca/jobs?id=98277
+          const jobId = link.match(/id=(\d+)/)?.[1] || guid.match(/id=(\d+)/)?.[1] || Date.now().toString()
           
           if (title && link) {
             jobs.push({
               title,
-              company: employer || 'Municipal Government',
-              location: jobLocation || location,
-              description: $desc.text().trim(),
+              company,
+              location: jobLocation,
+              description: description.replace(/<[^>]*>/g, '').trim(),
               url: link,
               source: 'civicjobs',
               external_id: `civicjobs_${jobId}`,
