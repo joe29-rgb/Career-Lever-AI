@@ -1,16 +1,9 @@
 {
   "crons": [
     {
-      "path": "/api/cron/prefetch-jobs",
-      "schedule": "0 8 * * 2,6"
-    },
-    {
-      "path": "/api/cron/legal-scrape",
-      "schedule": "0 3 * * 1-5"
-    },
-    {
       "path": "/api/cron/scrape-jobs",
-      "schedule": "0 9 * * 1-5"
+      "schedule": "0 9 * * 1-5",
+      "comment": "Mon-Fri at 3 AM Central (9 AM UTC) - Scrape all Canadian jobs"
     }
   ]
 }
