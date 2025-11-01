@@ -1,0 +1,2386 @@
+﻿CAREER LEVER AI - COMPLETE CSS + 20 REDESIGN IMPROVEMENTS + PERPLEXITY INTEGRATION
+Date: November 1, 2025
+Status: Production-Ready UI/UX Overhaul
+Scope: Full CSS system + Enhanced design plan based on live site audit
+
+PART 1: YOUR EXACT CURRENT CSS
+All CSS EXCEPT resume preview and email outputs.
+
+css
+/* ============================================
+   GLOBAL STYLES & VARIABLES
+   ============================================ */
+
+:root {
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Light Mode Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f1f3f5;
+  --text-primary: #1a1d1f;
+  --text-secondary: #626569;
+  --text-tertiary: #8a8d91;
+  --border-light: #d9dce1;
+  --border-normal: #ccd0d5;
+  --accent-blue: #0066cc;
+  --accent-blue-hover: #0052a3;
+  --accent-success: #22c55e;
+  --accent-warning: #f59e0b;
+  --accent-error: #ef4444;
+  
+  /* Dark Mode Colors */
+  --dark-bg-primary: #1a1d1f;
+  --dark-bg-secondary: #242628;
+  --dark-bg-tertiary: #2d3032;
+  --dark-text-primary: #f5f6f7;
+  --dark-text-secondary: #c9cace;
+  --dark-text-tertiary: #9ca3a8;
+  --dark-border: #3d4245;
+  
+  /* Spacing */
+  --space-xs: 0.25rem;   /* 4px */
+  --space-sm: 0.5rem;    /* 8px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2rem;      /* 32px */
+  --space-2xl: 3rem;     /* 48px */
+  --space-3xl: 4rem;     /* 64px */
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  --bg-primary: var(--dark-bg-primary);
+  --bg-secondary: var(--dark-bg-secondary);
+  --bg-tertiary: var(--dark-bg-tertiary);
+  --text-primary: var(--dark-text-primary);
+  --text-secondary: var(--dark-text-secondary);
+  --text-tertiary: var(--dark-text-tertiary);
+  --border-light: var(--dark-border);
+  --border-normal: var(--dark-border);
+}
+
+/* ============================================
+   BASE ELEMENT STYLES
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1.125rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--accent-blue);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--accent-blue-hover);
+  text-decoration: underline;
+}
+
+/* ============================================
+   LAYOUT COMPONENTS
+   ============================================ */
+
+/* Sidebar Navigation */
+nav {
+  display: flex;
+  flex-direction: column;
+  width: 250px;
+  background-color: var(--bg-primary);
+  border-right: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  nav {
+    display: none;
+    position: absolute;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    z-index: 50;
+  }
+
+  nav.active {
+    display: flex;
+  }
+}
+
+nav ul {
+  list-style: none;
+  flex: 1;
+}
+
+nav li {
+  border-bottom: 1px solid var(--border-light);
+}
+
+nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+nav a:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+nav a.active {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border-left: 4px solid var(--accent-blue);
+  padding-left: calc(var(--space-md) - 4px);
+}
+
+/* Main Container */
+main {
+  display: flex;
+  flex: 1;
+  margin-left: 250px;
+  background-color: var(--bg-secondary);
+}
+
+@media (max-width: 768px) {
+  main {
+    margin-left: 0;
+    flex-direction: column;
+  }
+}
+
+/* ============================================
+   PAGE HEADER STYLES
+   ============================================ */
+
+.page-header {
+  padding: var(--space-xl);
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: var(--space-xl);
+}
+
+.page-header h1 {
+  margin-bottom: var(--space-sm);
+}
+
+.page-header p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+  }
+}
+
+/* ============================================
+   FORM STYLES
+   ============================================ */
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select {
+  padding: var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+  padding: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px;
+    padding: var(--space-lg);
+  }
+}
+
+/* ============================================
+   BUTTON STYLES
+   ============================================ */
+
+button,
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.btn-primary {
+  background-color: var(--accent-blue);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-blue-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-light);
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background-color: var(--accent-success);
+  color: #ffffff;
+}
+
+.btn-success:hover {
+  background-color: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger {
+  background-color: var(--accent-error);
+  color: #ffffff;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================
+   CARD STYLES
+   ============================================ */
+
+.card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: var(--space-lg);
+}
+
+.card-body {
+  margin-bottom: var(--space-lg);
+}
+
+.card-footer {
+  display: flex;
+  gap: var(--space-md);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-light);
+}
+
+/* ============================================
+   GRID LAYOUT
+   ============================================ */
+
+.grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.grid-cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.grid-cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-cols-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   JOB CARD COMPONENT
+   ============================================ */
+
+.job-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.job-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  border-color: var(--accent-blue);
+}
+
+.job-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+}
+
+.job-card__logo {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+  background-color: var(--bg-tertiary);
+}
+
+.job-card__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.job-card__company {
+  display: flex;
+  gap: var(--space-md);
+  flex: 1;
+}
+
+.job-card__meta {
+  display: flex;
+  gap: var(--space-lg);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.meta-item--highlight {
+  color: var(--accent-success);
+  font-weight: 600;
+}
+
+.job-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.tag {
+  display: inline-block;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.job-card__actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+@media (max-width: 768px) {
+  .job-card {
+    padding: var(--space-md);
+  }
+
+  .job-card__actions {
+    flex-direction: column;
+  }
+
+  .job-card__actions button {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   BADGE STYLES
+   ============================================ */
+
+.badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge--success {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--accent-success);
+}
+
+.badge--warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--accent-warning);
+}
+
+.badge--error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--accent-error);
+}
+
+.badge--info {
+  background-color: rgba(0, 102, 204, 0.1);
+  color: var(--accent-blue);
+}
+
+/* ============================================
+   STAT CARD STYLES
+   ============================================ */
+
+.stat-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.stat-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-md);
+}
+
+.stat-card__label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.stat-card__icon {
+  width: 24px;
+  height: 24px;
+  color: var(--accent-blue);
+}
+
+.stat-card__value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.stat-card__change {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.stat-card__change--positive {
+  color: var(--accent-success);
+}
+
+.stat-card__change--negative {
+  color: var(--accent-error);
+}
+
+/* ============================================
+   SEARCH BAR STYLES (Glassmorphism)
+   ============================================ */
+
+.search-container {
+  padding: var(--space-xl);
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.dark .search-bar {
+  background: rgba(26, 29, 31, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.search-bar input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-bar button {
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.search-bar button:hover {
+  background-color: var(--accent-blue-hover);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar button {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   LOADING & SKELETON STYLES
+   ============================================ */
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 0%,
+    var(--border-light) 50%,
+    var(--bg-tertiary) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-card {
+  height: 200px;
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: var(--space-sm);
+}
+
+.skeleton-text--large {
+  height: 24px;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in var(--transition-base);
+}
+
+.animate-fade-in {
+  animation: fade-in var(--transition-base);
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ============================================
+   TABLE STYLES
+   ============================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--bg-primary);
+}
+
+thead {
+  background-color: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border-light);
+}
+
+th, td {
+  padding: var(--space-md) var(--space-lg);
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+th {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+tbody tr:hover {
+  background-color: var(--bg-secondary);
+}
+
+@media (max-width: 768px) {
+  table {
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    padding: var(--space-sm);
+  }
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+@media (max-width: 1024px) {
+  main {
+    margin-left: 0;
+  }
+
+  nav {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  nav {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--border-light);
+    overflow-x: auto;
+  }
+
+  nav ul {
+    display: flex;
+    flex-direction: row;
+  }
+
+  nav li {
+    border-bottom: none;
+    border-right: 1px solid var(--border-light);
+  }
+
+  main {
+    padding-top: 60px;
+  }
+
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+
+  button,
+  .btn {
+    width: 100%;
+  }
+
+  .page-header {
+    padding: var(--space-lg);
+  }
+
+  form {
+    padding: var(--space-lg);
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--dark-bg-secondary);
+  }
+}
+
+/* ============================================
+   PRINT STYLES (Resume/Email Fix)
+   ============================================ */
+
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+  }
+
+  body {
+    background: white;
+  }
+
+  .resume-container,
+  .email-preview {
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  nav,
+  .page-header,
+  .btn,
+  button {
+    display: none;
+  }
+}
+
+/* ============================================
+   DARK MODE EMAIL PREVIEW
+   ============================================ */
+
+.email-preview {
+  background: white !important;
+  color: #000000 !important;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+.email-preview * {
+  color: inherit !important;
+  background: transparent !important;
+}
+
+.email-preview a {
+  color: #0066cc !important;
+  text-decoration: underline;
+}
+PART 2: 20 IMPROVEMENTS TO YOUR REDESIGN PLAN
+Based on Perplexity's audit + your live site analysis:
+
+1. Hide Debug/Log Output (CRITICAL)
+Remove all system logs from user-facing pages instantly. Add environment check:
+
+typescript
+// src/app/layout.tsx
+if (process.env.NODE_ENV === 'production') {
+  console.log = () => {}
+  console.debug = () => {}
+}
+Priority: BEFORE LAUNCH
+
+2. Unified Icon System (Replace Emoji)
+Replace all emoji logos (Netflix, Amazon) with flat SVG icons. Add consistency layer:
+
+css
+/* Icon System */
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.icon--sm { width: 16px; height: 16px; }
+.icon--md { width: 24px; height: 24px; }
+.icon--lg { width: 32px; height: 32px; }
+
+.icon--colored {
+  color: var(--accent-blue);
+}
+Usage: <Icon name="netflix" className="icon--lg" />
+
+3. Mobile Download Links (App Store/Play)
+Add prominent app download section to landing/dashboard:
+
+tsx
+<section className="app-downloads">
+  <h3>Get the Mobile App</h3>
+  <div className="download-buttons">
+    <a href="https://apps.apple.com/app/..." className="btn btn--primary">
+      <Icon name="apple" /> Download on App Store
+    </a>
+    <a href="https://play.google.com/store/..." className="btn btn--primary">
+      <Icon name="google" /> Get on Google Play
+    </a>
+    <a href="javascript:alert('QR Code')" className="btn btn--secondary">
+      <Icon name="qr" /> Scan QR Code
+    </a>
+  </div>
+</section>
+4. Sidebar Responsive Collapse (Mobile)
+Already in CSS, but needs mobile hamburger menu:
+
+tsx
+// src/components/Navigation.tsx
+const [sidebarOpen, setSidebarOpen] = useState(false)
+
+return (
+  <>
+    <button 
+      className="mobile-menu-toggle"
+      onClick={() => setSidebarOpen(!sidebarOpen)}
+    >
+      <Icon name="menu" />
+    </button>
+    <nav className={sidebarOpen ? 'active' : ''}>
+      {/* Navigation items */}
+    </nav>
+  </>
+)
+5. Visual Feedback on Form Inputs
+Add real-time validation + error states:
+
+css
+/* Form validation states */
+input:invalid:not(:placeholder-shown) {
+  border-color: var(--accent-error);
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+input:valid:not(:placeholder-shown) {
+  border-color: var(--accent-success);
+  background-color: rgba(34, 197, 94, 0.05);
+}
+
+.form-error {
+  color: var(--accent-error);
+  font-size: 0.85rem;
+  margin-top: var(--space-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.form-success {
+  color: var(--accent-success);
+  font-size: 0.85rem;
+}
+6. Consistent Form Alignment
+Ensure all inputs/selects share same left margin + width:
+
+css
+/* Form consistency */
+.form-group {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-md);
+}
+
+@media (min-width: 768px) {
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+  }
+}
+7. Resume Text Padding/Readability
+Fix "wall of text" issue in resume textarea:
+
+css
+textarea[name="resume"] {
+  padding: var(--space-lg);
+  line-height: 1.8;
+  word-spacing: 0.1em;
+  letter-spacing: 0.3px;
+  white-space: pre-wrap;
+}
+8. Preview Box Separation
+Make preview area visually distinct from form:
+
+css
+.preview-container {
+  background-color: var(--bg-primary);
+  border: 2px solid var(--accent-blue);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-lg);
+  margin-top: var(--space-xl);
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.preview-empty__icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-lg);
+  opacity: 0.5;
+}
+9. Button Primary Action Contrast
+Ensure CTAs "pop" on all backgrounds:
+
+css
+.btn-primary {
+  background: linear-gradient(135deg, #0066cc, #0052a3);
+  box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 102, 204, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(-1px);
+}
+10. Loading State Feedback
+Add spinner + message to async actions:
+
+tsx
+<button onClick={handleGenerate} disabled={isLoading}>
+  {isLoading ? (
+    <>
+      <Spinner className="animate-spin" />
+      Generating...
+    </>
+  ) : (
+    'Generate Cover Letter'
+  )}
+</button>
+11. Dashboard Widget Customization
+Allow users to pin/rearrange dashboard widgets:
+
+tsx
+// DraggableWidget component
+<div 
+  draggable 
+  onDragStart={handleDragStart}
+  className="dashboard-widget"
+>
+  <button onClick={() => pinWidget(id)} className="btn--icon">
+    <Icon name={isPinned ? 'pin-filled' : 'pin'} />
+  </button>
+  {/* Widget content */}
+</div>
+12. Responsive Typography Scaling
+Ensure text readability at all screen sizes:
+
+css
+@media (max-width: 1024px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+  body { font-size: 0.95rem; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.125rem; }
+  h3 { font-size: 1rem; }
+  body { font-size: 0.9rem; }
+}
+13. Color Contrast Audit (WCAG AA)
+Implement automated contrast checking:
+
+typescript
+// src/lib/accessibility/contrast-check.ts
+export function checkContrast(foreground: string, background: string): boolean {
+  const ratio = getContrastRatio(foreground, background)
+  return ratio >= 4.5 // WCAG AA minimum
+}
+
+// Test all text colors
+const checks = [
+  checkContrast('--text-primary', '--bg-primary'),
+  checkContrast('--text-secondary', '--bg-primary'),
+  checkContrast('--accent-blue', '--bg-primary'),
+]
+14. Keyboard Navigation & Focus States
+Add visible focus indicators to all interactive elements:
+
+css
+*:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *:focus-visible {
+    outline-width: 3px;
+  }
+}
+15. ARIA Labels for All Interactive Elements
+Improve screen reader support:
+
+tsx
+<button 
+  aria-label="Save job to favorites"
+  className="btn btn--icon"
+>
+  <Icon name="bookmark" aria-hidden="true" />
+</button>
+
+<nav aria-label="Main navigation">
+  {/* Navigation items */}
+</nav>
+
+<div role="status" aria-live="polite" aria-label="Application status">
+  {/* Status updates */}
+</div>
+16. "Why This Job Matches You" Explanation
+Add contextual matching explanation to job cards:
+
+tsx
+<div className="job-match-explanation">
+  <h4>Why we matched you:</h4>
+  <ul>
+    <li>âœ“ 92% of your top skills match</li>
+    <li>âœ“ Your experience level aligns perfectly</li>
+    <li>âœ“ You have {matchedSkills.length} required skills</li>
+  </ul>
+  <progress value={matchScore} max="100" />
+  <span className="match-score">{matchScore}% Match</span>
+</div>
+17. Company Research Cards (Visual Redesign)
+Replace basic text with cards + icons:
+
+tsx
+<div className="company-research">
+  <div className="company-card company-card--pros">
+    <Icon name="thumbs-up" className="icon--lg" />
+    <h4>Pros</h4>
+    <ul>
+      {pros.map(pro => (
+        <li key={pro}>
+          <Icon name="check" /> {pro}
+        </li>
+      ))}
+    </ul>
+  </div>
+  
+  <div className="company-card company-card--cons">
+    <Icon name="thumbs-down" className="icon--lg" />
+    <h4>Cons</h4>
+    <ul>
+      {cons.map(con => (
+        <li key={con}>
+          <Icon name="alert-circle" /> {con}
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
+CSS:
+
+css
+.company-card {
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  border-left: 4px solid;
+}
+
+.company-card--pros {
+  border-left-color: var(--accent-success);
+}
+
+.company-card--cons {
+  border-left-color: var(--accent-warning);
+}
+18. Resume Builder Live Preview
+Show formatted resume as you edit:
+
+tsx
+<div className="resume-editor-container">
+  <div className="editor">
+    {/* Edit form */}
+  </div>
+  <div className="preview">
+    <ResumePreview data={formData} />
+  </div>
+</div>
+CSS:
+
+css
+.resume-editor-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xl);
+}
+
+@media (max-width: 1024px) {
+  .resume-editor-container {
+    grid-template-columns: 1fr;
+  }
+
+  .preview {
+    position: sticky;
+    top: 60px;
+  }
+}
+19. Application Tracking Status Swipe (Mobile)
+Enable swipe actions for mobile status updates:
+
+tsx
+<Swipeable
+  onSwipeLeft={() => updateStatus('rejected')}
+  onSwipeRight={() => updateStatus('interview')}
+>
+  <div className="application-row">
+    <span className={`status status--${app.status}`}>
+      {app.status}
+    </span>
+  </div>
+</Swipeable>
+20. Sticky Notifications for Mobile
+Add persistent toast notifications for action feedback:
+
+tsx
+<Toast
+  type="success"
+  message="Cover letter generated!"
+  icon="check-circle"
+  autoDismiss={3000}
+  sticky={true}
+/>
+CSS:
+
+css
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--accent-success);
+  color: white;
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  animation: slide-in var(--transition-base);
+}
+
+@media (max-width: 768px) {
+  .toast {
+    bottom: 80px;
+    left: 20px;
+    right: 20px;
+  }
+}
+PART 3: IMPLEMENTATION CHECKLIST
+Critical (Fix Before Launch)
+ Hide debug/log output
+
+ Replace emoji with flat icons
+
+ Add app download links
+
+ Fix form input alignment
+
+ Resume textarea padding fix
+
+ Email preview black background fix
+
+ Print styles for resume
+
+High Priority (Week 1)
+ Mobile hamburger menu
+
+ Form validation feedback
+
+ Button contrast improvement
+
+ WCAG AA compliance audit
+
+ ARIA labels on all interactive elements
+
+Medium Priority (Week 2)
+ Dashboard widget customization
+
+ "Why this job matches" explanation
+
+ Company research card redesign
+
+ Resume live preview
+
+ Loading states with spinners
+
+
+
+ Sticky notifications
+
+ Keyboard navigation improvements
+
+# UI Components Usage Guide
+**Career Lever AI - Complete UI Redesign Implementation**
+
+## ðŸ“¦ **Available Components**
+
+All components are now available from `@/components/ui`:
+
+```tsx
+import { 
+  Toast, 
+  JobMatchExplanation, 
+  CompanyResearchCard,
+  LoadingButton,
+  PreviewEmpty,
+  FormGroup 
+} from '@/components/ui'
+```
+
+---
+
+## ðŸŽ¨ **1. Toast Notifications**
+
+### Basic Usage
+```tsx
+import { useToast } from '@/components/ui'
+
+function MyComponent() {
+  const { success, error, warning, info } = useToast()
+  
+  const handleSubmit = async () => {
+    try {
+      await submitForm()
+      success('Form submitted successfully!')
+    } catch (err) {
+      error('Failed to submit form')
+    }
+  }
+}
+```
+
+### Manual Toast
+```tsx
+import { Toast } from '@/components/ui'
+
+<Toast 
+  type="success"
+  message="Resume generated!"
+  autoDismiss={3000}
+  onClose={() => console.log('closed')}
+/>
+```
+
+### Toast Types
+- `success` - Green with checkmark
+- `error` - Red with X icon
+- `warning` - Orange with alert icon
+- `info` - Blue with info icon
+
+---
+
+## ðŸŽ¯ **2. Job Match Explanation**
+
+Shows why a job matches the user's profile with visual progress bar.
+
+```tsx
+import { JobMatchExplanation } from '@/components/ui'
+
+<JobMatchExplanation 
+  data={{
+    matchScore: 85,
+    skillsMatch: 92,
+    experienceMatch: true,
+    matchedSkills: ['React', 'TypeScript', 'Node.js', 'AWS'],
+    reasons: [
+      '92% of your top skills match',
+      'Your experience level aligns perfectly',
+      'You have 4 required skills'
+    ]
+  }}
+/>
+```
+
+### Features
+- âœ… Color-coded progress bar (green >80%, yellow >60%, red <60%)
+- âœ… Matched skills tags (shows first 5, then "+X more")
+- âœ… Custom reasons or auto-generated from data
+
+---
+
+## ðŸ¢ **3. Company Research Cards**
+
+Beautiful pros/cons cards for company research.
+
+```tsx
+import { CompanyResearchCard } from '@/components/ui'
+
+<CompanyResearchCard 
+  data={{
+    pros: [
+      'Great work-life balance',
+      'Competitive salary and benefits',
+      'Strong engineering culture'
+    ],
+    cons: [
+      'Limited remote work options',
+      'Slow promotion process'
+    ]
+  }}
+/>
+```
+
+### Single Card Variant
+```tsx
+import { CompanyCard } from '@/components/ui'
+
+<CompanyCard 
+  type="pros"
+  title="What We Love"
+  items={['Great culture', 'Good pay', 'Remote work']}
+/>
+```
+
+---
+
+## â³ **4. Loading States**
+
+### Loading Button
+```tsx
+import { LoadingButton } from '@/components/ui'
+
+<LoadingButton 
+  isLoading={isSubmitting}
+  loadingText="Generating..."
+  onClick={handleGenerate}
+>
+  Generate Resume
+</LoadingButton>
+```
+
+### Full Page Overlay
+```tsx
+import { LoadingOverlay } from '@/components/ui'
+
+{isProcessing && <LoadingOverlay message="Processing your resume..." />}
+```
+
+### Inline Loading
+```tsx
+import { LoadingState } from '@/components/ui'
+
+{isLoading ? (
+  <LoadingState message="Loading jobs..." />
+) : (
+  <JobsList jobs={jobs} />
+)}
+```
+
+### Spinner Only
+```tsx
+import { Spinner } from '@/components/ui'
+
+<Spinner size="lg" />  // sm, md, lg
+```
+
+---
+
+## ðŸ“„ **5. Preview Empty State**
+
+Shows when preview area is empty with helpful message.
+
+```tsx
+import { PreviewEmpty } from '@/components/ui'
+
+<PreviewEmpty 
+  icon="document"  // document, email, job, search
+  title="No resume preview"
+  description="Upload your resume to see a preview"
+  action={
+    <button className="btn-primary">
+      Upload Resume
+    </button>
+  }
+/>
+```
+
+### With Container
+```tsx
+import { PreviewContainer } from '@/components/ui'
+
+<PreviewContainer 
+  isEmpty={!resume}
+  emptyState={{
+    icon: 'document',
+    title: 'No preview available',
+    description: 'Complete the form to see a preview'
+  }}
+>
+  <ResumePreview data={resume} />
+</PreviewContainer>
+```
+
+---
+
+## ðŸ“ **6. Form Validation**
+
+### Form Group with Validation
+```tsx
+import { FormGroup } from '@/components/ui'
+
+<FormGroup
+  label="Email Address"
+  required
+  error={errors.email}
+  success={isValid && 'Email looks good!'}
+>
+  <input 
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+  />
+</FormGroup>
+```
+
+### Manual Feedback
+```tsx
+import { FormFeedback } from '@/components/ui'
+
+<FormFeedback 
+  type="error"
+  message="Password must be at least 8 characters"
+/>
+```
+
+---
+
+## ðŸŽ¨ **CSS Classes Available**
+
+### Automatic Validation States
+```css
+/* Inputs automatically show validation colors */
+input:invalid:not(:placeholder-shown) {
+  border-color: var(--color-error);
+  background-color: rgba(var(--color-error-rgb), 0.05);
+}
+
+input:valid:not(:placeholder-shown) {
+  border-color: var(--color-success);
+  background-color: rgba(var(--color-success-rgb), 0.05);
+}
+```
+
+### Button Loading State
+```tsx
+<button className="btn-primary btn-loading">
+  Processing...
+</button>
+```
+
+### Resume Textarea
+```tsx
+<textarea 
+  name="resume"
+  className="resume-textarea"  // Better readability
+/>
+```
+
+### Preview Container
+```tsx
+<div className="preview-container">
+  {/* Your preview content */}
+</div>
+```
+
+### Company Cards (Manual)
+```tsx
+<div className="company-research">
+  <div className="company-card company-card--pros">
+    <h4>Pros</h4>
+    <ul>
+      <li>Great culture</li>
+    </ul>
+  </div>
+</div>
+```
+
+---
+
+## ðŸŽ¯ **Design System Variables**
+
+All components use the clean CSS variable system:
+
+```css
+/* Colors */
+var(--color-primary)           /* Teal accent */
+var(--color-text)              /* Primary text */
+var(--color-text-secondary)    /* Secondary text */
+var(--color-surface)           /* Card backgrounds */
+var(--color-background)        /* Page background */
+var(--color-success)           /* Green */
+var(--color-error)             /* Red */
+var(--color-warning)           /* Orange */
+
+/* Spacing */
+var(--space-4)   /* 4px */
+var(--space-8)   /* 8px */
+var(--space-12)  /* 12px */
+var(--space-16)  /* 16px */
+var(--space-24)  /* 24px */
+var(--space-32)  /* 32px */
+
+/* Shadows */
+var(--shadow-sm)
+var(--shadow-md)
+var(--shadow-lg)
+
+/* Border Radius */
+var(--radius-sm)
+var(--radius-md)
+var(--radius-lg)
+var(--radius-full)
+```
+
+---
+
+## âœ¨ **Quick Examples**
+
+### Resume Builder with Preview
+```tsx
+import { PreviewContainer, LoadingButton } from '@/components/ui'
+
+function ResumeBuilder() {
+  const [resume, setResume] = useState(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  return (
+    <div className="resume-editor-container">
+      <div className="editor">
+        <textarea name="resume" className="resume-textarea" />
+        <LoadingButton 
+          isLoading={isGenerating}
+          loadingText="Generating..."
+          onClick={handleGenerate}
+        >
+          Generate Resume
+        </LoadingButton>
+      </div>
+      
+      <PreviewContainer 
+        isEmpty={!resume}
+        emptyState={{
+          icon: 'document',
+          title: 'No preview yet',
+          description: 'Fill out the form to generate your resume'
+        }}
+      >
+        <ResumePreview data={resume} />
+      </PreviewContainer>
+    </div>
+  )
+}
+```
+
+### Job Card with Match Explanation
+```tsx
+import { JobMatchExplanation, CompanyResearchCard } from '@/components/ui'
+
+function JobDetails({ job }) {
+  return (
+    <div>
+      <JobMatchExplanation data={job.matchData} />
+      <CompanyResearchCard data={job.companyResearch} />
+    </div>
+  )
+}
+```
+
+### Form with Validation
+```tsx
+import { FormGroup, useToast } from '@/components/ui'
+
+function ApplicationForm() {
+  const { success, error } = useToast()
+  const [errors, setErrors] = useState({})
+
+  const handleSubmit = async () => {
+    try {
+      await submitApplication()
+      success('Application submitted!')
+    } catch (err) {
+      error('Failed to submit application')
+    }
+  }
+
+  return (
+    <form>
+      <FormGroup
+        label="Full Name"
+        required
+        error={errors.name}
+      >
+        <input type="text" />
+      </FormGroup>
+      
+      <FormGroup
+        label="Email"
+        required
+        error={errors.email}
+      >
+        <input type="email" />
+      </FormGroup>
+      
+      <button type="submit">Submit</button>
+    </form>
+  )
+}
+```
+
+---
+
+## ðŸš€ **Next Steps**
+
+1. **Replace old components** with new ones throughout the app
+2. **Use CSS variables** instead of hardcoded colors
+3. **Add ARIA labels** to all interactive elements
+4. **Test keyboard navigation** on all pages
+5. **Verify WCAG AA compliance** for color contrast
+
+---
+
+## ðŸ“š **Additional Resources**
+
+- `UI_REDESIGN_PLAN.md` - Original design plan with all 20 improvements
+- `src/app/globals.css` - Complete CSS system with all variables
+- `src/components/ui/` - All component source code
+
+**All components are production-ready and deployed to Railway!** ðŸŽ‰
+# ðŸŽ¨ CAREER LEVER AI - UI/UX REDESIGN IMPLEMENTATION GUIDE
+
+**Date:** November 1, 2025  
+**Status:** In Progress  
+**Goal:** Complete production-ready UI overhaul today
+
+---
+
+## ðŸ“‹ IMPLEMENTATION PHASES
+
+### âœ… PHASE 1: CRITICAL FIXES (30 minutes)
+**Must complete before any other work**
+
+- [x] Hide debug/log output in production
+- [ ] Fix dark mode email/resume preview (white background)
+- [ ] Fix form input alignment issues
+- [ ] Fix text overflow on mobile
+- [ ] Fix out-of-bounds buttons
+
+**Files to modify:**
+- `src/app/layout.tsx` - Add production logger
+- `src/app/globals.css` - Fix dark mode overrides
+- `src/components/**/*.tsx` - Add proper className boundaries
+
+---
+
+### ðŸ”¥ PHASE 2: HIGH PRIORITY (2 hours)
+**Core UX improvements**
+
+- [ ] Mobile hamburger menu
+- [ ] Form validation feedback (visual states)
+- [ ] Button contrast improvements
+- [ ] WCAG AA compliance audit
+- [ ] ARIA labels on all interactive elements
+- [ ] Replace emoji icons with SVG system
+- [ ] Add app download links (App Store/Play Store)
+
+**Files to create:**
+- `src/components/ui/mobile-menu.tsx`
+- `src/components/ui/icon-system.tsx`
+- `src/lib/accessibility/contrast-checker.ts`
+- `src/styles/forms.css`
+- `src/styles/buttons.css`
+
+---
+
+### ðŸŽ¯ PHASE 3: MEDIUM PRIORITY (3 hours)
+**Enhanced features**
+
+- [ ] Dashboard widget customization
+- [ ] "Why this job matches you" explanation cards
+- [ ] Company research visual redesign
+- [ ] Resume live preview (side-by-side)
+- [ ] Loading states with spinners
+- [ ] Sticky notifications/toasts
+- [ ] Keyboard navigation improvements
+
+**Files to create:**
+- `src/components/dashboard/draggable-widget.tsx`
+- `src/components/jobs/match-explanation.tsx`
+- `src/components/company/research-cards.tsx`
+- `src/components/resume/live-preview.tsx`
+- `src/components/ui/toast.tsx`
+- `src/components/ui/loading-spinner.tsx`
+
+---
+
+### ðŸ’… PHASE 4: POLISH (2 hours)
+**Micro-interactions and refinements**
+
+- [ ] Smooth animations on all transitions
+- [ ] Hover states on all interactive elements
+- [ ] Focus states for keyboard navigation
+- [ ] Responsive typography scaling
+- [ ] Mobile swipe actions for applications
+- [ ] Skeleton loading states
+- [ ] Empty state illustrations
+
+**Files to create:**
+- `src/styles/animations.css`
+- `src/styles/interactions.css`
+- `src/components/ui/skeleton.tsx`
+- `src/components/ui/empty-state.tsx`
+
+---
+
+### ðŸ§ª PHASE 5: TESTING (1 hour)
+**Quality assurance**
+
+- [ ] Test on Chrome, Firefox, Safari
+- [ ] Test on iOS (iPhone 12+, iPad)
+- [ ] Test on Android (Pixel, Samsung)
+- [ ] Accessibility audit (Lighthouse, axe)
+- [ ] Performance audit (Core Web Vitals)
+- [ ] Dark mode consistency check
+
+---
+
+## ðŸš€ QUICK START
+
+### 1. Install Production Logger
+```typescript
+// src/app/layout.tsx
+import { initProductionLogger } from '@/lib/utils/production-logger'
+
+// At the top of RootLayout
+initProductionLogger()
+```
+
+### 2. Apply New Global Styles
+```bash
+# Backup current styles
+cp src/app/globals.css src/app/globals.css.backup
+
+# Apply new comprehensive CSS
+# (See COMPLETE_STYLES.css in this directory)
+```
+
+### 3. Test Critical Fixes
+```bash
+npm run build
+npm run start
+
+# Check:
+# - No console logs visible in production
+# - Dark mode works on all pages
+# - Forms align properly on mobile
+# - Buttons stay within boundaries
+```
+
+---
+
+## ðŸ“ FILE STRUCTURE
+
+```
+src/
+â”œâ”€â”€ app/
+â”‚   â”œâ”€â”€ globals.css (UPDATED - comprehensive styles)
+â”‚   â””â”€â”€ layout.tsx (UPDATED - production logger)
+â”œâ”€â”€ components/
+â”‚   â”œâ”€â”€ ui/
+â”‚   â”‚   â”œâ”€â”€ mobile-menu.tsx (NEW)
+â”‚   â”‚   â”œâ”€â”€ icon-system.tsx (NEW)
+â”‚   â”‚   â”œâ”€â”€ toast.tsx (NEW)
+â”‚   â”‚   â”œâ”€â”€ loading-spinner.tsx (NEW)
+â”‚   â”‚   â”œâ”€â”€ skeleton.tsx (NEW)
+â”‚   â”‚   â””â”€â”€ empty-state.tsx (NEW)
+â”‚   â”œâ”€â”€ dashboard/
+â”‚   â”‚   â””â”€â”€ draggable-widget.tsx (NEW)
+â”‚   â”œâ”€â”€ jobs/
+â”‚   â”‚   â””â”€â”€ match-explanation.tsx (NEW)
+â”‚   â”œâ”€â”€ company/
+â”‚   â”‚   â””â”€â”€ research-cards.tsx (NEW)
+â”‚   â””â”€â”€ resume/
+â”‚       â””â”€â”€ live-preview.tsx (NEW)
+â”œâ”€â”€ lib/
+â”‚   â”œâ”€â”€ utils/
+â”‚   â”‚   â””â”€â”€ production-logger.ts (NEW)
+â”‚   â””â”€â”€ accessibility/
+â”‚       â””â”€â”€ contrast-checker.ts (NEW)
+â””â”€â”€ styles/
+    â”œâ”€â”€ forms.css (NEW)
+    â”œâ”€â”€ buttons.css (NEW)
+    â”œâ”€â”€ animations.css (NEW)
+    â””â”€â”€ interactions.css (NEW)
+```
+
+---
+
+## ðŸŽ¨ DESIGN SYSTEM
+
+### Colors
+- **Primary:** `#0066cc` (Blue)
+- **Secondary:** `#f8f9fa` (Light Gray)
+- **Success:** `#22c55e` (Green)
+- **Warning:** `#f59e0b` (Orange)
+- **Error:** `#ef4444` (Red)
+- **Dark BG:** `#1a1d1f` (Near Black)
+
+### Typography
+- **Font:** Inter, -apple-system, sans-serif
+- **Sizes:** 14px (mobile), 16px (desktop)
+- **Line Height:** 1.5 (body), 1.25 (headings)
+
+### Spacing
+- **xs:** 4px
+- **sm:** 8px
+- **md:** 16px
+- **lg:** 24px
+- **xl:** 32px
+- **2xl:** 48px
+
+### Shadows
+- **sm:** `0 1px 2px rgba(0,0,0,0.05)`
+- **md:** `0 4px 6px rgba(0,0,0,0.1)`
+- **lg:** `0 10px 15px rgba(0,0,0,0.1)`
+- **xl:** `0 20px 25px rgba(0,0,0,0.1)`
+
+---
+
+## âœ… COMPLETION CHECKLIST
+
+### Critical (Before Launch)
+- [ ] No debug logs in production
+- [ ] Dark mode works everywhere
+- [ ] Forms aligned on all devices
+- [ ] Buttons within boundaries
+- [ ] Text doesn't overflow
+
+### High Priority (Week 1)
+- [ ] Mobile menu functional
+- [ ] Form validation visual
+- [ ] WCAG AA compliant
+- [ ] ARIA labels complete
+- [ ] Icon system implemented
+
+### Medium Priority (Week 2)
+- [ ] Dashboard customizable
+- [ ] Job matching explanations
+- [ ] Company research redesigned
+- [ ] Resume live preview
+- [ ] Loading states everywhere
+
+### Polish (Week 3)
+- [ ] All animations smooth
+- [ ] Keyboard nav perfect
+- [ ] Mobile gestures work
+- [ ] Empty states beautiful
+- [ ] Performance optimized
+
+---
+
+## ðŸ“ž SUPPORT
+
+If you encounter issues:
+1. Check browser console for errors
+2. Test in incognito mode (no extensions)
+3. Clear cache and rebuild
+4. Check responsive breakpoints
+5. Validate HTML/CSS syntax
+
+---
+
+## ðŸŽ¯ SUCCESS METRICS
+
+- **Performance:** Lighthouse score > 90
+- **Accessibility:** WCAG AA compliant
+- **Mobile:** Works on iOS 14+ and Android 10+
+- **Load Time:** < 3 seconds on 3G
+- **User Feedback:** Positive reviews on UI/UX
+
+---
+
+**Last Updated:** November 1, 2025  
+**Next Review:** After Phase 1 completion
+# UI/UX Complete Repomix Summary
+**Generated:** November 1, 2025  
+**File:** `UI-UX-COMPLETE-REPOMIX.txt`  
+**Total Files:** 33 files  
+**Total Size:** 174,161 characters (54,178 tokens)
+
+---
+
+## ðŸ“¦ **What's Included**
+
+### **1. Core CSS (40.1% of content)**
+- âœ… `src/app/globals.css` (61,094 chars)
+  - Complete design system with CSS variables
+  - Form validation styles
+  - Loading states
+  - Job match & company card styles
+  - Toast notifications
+  - Responsive typography
+  - All UI redesign improvements
+
+### **2. Landing Page Components (16.4%)**
+- âœ… `src/components/features-section.tsx` (20,311 chars)
+  - Before/after metrics
+  - Feature cards with hover effects
+  - Mobile app section
+  - Pricing cards
+  - Uses new color system
+
+- âœ… `src/components/hero-section-v2.tsx` (10,190 chars)
+  - Hero with floating company pills
+  - CTA buttons
+  - Animated elements
+
+- âœ… `src/components/stats-section.tsx`
+  - Statistics display
+
+### **3. New UI Components (Created Today)**
+- âœ… `src/components/ui/toast.tsx` - Toast notifications with useToast hook
+- âœ… `src/components/ui/job-match-explanation.tsx` - Job matching UI with progress bar
+- âœ… `src/components/ui/company-research-card.tsx` - Pros/cons cards
+- âœ… `src/components/ui/preview-empty.tsx` - Empty state component
+- âœ… `src/components/ui/form-feedback.tsx` - Form validation feedback
+- âœ… `src/components/ui/spinner.tsx` - Enhanced with LoadingOverlay & LoadingState
+- âœ… `src/components/ui/index.ts` - Central exports
+
+### **4. Existing UI Components**
+- âœ… `src/components/ui/dropdown-menu.tsx` (8,553 chars)
+- âœ… `src/components/ui/select.tsx` (6,561 chars)
+- âœ… `src/components/ui/dialog.tsx` (4,855 chars)
+- âœ… `src/components/ui/icon-system.tsx` (3,806 chars)
+- âœ… `src/components/ui/toast-system.tsx` (3,670 chars)
+- âœ… `src/components/ui/button.tsx`
+- âœ… `src/components/ui/card.tsx`
+- âœ… `src/components/ui/input.tsx`
+- âœ… `src/components/ui/textarea.tsx`
+- âœ… `src/components/ui/badge.tsx`
+- âœ… `src/components/ui/alert.tsx`
+- âœ… `src/components/ui/avatar.tsx`
+- âœ… `src/components/ui/checkbox.tsx`
+- âœ… `src/components/ui/empty-state.tsx`
+- âœ… `src/components/ui/label.tsx`
+- âœ… `src/components/ui/mobile-menu.tsx`
+- âœ… `src/components/ui/progress.tsx`
+- âœ… `src/components/ui/separator.tsx`
+- âœ… `src/components/ui/skeleton.tsx`
+- âœ… `src/components/ui/tabs.tsx`
+- âœ… `src/components/ui/use-toast.ts`
+
+### **5. Documentation (4.8%)**
+- âœ… `DEPLOYMENT_GUIDE.md` (7,425 chars)
+
+---
+
+## ðŸ” **Files to Check for Overlap**
+
+### **Potential Duplicates/Conflicts:**
+
+#### **1. Toast System (DUPLICATE FOUND)**
+- ðŸ”´ `src/components/ui/toast.tsx` (NEW - created today)
+- ðŸ”´ `src/components/ui/toast-system.tsx` (EXISTING)
+- ðŸ”´ `src/components/ui/use-toast.ts` (EXISTING)
+
+**ACTION NEEDED:** Consolidate toast implementations
+
+#### **2. Empty State (DUPLICATE FOUND)**
+- ðŸ”´ `src/components/ui/preview-empty.tsx` (NEW - created today)
+- ðŸ”´ `src/components/ui/empty-state.tsx` (EXISTING)
+
+**ACTION NEEDED:** Merge or choose one implementation
+
+#### **3. Icon System**
+- âš ï¸ `src/components/ui/icon-system.tsx` (EXISTING)
+- âš ï¸ Hero section uses emoji icons
+
+**ACTION NEEDED:** Verify if icon system should replace emojis
+
+---
+
+## ðŸ“Š **Top 10 Files by Size**
+
+1. **globals.css** - 61,094 chars (40.1%) - âœ… Complete design system
+2. **features-section.tsx** - 20,311 chars (9.7%) - âœ… Landing page features
+3. **hero-section-v2.tsx** - 10,190 chars (6.7%) - âœ… Hero section
+4. **dropdown-menu.tsx** - 8,553 chars (4.4%) - Existing component
+5. **DEPLOYMENT_GUIDE.md** - 7,425 chars (4.8%) - Documentation
+6. **select.tsx** - 6,561 chars (3.4%) - Existing component
+7. **dialog.tsx** - 4,855 chars (2.7%) - Existing component
+8. **job-match-explanation.tsx** - 4,147 chars (2.2%) - âœ… NEW component
+9. **icon-system.tsx** - 3,806 chars (2.5%) - Existing component
+10. **toast-system.tsx** - 3,670 chars (2.2%) - Existing component
+
+---
+
+## âš ï¸ **Issues to Review**
+
+### **1. Duplicate Toast Implementations**
+You have THREE toast-related files:
+- `toast.tsx` (new, with useToast hook)
+- `toast-system.tsx` (existing)
+- `use-toast.ts` (existing)
+
+**Recommendation:** 
+- Keep the NEW `toast.tsx` (more complete with useToast hook)
+- Remove or merge `toast-system.tsx` and `use-toast.ts`
+- Update imports throughout the app
+
+### **2. Duplicate Empty State Components**
+- `preview-empty.tsx` (new, more flexible)
+- `empty-state.tsx` (existing)
+
+**Recommendation:**
+- Review both implementations
+- Keep the more feature-rich one
+- Update all usages
+
+### **3. CSS Variable Consistency**
+The new `globals.css` uses:
+- `var(--color-primary)`
+- `var(--color-text)`
+- `var(--color-surface)`
+
+**Verify:** All components use these variables consistently
+
+### **4. Icon System vs Emojis**
+- Hero section uses emoji icons (ðŸ“º, ðŸ“¦, ðŸŽµ)
+- `icon-system.tsx` exists for SVG icons
+
+**Recommendation:** 
+- Replace emojis with proper SVG icons from icon-system
+- Or document when to use each
+
+---
+
+## âœ… **What's Working Well**
+
+1. **Consistent Color System** - All new components use CSS variables
+2. **Accessibility** - ARIA labels, focus states, keyboard navigation
+3. **Loading States** - Comprehensive loading UI (spinner, overlay, inline)
+4. **Form Validation** - Visual feedback with colors
+5. **Responsive Design** - Mobile-first approach
+6. **Component Modularity** - Well-separated concerns
+
+---
+
+## ðŸ“ **Missing from Repomix**
+
+These MD files were NOT included (need to check why):
+- âŒ `UI_REDESIGN_PLAN.md` (your original plan)
+- âŒ `UI_COMPONENTS_GUIDE.md` (created today)
+- âŒ `REDESIGN_IMPLEMENTATION_GUIDE.md`
+- âŒ Other project MD files
+
+**Reason:** Repomix config used `*.md` pattern which only matches root-level MD files.
+
+---
+
+## ðŸŽ¯ **Next Steps**
+
+1. **Review Duplicates**
+   - Consolidate toast implementations
+   - Merge empty state components
+   - Update imports
+
+2. **Check Missing Files**
+   - Manually review `UI_REDESIGN_PLAN.md`
+   - Manually review `UI_COMPONENTS_GUIDE.md`
+   - Compare with your original plan
+
+3. **Verify Consistency**
+   - All components use CSS variables
+   - No hardcoded colors
+   - Consistent spacing/sizing
+
+4. **Test Integration**
+   - Toast notifications work
+   - Loading states display correctly
+   - Form validation shows properly
+
+---
+
+## ðŸ“ **File Locations**
+
+- **Repomix Output:** `UI-UX-COMPLETE-REPOMIX.txt`
+- **This Summary:** `UI-UX-REPOMIX-SUMMARY.md`
+- **Usage Guide:** `UI_COMPONENTS_GUIDE.md`
+- **Original Plan:** `UI_REDESIGN_PLAN.md`
+
+**Total Package:** 174,161 characters across 33 files ready for review! ðŸŽ‰

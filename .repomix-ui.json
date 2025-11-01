@@ -1,0 +1,29 @@
+{
+  "output": {
+    "filePath": "UI-UX-COMPLETE-REPOMIX.txt",
+    "style": "xml",
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "topFilesLength": 10,
+    "showLineNumbers": true
+  },
+  "include": [
+    "src/app/globals.css",
+    "src/components/ui/**/*.tsx",
+    "src/components/ui/**/*.ts",
+    "src/components/features-section.tsx",
+    "src/components/hero-section-v2.tsx",
+    "src/components/stats-section.tsx",
+    "*.md"
+  ],
+  "ignore": {
+    "useGitignore": false,
+    "useDefaultPatterns": false,
+    "customPatterns": [
+      "node_modules/**",
+      ".next/**",
+      "dist/**",
+      "build/**"
+    ]
+  }
+}
