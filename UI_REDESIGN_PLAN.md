@@ -1,8 +1,5 @@
 # 🎨 Career Lever AI - UI/UX Redesign Master Plan
 
-**Status**: 📋 PLANNED - Separate from critical fixes
-**Timeline**: 2-3 weeks (after critical issues complete)
-**Branch**: `feature/ui-redesign`
 
 ---
 
@@ -416,7 +413,6 @@
 ## 📝 NOTES
 
 - This is a **MAJOR redesign** - requires dedicated focus
-- Create separate branch: `feature/ui-redesign`
 - Test thoroughly before merging to main
 - Consider this a v2.0 release
 - Get user feedback early and often
