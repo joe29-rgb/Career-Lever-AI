@@ -24,6 +24,7 @@ import { JobBankCanadaAPI } from '../apis/job-bank-canada'
 import { CivicJobsRSS } from '../apis/civic-jobs-rss'
 import { getGoogleForJobsAPI } from '../apis/google-for-jobs'
 import { getCompanyCareerPagesAPI } from '../apis/company-career-pages'
+import { getElutaRSS } from '../apis/eluta-rss'
 import { getVerifiedCompanies } from '@/data/verified-ats-companies'
 import { CircuitBreaker } from '../utils/circuit-breaker'
 import type { Job } from '@/types/supabase'
@@ -44,6 +45,7 @@ export class MasterJobOrchestrator {
   private civicJobsBreaker = new CircuitBreaker(3, 60000)
   private googleJobsBreaker = new CircuitBreaker(3, 60000)
   private companyPagesBreaker = new CircuitBreaker(3, 60000)
+  private elutaBreaker = new CircuitBreaker(3, 60000)
 
   /**
    * Scrape all sources with circuit breaker protection
@@ -69,6 +71,7 @@ export class MasterJobOrchestrator {
       this.scrapeATS(),
       this.scrapeLinkedIn(),
       this.scrapeAdzuna(),
+      this.scrapeEluta(),
       this.scrapeJobBank(),
       this.scrapeGoogleJobs(),
       this.scrapeCompanyPages(),
@@ -577,6 +580,55 @@ export class MasterJobOrchestrator {
       
       return {
         source: 'CivicJobs',
+        jobs: [],
+        success: false,
+        error: errorMessage,
+        duration
+      }
+    }
+  }
+
+  /**
+   * Scrape Eluta RSS with circuit breaker
+   */
+  private async scrapeEluta(): Promise<ScraperResult> {
+    const startTime = Date.now()
+    
+    try {
+      console.log('[ELUTA] Starting Eluta RSS scrape...')
+      
+      const jobs = await this.elutaBreaker.execute(async () => {
+        const eluta = getElutaRSS()
+        return await eluta.searchAlbertaJobs()
+      })
+
+      const duration = Math.round((Date.now() - startTime) / 1000)
+
+      if (jobs === null) {
+        return {
+          source: 'Eluta',
+          jobs: [],
+          success: false,
+          error: 'Circuit breaker open',
+          duration
+        }
+      }
+
+      console.log(`[ELUTA] Completed: ${jobs.length} jobs in ${duration}s`)
+
+      return {
+        source: 'Eluta',
+        jobs,
+        success: true,
+        duration
+      }
+    } catch (error) {
+      const duration = Math.round((Date.now() - startTime) / 1000)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      console.error(`\n❌ Eluta failed: ${errorMessage}\n`)
+      
+      return {
+        source: 'Eluta',
         jobs: [],
         success: false,
         error: errorMessage,
