@@ -1,8 +1,9 @@
 /**
- * LOADING SPINNER COMPONENT
- * Reusable spinner for loading states
+ * LOADING SPINNER COMPONENT - Production Ready
+ * Path: src/components/ui/loading-spinner.tsx
  */
 
+import React, { type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface SpinnerProps {
@@ -14,13 +15,13 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
   const sizes = {
     sm: 'w-4 h-4 border-2',
     md: 'w-6 h-6 border-2',
-    lg: 'w-8 h-8 border-3'
+    lg: 'w-8 h-8 border-4'
   }
 
   return (
     <div
       className={cn(
-        'loading-spinner animate-spin rounded-full border-current border-r-transparent',
+        'animate-spin rounded-full border-current border-r-transparent',
         sizes[size],
         className
       )}
@@ -32,25 +33,37 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
   )
 }
 
+interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  isLoading?: boolean
+  loadingText?: string
+  children: ReactNode
+  variant?: 'primary' | 'secondary' | 'ghost'
+}
+
 export function LoadingButton({
   children,
   isLoading,
   loadingText = 'Loading...',
   className,
+  variant = 'primary',
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { 
-  isLoading?: boolean
-  loadingText?: string
-}) {
+}: LoadingButtonProps) {
+  const variantClasses = {
+    primary: 'btn-primary',
+    secondary: 'btn-secondary',
+    ghost: 'btn-ghost'
+  }
+
   return (
-    <button 
-      {...props} 
+    <button
+      {...props}
       disabled={isLoading || props.disabled}
       className={cn(
-        isLoading && 'btn-loading',
+        'btn',
+        variantClasses[variant],
+        isLoading && 'cursor-wait',
         className
       )}
-      aria-busy={isLoading}
     >
       {isLoading ? (
         <>
@@ -64,53 +77,7 @@ export function LoadingButton({
   )
 }
 
-// Full page loading overlay
-export function LoadingOverlay({ message = 'Loading...' }: { message?: string }) {
-  return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ 
-        background: 'rgba(var(--color-charcoal-900-rgb), 0.8)',
-        backdropFilter: 'blur(4px)'
-      }}
-      role="alert"
-      aria-busy="true"
-      aria-label={message}
-    >
-      <div 
-        className="flex flex-col items-center gap-4 p-8 rounded-lg"
-        style={{ background: 'var(--color-surface)' }}
-      >
-        <Spinner size="lg" />
-        <p style={{ color: 'var(--color-text)' }} className="font-medium">
-          {message}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// Inline loading state for content areas
-export function LoadingState({ 
-  message = 'Loading...', 
-  className = '' 
-}: { 
-  message?: string
-  className?: string 
-}) {
-  return (
-    <div 
-      className={cn('flex flex-col items-center justify-center py-12', className)}
-      role="status"
-      aria-label={message}
-    >
-      <Spinner size="lg" />
-      <p 
-        className="mt-4 text-sm"
-        style={{ color: 'var(--color-text-secondary)' }}
-      >
-        {message}
-      </p>
-    </div>
-  )
+// Bonus: Inline spinner for custom buttons
+export function ButtonSpinner({ className }: { className?: string }) {
+  return <Spinner size="sm" className={cn('mr-2', className)} />
 }
