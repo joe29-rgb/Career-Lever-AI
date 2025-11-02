@@ -56,15 +56,14 @@ export function HeroSectionV2() {
   }
 
   return (
-    <section className="landing-page relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-6 py-12">
-      {/* Background with theme-aware gradients */}
+    <section className="relative min-h-screen overflow-hidden flex flex-col items-center justify-center px-6 py-12 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      {/* Subtle gradient overlays */}
       <div 
-        className="absolute inset-0 -z-10 bg-background"
+        className="absolute inset-0 -z-10"
         style={{
           background: `
-            radial-gradient(circle at 20% 30%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
-            radial-gradient(circle at 80% 70%, hsl(var(--secondary) / 0.08) 0%, transparent 50%),
-            hsl(var(--background))
+            radial-gradient(circle at 20% 30%, rgba(88, 36, 253, 0.1) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(245, 0, 30, 0.08) 0%, transparent 50%)
           `
         }}
       />
